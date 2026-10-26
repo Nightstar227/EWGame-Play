@@ -29,7 +29,7 @@
   document.documentElement.classList.add('ew-touch');
 })();
 </script>
-<title>Engineer's War v46 - ships go for repairs, broken parts remembered</title>
+<title>Engineer's War v48 - enemy-held places are taken back after a quiet park</title>
 <!-- (v17) The shared look: theme-v0.4.css from the UI folder, built in word for word (tools/build.js). It only styles its own named parts
      (.mode-front, .panel, .btn ...), plus a few page-wide basics that the rules just below undo for the older screens. -->
 <style>
@@ -5244,6 +5244,8 @@ const SETTINGS = {
   // (stop 2: the link between the campaign and the one Mars battle)
   parkLookaheadWeeks: 0.5,    // the Mars battle is parked only when no enemy is in the AO and none is due to reach the Mars edge within this many war weeks
   campaignParkQuietSeconds: 1200,   // with no enemy ship in the AO for this long (battle seconds) the battle is parked even if the AO is not yet secured (a side alone at Mars that is slow to claim every place)
+  campaignRetakeWeeks: 2,    // (v48) a battle parked by the rule above while the enemy still holds a place there (a station with nobody in it, like Deimos in Alex's week-130 save)
+                             //   wakes again after this many war weeks so the side in the AO can finish taking it; a save that never recorded such a park wakes at once. 0 = never
   campaignYardEvery: 0,      // while live, the Mars Yard delivers campaignYardShips ships every this many battle seconds for whoever holds Mars (slower under siege: siegeResourceFactor).
                              //   0 = worked out from the Mars Yard's berths and the side's Alloys a week, so the yard builds at the same rate live as parked; a number above 0 overrides it
   campaignYardShips: 6,      // ... that many ships per delivery (0 = the yard builds nothing while live)
@@ -6050,7 +6052,7 @@ const SETTING_MUST_BE_POSITIVE = ['cmdMaxAbreast', 'cmdPdCoverFactor', 'cmdLongR
   'serviceLastMax', 'serviceHistoryMax', 'serviceEventsMax', 'recentChangeSeconds', 'dossierLastActions', 'reportOfficerRows', 'dossierChartMinSpan',
   'orbitRateHeadroom', 'orbitMinRate', 'facingLeadFactor', 'interceptMaxLead', 'orbitRangeFraction', 'orbitTurnMargin', 'tightOrbitSizeRatio', 'tightOrbitHulls', 'tightOrbitStraySeconds', 'tightOrbitSpacings', 'tacticMinSeconds', 'chaseGiveUpSeconds', 'noChaseSeconds',
   'shapeEnterFactor', 'shapeExitFactor', 'axisTurnRate'];
-const SETTING_MUST_BE_NON_NEGATIVE = ['dcNoRoomSeconds', 'wreckHitShare', 'repairPartsWeeks', 'repairAutoBelow', 'dockQueueWarnSeconds', 'facingTwoSidedAngle', 'freshSideHoldSeconds', 'crossTEdge', 'crossTCreepFraction', 'crossTWidth', 'crossTTurnEdge', 'placesPicketSpread', 'placesPicketMove', 'placesPicketMax', 'placesWithdrawGatherSeconds', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerTargetShare', 'ledgerLineMin', 'ledgerLossMargin', 'ledgerSaveFloor', 'ledgerMinLoss', 'ledgerSurplusShare', 'withdrawRatio', 'withdrawHoldWeeks', 'ledgerAssaultWeeks', 'indDevShareSave', 'indDevShareIdle', 'dirPriorityMul', 'resourceHeldShare', 'devGraceWeeks', 'devCapStart', 'devCapAlien', 'devPotShare', 'devIdleWeeks', 'devMaxBuilds', 'bbAcidSeconds', 'bbAcidMaxPatches', 'bbRegrowQuiet', 'bbRegrowHull', 'bbRegrowPlate', 'bbRegrowHeatStop', 'bbBurstTouch', 'bbBurstDeathReach', 'bbBurstSeek', 'bbVolleySpread', 'bbMissileRetries', 'bbPdRoundsPerShot', 'bbPdFlakRounds', 'bbPdReadyRounds', 'bbPdLaserHeat', 'bbRadiatorFoldSeconds', 'bbSideWeight', 'deflectRatio', 'deflectCallSeconds', 'readyRoundsPerGun', 'boostFuEarth', 'boostFuOther', 'boostGrowth', 'alloysEarthStart', 'alloysEarthRampTo', 'alloysEarthRampWeeks', 'alloysGrowth', 'alienAlloysStart', 'alienAlloysGrowth', 'alienAlloysPerStep', 'alienBoostPerStep', 'alienNodeLossShare', 'berthIdleWeeks', 'berthBoostWeeks', 'berthMaxGrowth', 'campaignBuildDays', 'campaignLiveEnterShips', 'civilianNoteWeeks', 'leaderNewsCooldown', 'leaderNewsCombatGap', 'stationRebuildYardBonus', 'stationRebuildSecuredBonus', 'stationRebuildNearShare', 'stationRebuildAlloys', 'cmdAttackMaxSeconds', 'cmdPaceGap', 'radioQuietSeconds', 'cmdSummaryMinutes', 'designRemarkSeconds', 'cmdReviewBattles', 'huntMaxShips', 'huntGraceSeconds', 'pursuitFleeingBonus', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'dangerConeSeconds', 'placesAttackStallSeconds', 'campaignAttackStallSeconds', 'campaignStragglerShips', 'campaignStragglerShare', 'campaignStragglerSeconds', 'campaignStandoffSeconds', 'campaignStandoffWeeks', 'comebackMassWeeks', 'alienGarrisonCap', 'campaignFallenMax', 'campaignPoolCap', 'campaignGarrisonCap', 'campaignStartOwnShips', 'campaignAlienGarrison', 'campaignAdvanceKeep', 'campaignAdvanceRatio', 'campaignAdvanceTake', 'campaignAdvanceAfterWaves', 'campaignAdvanceHoldWeeks', 'campaignRearKeep', 'campaignFrontMoveMinShips', 'campaignFrontMoveShare', 'executiveMassRatio', 'executiveAssaultRatio', 'executiveAssaultMin', 'campaignPriorityWeight', 'alienShoveWeeks', 'alienGatherRatio', 'alienGatherTarget', 'alienGatherMinShips', 'alienGatherMaxWeeks', 'alienPullBackRatio', 'alienStateHoldWeeks', 'alienFirstPool', 'alienWaveJitter', 'alienWarnWeeks', 'alienWaveBoostWeeks', 'alienTargetWeakest', 'alienTargetMain', 'alienFirstWaveWeek', 'minLaunchShips', 'placesHoldClearOdds', 'campaignYardEvery', 'boostPerMarker', 'campaignRefuelShare', 'capitalBuildShare', 'assaultMaxWaitWeeks', 'repairPerWeek', 'campaignDesignBoostPerMass', 'campaignDesignBuildPerCost', 'campaignDesignAlloysShare', 'campaignDesignWeight', 'placesReachShare', 'placesFailRaise', 'placesContestShare', 'aoSecureShare', 'aoLoseShare', 'siegeBoostTrickle', 'boostFootholdShare', 'siegeGrowthFactor', 'siegeResourceFactor', 'placesReportMinutes', 'placesHysteresis', 'placesMaxOpposite', 'internalChance', 'internalFresh', 'externalCover', 'deepBelowHull', 'dcSeconds', 'blastToHull', 'blastToParts', 'profileNudgeMax', 'profileNudgeTurn', 'profileNudgeFiring', 'reactorWallShare', 'trackSquareCut', 'pressDryValue', 'pressFleetRatio', 'pressOdds', 'pressHealthEdge', 'pressOddsHealthy', 'pressDangerShare', 'pressHitChance', 'pressAfter', 'pressProgress', 'pressHold', 'pressStep', 'pressRingMin', 'lockFormShare', 'looseJitter', 'looseRein', 'lockSettleSeconds', 'lockRein', 'lockBreakHull', 'lockMinShare', 'closeRanksDelay', 'mergeBelow', 'mergeMaxOdds', 'disbandAt', 'stragglerSeconds', 'divisionLeash', 'pursuitBase', 'formBeforeAttack', 'gatherSeconds', 'fallenKeep', 'topUpBelow', 'stagingContactSeconds', 'stagingMaxWait', 'minNewSquadron', 'entryDangerRatio', 'entryCheckFactor', 'entryRetrySeconds', 'rallyInset', 'joinWornBelow', 'survivorEdgeMargin', 'flagKilled', 'flagWounded', 'flagSurviveSwing', 'woundedSkillPenalty', 'woundedBattles', 'replacementDelay', 'handoverSeconds', 'standInSkill', 'pinRenewSeconds', 'divisionTaskMinSeconds', 'rotateWornShare', 'divisionRefuseOdds', 'divisionRallyOdds', 'divisionCounterPressure', 'mainEffortMinOdds', 'mainEffortFreeRein', 'pinRenewFactor', 'supportSeconds', 'supportMaxTravelSeconds', 'divisionTargetBonus', 'localAttackOdds', 'memberCompactShare', 'recruitAxisSpread', 'recruitSkillLow', 'recruitSkillHigh', 'skillPerLevel', 'readinessXpPerRepair', 'medalSkillAdd', 'scarShakenBoldness', 'repertoirePull', 'spawnEdgeMargin', 'doctrinePull', 'matchupPull', 'experimentMinSeconds', 'experimentCooldown', 'tacticLearnStep', 'tacticWeightMax', 'exploreLearnBoost', 'spawnBandWidth', 'spawnVerticalMargin', 'shieldRechargeDelay', 'minArmorPassFraction', 'separationStrength',
+const SETTING_MUST_BE_NON_NEGATIVE = ['dcNoRoomSeconds', 'wreckHitShare', 'repairPartsWeeks', 'repairAutoBelow', 'dockQueueWarnSeconds', 'facingTwoSidedAngle', 'freshSideHoldSeconds', 'crossTEdge', 'crossTCreepFraction', 'crossTWidth', 'crossTTurnEdge', 'placesPicketSpread', 'placesPicketMove', 'placesPicketMax', 'placesWithdrawGatherSeconds', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerTargetShare', 'ledgerLineMin', 'ledgerLossMargin', 'ledgerSaveFloor', 'ledgerMinLoss', 'ledgerSurplusShare', 'withdrawRatio', 'withdrawHoldWeeks', 'ledgerAssaultWeeks', 'indDevShareSave', 'indDevShareIdle', 'dirPriorityMul', 'resourceHeldShare', 'devGraceWeeks', 'devCapStart', 'devCapAlien', 'devPotShare', 'devIdleWeeks', 'devMaxBuilds', 'bbAcidSeconds', 'bbAcidMaxPatches', 'bbRegrowQuiet', 'bbRegrowHull', 'bbRegrowPlate', 'bbRegrowHeatStop', 'bbBurstTouch', 'bbBurstDeathReach', 'bbBurstSeek', 'bbVolleySpread', 'bbMissileRetries', 'bbPdRoundsPerShot', 'bbPdFlakRounds', 'bbPdReadyRounds', 'bbPdLaserHeat', 'bbRadiatorFoldSeconds', 'bbSideWeight', 'deflectRatio', 'deflectCallSeconds', 'readyRoundsPerGun', 'boostFuEarth', 'boostFuOther', 'boostGrowth', 'alloysEarthStart', 'alloysEarthRampTo', 'alloysEarthRampWeeks', 'alloysGrowth', 'alienAlloysStart', 'alienAlloysGrowth', 'alienAlloysPerStep', 'alienBoostPerStep', 'alienNodeLossShare', 'berthIdleWeeks', 'berthBoostWeeks', 'berthMaxGrowth', 'campaignBuildDays', 'campaignLiveEnterShips', 'civilianNoteWeeks', 'leaderNewsCooldown', 'leaderNewsCombatGap', 'stationRebuildYardBonus', 'stationRebuildSecuredBonus', 'stationRebuildNearShare', 'stationRebuildAlloys', 'cmdAttackMaxSeconds', 'cmdPaceGap', 'radioQuietSeconds', 'cmdSummaryMinutes', 'designRemarkSeconds', 'cmdReviewBattles', 'huntMaxShips', 'huntGraceSeconds', 'pursuitFleeingBonus', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'dangerConeSeconds', 'placesAttackStallSeconds', 'campaignAttackStallSeconds', 'campaignStragglerShips', 'campaignStragglerShare', 'campaignStragglerSeconds', 'campaignStandoffSeconds', 'campaignStandoffWeeks', 'campaignRetakeWeeks', 'comebackMassWeeks', 'alienGarrisonCap', 'campaignFallenMax', 'campaignPoolCap', 'campaignGarrisonCap', 'campaignStartOwnShips', 'campaignAlienGarrison', 'campaignAdvanceKeep', 'campaignAdvanceRatio', 'campaignAdvanceTake', 'campaignAdvanceAfterWaves', 'campaignAdvanceHoldWeeks', 'campaignRearKeep', 'campaignFrontMoveMinShips', 'campaignFrontMoveShare', 'executiveMassRatio', 'executiveAssaultRatio', 'executiveAssaultMin', 'campaignPriorityWeight', 'alienShoveWeeks', 'alienGatherRatio', 'alienGatherTarget', 'alienGatherMinShips', 'alienGatherMaxWeeks', 'alienPullBackRatio', 'alienStateHoldWeeks', 'alienFirstPool', 'alienWaveJitter', 'alienWarnWeeks', 'alienWaveBoostWeeks', 'alienTargetWeakest', 'alienTargetMain', 'alienFirstWaveWeek', 'minLaunchShips', 'placesHoldClearOdds', 'campaignYardEvery', 'boostPerMarker', 'campaignRefuelShare', 'capitalBuildShare', 'assaultMaxWaitWeeks', 'repairPerWeek', 'campaignDesignBoostPerMass', 'campaignDesignBuildPerCost', 'campaignDesignAlloysShare', 'campaignDesignWeight', 'placesReachShare', 'placesFailRaise', 'placesContestShare', 'aoSecureShare', 'aoLoseShare', 'siegeBoostTrickle', 'boostFootholdShare', 'siegeGrowthFactor', 'siegeResourceFactor', 'placesReportMinutes', 'placesHysteresis', 'placesMaxOpposite', 'internalChance', 'internalFresh', 'externalCover', 'deepBelowHull', 'dcSeconds', 'blastToHull', 'blastToParts', 'profileNudgeMax', 'profileNudgeTurn', 'profileNudgeFiring', 'reactorWallShare', 'trackSquareCut', 'pressDryValue', 'pressFleetRatio', 'pressOdds', 'pressHealthEdge', 'pressOddsHealthy', 'pressDangerShare', 'pressHitChance', 'pressAfter', 'pressProgress', 'pressHold', 'pressStep', 'pressRingMin', 'lockFormShare', 'looseJitter', 'looseRein', 'lockSettleSeconds', 'lockRein', 'lockBreakHull', 'lockMinShare', 'closeRanksDelay', 'mergeBelow', 'mergeMaxOdds', 'disbandAt', 'stragglerSeconds', 'divisionLeash', 'pursuitBase', 'formBeforeAttack', 'gatherSeconds', 'fallenKeep', 'topUpBelow', 'stagingContactSeconds', 'stagingMaxWait', 'minNewSquadron', 'entryDangerRatio', 'entryCheckFactor', 'entryRetrySeconds', 'rallyInset', 'joinWornBelow', 'survivorEdgeMargin', 'flagKilled', 'flagWounded', 'flagSurviveSwing', 'woundedSkillPenalty', 'woundedBattles', 'replacementDelay', 'handoverSeconds', 'standInSkill', 'pinRenewSeconds', 'divisionTaskMinSeconds', 'rotateWornShare', 'divisionRefuseOdds', 'divisionRallyOdds', 'divisionCounterPressure', 'mainEffortMinOdds', 'mainEffortFreeRein', 'pinRenewFactor', 'supportSeconds', 'supportMaxTravelSeconds', 'divisionTargetBonus', 'localAttackOdds', 'memberCompactShare', 'recruitAxisSpread', 'recruitSkillLow', 'recruitSkillHigh', 'skillPerLevel', 'readinessXpPerRepair', 'medalSkillAdd', 'scarShakenBoldness', 'repertoirePull', 'spawnEdgeMargin', 'doctrinePull', 'matchupPull', 'experimentMinSeconds', 'experimentCooldown', 'tacticLearnStep', 'tacticWeightMax', 'exploreLearnBoost', 'spawnBandWidth', 'spawnVerticalMargin', 'shieldRechargeDelay', 'minArmorPassFraction', 'separationStrength',
   'separationMaxStepFraction', 'reengageMinGap', 'kiteEnterFactor', 'kiteExitFactor', 'kiteBackSpeed', 'debugMaxLines', 'formationHoldFraction', 'formationPaceMin',
   'formationBreakAngle', 'formationBreakSeconds', 'formationPassBend', 'leaderCloserMin', 'escortHoldFraction', 'escortStandOff', 'flankMarginFactor', 'flankAlong', 'flankContactFactor', 'flankArriveFactor', 'flankMapMarginFactor',
   'shotLengthSizes', 'minShipScreenPixels', 'maxTriangleShips', 'defaultReengage', 'defaultSeed',
@@ -18824,7 +18826,8 @@ function campaignBuildMap(enemyId, extra) {
 //                 securedSince (week), places: [{ id, owner, facility: 'standing' | 'destroyed' | 'none', facilityHull, facilityShield, rebuild }],
 //                 battleSeconds (battle time lived at this AO over every wake), lastWakeSeconds }
 //     battle      the one battle: { ao (the front), state: 'parked' | 'live', battleSeed, lastReport, wakes, savedLive, reports, standoffSince (the
-//                 week a standoff park began, -1 none; v31 D1: the standoff park is off unless campaignStandoffPark 1) }
+//                 week a standoff park began, -1 none; v31 D1: the standoff park is off unless campaignStandoffPark 1), retakeFrom (v48, optional: the
+//                 week a quiet park left a place the enemy's; the front wakes again campaignRetakeWeeks later) }
 //     boost[ao][side]  { perWeek, usedThisWeek, growth }: the boost (FU) an AO gives a side each week, how much is spent, the growth earned while held (06f)
 //     dev         (v31 A1) the development of every held place: its tier, colony flag, build in progress, grace window (06n campaignDevFields)
 //     pop[loc]    (v31 A1) the people of every place: { n, side, mark } (06l; the rules in 06n)
@@ -19375,6 +19378,7 @@ function campaignWakeBattle(why, peek) {
   b.battleSeed = (typeof b.seedNext === 'number' ? b.seedNext : campaign.rngSeed + b.wakes) >>> 0;   // (v27 C3) a scripted battle (the tutorial's) may name its seed, once
   delete b.seedNext;
   b.state = 'live'; b.savedLive = false; b.standoffSince = -1;
+  if (!peek) delete b.retakeFrom;                               // (v48) set again if this battle is parked the same way
   campaignLinkReset();
   campaignSqJumps.clear();
   const link = campaignLink, entering = [{}, {}], fleetsIn = [];
@@ -19511,6 +19515,17 @@ function campaignWakeCheckAt(aoId, isFront) {
     if (standoff < 0) wake = 'both sides are at ' + campaignAoName(aoId);
     else if (standoff >= SETTINGS.campaignStandoffWeeks) wake = 'the standoff at ' + campaignAoName(aoId) + ' has lasted ' + plural(SETTINGS.campaignStandoffWeeks, 'war week');
   }
+  // (v48) ONE SIDE ALONE, THE ENEMY STILL HOLDING A PLACE. Only one side has ships at the front, but a place there (often with its station still standing) is
+  // still the enemy's: nothing else would ever wake the battle, so the place stayed the enemy's for good and the ships could only circle it on a look. The
+  // battle wakes so they can take it; after a quiet park that left it the enemy's (retakeFrom), only once campaignRetakeWeeks war weeks have gone by.
+  if (!wake && here[0] !== here[1] && SETTINGS.campaignRetakeWeeks > 0) {
+    const side = here[0] ? 0 : 1, from = campaign.battle.retakeFrom;
+    const held = st.places.find(function (r) { return r.owner === 1 - side; });
+    if (held && !(typeof from === 'number' && campaign.week - from < SETTINGS.campaignRetakeWeeks)) {
+      const loc = campaignLocationById(held.id);
+      wake = SIDE_NAMES[side] + ' goes to take ' + (loc ? loc.loc.name : held.id) + ', which ' + SIDE_NAMES[1 - side] + ' still holds with no ships in the AO';
+    }
+  }
   return wake;
 }
 
@@ -19527,7 +19542,7 @@ function campaignFrontQuietSecure() {
   // a place claimed by a side that has no ship left in the AO and no standing station there is nobody's again (the claim of the tutorial's probes outlived them)
   for (let k = 0; k < st.places.length; k++) {
     const row = st.places[k];
-    if (row.owner >= 0 && !here[row.owner] && row.facility !== 'standing') { campaignLog('place', campaignLocationById(row.id).name + ' belongs to nobody: ' + SIDE_NAMES[row.owner] + ' left no ship and no station there.'); row.owner = -1; }
+    if (row.owner >= 0 && !here[row.owner] && row.facility !== 'standing') { campaignLog('place', campaignLocationById(row.id).loc.name + ' belongs to nobody: ' + SIDE_NAMES[row.owner] + ' left no ship and no station there.'); row.owner = -1; }
   }
   for (let k = 0; k < st.places.length; k++) if (st.places[k].owner >= 0) holds[st.places[k].owner] = true;
   for (let side = 0; side < 2; side++) {
@@ -19755,6 +19770,11 @@ function campaignLinkStep() {
     return;
   }
   link.stragglerSince = -1; link.ownersKey = '';
+  // (v48) The quiet clock starts again whenever a place changes hands or a station falls: a side still busy taking places is not parked half way through
+  // (Alex's week-130 save: Mars was parked a minute after we took Phobos, with Deimos and its Swarm station still the enemy's and nobody coming back for it).
+  let placesKey = '';
+  for (let k = 0; k < battlePlaces.length; k++) placesKey += battlePlaces[k].owner + battlePlaces[k].facilityState + ';';
+  if (placesKey !== link.quietKey) { link.quietKey = placesKey; link.quietSince = Math.max(link.quietSince, simTime); }
   const alone = present[0] ? 0 : (present[1] ? 1 : -1);
   if (alone >= 0 && campaignEnemyDue(1 - alone, SETTINGS.parkLookaheadWeeks)) return;
   if (alone < 0 && (campaignEnemyDue(0, SETTINGS.parkLookaheadWeeks) || campaignEnemyDue(1, SETTINGS.parkLookaheadWeeks))) return;
@@ -19765,7 +19785,11 @@ function campaignLinkStep() {
   // place, or until the quiet rule below parks it anyway.
   else if (aoState.holder === alone && theatreHoldsAll(alone)) why = 'the AO is secured by ' + SIDE_NAMES[alone] + ' and no enemy is in it or due within ' + SETTINGS.parkLookaheadWeeks + ' weeks';
   else if (simTime - link.quietSince >= SETTINGS.campaignParkQuietSeconds) why = 'no enemy ship has been in the AO for ' + Math.round(SETTINGS.campaignParkQuietSeconds) + ' s and none is due';
-  if (why) campaignParkBattle(why);
+  if (why) {
+    campaignParkBattle(why);
+    // (v48) parked by the quiet rule with a place still the enemy's: noted, so the parked front wakes again later to finish the job (campaignWakeCheckAt)
+    if (alone >= 0 && !theatreHoldsAll(alone)) campaign.battle.retakeFrom = campaign.week;
+  }
 }
 // One periodic report of the battle read into the campaign: the last report kept whole (with the war week), the losses since the report before into the scoreboard.
 function campaignReadReport(row, final) {
@@ -50563,12 +50587,13 @@ function cmRenderSol() {
   // fleets in transit: a marker on the lane, with ships and arrival day
   for (const f of c.fleets) {
     if (!f.transit || !campaignFleetSighted(f)) continue;
+    if (fleetShipCount(f) === 0) continue;   // (v47) a fleet wiped out to the last ship (only its evacuated staff left) gets no marker
     const q = cmFleetPoint(f), us = f.side === 0, n = fleetShipCount(f), sel = cmState.sel && cmState.sel.kind === 'fleet' && cmState.sel.id === f.id;
     const col = us ? 'var(--friendly)' : 'var(--alien)', y = q.p.y + (us ? -26 : 26), lx = q.p.x;
     s += '<g class="hit" data-cm="fleet" data-id="' + f.id + '" transform="translate(' + cmF(lx) + ' ' + cmF(y) + ')"><title>' + esc((us ? 'Our' : 'Alien') + ' fleet ' + f.id + ': ' + fleetWhere(f)) + '</title>' +
       '<circle r="11" fill="' + col + '" opacity="' + (sel ? '.45' : '.22') + '"/>' +
       (us ? '<path transform="scale(' + q.dir + ' 1)" d="M10 0L-6 -7L-2.5 0L-6 7Z" fill="var(--friendly)" stroke="#0A111A" stroke-width="1.2"/>' : '<circle r="6" fill="var(--alien)" stroke="#140B0A" stroke-width="1.2"/><path transform="scale(' + q.dir + ' 1)" d="M-8 -5L-13 0L-8 5" fill="none" stroke="var(--alien)" stroke-width="2"/>') +
-      '<text class="n-fleet" y="' + (us ? -15 : 24) + '" text-anchor="middle" style="fill:' + (us ? 'color-mix(in srgb,var(--friendly) 40%,#fff)' : 'color-mix(in srgb,var(--alien) 50%,#fff)') + '">' + cmNum('fleet:' + f.id + ':ships', n) + (n === 0 ? ' staff' : '') + ' &middot; week ' + cmNum('fleet:' + f.id + ':arrive', f.transit.arriveWeek.toFixed(1)) + '</text></g>';
+      '<text class="n-fleet" y="' + (us ? -15 : 24) + '" text-anchor="middle" style="fill:' + (us ? 'color-mix(in srgb,var(--friendly) 40%,#fff)' : 'color-mix(in srgb,var(--alien) 50%,#fff)') + '">' + cmNum('fleet:' + f.id + ':ships', n) + ' &middot; week ' + cmNum('fleet:' + f.id + ':arrive', f.transit.arriveWeek.toFixed(1)) + '</text></g>';
   }
   setHtml(document.getElementById('cmFg'), s);
   setHtml(document.getElementById('cmOv'), '');
@@ -66768,7 +66793,7 @@ BUREAU2_SCREEN_API.testRange = { run: testRangeRun, state: testRange, plan: func
 //   adopted habits come along in its copy code and into every new campaign. A doctrine changed in the Bureau after the save updates the plan's copy.
 //   DOCTRINE TEMPLATES (LIBRARY.templates: [{ name, doctrine, savedAt }]) live here too, so they carry over as well. A plan from before v37 has no doctrine: Auto.
 // =====================================================================
-const GAME_VERSION = 'v46';                       // the game version written on every saved plan (raise it with each new build)
+const GAME_VERSION = 'v48';                       // the game version written on every saved plan (raise it with each new build)
 const LIBRARY_KEY = 'engineersWar.library';
 const LIBRARY_FORMAT = 1;
 const LIBRARY_CODE_SHIP = 'EW-SHIP-1:', LIBRARY_CODE_LIB = 'EW-LIB-1:';
