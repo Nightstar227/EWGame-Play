@@ -8171,12 +8171,12 @@ const PART_CATEGORIES = [
   { id: 'support', name: 'Support', subs: ['Crew', 'Life support', 'Passageways'] },
   { id: 'alien',   name: 'Alien',   subs: ['Reverse-engineered'] }
 ];
-// The marks. better = what the "better" numbers of a part are multiplied by; mass, cost and resources change as given. locked = needs research.
+// The marks. better = what the "better" numbers of a part are multiplied by; mass and cost change as given (no mark adds Iridium or any other resource: Alex 2026-10-26). locked = needs research.
 const PART_MARKS = [
   { mk: 1, name: 'Mk I',   better: 1.00, range: 1.00, mass: 1.00, cost: 1.0, iridium: 0, locked: false },
   { mk: 2, name: 'Mk II',  better: 1.20, range: 1.10, mass: 0.95, cost: 1.4, iridium: 0, locked: false },
-  { mk: 3, name: 'Mk III', better: 1.45, range: 1.20, mass: 0.90, cost: 2.0, iridium: 1, locked: true },
-  { mk: 4, name: 'Mk IV',  better: 1.75, range: 1.30, mass: 0.85, cost: 2.8, iridium: 2, locked: true }
+  { mk: 3, name: 'Mk III', better: 1.45, range: 1.20, mass: 0.90, cost: 2.0, iridium: 0, locked: true },
+  { mk: 4, name: 'Mk IV',  better: 1.75, range: 1.30, mass: 0.85, cost: 2.8, iridium: 0, locked: true }
 ];
 // The numbers a mark makes better (each is multiplied by the mark's "better"; power only where the part MAKES power).
 const PART_BETTER_KEYS = ['hp', 'thrust', 'rcsThrust', 'cooling', 'armor', 'shield', 'shieldRecharge', 'ammo', 'charge', 'heatCap', 'houses', 'supports', 'fuel', 'pdRate', 'dc', 'structure'];
@@ -8679,7 +8679,7 @@ const FUEL_PAIRINGS = [
 ];
 
 // The resources a part can list (resources.md). charged: true = the campaign takes it from the stockpile today (Alloys, Iridium, Helium-3); the
-// others are shown on the part (the advanced resources its higher marks need) and are charged once the resources update lands.
+// others are the advanced resources a part itself may need (never because of its mark), charged by the campaign's resource gate (06f).
 const RESOURCE_TYPES = [
   { id: 'alloys',     name: 'Alloys',      charged: true },
   { id: 'iridium',    name: 'Iridium',     charged: true },
@@ -8690,17 +8690,18 @@ const RESOURCE_TYPES = [
   { id: 'antimatter', name: 'Antimatter',  charged: false },
   { id: 'biomass',    name: 'Biomass',     charged: false }    // (the Swarm's own: from its wrecks; race-kits.md)
 ];
-// What each part family's higher marks need (resources.md section 8, Claude's table): Mk I is Alloys only (plus Helium-3 for fusion parts), Mk II
-// adds the family's advanced resource, Mk III and IV more of it. Amounts per part. (The Iridium of Mk III and IV is MODULE_MARKS' and is charged.)
+// Which advanced-resource group each part family belongs to (resources.md section 8). The names are still shown in the Bureau, but a higher MARK never
+// needs a new resource (Alex 2026-10-26: a mark is a direct upgrade, ingenuity in design and efficiency, not new materials). So every mark row is empty:
+// a part's own resources (an Iridium plate, a fusion part's Helium-3, an advanced missile pick) come from the part itself, the same at every mark.
 const MARK_RESOURCES = {
-  structure: { name: 'Armour, frames and mounts',            2: {},                              3: { iridium: 1 },                4: { iridium: 2 } },
-  magnetic:  { name: 'Magnetic guns, lasers and electronics', 2: { rareEarths: 1 },               3: { rareEarths: 2 },             4: { rareEarths: 3 } },
-  railgun:   { name: 'Railguns',                              2: { rareEarths: 1 },               3: { rareEarths: 2, iridium: 1 }, 4: { rareEarths: 3, iridium: 2 } },
-  nuclear:   { name: 'Reactors, drives and plasma',           2: { fissiles: 1 },                 3: { helium3: 1 },                4: { helium3: 2 } },
-  volatile:  { name: 'Tanks, heat sinks and life support',    2: { volatiles: 1 },                3: { volatiles: 2 },              4: { volatiles: 3 } },
-  warhead:   { name: 'Missiles and warheads',                 2: { rareEarths: 1 },               3: { fissiles: 1 },               4: { fissiles: 2 } },
-  general:   { name: 'Rooms and fittings',                    2: {},                              3: {},                            4: {} },
-  bio:       { name: 'Swarm bio-parts',                       2: { biomass: 1 },                  3: { biomass: 2 },                4: { biomass: 3 } }
+  structure: { name: 'Armour, frames and mounts',            2: {}, 3: {}, 4: {} },
+  magnetic:  { name: 'Magnetic guns, lasers and electronics', 2: {}, 3: {}, 4: {} },
+  railgun:   { name: 'Railguns',                              2: {}, 3: {}, 4: {} },
+  nuclear:   { name: 'Reactors, drives and plasma',           2: {}, 3: {}, 4: {} },
+  volatile:  { name: 'Tanks, heat sinks and life support',    2: {}, 3: {}, 4: {} },
+  warhead:   { name: 'Missiles and warheads',                 2: {}, 3: {}, 4: {} },
+  general:   { name: 'Rooms and fittings',                    2: {}, 3: {}, 4: {} },
+  bio:       { name: 'Swarm bio-parts',                       2: {}, 3: {}, 4: {} }
 };
 
 // ---- Traits (parts-and-weapons working doc 4g, 4h, 4i; the trait placards mockup) ----
@@ -9566,7 +9567,7 @@ function moduleStats(id, mk, sz, opt) {
   if (m.fuel) s.fuel = { type: m.fuel.type, eff: m.fuel.start ? FUEL_RULES.startEfficiency[mk - 1] : m.fuel.eff, start: !!m.fuel.start };
   if (s.weapon) s.weapon = Object.assign({ interval: s.weapon.fireRate > 0 ? roundTo(1 / s.weapon.fireRate, 3) : 0, roundsPerShot: 1, heatShot: 0, mountKind: 'fixed' }, s.weapon);
   s.locked = mark.locked || m.locked;
-  // the advanced resources this mark needs (resources.md section 8): shown on the part, not charged until the resources update (a size piece: per square)
+  // the advanced resources this mark adds: none since v45 (a mark never needs a new resource; MARK_RESOURCES above). Kept so the table can say so in one place
   const adv = MARK_RESOURCES[m.res][mk] || {}, per = m.sizes ? s.sz * s.sz : 1;
   s.advanced = {}; for (const r in adv) s.advanced[r] = adv[r] * per;
   s.alloys = partAlloysV3(s.alloys); s.cost = s.alloys;   // (v30.1) one number: a plain part's cost is its Alloys, a whole number (size pieces: after the squares)
@@ -24627,8 +24628,8 @@ const RESEARCH_PROJECTS = [
   { id: 'combatbridge', name: 'Combat bridge',           branch: 'defence', step: 2, kind: 'option', needs: ['frigate'], tags: ['Command'], text: 'The 5 x 5 combat bridge.' },
   // Power and drives
   { id: 'solar',      name: 'Solar panels',              branch: 'power', step: 1, kind: 'option', needs: [], tags: ['Power', 'Civilian'], spin: { alloysEarth: 0.10 }, text: 'Solar panels for ships; cheap power for industry: +10% Alloys at Earth.' },
-  { id: 'fissionmk2', name: 'Fission Mk II',             branch: 'power', step: 1, kind: 'mark',   needs: [], tags: ['Power', 'Civilian', 'Mark'], uses: ['Fissiles'], spin: { alloys: 0.10 }, text: 'Smaller Mk II fission reactors; power for the yards: +10% Alloys.' },
-  { id: 'tanks2',     name: 'Tanks II',                  branch: 'power', step: 1, kind: 'mark',   needs: [], tags: ['Fuel', 'Mark'], uses: ['Volatiles'], text: 'Mk II tanks: more fuel a square.' },
+  { id: 'fissionmk2', name: 'Fission Mk II',             branch: 'power', step: 1, kind: 'mark',   needs: [], tags: ['Power', 'Civilian', 'Mark'], spin: { alloys: 0.10 }, text: 'Smaller Mk II fission reactors; power for the yards: +10% Alloys.' },
+  { id: 'tanks2',     name: 'Tanks II',                  branch: 'power', step: 1, kind: 'mark',   needs: [], tags: ['Fuel', 'Mark'], text: 'Mk II tanks: more fuel a square.' },
   { id: 'propellant', name: 'Better propellants',        branch: 'power', step: 1, kind: 'option', needs: [], tags: ['Fuel', 'Drives', 'Civilian'], uses: ['Volatiles'], spin: { boost: 0.10, startDriveEff: 0.45 }, text: 'Chemical drives burn less (fuel efficiency x0.45); better launchers: +10% boost.' },
   { id: 'bigreactor', name: 'Large reactor',             branch: 'power', step: 2, kind: 'option', needs: ['frigate'], tags: ['Power', 'Shipyards'], uses: ['Fissiles'], text: 'The 5 x 5 fission reactor.' },
   // Hulls
@@ -63671,6 +63672,23 @@ const B2_TIPS = {
 function b2Plural(n, one, many) { return n + ' ' + (n === 1 ? one : (many || one + 's')); }
 function b2Term(key, text) { return '<span class="term" data-k="' + key + '">' + text + '</span>'; }
 function b2Round(x, p) { return roundTo(x, p === undefined ? 1 : p); }
+// (v45) Every resource other than Alloys that a part, or a whole ship, costs to build, in plain words ("Iridium 2 · Volatiles 1"), or '' when none.
+// Alex 2026-10-26: whatever a part costs must show on its tooltip and in the Cost line, so nothing a yard waits on is hidden.
+const B2_RES_WORDS = [['iridium', 'Iridium'], ['helium3', 'Helium-3'], ['rareEarths', 'Rare earths'], ['fissiles', 'Fissiles'], ['volatiles', 'Volatiles'], ['antimatter', 'Antimatter']];
+function b2ResTotals(list) {
+  const out = {};
+  for (let k = 0; k < list.length; k++) { const r = list[k]; if (!r) continue; for (const id in r) if (typeof r[id] === 'number' && r[id] > 0) out[id] = (out[id] || 0) + r[id]; }
+  return out;
+}
+function b2ResWords(n, sep) {
+  const out = [];
+  for (let k = 0; k < B2_RES_WORDS.length; k++) { const v = n[B2_RES_WORDS[k][0]]; if (v > 0) out.push(B2_RES_WORDS[k][1] + ' ' + b2Round(v, 1)); }
+  return out.join(sep || ' · ');
+}
+// One part's: its own resources plus any its mark adds (none since v45, but read so the words never fall out of step with what the campaign charges).
+function b2PartRes(s) {
+  return b2ResTotals([{ iridium: s.iridium, helium3: s.helium3, rareEarths: s.rareEarths, fissiles: s.fissiles, antimatter: s.antimatter }, s.advanced]);
+}
 // Wraps the rule words of a model's problem text (already escaped) in tooltips.
 function b2Termify(html) {
   const rules = [[/chain explosion/i, 'chain'], [/its crew suffer/i, 'rwall'], [/One hit here|Single point of failure/, 'redund'], [/working reserve/, 'local'],[/exhaust lane|clear lane|no clear lane|clear line/i, 'lane'], [/short for \d (?:transfers?|jumps?)/i, 'jumpfuel'], [/^Local/, 'local'],
@@ -64149,7 +64167,7 @@ function b2SetPartPick(k, axis, v) {
 // The numbers a built part's tooltips show: [label, value] pairs, in plain words. (Range and heat are what the battle reads today; Part B sets the rest.)
 function b2BuildNums(s) {
   const w = s.weapon, out = []; if (!w) return out;
-  const al = 'Alloys ' + Math.round(s.alloys) + (s.fissiles ? ' + Fissiles ' + b2Round(s.fissiles, 1) : '') + (s.rareEarths ? ' + Rare earths ' + b2Round(s.rareEarths, 1) : '') + (s.helium3 ? ' + Helium-3 ' + b2Round(s.helium3, 1) : '') + (s.antimatter ? ' + Antimatter ' + b2Round(s.antimatter, 1) : '');
+  const more = b2ResWords(b2PartRes(s), ' + '), al = 'Alloys ' + Math.round(s.alloys) + (more ? ' + ' + more : '');
   const sq = s.w + '×' + s.h + ' = ' + s.squares + (s.ringSquares > 0 ? ' (gun ' + s.gunW + '×' + s.gunH + ' on its mount)' : '');
   const dps = b2Round(w.damage / Math.max(0.01, w.interval), 1);
   if (w.ammo === 'beam') {
@@ -64452,10 +64470,10 @@ function b2RenderNums() {
   const dps = sm.weapons.reduce(function (s, g) { return s + g.dps; }, 0);
   h += '<dt>Weapons</dt><dd>' + (sm.weapons.length ? b2Round(dps, 1) + ' dmg/s<small>' + b2Plural(sm.weapons.length, 'group') + (sm.pd ? ' · ' + sm.pd.mounts + ' PD' : '') + '</small>' : 'none') + '</dd>';
   h += '<dt>Defence</dt><dd>shield ' + b2Round(sm.shield, 1) + '<small>armour F ' + b2Round(sm.armour[0], 1) + ' · R ' + b2Round(sm.armour[1], 1) + ' · sides ' + b2Round((sm.armour[2] + sm.armour[3]) / 2, 1) + '</small></dd>';
-  // (v27 C2) every resource the parts list, marked when it is charged (plan.md s2b: in a campaign, Alloys and the crash site's resource only)
-  const resNames = [['iridium', 'Iridium'], ['helium3', 'Helium-3'], ['rareEarths', 'Rare earths'], ['fissiles', 'Fissiles']];
-  let resLine = 'Alloys ' + sm.resources.alloys;
-  for (let k = 0; k < resNames.length; k++) { const v = sm.resources[resNames[k][0]]; if (v) resLine += ' · ' + resNames[k][1] + ' ' + b2Round(v, 1) + (bureauResourceCharged(resNames[k][0]) ? ' (charged)' : ' (shown, not charged)'); }
+  // (v45) every resource the ship costs: Alloys, then each other resource the frames and parts need (all are charged by the campaign's yards)
+  const r0 = sm.resources, more = b2ResWords(b2ResTotals([{ iridium: r0.iridium, helium3: r0.helium3, rareEarths: r0.rareEarths, fissiles: r0.fissiles, antimatter: r0.antimatter }]
+    .concat(L.parts.map(function (it) { return it.s ? it.s.advanced : null; }))));
+  const resLine = 'Alloys ' + r0.alloys + (more ? ' · ' + more : '');
   h += '<dt>Cost</dt><dd>' + Math.round(sm.cost) + '<small data-cost="1">' + esc(resLine) + '</small></dd>';
   h += '</dl>';
   if (rec.length > 1) {
@@ -64630,7 +64648,7 @@ function b2RenderInsp() {
   if (s.houses > 0) h += '<span>sleeps ' + b2Round(s.houses, 1) + '</span>';
   if (s.lifeSupport > 0) h += '<span>keeps ' + b2Round(s.lifeSupport, 1) + ' alive</span>';
   if (s.weapon && !m.build) h += '<span>' + b2Round(s.weapon.damage, 1) + ' dmg · range ' + Math.round(s.weapon.range) + (u ? ' · fires at ' + b2DirName(u.dir) : '') + '</span>';
-  h += '<span>Alloys ' + Math.round(s.alloys) + '</span>';
+  h += '<span>Alloys ' + Math.round(s.alloys) + (b2ResWords(b2PartRes(s)) ? ' · ' + esc(b2ResWords(b2PartRes(s))) : '') + '</span>';
   if (s.volatile > 0) h += b2Term('chain', 'volatile');
   h += b2Traits(m.build ? s : m).map(b2TraitWord).join(' ');
   if (!lk) h += '<button class="btn" type="button" data-act="rotate">↻ Turn</button>';
@@ -65713,6 +65731,7 @@ function b2TipModule(id, mk, sz, item, opt) {
   if (s.cooling > 0) nums.push('Sheds heat', b2Round(s.cooling, 1));
   if (s.volatile > 0) nums.push('Volatile', 'can chain-explode');
   nums.push('Mass', b2Round(s.mass, 1), 'Hull points', Math.round(s.hp), 'Alloys', Math.round(s.alloys));
+  const pr = b2PartRes(s); for (let k = 0; k < B2_RES_WORDS.length; k++) if (pr[B2_RES_WORDS[k][0]] > 0) nums.push(B2_RES_WORDS[k][1], b2Round(pr[B2_RES_WORDS[k][0]], 1));
   h += '<div class="nums">'; for (let k = 0; k + 1 < nums.length; k += 2) h += '<span>' + esc(nums[k]) + '</span><span>' + esc(String(nums[k + 1])) + '</span>'; h += '</div>';
   const tr = b2Traits(m); if (tr.length) h += '<div class="chips">' + tr.map(b2TraitWord).join('') + '</div>';
   if (m.edge) h += '<div class="seen">Must touch the outer edge.</div>';
