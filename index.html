@@ -29,7 +29,7 @@
   document.documentElement.classList.add('ew-touch');
 })();
 </script>
-<title>Engineer's War v44 - broadsides, daily shipyards, radiators, officer names, research pins, active designs</title>
+<title>Engineer's War v46 - ships go for repairs, broken parts remembered</title>
 <!-- (v17) The shared look: theme-v0.4.css from the UI folder, built in word for word (tools/build.js). It only styles its own named parts
      (.mode-front, .panel, .btn ...), plus a few page-wide basics that the rules just below undo for the older screens. -->
 <style>
@@ -4845,6 +4845,11 @@ const SETTINGS = {
   externalCover: 12,         // a part outside the hull (turret, point defence, sensor) on the side hit takes the hit with chance its squares / (its squares + this)
   deepBelowHull: 0.5,        // citadel parts can be hit only once the ship is below this share of its hull
   dcSeconds: 15,             // a damage control station brings one knocked-out part back in this many seconds (x 1.5 - the squadron's readiness)
+  // (v46, repair update 1) Bureau ships: every damage control room works at the dcSeconds pace and mends as many parts at once as its size gives
+  // (2x2 one, 3x3 two, 4x4 three); a ship with no room left has its crew patch one part at a time, this many seconds a part (x the same readiness)
+  dcNoRoomSeconds: 60,
+  wreckHitShare: 2,          // (v46) a part is WRECKED (only a dock or the rear can mend it) by a hit of more than this x its full hit points, by blowing up,
+                             //     or by being knocked out again after damage control patched it
   blastToHull: 1,            // a volatile part that is destroyed: its blast x this hits the hull ...
   blastToParts: 1.5,         // ... and x this each part touching it (bulkheads stop it)
   partLossCall: 1,           // 1 = the radio says when a ship loses its main gun, its drive or its reactor
@@ -5286,6 +5291,7 @@ const SETTINGS = {
   capitalBuildShare: 0.1667, // capital hulls are at most this share of all the hulls a side has built (1 in 6)
   assaultMaxWaitWeeks: 4,     // an assault order masses at its yard until the whole planned force is there (and fuelled), or for at most this many war weeks, then launches what it has
   repairPerWeek: 0.5,         // the hull share a ship gets back each war week at a held Mars place with a station (while the battle is parked), or at Earth or Ceres
+  repairPartsWeeks: 1,        // (v46) a ship gets all its broken parts back (wrecked ones too) after this many war weeks where its hull is mended (off the front, or at a station of ours while the battle is parked)
   campaignShipsPerOfficer: 12,   // a launch from a yard's pool takes one officer from the home pool (roster officers in no fleet) for every this many ships
   campaignDesignBoostPerMass: 0.1,   // (the old Design Bureau, designModel 1) a design's refuel boost = its boost readout (from its mass) x this (at least 1)
   campaignDesignBuildPerCost: 0.1,   // ... its worth = its cost readout x this
@@ -5847,6 +5853,9 @@ const SETTINGS = {
   repairForwardSize: 300,      // ... and counts as this big (u) when ships come to it. Its capacity and speed are chosen on the setup screen
   repairReleaseSpreadFactor: 1.0, // repaired ships come out of a repair point in a block this x (the ships' spacing x the square root of the number of ships) across
   repairReturnDelay: 0,         // seconds a ship that is mended waits before it leaves the dock (0 = it leaves at once)
+  repairOffMap: 1,              // (v46) 1 = with no repair point a ship flies off the map to be mended; 0 = it fights on (campaign battles set 0: no repair without a station)
+  repairAutoBelow: 35,          // (v46) the doctrine's Auto "Go for repairs below" (% hull) in campaign battles
+  dockQueueWarnSeconds: 60,     // (v46) a campaign Dispatch says so when more ships wait at one of our stations than it has docks for this long (battle seconds)
   reportSampleSeconds: 5,      // how often (battle seconds) the battle writes down its numbers for the report's charts
   versionLogMax: 200,          // the most changes (pause, design saved, production order changed) written down for the report
   // The bars drawn for an objective (section 7d), in screen pixels.
@@ -6041,7 +6050,7 @@ const SETTING_MUST_BE_POSITIVE = ['cmdMaxAbreast', 'cmdPdCoverFactor', 'cmdLongR
   'serviceLastMax', 'serviceHistoryMax', 'serviceEventsMax', 'recentChangeSeconds', 'dossierLastActions', 'reportOfficerRows', 'dossierChartMinSpan',
   'orbitRateHeadroom', 'orbitMinRate', 'facingLeadFactor', 'interceptMaxLead', 'orbitRangeFraction', 'orbitTurnMargin', 'tightOrbitSizeRatio', 'tightOrbitHulls', 'tightOrbitStraySeconds', 'tightOrbitSpacings', 'tacticMinSeconds', 'chaseGiveUpSeconds', 'noChaseSeconds',
   'shapeEnterFactor', 'shapeExitFactor', 'axisTurnRate'];
-const SETTING_MUST_BE_NON_NEGATIVE = ['facingTwoSidedAngle', 'freshSideHoldSeconds', 'crossTEdge', 'crossTCreepFraction', 'crossTWidth', 'crossTTurnEdge', 'placesPicketSpread', 'placesPicketMove', 'placesPicketMax', 'placesWithdrawGatherSeconds', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerTargetShare', 'ledgerLineMin', 'ledgerLossMargin', 'ledgerSaveFloor', 'ledgerMinLoss', 'ledgerSurplusShare', 'withdrawRatio', 'withdrawHoldWeeks', 'ledgerAssaultWeeks', 'indDevShareSave', 'indDevShareIdle', 'dirPriorityMul', 'resourceHeldShare', 'devGraceWeeks', 'devCapStart', 'devCapAlien', 'devPotShare', 'devIdleWeeks', 'devMaxBuilds', 'bbAcidSeconds', 'bbAcidMaxPatches', 'bbRegrowQuiet', 'bbRegrowHull', 'bbRegrowPlate', 'bbRegrowHeatStop', 'bbBurstTouch', 'bbBurstDeathReach', 'bbBurstSeek', 'bbVolleySpread', 'bbMissileRetries', 'bbPdRoundsPerShot', 'bbPdFlakRounds', 'bbPdReadyRounds', 'bbPdLaserHeat', 'bbRadiatorFoldSeconds', 'bbSideWeight', 'deflectRatio', 'deflectCallSeconds', 'readyRoundsPerGun', 'boostFuEarth', 'boostFuOther', 'boostGrowth', 'alloysEarthStart', 'alloysEarthRampTo', 'alloysEarthRampWeeks', 'alloysGrowth', 'alienAlloysStart', 'alienAlloysGrowth', 'alienAlloysPerStep', 'alienBoostPerStep', 'alienNodeLossShare', 'berthIdleWeeks', 'berthBoostWeeks', 'berthMaxGrowth', 'campaignBuildDays', 'campaignLiveEnterShips', 'civilianNoteWeeks', 'leaderNewsCooldown', 'leaderNewsCombatGap', 'stationRebuildYardBonus', 'stationRebuildSecuredBonus', 'stationRebuildNearShare', 'stationRebuildAlloys', 'cmdAttackMaxSeconds', 'cmdPaceGap', 'radioQuietSeconds', 'cmdSummaryMinutes', 'designRemarkSeconds', 'cmdReviewBattles', 'huntMaxShips', 'huntGraceSeconds', 'pursuitFleeingBonus', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'dangerConeSeconds', 'placesAttackStallSeconds', 'campaignAttackStallSeconds', 'campaignStragglerShips', 'campaignStragglerShare', 'campaignStragglerSeconds', 'campaignStandoffSeconds', 'campaignStandoffWeeks', 'comebackMassWeeks', 'alienGarrisonCap', 'campaignFallenMax', 'campaignPoolCap', 'campaignGarrisonCap', 'campaignStartOwnShips', 'campaignAlienGarrison', 'campaignAdvanceKeep', 'campaignAdvanceRatio', 'campaignAdvanceTake', 'campaignAdvanceAfterWaves', 'campaignAdvanceHoldWeeks', 'campaignRearKeep', 'campaignFrontMoveMinShips', 'campaignFrontMoveShare', 'executiveMassRatio', 'executiveAssaultRatio', 'executiveAssaultMin', 'campaignPriorityWeight', 'alienShoveWeeks', 'alienGatherRatio', 'alienGatherTarget', 'alienGatherMinShips', 'alienGatherMaxWeeks', 'alienPullBackRatio', 'alienStateHoldWeeks', 'alienFirstPool', 'alienWaveJitter', 'alienWarnWeeks', 'alienWaveBoostWeeks', 'alienTargetWeakest', 'alienTargetMain', 'alienFirstWaveWeek', 'minLaunchShips', 'placesHoldClearOdds', 'campaignYardEvery', 'boostPerMarker', 'campaignRefuelShare', 'capitalBuildShare', 'assaultMaxWaitWeeks', 'repairPerWeek', 'campaignDesignBoostPerMass', 'campaignDesignBuildPerCost', 'campaignDesignAlloysShare', 'campaignDesignWeight', 'placesReachShare', 'placesFailRaise', 'placesContestShare', 'aoSecureShare', 'aoLoseShare', 'siegeBoostTrickle', 'boostFootholdShare', 'siegeGrowthFactor', 'siegeResourceFactor', 'placesReportMinutes', 'placesHysteresis', 'placesMaxOpposite', 'internalChance', 'internalFresh', 'externalCover', 'deepBelowHull', 'dcSeconds', 'blastToHull', 'blastToParts', 'profileNudgeMax', 'profileNudgeTurn', 'profileNudgeFiring', 'reactorWallShare', 'trackSquareCut', 'pressDryValue', 'pressFleetRatio', 'pressOdds', 'pressHealthEdge', 'pressOddsHealthy', 'pressDangerShare', 'pressHitChance', 'pressAfter', 'pressProgress', 'pressHold', 'pressStep', 'pressRingMin', 'lockFormShare', 'looseJitter', 'looseRein', 'lockSettleSeconds', 'lockRein', 'lockBreakHull', 'lockMinShare', 'closeRanksDelay', 'mergeBelow', 'mergeMaxOdds', 'disbandAt', 'stragglerSeconds', 'divisionLeash', 'pursuitBase', 'formBeforeAttack', 'gatherSeconds', 'fallenKeep', 'topUpBelow', 'stagingContactSeconds', 'stagingMaxWait', 'minNewSquadron', 'entryDangerRatio', 'entryCheckFactor', 'entryRetrySeconds', 'rallyInset', 'joinWornBelow', 'survivorEdgeMargin', 'flagKilled', 'flagWounded', 'flagSurviveSwing', 'woundedSkillPenalty', 'woundedBattles', 'replacementDelay', 'handoverSeconds', 'standInSkill', 'pinRenewSeconds', 'divisionTaskMinSeconds', 'rotateWornShare', 'divisionRefuseOdds', 'divisionRallyOdds', 'divisionCounterPressure', 'mainEffortMinOdds', 'mainEffortFreeRein', 'pinRenewFactor', 'supportSeconds', 'supportMaxTravelSeconds', 'divisionTargetBonus', 'localAttackOdds', 'memberCompactShare', 'recruitAxisSpread', 'recruitSkillLow', 'recruitSkillHigh', 'skillPerLevel', 'readinessXpPerRepair', 'medalSkillAdd', 'scarShakenBoldness', 'repertoirePull', 'spawnEdgeMargin', 'doctrinePull', 'matchupPull', 'experimentMinSeconds', 'experimentCooldown', 'tacticLearnStep', 'tacticWeightMax', 'exploreLearnBoost', 'spawnBandWidth', 'spawnVerticalMargin', 'shieldRechargeDelay', 'minArmorPassFraction', 'separationStrength',
+const SETTING_MUST_BE_NON_NEGATIVE = ['dcNoRoomSeconds', 'wreckHitShare', 'repairPartsWeeks', 'repairAutoBelow', 'dockQueueWarnSeconds', 'facingTwoSidedAngle', 'freshSideHoldSeconds', 'crossTEdge', 'crossTCreepFraction', 'crossTWidth', 'crossTTurnEdge', 'placesPicketSpread', 'placesPicketMove', 'placesPicketMax', 'placesWithdrawGatherSeconds', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerTargetShare', 'ledgerLineMin', 'ledgerLossMargin', 'ledgerSaveFloor', 'ledgerMinLoss', 'ledgerSurplusShare', 'withdrawRatio', 'withdrawHoldWeeks', 'ledgerAssaultWeeks', 'indDevShareSave', 'indDevShareIdle', 'dirPriorityMul', 'resourceHeldShare', 'devGraceWeeks', 'devCapStart', 'devCapAlien', 'devPotShare', 'devIdleWeeks', 'devMaxBuilds', 'bbAcidSeconds', 'bbAcidMaxPatches', 'bbRegrowQuiet', 'bbRegrowHull', 'bbRegrowPlate', 'bbRegrowHeatStop', 'bbBurstTouch', 'bbBurstDeathReach', 'bbBurstSeek', 'bbVolleySpread', 'bbMissileRetries', 'bbPdRoundsPerShot', 'bbPdFlakRounds', 'bbPdReadyRounds', 'bbPdLaserHeat', 'bbRadiatorFoldSeconds', 'bbSideWeight', 'deflectRatio', 'deflectCallSeconds', 'readyRoundsPerGun', 'boostFuEarth', 'boostFuOther', 'boostGrowth', 'alloysEarthStart', 'alloysEarthRampTo', 'alloysEarthRampWeeks', 'alloysGrowth', 'alienAlloysStart', 'alienAlloysGrowth', 'alienAlloysPerStep', 'alienBoostPerStep', 'alienNodeLossShare', 'berthIdleWeeks', 'berthBoostWeeks', 'berthMaxGrowth', 'campaignBuildDays', 'campaignLiveEnterShips', 'civilianNoteWeeks', 'leaderNewsCooldown', 'leaderNewsCombatGap', 'stationRebuildYardBonus', 'stationRebuildSecuredBonus', 'stationRebuildNearShare', 'stationRebuildAlloys', 'cmdAttackMaxSeconds', 'cmdPaceGap', 'radioQuietSeconds', 'cmdSummaryMinutes', 'designRemarkSeconds', 'cmdReviewBattles', 'huntMaxShips', 'huntGraceSeconds', 'pursuitFleeingBonus', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'dangerConeSeconds', 'placesAttackStallSeconds', 'campaignAttackStallSeconds', 'campaignStragglerShips', 'campaignStragglerShare', 'campaignStragglerSeconds', 'campaignStandoffSeconds', 'campaignStandoffWeeks', 'comebackMassWeeks', 'alienGarrisonCap', 'campaignFallenMax', 'campaignPoolCap', 'campaignGarrisonCap', 'campaignStartOwnShips', 'campaignAlienGarrison', 'campaignAdvanceKeep', 'campaignAdvanceRatio', 'campaignAdvanceTake', 'campaignAdvanceAfterWaves', 'campaignAdvanceHoldWeeks', 'campaignRearKeep', 'campaignFrontMoveMinShips', 'campaignFrontMoveShare', 'executiveMassRatio', 'executiveAssaultRatio', 'executiveAssaultMin', 'campaignPriorityWeight', 'alienShoveWeeks', 'alienGatherRatio', 'alienGatherTarget', 'alienGatherMinShips', 'alienGatherMaxWeeks', 'alienPullBackRatio', 'alienStateHoldWeeks', 'alienFirstPool', 'alienWaveJitter', 'alienWarnWeeks', 'alienWaveBoostWeeks', 'alienTargetWeakest', 'alienTargetMain', 'alienFirstWaveWeek', 'minLaunchShips', 'placesHoldClearOdds', 'campaignYardEvery', 'boostPerMarker', 'campaignRefuelShare', 'capitalBuildShare', 'assaultMaxWaitWeeks', 'repairPerWeek', 'campaignDesignBoostPerMass', 'campaignDesignBuildPerCost', 'campaignDesignAlloysShare', 'campaignDesignWeight', 'placesReachShare', 'placesFailRaise', 'placesContestShare', 'aoSecureShare', 'aoLoseShare', 'siegeBoostTrickle', 'boostFootholdShare', 'siegeGrowthFactor', 'siegeResourceFactor', 'placesReportMinutes', 'placesHysteresis', 'placesMaxOpposite', 'internalChance', 'internalFresh', 'externalCover', 'deepBelowHull', 'dcSeconds', 'blastToHull', 'blastToParts', 'profileNudgeMax', 'profileNudgeTurn', 'profileNudgeFiring', 'reactorWallShare', 'trackSquareCut', 'pressDryValue', 'pressFleetRatio', 'pressOdds', 'pressHealthEdge', 'pressOddsHealthy', 'pressDangerShare', 'pressHitChance', 'pressAfter', 'pressProgress', 'pressHold', 'pressStep', 'pressRingMin', 'lockFormShare', 'looseJitter', 'looseRein', 'lockSettleSeconds', 'lockRein', 'lockBreakHull', 'lockMinShare', 'closeRanksDelay', 'mergeBelow', 'mergeMaxOdds', 'disbandAt', 'stragglerSeconds', 'divisionLeash', 'pursuitBase', 'formBeforeAttack', 'gatherSeconds', 'fallenKeep', 'topUpBelow', 'stagingContactSeconds', 'stagingMaxWait', 'minNewSquadron', 'entryDangerRatio', 'entryCheckFactor', 'entryRetrySeconds', 'rallyInset', 'joinWornBelow', 'survivorEdgeMargin', 'flagKilled', 'flagWounded', 'flagSurviveSwing', 'woundedSkillPenalty', 'woundedBattles', 'replacementDelay', 'handoverSeconds', 'standInSkill', 'pinRenewSeconds', 'divisionTaskMinSeconds', 'rotateWornShare', 'divisionRefuseOdds', 'divisionRallyOdds', 'divisionCounterPressure', 'mainEffortMinOdds', 'mainEffortFreeRein', 'pinRenewFactor', 'supportSeconds', 'supportMaxTravelSeconds', 'divisionTargetBonus', 'localAttackOdds', 'memberCompactShare', 'recruitAxisSpread', 'recruitSkillLow', 'recruitSkillHigh', 'skillPerLevel', 'readinessXpPerRepair', 'medalSkillAdd', 'scarShakenBoldness', 'repertoirePull', 'spawnEdgeMargin', 'doctrinePull', 'matchupPull', 'experimentMinSeconds', 'experimentCooldown', 'tacticLearnStep', 'tacticWeightMax', 'exploreLearnBoost', 'spawnBandWidth', 'spawnVerticalMargin', 'shieldRechargeDelay', 'minArmorPassFraction', 'separationStrength',
   'separationMaxStepFraction', 'reengageMinGap', 'kiteEnterFactor', 'kiteExitFactor', 'kiteBackSpeed', 'debugMaxLines', 'formationHoldFraction', 'formationPaceMin',
   'formationBreakAngle', 'formationBreakSeconds', 'formationPassBend', 'leaderCloserMin', 'escortHoldFraction', 'escortStandOff', 'flankMarginFactor', 'flankAlong', 'flankContactFactor', 'flankArriveFactor', 'flankMapMarginFactor',
   'shotLengthSizes', 'minShipScreenPixels', 'maxTriangleShips', 'defaultReengage', 'defaultSeed',
@@ -6058,7 +6067,7 @@ const SETTING_MUST_BE_NON_NEGATIVE = ['facingTwoSidedAngle', 'freshSideHoldSecon
   'arrivalStandOff', 'arrivalEdgeMargin', 'arrivalEdgeHeight', 'repairOffMapMinSeconds', 'repairForwardSetback', 'repairReleaseSpreadFactor', 'repairReturnDelay',
   'learningSpeed', 'learningStep', 'learningSoftZone', 'learningMaxRoomShare', 'levelEffect', 'serviceEffectPerHour', 'adaptabilityMin', 'xpPerAction', 'xpScoreBonus', 'driftSize', 'learningMinWindow', 'learningMinActivity',
   'expectationWeight', 'successScore', 'notableScore', 'arrowThreshold', 'objectiveMinShare', 'fireBarLowStoreBelow', 'pdProtectedFactor', 'pdSlugPerMount', 'pdSlugCap', 'pdCrossingKill', 'spinalDeadband', 'safeRingMargin', 'stationHysteresis', 'holdHysteresis', 'stationLeeBelow', 'hotWeaveOutgunned', 'hotWeaveShare', 'stragglerFactorSurvival', 'probeWindow', 'probeRecover', 'probeShieldBack', 'probeLossLimit', 'probeOutgunned', 'commitOdds', 'commitDropFactor', 'aheadMax', 'screenAhead', 'marchQuantile', 'massAttackOdds', 'massAttackWaitedOdds', 'flankMinSquadrons', 'survivalPressSeconds', 'abandonAfter', 'abandonRatio', 'abandonRatioNow', 'abandonWaitReinf', 'abandonLossShare', 'dangerRadiusPad', 'surroundRadiusFactor', 'surroundShare', 'supportRadiusFactor', 'supportWant', 'lineSpacingMin', 'dangerAttackFactor', 'dangerWeakFactor', 'dangerWeakBelow'];
-const SETTING_WHOLE_NUMBERS = ['campaignBuildDays', 'campaignLiveEnterShips', 'cmdMaxAbreast', 'divisionFormations', 'doctrineModel', 'doctrineAlienClose', 'facingByGuns', 'facingVsTarget', 'facingTwoSided', 'freshSide', 'crossT', 'facingDodge', 'doctrineFindBattles', 'doctrineReviewMinLosses', 'doctrineReviewWeeks', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerMinLoss', 'ledgerAssaultWeeks', 'devCapStart', 'devCapAlien', 'devMaxBuilds', 'bbBeams', 'bbHeatModel', 'bbMissiles', 'bbPointDefence', 'bbBeamTicks', 'bbMissileRetries', 'bbPdFlakMax', 'bbLineOfFire', 'lineMinRanks', 'lineDeepRanks', 'lineDeepAbove', 'squadronMaxShips', 'tightOrbit', 'stationRebuild', 'radioMaxPerMinute', 'cmdReviewBattles', 'huntMaxShips', 'commandModel', 'cmdPassThrough', 'cmdSquadronBudget', 'cmdSquadronMax', 'cmdFleetMax', 'cmdRankBumpShips', 'cmdDivisionsMin', 'cmdDivisionsPerFleet', 'cmdDivisionsMax', 'orgScale', 'orgSquadronBudget', 'orgSquadronMax', 'orgDivisionTarget', 'orgDivisionMax', 'campaignLateAdmiral', 'campaignStartKit', 'placesFacilityApart', 'campaignFacilityApart', 'campaignStragglerShips', 'alienGarrisonCap', 'alienGatherMinShips', 'alienFirstPool', 'campaignFallenMax', 'placesHoldClear', 'campaignHoldClear', 'campaignPoolCap', 'campaignGarrisonCap', 'minLaunchShips', 'campaignYardShips', 'campaignModel', 'campaignAutosave', 'campaignLogMax', 'placesRetry', 'placesSweep', 'placesDecisive', 'siegeYardSlowdown', 'placesModel', 'placesAllowAbandon', 'placesTheatre', 'placesMaxOpposite', 'designModel', 'bureauBattle', 'moduleDamage', 'pressModel', 'partLossCall', 'crewRuleSquares', 'supplyReach', 'heatReach', 'exhaustLane', 'designMinSquares', 'designMaxSquares', 'survivalModel', 'allowAbandon', 'flankMinSquadrons', 'weaponModel', 'maxMissiles', 'pdSlugMaxMounts', 'missileInboundCall', 'formationModel', 'lockStep', 'columnMaxFile', 'wedgeMaxArm', 'reorgModel', 'disbandAt', 'fallenKeep', 'stagingModel', 'entrySegments', 'minNewSquadron', 'successionMode', 'woundedBattles', 'divisionTier', 'divisionTargetSize', 'divisionMinSize', 'divisionMaxSize', 'divisionMinSquadrons', 'rosterHistoryKeep', 'repertoireSize', 'aceKills', 'scarShakenBattles', 'maxShipsTotal', 'maxGridCells', 'targetCandidates', 'maxSalvosPerStep', 'maxShots', 'maxFlashes', 'formationMatchMaxShips', 'defaultSquadronSize',
+const SETTING_WHOLE_NUMBERS = ['repairOffMap', 'campaignBuildDays', 'campaignLiveEnterShips', 'cmdMaxAbreast', 'divisionFormations', 'doctrineModel', 'doctrineAlienClose', 'facingByGuns', 'facingVsTarget', 'facingTwoSided', 'freshSide', 'crossT', 'facingDodge', 'doctrineFindBattles', 'doctrineReviewMinLosses', 'doctrineReviewWeeks', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerMinLoss', 'ledgerAssaultWeeks', 'devCapStart', 'devCapAlien', 'devMaxBuilds', 'bbBeams', 'bbHeatModel', 'bbMissiles', 'bbPointDefence', 'bbBeamTicks', 'bbMissileRetries', 'bbPdFlakMax', 'bbLineOfFire', 'lineMinRanks', 'lineDeepRanks', 'lineDeepAbove', 'squadronMaxShips', 'tightOrbit', 'stationRebuild', 'radioMaxPerMinute', 'cmdReviewBattles', 'huntMaxShips', 'commandModel', 'cmdPassThrough', 'cmdSquadronBudget', 'cmdSquadronMax', 'cmdFleetMax', 'cmdRankBumpShips', 'cmdDivisionsMin', 'cmdDivisionsPerFleet', 'cmdDivisionsMax', 'orgScale', 'orgSquadronBudget', 'orgSquadronMax', 'orgDivisionTarget', 'orgDivisionMax', 'campaignLateAdmiral', 'campaignStartKit', 'placesFacilityApart', 'campaignFacilityApart', 'campaignStragglerShips', 'alienGarrisonCap', 'alienGatherMinShips', 'alienFirstPool', 'campaignFallenMax', 'placesHoldClear', 'campaignHoldClear', 'campaignPoolCap', 'campaignGarrisonCap', 'minLaunchShips', 'campaignYardShips', 'campaignModel', 'campaignAutosave', 'campaignLogMax', 'placesRetry', 'placesSweep', 'placesDecisive', 'siegeYardSlowdown', 'placesModel', 'placesAllowAbandon', 'placesTheatre', 'placesMaxOpposite', 'designModel', 'bureauBattle', 'moduleDamage', 'pressModel', 'partLossCall', 'crewRuleSquares', 'supplyReach', 'heatReach', 'exhaustLane', 'designMinSquares', 'designMaxSquares', 'survivalModel', 'allowAbandon', 'flankMinSquadrons', 'weaponModel', 'maxMissiles', 'pdSlugMaxMounts', 'missileInboundCall', 'formationModel', 'lockStep', 'columnMaxFile', 'wedgeMaxArm', 'reorgModel', 'disbandAt', 'fallenKeep', 'stagingModel', 'entrySegments', 'minNewSquadron', 'successionMode', 'woundedBattles', 'divisionTier', 'divisionTargetSize', 'divisionMinSize', 'divisionMaxSize', 'divisionMinSquadrons', 'rosterHistoryKeep', 'repertoireSize', 'aceKills', 'scarShakenBattles', 'maxShipsTotal', 'maxGridCells', 'targetCandidates', 'maxSalvosPerStep', 'maxShots', 'maxFlashes', 'formationMatchMaxShips', 'defaultSquadronSize',
   'farGoalBlocksAcross', 'debugMaxLines', 'maxTriangleShips', 'sectorsAcross', 'eventLogMax', 'logPanelLines', 'logBatchDetail', 'lineOrderRetries',
   'reportSquadronRows', 'reportPacketRows', 'reinforceMaxSquadrons', 'flankMaxSquadrons', 'counterMaxSquadrons', 'withdrawSamples', 'versionLogMax', 'serviceLastMax', 'serviceHistoryMax', 'serviceEventsMax', 'dossierLastActions', 'reportOfficerRows',
   'movementModel', 'hitModel', 'tacticsModel', 'flightAssist', 'retreatFiring', 'simultaneousFire', 'officerModel', 'strengthMapSteps', 'oddsCellsPerRadius', 'oddsMaxCells', 'maxRouts', 'maxBreakOffs', 'overheatFallback', 'smartTargetCandidates'];
@@ -14273,6 +14282,7 @@ function bbStatsBlank() {
            // touch, bursts on death, the damage they did and the ships they killed
            acidPatches: 0, acidEaten: 0, acidPlatesOut: 0, acidCleared: 0, acidSplashes: 0, acidHardened: 0, regrowHull: 0, regrowPlates: 0, regrowHeatStops: 0,
            bursts: 0, burstDeaths: 0, burstDamage: 0, burstKills: 0,
+           wrecked: 0, partsLoaded: 0,   // (v46) parts wrecked (beyond damage control), ships that came into the battle with the damage the campaign remembered
            byType: {} };
 }
 // At the start of every battle (from resetModuleDamage).
@@ -15123,7 +15133,9 @@ function bbStateOf(i, info) {
                fuelDry: {},     // (v27.1 D1) fuel id -> true while every tank of that fuel is knocked out
                fuelCutOff: {},  // (v36) drive part index -> 1 while a cut fuel line keeps it from its tanks
                acid: [],        // (v30 S1) the acid patches eating this ship's plates: { part, left (hit points still to eat), rate (a second) }
-               used: new Uint8Array(n) };   // (v30 B1) 1 = a Reactive plate that has burst (one use per plate)
+               used: new Uint8Array(n),     // (v30 B1) 1 = a Reactive plate that has burst (one use per plate)
+               wreck: new Uint8Array(n),    // (v46) 1 = WRECKED: knocked out so badly that damage control cannot mend it (only a dock or the rear can)
+               patched: new Uint8Array(n) };   // (v46) 1 = damage control has patched it back at half strength (knocked out again, it is wrecked)
   for (let k = 0; k < n; k++) ms.hp[k] = info.units[k].hp;
   for (let g = 0; g < info.groups.length; g++) ms.gLive[g] = info.groups[g].weapons;
   mdState[i] = ms;
@@ -15359,6 +15371,7 @@ function bbDamagePart(t, ms, id, dmg, stat, depth) {
     const kind = info.blastKind[id], cap = info.storeCap[kind];
     blast *= cap > 0 ? Math.max(0, Math.min(1, bbStore[t * BB_SK + kind] / cap)) : 1;
   }
+  bbWreckCheck(ms, id, dmg, blast > 0 && depth < BB_BLAST.chainDepth);   // (v46) a huge hit, a blast, or a second loss after a patch wrecks it
   if (u.store > 0) {                                                   // a magazine (or capacitor) lost takes its share of its own store with it
     // (v30 Bfix) only the store the part holds: a gun magazine its share of the rounds, a missile magazine its share of its size's missiles, a capacitor
     // its share of the charge (B2 took a share of the rounds AND the missiles for any magazine)
@@ -15384,7 +15397,7 @@ function bbDamagePart(t, ms, id, dmg, stat, depth) {
       for (let k = 0; k < u.neighbours.length; k++) {
         const v = u.neighbours[k];
         if (ms.out[v] !== 0) continue;
-        if (U[v].blocks === 1) { ms.hp[v] -= blast * SETTINGS.blastToParts * 0.5; if (ms.hp[v] <= 0) { ms.hp[v] = 0; ms.out[v] = 1; stat.out++; bbStats.partsOut++; stat.byFam[U[v].name] = (stat.byFam[U[v].name] || 0) + 1; if (U[v].role === 'armour') bbStats.platesOut++; } continue; }   // (a bulkhead: takes the blast, passes nothing on)
+        if (U[v].blocks === 1) { ms.hp[v] -= blast * SETTINGS.blastToParts * 0.5; if (ms.hp[v] <= 0) { ms.hp[v] = 0; ms.out[v] = 1; bbWreckCheck(ms, v, blast * SETTINGS.blastToParts * 0.5, false); stat.out++; bbStats.partsOut++; stat.byFam[U[v].name] = (stat.byFam[U[v].name] || 0) + 1; if (U[v].role === 'armour') bbStats.platesOut++; } continue; }   // (a bulkhead: takes the blast, passes nothing on)
         bbDamagePart(t, ms, v, blast * SETTINGS.blastToParts, stat, depth + 1);
       }
     }
@@ -15609,11 +15622,23 @@ function bbRecompute(i) {
 // ---------------------------------------------------------------------
 // DAMAGE CONTROL through the passageways: one thing at a time, the most needed first, among the parts the crew can still reach (and every cut square).
 // ---------------------------------------------------------------------
+// (v46, repair update 1) Every damage control room works at the dcSeconds pace and mends as many things at once as the rooms' sizes add up to (bbRepairBatch):
+// a 2x2 room one, a 3x3 two, a 4x4 three. A room only partly powered is that much slower. With no room working, the crew patch one thing at a time, dcNoRoomSeconds each.
 function bbRepairSeconds(i, ms) {
   const sq = shipSquad[i];
   const o = sq > 0 && typeof sqOfficer !== 'undefined' && sqOfficer && sqOfficer[sq] ? sqOfficer[sq] : null;
   const readiness = o && typeof o.readiness === 'number' ? o.readiness : 0.5;
-  return SETTINGS.dcSeconds * Math.max(0.25, 1.5 - readiness) / (1 + ms.dc);
+  const pace = Math.max(0.25, 1.5 - readiness);
+  if (!(ms.dc > 0)) return SETTINGS.dcNoRoomSeconds * pace;
+  return Math.min(SETTINGS.dcNoRoomSeconds, SETTINGS.dcSeconds / Math.min(1, ms.dc)) * pace;
+}
+function bbRepairBatch(ms) { return ms.dc > 0 ? Math.max(1, Math.round(ms.dc)) : 1; }
+// (v46) A part just knocked out: is it WRECKED? Yes when the hit was more than wreckHitShare x its full hit points, when it blew up, or when damage control had
+// already patched it once. A wrecked part stays out until a dock or a week in the rear.
+function bbWreckCheck(ms, id, dmg, blew) {
+  if (!ms.wreck) return;
+  const u = ms.bb.units[id];
+  if (ms.patched[id] === 1 || blew || dmg > SETTINGS.wreckHitShare * u.hp) { if (ms.wreck[id] === 0) bbStats.wrecked++; ms.wreck[id] = 1; }
 }
 function bbRepairOrder(u) {
   if (u.bridge === 1) return 0;
@@ -15629,7 +15654,7 @@ function bbRepairStep(i, ms, dt) {
   if (ms.acid.length > 0) bbAcidTick(i, ms, dt > 0 ? dt : SETTINGS.simStep);   // (v30 S1) the acid patches eat their plates meanwhile
   let best = -1, bestOrder = 99, bestCut = -1, acid = false;
   if (ms.acid.length > 0) { bestOrder = 0.5; acid = true; }                        // (v30 S1) acid patches come right after the bridge: they are eating the plates now
-  for (let k = 0; k < ms.out.length; k++) if (ms.out[k] === 1 && ms.reach[k] === 1) {
+  for (let k = 0; k < ms.out.length; k++) if (ms.out[k] === 1 && ms.reach[k] === 1 && ms.wreck[k] !== 1) {   // (v46: a wrecked part waits for a dock)
     let o = bbRepairOrder(U[k]);
     if (U[k].tankType && ms.fuelDry && ms.fuelDry[U[k].tankType]) o = 1.9;   // (v27.1 D1) a tank of a dry fuel comes just before the drives: it gets them going again
     if (o < bestOrder) { bestOrder = o; best = k; acid = false; }
@@ -15649,13 +15674,40 @@ function bbRepairStep(i, ms, dt) {
   if (ms.dcAt < 0) ms.dcAt = simTime + bbRepairSeconds(i, ms);              // (v30 S1: a ship whose only trouble is acid gets a mend time too)
   if (simTime >= ms.dcAt) {
     const stat = bbStatFor(shipSide[i], shipType[i]);
-    if (acid) bbAcidClear(i, ms, stat);                                       // (v30 S1) one mend clears the patches on one side
-    else if (bestCut >= 0) { ms.cut[bestCut] = 0; ms.cutCount--; stat.v3.cutsMended++; bbStats.cutsMended++; }
-    else { ms.out[best] = 0; ms.hp[best] = U[best].hp * 0.5; stat.mended++; bbStats.mended++; }
-    if (!acid) bbRecompute(i);
+    // (v46) the rooms mend bbRepairBatch things at once: the most needed first, then the next most needed (picked again after each)
+    const batch = bbRepairBatch(ms);
+    let mendedAny = false;
+    for (let n = 0; n < batch; n++) {
+      if (n > 0) { const nx = bbRepairPick(ms); best = nx.best; bestCut = nx.cut; acid = nx.acid; if (best < 0 && bestCut < 0 && !acid) break; }
+      if (acid) bbAcidClear(i, ms, stat);                                     // (v30 S1) one mend clears the patches on one side
+      else if (bestCut >= 0) { ms.cut[bestCut] = 0; ms.cutCount--; stat.v3.cutsMended++; bbStats.cutsMended++; mendedAny = true; }
+      else { ms.out[best] = 0; ms.hp[best] = U[best].hp * 0.5; ms.patched[best] = 1; stat.mended++; bbStats.mended++; mendedAny = true; }
+    }
+    if (mendedAny) bbRecompute(i);
     ms.dcAt = simTime + bbRepairSeconds(i, ms);
   }
   return true;
+}
+// (v46) What damage control would mend next (the same order as bbRepairStep): { best (a part, -1 none), cut (a track square, -1 none), acid (true = the acid patches) }.
+function bbRepairPick(ms) {
+  const info = ms.bb, U = info.units;
+  let best = -1, bestOrder = 99, bestCut = -1, acid = false;
+  if (ms.acid.length > 0) { bestOrder = 0.5; acid = true; }
+  for (let k = 0; k < ms.out.length; k++) if (ms.out[k] === 1 && ms.reach[k] === 1 && ms.wreck[k] !== 1) {
+    let o = bbRepairOrder(U[k]);
+    if (U[k].tankType && ms.fuelDry && ms.fuelDry[U[k].tankType]) o = 1.9;
+    if (o < bestOrder) { bestOrder = o; best = k; acid = false; }
+  }
+  if (ms.cutCount > 0) {
+    const lineOrder = ms.fuelCutOff && Object.keys(ms.fuelCutOff).length > 0 ? 1.95 : 4.6;
+    let base = 0;
+    for (let k = 0; k < info.tracks.length; k++) {
+      const tr = info.tracks[k], o = tr.kind === 1 ? 1.5 : (tr.kind === 3 ? lineOrder : (tr.kind === 2 ? 3.5 : 4.5));
+      if (o < bestOrder) for (let q = 0; q < tr.cells.length; q++) if (ms.cut[base + q]) { bestOrder = o; best = -1; bestCut = base + q; acid = false; break; }
+      base += tr.cells.length;
+    }
+  }
+  return { best: best, cut: bestCut, acid: acid };
 }
 
 // ---------------------------------------------------------------------
@@ -15684,7 +15736,7 @@ function bbAcidTick(i, ms, dt) {
     let eat = p.rate * dt; if (eat > p.left) eat = p.left; if (eat > ms.hp[part]) eat = ms.hp[part];
     ms.hp[part] -= eat; p.left -= eat; bbStats.acidEaten += eat;
     if (ms.hp[part] <= 1e-9) {
-      ms.hp[part] = 0; ms.out[part] = 1; changed = true;
+      ms.hp[part] = 0; ms.out[part] = 1; changed = true; bbWreckCheck(ms, part, 0, false);
       stat.out++; bbStats.partsOut++; bbStats.platesOut++; bbStats.acidPlatesOut++; stat.v3.acidPlatesOut++;
       stat.byFam[U[part].name] = (stat.byFam[U[part].name] || 0) + 1;
       continue;
@@ -15822,8 +15874,9 @@ function bbInspectLine(i) {
   const ms = mdState[i];
   if (!ms || !ms.v3) return '';
   let out = 0; for (let k = 0; k < ms.out.length; k++) if (ms.out[k] === 1) out++;
-  const bits = [];
+  const bits = [], wr = bbWreckedOf(i);
   if (out > 0) bits.push(out + ' part' + (out === 1 ? '' : 's') + ' knocked out');
+  if (wr.n > 0) bits.push('<b>crippled</b>: ' + esc(bbWreckedWords(wr)) + ' (only a dock or the rear can mend ' + (wr.n === 1 ? 'it' : 'them') + ')');   // (v46)
   if (ms.darkN > 0) bits.push(ms.darkN + ' without power');
   if (ms.starvedN > 0) bits.push(ms.starvedN + ' gun' + (ms.starvedN === 1 ? '' : 's') + ' without ammo');
   if (ms.cutCount > 0) bits.push(ms.cutCount + ' track square' + (ms.cutCount === 1 ? '' : 's') + ' cut');
@@ -15843,6 +15896,56 @@ function bbInspectLine(i) {
   if (cutN) html += (html ? '. ' : '') + '<b>Fuel line cut</b>: ' + (cutN === 1 ? 'a drive is' : cutN + ' drives are') + ' cut off from its tanks' + (mdFuelOut[i] === 1 ? ', so the ship cannot manoeuvre (its guns still fire)' : '') + ' (damage control mending the line restarts ' + (cutN === 1 ? 'it' : 'them') + ')';
   return html;
 }
+// ---------------------------------------------------------------------
+// (v46, repair update 1) BROKEN PARTS KEPT BETWEEN BATTLES. The campaign keeps, for each ship, what is broken: { n, t, o, w, p, c } = the design's part count
+// and track squares (so a changed design is never read wrongly), the parts knocked out, the parts wrecked, the parts damage control patched (at half strength)
+// and the track squares cut. null = nothing broken. Acid patches are not kept (they burn out between battles).
+// ---------------------------------------------------------------------
+function bbPartsSave(i) {
+  const ms = mdState[i];
+  if (!ms || !ms.v3 || !ms.wreck) return null;
+  const o = [], w = [], p = [], c = [];
+  for (let k = 0; k < ms.out.length; k++) {
+    if (ms.out[k] === 1) (ms.wreck[k] === 1 ? w : o).push(k);
+    else if (ms.patched[k] === 1) p.push(k);
+  }
+  if (ms.cutCount > 0) for (let q = 0; q < ms.cut.length; q++) if (ms.cut[q]) c.push(q);
+  if (!o.length && !w.length && !p.length && !c.length) return null;
+  const e = { n: ms.bb.units.length, t: ms.bb.trackSquares };
+  if (o.length) e.o = o; if (w.length) e.w = w; if (p.length) e.p = p; if (c.length) e.c = c;
+  return e;
+}
+// Puts a kept record back on ship i as it enters a battle (the campaign's fleet event, 06e). Damage control takes up what it can mend. Returns true when applied.
+function bbPartsLoad(i, e) {
+  if (!e || typeof e !== 'object' || !mdOn() || !bbOn()) return false;
+  const info = bbTypeInfo(shipType[i]);
+  if (!info || info.units.length !== e.n || info.trackSquares !== e.t) return false;
+  const ms = mdState[i] || bbStateOf(i, info), n = info.units.length;
+  const each = function (list, fn) { if (Array.isArray(list)) for (let j = 0; j < list.length; j++) { const k = list[j]; if (k >= 0 && k < n) fn(k); } };
+  each(e.o, function (k) { ms.out[k] = 1; ms.hp[k] = 0; });
+  each(e.w, function (k) { ms.out[k] = 1; ms.hp[k] = 0; ms.wreck[k] = 1; });
+  each(e.p, function (k) { ms.patched[k] = 1; ms.hp[k] = info.units[k].hp * 0.5; });
+  if (Array.isArray(e.c)) for (let j = 0; j < e.c.length; j++) { const q = e.c[j]; if (q >= 0 && q < ms.cut.length && !ms.cut[q]) { ms.cut[q] = 1; ms.cutCount++; } }
+  ms.calls = 7;                                   // (no radio call for damage it came in with)
+  bbRecompute(i);
+  bbStats.partsLoaded++;
+  if ((e.o || e.w || e.c) && mdList.indexOf(i) < 0) mdList.push(i);
+  return true;
+}
+// How many parts of a kept record (or of ship i's live state, when e is a number) are wrecked, and their names: { n, names }.
+function bbWreckedOf(e, t) {
+  if (typeof e === 'number') { const ms = mdState[e]; if (!ms || !ms.v3 || !ms.wreck) return { n: 0, names: [] }; const w = []; for (let k = 0; k < ms.wreck.length; k++) if (ms.wreck[k] === 1 && ms.out[k] === 1) w.push(k); return bbWreckedNames(w, ms.bb); }
+  if (!e || !Array.isArray(e.w) || e.w.length === 0) return { n: 0, names: [] };
+  const info = t >= 0 && typeof bbTypeInfo === 'function' ? bbTypeInfo(t) : null;
+  return bbWreckedNames(e.w, info && info.units.length === e.n ? info : null);
+}
+function bbWreckedNames(list, info) {
+  const names = [];
+  if (info) for (const k of list) { const nm = String(info.units[k] && info.units[k].name || 'part').toLowerCase(); if (names.indexOf(nm) < 0) names.push(nm); }
+  return { n: list.length, names: names };
+}
+// "2 parts wrecked: drives, bridge" ('' when none).
+function bbWreckedWords(w) { return w.n > 0 ? w.n + ' part' + (w.n === 1 ? '' : 's') + ' wrecked' + (w.names.length ? ': ' + w.names.slice(0, 4).join(', ') : '') : ''; }
 const BUREAU_BATTLE_API = {
   on: bbOn,
   stats: function () { return bbStats ? JSON.parse(JSON.stringify(bbStats)) : null; },
@@ -15867,6 +15970,7 @@ const BUREAU_BATTLE_API = {
   acidAdd: function (t, id, dmg) { const info = bbTypeInfo(shipType[t]); if (!info) return false; const ms = mdState[t] || bbStateOf(t, info); if (!ms.bb.units[id] || ms.bb.units[id].role !== 'armour') return false; bbAcidAdd(t, ms, id, dmg, bbStatFor(shipSide[t], shipType[t])); return true; },   // (v30 S1, tools) lay an acid patch of `dmg` on plate `id` by hand
   regrow: function (i) { const st = shipSide[i] * TYPE_COUNT + shipType[i]; return { regrowing: stRegrow.length > st && stRegrow[st] === 1, lastHit: shipAttackedAt[i], stopUntil: bbRegrowStop[i], burstDone: bbBurstDone[i] }; },
   inspectLine: bbInspectLine,
+  partsSave: bbPartsSave, partsLoad: bbPartsLoad, wreckedOf: bbWreckedOf,   // (v46) the kept damage (a test tool reads and sets it)
   // (v30 B2) what the beams, the heat meter and point defence are doing right now (a test tool reads them)
   beam: function (i, g) { const b = i * BB_MAXG + g; return { focus: bbFocus[b], target: bbFocusTgt[b], charge: bbStore[i * BB_SK + 3] }; },
   heat: function (i) { const st = shipSide[i] * TYPE_COUNT + shipType[i]; return { heat: shipHeat[i], limit: stHeatLimit[st], drift: bbHeatDrift(i, st), folded: bbFolded(i), overheated: shipOverheated[i] }; },
@@ -18940,10 +19044,12 @@ function campaignMakeFleet(side, groups, officers, at, place) {
   for (let k = 0; k < groups.length; k++) {
     const g = groups[k], info = campaignShipInfo(g.type), jumpsMax = typeof g.jumpsMax === 'number' ? g.jumpsMax : info.jumps;
     f.groups.push({ type: g.type, design: g.design || '', count: Math.max(0, Math.floor(g.count || 0)), hull: (g.hull || []).slice(), shield: (g.shield || []).slice(),
+                    parts: Array.isArray(g.parts) ? g.parts.map(campaignCopyParts) : [],   // (v46) each ship's broken parts (null = none; empty = all whole)
                     jumps: typeof g.jumps === 'number' ? g.jumps : jumpsMax, jumpsMax: jumpsMax });
   }
   return f;
 }
+function campaignCopyParts(e) { return e ? copyJson(e) : null; }
 function campaignFleetById(id) { if (!campaign) return null; for (let k = 0; k < campaign.fleets.length; k++) if (campaign.fleets[k].id === id) return campaign.fleets[k]; return null; }
 function fleetShipCount(f) { let n = 0; for (let k = 0; k < f.groups.length; k++) n += f.groups[k].count; return n; }
 function campaignAoName(id) { const a = aoById(id); return a ? a.name : id; }
@@ -19149,7 +19255,8 @@ function campaignFleetDivisions(f) {
     if (scenarioTypeIndex(id) < 0 || !(gr.count > 0)) { if (gr.count > 0) campaignLog('battle', 'Fleet ' + f.id + ': the game has no ship type "' + id + '", so ' + gr.count + ' ships cannot enter the battle.'); continue; }
     for (let at = 0; at < gr.count; at += full) {
       const n = Math.min(full, gr.count - at);
-      rows.push({ type: id, ships: n, officer: null, hull: gr.hull.length ? gr.hull.slice(at, at + n) : [], shield: gr.shield.length ? gr.shield.slice(at, at + n) : [], jumps: gr.jumps, jumpsMax: gr.jumpsMax, fleetId: f.id });
+      rows.push({ type: id, ships: n, officer: null, hull: gr.hull.length ? gr.hull.slice(at, at + n) : [], shield: gr.shield.length ? gr.shield.slice(at, at + n) : [],
+                 parts: Array.isArray(gr.parts) && gr.parts.length ? gr.parts.slice(at, at + n) : [], jumps: gr.jumps, jumpsMax: gr.jumpsMax, fleetId: f.id });
     }
   }
   const target = Math.max(1, Math.floor(SETTINGS.divisionTargetSize)), minSize = Math.max(1, Math.floor(SETTINGS.divisionMinSize)), maxSize = Math.max(target, Math.floor(SETTINGS.divisionMaxSize));
@@ -19187,6 +19294,7 @@ function campaignUnitMade(sq, row, slots) {
     const m = slots[k];
     if (row.hull.length > k && isFinite(row.hull[k])) shipHp[m] = Math.max(1, Math.min(stHull[st], row.hull[k] * stHull[st]));
     if (row.shield.length > k && isFinite(row.shield[k])) shipShield[m] = Math.max(0, Math.min(stShield[st], row.shield[k] * stShield[st]));
+    if (Array.isArray(row.parts) && row.parts[k] && typeof bbPartsLoad === 'function') bbPartsLoad(m, row.parts[k]);   // (v46) as broken as it left its last battle
   }
   campaignSqJumps.set(sq, { jumps: typeof row.jumps === 'number' ? row.jumps : campaignShipInfo(typeId[sqType[sq]]).jumps, jumpsMax: typeof row.jumpsMax === 'number' ? row.jumpsMax : campaignShipInfo(typeId[sqType[sq]]).jumps });
   campaign.stats.entered[side] += slots.length; campaignLink.entered[side] += slots.length;
@@ -19232,7 +19340,8 @@ function campaignBattleScenario(entering) {
     aoName: ao.name,
     layout: { edgeMargin: 0.015, bandWidth: 0.02, verticalMargin: 0.42 },
     settings: Object.assign({}, PLACES_SETTINGS, { maxBattleSeconds: 1e9, siegeYardSlowdown: 1, regressionSecondsCap: 0, placesHoldClear: SETTINGS.campaignHoldClear,   // (stop 4: a garrison clears its own place)
-                                                                      placesFacilityApart: SETTINGS.campaignFacilityApart, placesAttackStallSeconds: SETTINGS.campaignAttackStallSeconds }),   // (stop 7: the stations kept out of the Divisions; a stalled attack is called off)
+                                                                      placesFacilityApart: SETTINGS.campaignFacilityApart, placesAttackStallSeconds: SETTINGS.campaignAttackStallSeconds,   // (stop 7: the stations kept out of the Divisions; a stalled attack is called off)
+                                                                      repairOffMap: 0 }),   // (v46) no mending off the map: only at a station of ours here
     command: function (c) { placesCommand(c); for (let side = 0; side < 2; side++) c[side].admiral = 'roster'; },
     places: specs,
     orderOfBattle: { sides: [{ edge: 'west', arrivals: campaignV3YardArrivals(yard, 0) }, { edge: 'east', arrivals: campaignV3YardArrivals(yard, 1) }] },   // (a v2 campaign: each side's own corvette, 06k)
@@ -19244,6 +19353,7 @@ function campaignBattleScenario(entering) {
         row.officer = 'roster'; row.squadSize = campaignSquadSize(id); row.count = entering[side][id] || 0;
         // (v37, section 5kd) a design's doctrine sets its boxes; with every choice on Auto they are the old ones: a heavy hull at its longest range
         if (!docApplyToRow(row, t, { campaign: true }) && (id === 'capital' || id === 'lance' || campaignV3Heavy(id))) Object.assign(row, { engage: 'max', priority: 'smart', kite: 'auto', flank: 'auto', fallbackBelow: 60, breakOff: 4 });
+        if (docOn() && SHIP_TYPES[t].design && !docOf(SHIP_TYPES[t])) row.repairBelow = docRepairBelow(t);   // (v46) a design with no doctrine record yet: Auto's "Go for repairs below"
       }
     }
   };
@@ -19576,7 +19686,7 @@ function campaignStragglersAway(weak) {
       if (!(gr.count > 0)) continue;
       if (gr.jumps >= 1 && home !== front) {
         if (away === null) away = campaignMakeFleet(weak, [], [], null, null);
-        campaignPutShips(campaignGroupFor(away, gr.type, gr.design, gr.jumps - 1, gr.jumpsMax), gr.count, gr.hull, gr.shield);
+        campaignPutShips(campaignGroupFor(away, gr.type, gr.design, gr.jumps - 1, gr.jumpsMax), gr.count, gr.hull, gr.shield, gr.parts);
         gone += gr.count;
       } else { lost += gr.count; c.stats.lost[weak] += gr.count; c.stats.lostWorth[weak] += gr.count * campaignShipWorth(gr.design || gr.type); }   // (v31 C1: by worth too, for the ledger)
     }
@@ -19686,11 +19796,11 @@ function campaignSquadronLeaves(sq, edge) {
     if (!campaignLink.staffNote[side][sq]) { campaignLink.staffNote[side][sq] = true; logEvent(side, 'Squadron ' + squadronLabel(sq) + ' cannot leave: it has no transfer left. It falls back to a place we hold.'); campaignLog('battle', SIDE_NAMES[side] + ' squadron ' + squadronLabel(sq) + ' has no transfer left and cannot leave the battle; it stays and fights on.'); }
     return false;
   }
-  const hull = [], shield = [];
+  const hull = [], shield = [], parts = [];
   const start = sqStart[sq], end = start + sqSize[sq];
   // Each ship is counted once (a squadron's member list can name the same ship twice when a lost ship's slot is reused by a ship coming back to it).
   const counted = new Set();
-  for (let k = start; k < end; k++) { const m = sqMembers[k]; if (m >= 0 && shipAlive[m] === 1 && shipSquad[m] === sq && !counted.has(m)) { counted.add(m); hull.push(Math.round(shipHp[m] / stHull[st] * 1000) / 1000); shield.push(stShield[st] > 0 ? Math.round(shipShield[m] / stShield[st] * 1000) / 1000 : 1); } }
+  for (let k = start; k < end; k++) { const m = sqMembers[k]; if (m >= 0 && shipAlive[m] === 1 && shipSquad[m] === sq && !counted.has(m)) { counted.add(m); hull.push(Math.round(shipHp[m] / stHull[st] * 1000) / 1000); shield.push(stShield[st] > 0 ? Math.round(shipShield[m] / stShield[st] * 1000) / 1000 : 1); parts.push(campaignPartsOfShip(m)); } }
   const officers = [];
   const o = sqOfficer[sq];
   if (o && o.rosterId && !campaignLink.gone[o.rosterId]) officers.push(o.rosterId);
@@ -19698,17 +19808,19 @@ function campaignSquadronLeaves(sq, edge) {
     const others = dv.squads.filter(function (q) { return q !== sq && (sqAlive[q] > 0 || sqAway[q] > 0); });
     if (others.length === 0) officers.push(dv.officer.rosterId);
   }
-  campaignShipsLeave(side, edge, t, hull, shield, fuel, officers, 'Squadron ' + squadronLabel(sq));
+  campaignShipsLeave(side, edge, t, hull, shield, fuel, officers, 'Squadron ' + squadronLabel(sq), parts);
   return true;
 }
 // (leaveBattle, section 5) a lone ship in retreat flies off the edge alive: it limps away, whatever its fuel (a jump is spent when it has one).
 function campaignShipGotAway(i) {
   const side = shipSide[i], t = shipType[i], st = side * TYPE_COUNT + t, fuel = campaignJumpsOf(shipSquad[i], t), edge = side === 0 ? 'west' : 'east';
-  campaignShipsLeave(side, edge, t, [Math.round(shipHp[i] / stHull[st] * 1000) / 1000], [stShield[st] > 0 ? Math.round(shipShield[i] / stShield[st] * 1000) / 1000 : 1], fuel, [], 'a ship in retreat');
+  campaignShipsLeave(side, edge, t, [Math.round(shipHp[i] / stHull[st] * 1000) / 1000], [stShield[st] > 0 ? Math.round(shipShield[i] / stShield[st] * 1000) / 1000 : 1], fuel, [], 'a ship in retreat', [campaignPartsOfShip(i)]);
 }
+// (v46) Ship i's broken parts as the campaign keeps them (null = nothing broken; section 5vb).
+function campaignPartsOfShip(i) { return typeof bbPartsSave === 'function' ? bbPartsSave(i) : null; }
 // Ships leave the battle by an edge: they join the fleet that left by that edge within campaignConvoyGapWeeks (one convoy), or start a new one in transit to
 // the AO the lane by that edge leads to.
-function campaignShipsLeave(side, edge, t, hull, shield, fuel, officers, what) {
+function campaignShipsLeave(side, edge, t, hull, shield, fuel, officers, what, parts) {
   const c = campaign, front = c.battle.ao, home = campaignHomeByEdge(side, edge), lane = laneBetween(front, home), weeks = lane ? laneWeeks(lane) : 1;
   const n = hull.length, jumps = Math.max(0, fuel.jumps - 1), whole = hull.every(function (h) { return h >= 0.999; }) && shield.every(function (s) { return s >= 0.999; });
   let f = null;
@@ -19724,12 +19836,8 @@ function campaignShipsLeave(side, edge, t, hull, shield, fuel, officers, what) {
   }
   let g = null;
   for (let k = 0; k < f.groups.length; k++) { const gr = f.groups[k]; if (gr.type === typeId[t] && gr.jumps === jumps && gr.jumpsMax === fuel.jumpsMax) { g = gr; break; } }
-  if (g === null) { g = { type: typeId[t], design: SHIP_TYPES[t].design ? typeId[t] : '', count: 0, hull: [], shield: [], jumps: jumps, jumpsMax: fuel.jumpsMax }; f.groups.push(g); }
-  if (!whole || g.hull.length > 0) {                          // (health lists are kept only once a ship is not whole: whole ships before it get 1s)
-    while (g.hull.length < g.count) { g.hull.push(1); g.shield.push(1); }
-    for (let k = 0; k < n; k++) { g.hull.push(hull[k]); g.shield.push(shield[k]); }
-  }
-  g.count += n;
+  if (g === null) { g = { type: typeId[t], design: SHIP_TYPES[t].design ? typeId[t] : '', count: 0, hull: [], shield: [], parts: [], jumps: jumps, jumpsMax: fuel.jumpsMax }; f.groups.push(g); }
+  campaignPutShips(g, n, whole && g.hull.length === 0 ? [] : hull, whole && g.hull.length === 0 ? [] : shield, parts || []);   // (health lists kept only once a ship is not whole; v46: and its broken parts)
   for (let k = 0; k < officers.length; k++) { f.officers.push(officers[k]); campaignLink.gone[officers[k]] = true; }
   c.stats.left[side] += n; campaignLink.left[side] += n;
   campaignLog('battle', what + ' (' + SIDE_NAMES[side] + ', ' + plural(n, 'ship') + (officers.length ? ', ' + officers.join(' ') : '') + ') leaves the battle by the ' + edge + ' edge at ' + fmtClock(simTime) + ' and joins fleet ' + f.id + '.');
@@ -19750,11 +19858,13 @@ function campaignTakeSnapshot(nextId) {
   const link = campaignLink, buckets = [new Map(), new Map()], front = campaign.battle.ao;
   // (v25) under the chain of command a bucket is a Fleet number at a place (no = 0: a draft), so the records keep the battle's Fleets
   const bucket = function (side, place, no) { const bk = cmdOn() ? place + '|' + (no || 0) : place; let b = buckets[side].get(bk); if (!b) { b = { place: place, no: no || 0, groups: new Map(), officers: [] }; buckets[side].set(bk, b); } return b; };
-  const addShip = function (side, place, t, hullShare, shieldShare, fuel, no) {
+  const addShip = function (side, place, t, hullShare, shieldShare, fuel, no, parts) {
     const b = bucket(side, place, no), key = typeId[t] + '|' + fuel.jumps + '|' + fuel.jumpsMax;
     let g = b.groups.get(key);
-    if (!g) { g = { type: typeId[t], design: SHIP_TYPES[t].design ? typeId[t] : '', count: 0, hull: [], shield: [], jumps: fuel.jumps, jumpsMax: fuel.jumpsMax, allWhole: true }; b.groups.set(key, g); }
+    if (!g) { g = { type: typeId[t], design: SHIP_TYPES[t].design ? typeId[t] : '', count: 0, hull: [], shield: [], parts: [], anyParts: false, jumps: fuel.jumps, jumpsMax: fuel.jumpsMax, allWhole: true }; b.groups.set(key, g); }
     g.count++; g.hull.push(Math.round(hullShare * 1000) / 1000); g.shield.push(Math.round(shieldShare * 1000) / 1000);
+    g.parts.push(parts || null);                                // (v46) its broken parts
+    if (parts) { g.anyParts = true; g.allWhole = false; }
     if (hullShare < 0.999 || shieldShare < 0.999) g.allWhole = false;
   };
   const mainPlace = function (side) {                           // the side's main place: the yard if it holds it, else its first held place, else the first place
@@ -19767,7 +19877,7 @@ function campaignTakeSnapshot(nextId) {
     if (shipAlive[i] !== 1) continue;
     const side = shipSide[i], t = shipType[i], st = side * TYPE_COUNT + t;
     if (stImmobile[st] === 1) continue;
-    addShip(side, campaignPlaceOfShip(shipX[i], shipY[i], side), t, shipHp[i] / stHull[st], stShield[st] > 0 ? shipShield[i] / stShield[st] : 1, campaignJumpsOf(shipSquad[i], t), campaignCmdNoOfSquad(shipSquad[i]));
+    addShip(side, campaignPlaceOfShip(shipX[i], shipY[i], side), t, shipHp[i] / stHull[st], stShield[st] > 0 ? shipShield[i] / stShield[st] : 1, campaignJumpsOf(shipSquad[i], t), campaignCmdNoOfSquad(shipSquad[i]), campaignPartsOfShip(i));
   }
   // 2. The ships at the staging point (built, not yet launched) and the ships away in repair.
   for (let side = 0; side < 2; side++) {
@@ -19782,7 +19892,7 @@ function campaignTakeSnapshot(nextId) {
       for (let j = 0; j < all.length; j++) {
         const rec = all[j], st = side * TYPE_COUNT + rec.type;
         const hp = rec.startedAt >= 0 ? Math.min(stHull[st], rec.hp + (rec.rate || p.rate) * (simTime - rec.startedAt)) : rec.hp;
-        addShip(side, place, rec.type, hp / stHull[st], 1, campaignJumpsOf(rec.sq, rec.type), campaignCmdNoOfSquad(rec.sq));
+        addShip(side, place, rec.type, hp / stHull[st], 1, campaignJumpsOf(rec.sq, rec.type), campaignCmdNoOfSquad(rec.sq), rec.startedAt < 0 ? rec.parts || null : null);   // (v46) a ship still waiting keeps its broken parts; one in a dock is mended
       }
     }
     for (let j = 0; j < offMapShips[side].length; j++) { const rec = offMapShips[side][j], st = side * TYPE_COUNT + rec.type; addShip(side, mainPlace(side), rec.type, rec.hp / stHull[st], 1, campaignJumpsOf(rec.sq, rec.type), campaignCmdNoOfSquad(rec.sq)); }
@@ -19818,7 +19928,7 @@ function campaignTakeSnapshot(nextId) {
   for (let side = 0; side < 2; side++) {
     buckets[side].forEach(function (b) {
       const groups = [];
-      b.groups.forEach(function (g) { groups.push({ type: g.type, design: g.design, count: g.count, hull: g.allWhole ? [] : g.hull, shield: g.allWhole ? [] : g.shield, jumps: g.jumps, jumpsMax: g.jumpsMax }); });
+      b.groups.forEach(function (g) { groups.push({ type: g.type, design: g.design, count: g.count, hull: g.allWhole ? [] : g.hull, shield: g.allWhole ? [] : g.shield, parts: g.anyParts ? g.parts : [], jumps: g.jumps, jumpsMax: g.jumpsMax }); });
       const ships = groups.reduce(function (n, g) { return n + g.count; }, 0);
       const f = campaignCmdFillRecord({ id: 'F' + next++, side: side, groups: groups, officers: b.officers.slice(), at: front, place: b.place, transit: null, edge: side === 0 ? 'west' : 'east', inBattle: false, order: null }, b.no);   // (v25: the Fleet's identity)
       if (ships === 0) { const home = campaignHomeByEdge(side, f.edge); if (home !== front) { const lane = laneBetween(front, home), weeks = lane ? laneWeeks(lane) : 1; f.at = null; f.place = null; f.transit = { from: front, to: home, departWeek: campaign.week, arriveWeek: campaign.week + weeks, edge: f.edge }; } }
@@ -20110,6 +20220,7 @@ function campaignCheckObject(data) {
         if (!Array.isArray(gr.hull) || !Array.isArray(gr.shield)) err(where + '.groups[' + g + ']" must have hull and shield lists (empty = all whole).');
         else if ((gr.hull.length !== 0 && gr.hull.length !== gr.count) || (gr.shield.length !== 0 && gr.shield.length !== gr.count)) err(where + '.groups[' + g + ']" hull and shield lists must be empty or one number per ship.');
         if (!isNum(gr.jumps) || !isNum(gr.jumpsMax) || gr.jumps < 0) err(where + '.groups[' + g + ']" must have jumps and jumpsMax numbers.');
+        if (gr.parts !== undefined && (!Array.isArray(gr.parts) || (gr.parts.length !== 0 && gr.parts.length !== gr.count))) warn(where + '.groups[' + g + ']" has a broken-parts list of the wrong length: its ships load with every part whole.');   // (v46)
       }
       if (f.order !== undefined && f.order !== null && typeof f.order !== 'string') err(where + '.order" must be an order id or null.');   // (stop 3)
       if (isObj(f.transit) && f.transit.order !== undefined && f.transit.order !== null && typeof f.transit.order !== 'string') err(where + '.transit.order" must be an order id or null.');
@@ -20159,7 +20270,8 @@ function campaignImportObject(data) {
   if (typeof s.frontMoves !== 'number') s.frontMoves = 0;
   const fresh = makeCampaignStats();
   for (const key of ['placeWeeks', 'aoSecuredWeeks', 'aoBesiegedWeeks']) { if (!s[key] || typeof s[key] !== 'object') s[key] = {}; for (const id in fresh[key]) if (s[key][id] === undefined) s[key][id] = fresh[key][id]; }
-  for (let k = 0; k < campaign.fleets.length; k++) { const f = campaign.fleets[k]; if (f.edge === undefined) f.edge = f.side === 0 ? 'west' : 'east'; if (f.inBattle === undefined) f.inBattle = false; if (f.inBattle && b.state === 'parked') f.inBattle = false; }
+  for (let k = 0; k < campaign.fleets.length; k++) { const f = campaign.fleets[k]; if (f.edge === undefined) f.edge = f.side === 0 ? 'west' : 'east'; if (f.inBattle === undefined) f.inBattle = false; if (f.inBattle && b.state === 'parked') f.inBattle = false;
+    for (const g of f.groups) if (!Array.isArray(g.parts) || (g.parts.length !== 0 && (g.parts.length !== g.count || g.hull.length !== g.count))) g.parts = []; }   // (v46) a save from before v46 has no broken parts: all whole
   campaignLogisticsFields(campaign);                           // (stop 3) the logistics fields, any missing one at its starting value
   campaignEconFields(campaign);                                // (v27) the economy's fields
   campaignAiFields(campaign);                                  // (stop 4) the brains' fields
@@ -20757,39 +20869,53 @@ function campaignSiegeFactors(aoId) {
 // A group of the fleet for this type, design and fuel (made empty when there is none).
 function campaignGroupFor(f, type, design, jumps, jumpsMax) {
   for (let k = 0; k < f.groups.length; k++) { const g = f.groups[k]; if (g.type === type && g.design === design && g.jumps === jumps && g.jumpsMax === jumpsMax) return g; }
-  const g = { type: type, design: design, count: 0, hull: [], shield: [], jumps: jumps, jumpsMax: jumpsMax };
+  const g = { type: type, design: design, count: 0, hull: [], shield: [], parts: [], jumps: jumps, jumpsMax: jumpsMax };
   f.groups.push(g);
   return g;
 }
 // Puts n ships into a group: hull and shield are lists of n shares, or empty when every ship is whole. (Once a group keeps lists, the whole ships in it get 1s.)
-function campaignPutShips(g, n, hull, shield) {
+// (v46) parts (may be left out) is the list of each ship's broken parts (null = nothing broken; section 5vb's bbPartsSave), or empty; a group that keeps one keeps
+// the hull and shield lists too.
+function campaignPutShips(g, n, hull, shield, parts) {
   if (!(n > 0)) return;
-  if (hull.length > 0 || shield.length > 0 || g.hull.length > 0 || g.shield.length > 0) {
+  parts = parts || [];
+  if (!Array.isArray(g.parts)) g.parts = [];
+  const anyParts = parts.some(function (e) { return !!e; });
+  if (hull.length > 0 || shield.length > 0 || g.hull.length > 0 || g.shield.length > 0 || anyParts) {
     while (g.hull.length < g.count) g.hull.push(1);
     while (g.shield.length < g.count) g.shield.push(1);
     for (let k = 0; k < n; k++) { g.hull.push(hull.length > k ? hull[k] : 1); g.shield.push(shield.length > k ? shield[k] : 1); }
+    if (anyParts || g.parts.length > 0) {
+      while (g.parts.length < g.count) g.parts.push(null);
+      for (let k = 0; k < n; k++) g.parts.push(parts.length > k && parts[k] ? parts[k] : null);
+    }
   }
   g.count += n;
 }
-// Takes the first n ships out of a group: returns their { hull, shield } lists (empty = whole).
+// Takes the first n ships out of a group: returns their { hull, shield, parts } lists (empty = whole).
 function campaignTakeShips(g, n) {
   n = Math.min(n, g.count);
-  const out = { hull: g.hull.length ? g.hull.slice(0, n) : [], shield: g.shield.length ? g.shield.slice(0, n) : [] };
+  const P = Array.isArray(g.parts) ? g.parts : [];
+  const out = { hull: g.hull.length ? g.hull.slice(0, n) : [], shield: g.shield.length ? g.shield.slice(0, n) : [], parts: P.length ? P.slice(0, n) : [] };
   if (g.hull.length) g.hull = g.hull.slice(n);
   if (g.shield.length) g.shield = g.shield.slice(n);
+  if (P.length) g.parts = P.slice(n);
   g.count -= n;
   return out;
 }
+// (v46) Ship k of a group: its kept broken parts (null = none), and whether any are WRECKED (the ship is crippled until a dock or the rear mends it).
+function campaignShipParts(g, k) { return Array.isArray(g.parts) && g.parts.length > k ? g.parts[k] : null; }
+function campaignShipCrippled(g, k) { const e = campaignShipParts(g, k); return !!(e && Array.isArray(e.w) && e.w.length > 0); }
 function campaignDropEmptyGroups(f) { f.groups = f.groups.filter(function (g) { return g.count > 0; }); }
 // Groups of the same type, design and fuel are made one again (after a refuel or a launch changed some groups' jumps), and empty groups dropped.
 function campaignTidyGroups(f) {
   const old = f.groups;
   f.groups = [];
-  for (let k = 0; k < old.length; k++) { const g = old[k]; if (g.count > 0) campaignPutShips(campaignGroupFor(f, g.type, g.design, g.jumps, g.jumpsMax), g.count, g.hull, g.shield); }
+  for (let k = 0; k < old.length; k++) { const g = old[k]; if (g.count > 0) campaignPutShips(campaignGroupFor(f, g.type, g.design, g.jumps, g.jumpsMax), g.count, g.hull, g.shield, g.parts); }
 }
 // Merges fleet src into dst (ships, health, fuel and officers) and removes src from the campaign.
 function campaignMergeFleet(dst, src) {
-  for (let k = 0; k < src.groups.length; k++) { const g = src.groups[k]; campaignPutShips(campaignGroupFor(dst, g.type, g.design, g.jumps, g.jumpsMax), g.count, g.hull, g.shield); }
+  for (let k = 0; k < src.groups.length; k++) { const g = src.groups[k]; campaignPutShips(campaignGroupFor(dst, g.type, g.design, g.jumps, g.jumpsMax), g.count, g.hull, g.shield, g.parts); }
   for (let k = 0; k < src.officers.length; k++) dst.officers.push(src.officers[k]);
   if (src.fleetNo > 0 && !(dst.fleetNo > 0)) { dst.fleetNo = src.fleetNo; dst.fleetName = src.fleetName; dst.viceAdmiral = src.viceAdmiral; }   // (v25) a draft joining a Fleet takes its name
   campaign.fleets = campaign.fleets.filter(function (f) { return f !== src; });
@@ -20868,7 +20994,7 @@ function campaignTopUpFleet(f, aoId, route) {
       if (fromCredit > 0) { f.fuelCredit = credit - fromCredit; if (!(f.fuelCredit > 1e-9)) delete f.fuelCredit; }
       out.ships += n; out.jumps += n; out.boost += cost;
       if (n === g.count) g.jumps += 1;
-      else { const moved = campaignTakeShips(g, n); campaignPutShips(campaignGroupFor(f, g.type, g.design, g.jumps + 1, g.jumpsMax), n, moved.hull, moved.shield); }
+      else { const moved = campaignTakeShips(g, n); campaignPutShips(campaignGroupFor(f, g.type, g.design, g.jumps + 1, g.jumpsMax), n, moved.hull, moved.shield, moved.parts); }
       progress = true;
     }
     campaignTidyGroups(f);
@@ -20925,7 +21051,7 @@ function campaignFuelOrder(o) {
   for (let k = 0; k < f.groups.length; k++) if (f.groups[k].jumpsMax < 1) locals += f.groups[k].count;
   if (locals > 0) {
     const b = campaignMakeFleet(side, [], [], f.at, f.place);
-    for (let k = 0; k < f.groups.length; k++) { const g = f.groups[k]; if (g.jumpsMax < 1 && g.count > 0) { const n = g.count, moved = campaignTakeShips(g, n); campaignPutShips(campaignGroupFor(b, g.type, g.design, g.jumps, g.jumpsMax), n, moved.hull, moved.shield); } }
+    for (let k = 0; k < f.groups.length; k++) { const g = f.groups[k]; if (g.jumpsMax < 1 && g.count > 0) { const n = g.count, moved = campaignTakeShips(g, n); campaignPutShips(campaignGroupFor(b, g.type, g.design, g.jumps, g.jumpsMax), n, moved.hull, moved.shield, moved.parts); } }
     campaignDropEmptyGroups(f);
     campaign.fleets.push(b);
     campaignLog('launch', SIDE_NAMES[side] + ' order ' + o.id + ': ' + plural(locals, 'Local ship') + ' stayed at ' + f.at + ' as fleet ' + b.id + ': they cannot transfer. Carry them in hangars or refit them with tanks.');
@@ -20950,7 +21076,7 @@ function campaignFuelOrder(o) {
     // a fight is on: the ships with a jump go now as a batch (the order's own record keeps fuelling the rest); nothing fuelled today means nothing goes
     if (cannot === total) { if (o.fuelNote !== Math.floor(campaign.week)) { o.fuelNote = Math.floor(campaign.week); campaign.stats.bottlenecks[side]++; } return; }
     const b = campaignMakeFleet(side, [], [], f.at, f.place);
-    for (let k = 0; k < f.groups.length; k++) { const g = f.groups[k]; if (g.jumps >= 1 && g.count > 0) { const n = g.count, moved = campaignTakeShips(g, n); campaignPutShips(campaignGroupFor(b, g.type, g.design, g.jumps, g.jumpsMax), n, moved.hull, moved.shield); } }
+    for (let k = 0; k < f.groups.length; k++) { const g = f.groups[k]; if (g.jumps >= 1 && g.count > 0) { const n = g.count, moved = campaignTakeShips(g, n); campaignPutShips(campaignGroupFor(b, g.type, g.design, g.jumps, g.jumpsMax), n, moved.hull, moved.shield, moved.parts); } }
     campaignDropEmptyGroups(f);
     campaign.fleets.push(b);
     const n = campaignSendFleet(b, o, lane, o.to, false);
@@ -20960,7 +21086,7 @@ function campaignFuelOrder(o) {
   if (!gives && cannot > 0) {
     if (cannot === total) { campaignOrderCancel(o, f, 'its ships have no transfer left and ' + f.at + ' gives ' + SIDE_NAMES[side] + ' no boost to refuel them'); return; }
     const b = campaignMakeFleet(side, [], [], f.at, f.place);
-    for (let k = 0; k < f.groups.length; k++) { const g = f.groups[k]; if (g.jumps < 1 && g.count > 0) { const n = g.count, moved = campaignTakeShips(g, n); campaignPutShips(campaignGroupFor(b, g.type, g.design, g.jumps, g.jumpsMax), n, moved.hull, moved.shield); } }
+    for (let k = 0; k < f.groups.length; k++) { const g = f.groups[k]; if (g.jumps < 1 && g.count > 0) { const n = g.count, moved = campaignTakeShips(g, n); campaignPutShips(campaignGroupFor(b, g.type, g.design, g.jumps, g.jumpsMax), n, moved.hull, moved.shield, moved.parts); } }
     campaignDropEmptyGroups(f);
     campaign.fleets.push(b);
     campaignLog('launch', lineFrom + ': ' + plural(cannot, 'ship') + ' with no transfer left stay at ' + f.at + ' as fleet ' + b.id + ' (' + fromAo + ' gives ' + SIDE_NAMES[side] + ' no boost).');
@@ -21327,6 +21453,7 @@ function campaignRefuelLive() {
 // ---- Repair ----
 // Every tick: ships off the battle recharge their shields; ships at an AO off the front, or at a place of the front AO their side holds with a standing station
 // while the battle is parked, get repairPerWeek of their hull back a war week. A group whose ships are all whole again drops its health lists (the save stays small).
+// (v46) The same places mend broken parts: a ship gets every part back once it has spent a week there (repairPartsWeeks; its record counts the time, r).
 function campaignRepair(dtWeeks) {
   const rate = SETTINGS.repairPerWeek;
   for (let k = 0; k < campaign.fleets.length; k++) {
@@ -21339,7 +21466,10 @@ function campaignRepair(dtWeeks) {
       if (g.hull.length === 0 && g.shield.length === 0) continue;
       for (let s = 0; s < g.shield.length; s++) g.shield[s] = 1;
       if (dock && rate > 0) for (let h = 0; h < g.hull.length; h++) if (g.hull[h] < 1) { g.hull[h] = Math.min(1, g.hull[h] + rate * dtWeeks); if (g.hull[h] >= 1) campaign.stats.repaired[f.side]++; }
-      if (g.hull.every(function (v) { return v >= 1; })) { g.hull = []; g.shield = []; }
+      const P = Array.isArray(g.parts) ? g.parts : [];
+      if (dock) for (let h = 0; h < P.length; h++) if (P[h]) { P[h].r = (P[h].r || 0) + dtWeeks; if (P[h].r >= SETTINGS.repairPartsWeeks - 1e-9) P[h] = null; }
+      if (P.length && P.every(function (e) { return !e; })) g.parts = [];
+      if (g.hull.every(function (v) { return v >= 1; }) && !(g.parts && g.parts.length)) { g.hull = []; g.shield = []; }
     }
   }
 }
@@ -21901,7 +22031,7 @@ function campaignAdvanceSpare(side, keep) {
     for (const g of f.groups) {
       if (!(g.count > 0) || !(g.jumpsMax >= 1)) continue;
       let whole = 0;
-      for (let k = 0; k < g.count; k++) if ((g.hull.length > k ? g.hull[k] : 1) >= 0.999 && (g.shield.length > k ? g.shield[k] : 1) >= 0.999) whole++;
+      for (let k = 0; k < g.count; k++) if ((g.hull.length > k ? g.hull[k] : 1) >= 0.999 && (g.shield.length > k ? g.shield[k] : 1) >= 0.999 && !campaignShipCrippled(g, k)) whole++;   // (v46: a ship with wrecked parts is not whole)
       rows.push({ n: whole, w: campaignShipWorth(g.design || g.type), fu: g.jumps >= 1 ? 0 : campaignRefuelCost(g.design || g.type) });
     }
   }
@@ -21933,16 +22063,17 @@ function campaignAdvanceForce(side, keep, worthWanted) {
     if (spare <= 0 || got >= enough) break;
     const w = campaignShipWorth(g.design || g.type), cap = Math.min(spare, w > 0 && enough < Infinity ? Math.ceil((enough - got) / w) : spare);
     let n = 0;
+    let goParts = [];
     if (g.hull.length === 0 && g.shield.length === 0) { n = Math.min(g.count, cap); campaignTakeShips(g, n); }
-    else {                                                       // (a group with health lists: only its whole ships go)
-      const hull = [], shield = [];
+    else {                                                       // (a group with health lists: only its whole ships go; v46: not one with wrecked parts, and the rest keep their broken parts)
+      const hull = [], shield = [], parts = [];
       for (let k = 0; k < g.count; k++) {
-        const h = g.hull.length > k ? g.hull[k] : 1, sh = g.shield.length > k ? g.shield[k] : 1;
-        if (h >= 0.999 && sh >= 0.999 && n < cap) n++; else { hull.push(h); shield.push(sh); }
+        const h = g.hull.length > k ? g.hull[k] : 1, sh = g.shield.length > k ? g.shield[k] : 1, pe = campaignShipParts(g, k);
+        if (h >= 0.999 && sh >= 0.999 && !campaignShipCrippled(g, k) && n < cap) { n++; goParts.push(pe); } else { hull.push(h); shield.push(sh); parts.push(pe); }
       }
-      g.count -= n; g.hull = hull; g.shield = shield;
+      g.count -= n; g.hull = hull; g.shield = shield; g.parts = parts.some(function (e) { return !!e; }) ? parts : [];
     }
-    if (n > 0) { campaignPutShips(campaignGroupFor(out, g.type, g.design, g.jumps, g.jumpsMax), n, [], []); spare -= n; fromGarrison += n; got += n * w; }
+    if (n > 0) { campaignPutShips(campaignGroupFor(out, g.type, g.design, g.jumps, g.jumpsMax), n, [], [], goParts); spare -= n; fromGarrison += n; got += n * w; }
   }
   for (const f of mine) campaignDropEmptyGroups(f);
   for (const id of Object.keys(pool)) {
@@ -22219,7 +22350,7 @@ function campaignSidePullOut(side, front, rear, ratio, order) {
     if (f.side !== side || f.at !== front || f.inBattle || f.transit || f.order) { keep.push(f); continue; }
     for (const g of f.groups) {
       if (!(g.count > 0)) continue;
-      if (g.jumps >= 1) { if (away === null) away = campaignMakeFleet(side, [], [], null, null); campaignPutShips(campaignGroupFor(away, g.type, g.design, g.jumps - 1, g.jumpsMax), g.count, g.hull, g.shield); out.gone += g.count; g.count = 0; g.hull = []; g.shield = []; }
+      if (g.jumps >= 1) { if (away === null) away = campaignMakeFleet(side, [], [], null, null); campaignPutShips(campaignGroupFor(away, g.type, g.design, g.jumps - 1, g.jumpsMax), g.count, g.hull, g.shield, g.parts); out.gone += g.count; g.count = 0; g.hull = []; g.shield = []; g.parts = []; }
       else out.stay += g.count;
     }
     campaignDropEmptyGroups(f);
@@ -23640,7 +23771,7 @@ function councilSplitForces(view, why) {
         if (dst === null) { dst = campaignCmdRecordFields(campaignMakeFleet(side, [], [], front, src.place)); dst.fleetNo = r.no; dst.fleetName = r.name; made.push(dst); }
         if (f === null) { f = dst; first.push(dst); }
         const h = campaignTakeShips(gr, n2);
-        campaignPutShips(campaignGroupFor(dst, gr.type, gr.design, gr.jumps, gr.jumpsMax), n2, h.hull, h.shield);
+        campaignPutShips(campaignGroupFor(dst, gr.type, gr.design, gr.jumps, gr.jumpsMax), n2, h.hull, h.shield, h.parts);
         need -= n2;
       }
       campaignDropEmptyGroups(src);
@@ -26664,7 +26795,7 @@ function thinkShip(i, st) {
 
   if (state === STATE_REPAIR) {
     keepRepairPoint(i);                                      // flying to a repair point (section 5j); if that one was destroyed, pick another
-  } else if (stRepairBelow[st] > 0 && shipHp[i] < stRepairBelow[st] * stHull[st]) {
+  } else if (stRepairBelow[st] > 0 && shipHp[i] < stRepairBelow[st] * stHull[st] && repairCanGo(i)) {
     startRepair(i, st);                                      // the hull is too damaged: go to be repaired (section 5j)
   } else if (state === STATE_REGROUP) {
     // Out of the fight at home: go back once the shield has recovered enough (only ships with a shield can).
@@ -26738,7 +26869,7 @@ function thinkShipSmart(i, st) {
 
   if (state === STATE_REPAIR) {
     keepRepairPoint(i);
-  } else if (stRepairBelow[st] > 0 && shipHp[i] < stRepairBelow[st] * stHull[st]) {
+  } else if (stRepairBelow[st] > 0 && shipHp[i] < stRepairBelow[st] * stHull[st] && repairCanGo(i)) {
     startRepair(i, st);
   } else if (state === STATE_REGROUP) {
     // Back once the shield has recovered (a routed ship without one comes back as it is), and, for a routed ship, once the odds where it will rejoin have been
@@ -37687,6 +37818,9 @@ function placeArrivals(a, squads) {
 //   IF THE FACILITY IS DESTROYED: ships in its docks and queue are put out of it where it stood, as damaged as they were (docked ships have been partly mended), and go on to the next
 //     repair point or off the map.
 //   The end rules (section 5a) count ships away in repair as ships that could still fight.
+//   (v46, repair update 1) CAMPAIGN BATTLES: repairOffMap is 0 there, so a ship goes for repairs only when one of its side's stations stands at the AO; with none it
+//     fights on (no flying off the map to be mended for free). A doctrine slider sets "Go for repairs below" for each design (section 5kd). A ship keeps its
+//     broken parts while it waits in a queue; a dock mends everything. A long queue at one of our stations is told in a Dispatch.
 // =====================================================================
 
 const repairPoints = [];                        // { side, kind ('facility' or 'forward'), name, objective (battleObjectives index, or -1), x, y, size, capacity, rate, alive, queue, docks, mended, ejected, peakQueue, waitTotal, started, released }
@@ -37764,6 +37898,10 @@ function nearestRepairPointTo(side, x, y) {
   return best;
 }
 
+// (v46) Can the ship go for repairs at all? Always while flying off the map is allowed; otherwise only when its side has a repair point standing.
+function repairCanGo(i) {
+  return SETTINGS.repairOffMap !== 0 || nearestRepairPointTo(shipSide[i], shipX[i], shipY[i]) >= 0;
+}
 // The ship's hull has fallen below its repair level: it breaks off and heads for a repair point.
 function startRepair(i, st) {
   shipRepairPoint[i] = chooseRepairPoint(i);
@@ -37775,6 +37913,7 @@ function startRepair(i, st) {
 function keepRepairPoint(i) {
   const p = shipRepairPoint[i];
   if (p >= 0 && !repairPoints[p].alive) shipRepairPoint[i] = chooseRepairPoint(i);
+  if (shipRepairPoint[i] < 0 && SETTINGS.repairOffMap === 0) setShipState(i, STATE_APPROACH);   // (v46) no station left and no flying off the map: back to the fight
 }
 
 // The ship has reached its repair point (the movement code noticed): it is taken out of the battle and joins the queue.
@@ -37806,6 +37945,7 @@ function sendShipAway(i) {
   const side = shipSide[i], type = shipType[i], st = side * TYPE_COUNT + type;
   const sq = shipSquad[i];
   const rec = { side: side, type: type, sq: sq, place: -1, hp: shipHp[i], missing: Math.max(0, stHull[st] - shipHp[i]), everRetreated: shipEverRetreated[i],
+                parts: typeof bbPartsSave === 'function' ? bbPartsSave(i) : null,   // (v46) its broken parts, kept while it waits (a dock mends them all)
                 storeMissing: SETTINGS.weaponModel === 1 && stStore[st] > 0 ? Math.max(0, stStore[st] - shipStore[i]) : 0,   // (v18) the ammunition to load
                 sentAt: simTime, point: -1, queuedAt: simTime, startedAt: -1, doneAt: 0, backAt: 0 };
   if (sq > 0) {
@@ -37874,6 +38014,19 @@ function serveRepairPoint(p) {
     p.started++;
     p.docks.push(rec);
   }
+  repairQueueWatch(p);
+}
+// (v46) A campaign battle: when more of our ships wait at one of our stations than it has docks for dockQueueWarnSeconds, the campaign log says so
+// (kind 'dockQueue', which the Dispatches show), at most once every five minutes of battle a station.
+function repairQueueWatch(p) {
+  if (typeof campaignBattleActive === 'undefined' || !campaignBattleActive || p.side !== BLUE || p.kind !== 'facility') return;
+  const waiting = p.queue.length;
+  if (waiting <= p.capacity) { p.longSince = -1; return; }
+  if (!(p.longSince >= 0)) p.longSince = simTime;
+  if (simTime - p.longSince < SETTINGS.dockQueueWarnSeconds || simTime < (p.warnedAt || 0)) return;
+  p.warnedAt = simTime + 300;
+  const name = p.name.replace(/^the /, '');
+  campaignLog('dockQueue', name.charAt(0).toUpperCase() + name.slice(1) + ': ' + plural(waiting, 'ship') + ' waiting for ' + p.capacity + ' docks.');
 }
 
 // Where mended ships appear: beside a facility (on the side away from the enemy), or on the forward repair point itself.
@@ -37914,6 +38067,7 @@ function returnShip(rec, cx, cy, k, hp, why) {
   if (!spawnShip(side, type, clampNumber(cx + offset.x, 0, SETTINGS.worldWidth), clampNumber(cy + offset.y, 0, SETTINGS.worldHeight))) return false;
   const slot = lastSpawnedSlot;
   if (hp >= 0) shipHp[slot] = hp;
+  if (hp >= 0 && rec.parts && rec.startedAt < 0 && typeof bbPartsLoad === 'function') bbPartsLoad(slot, rec.parts);   // (v46) put out before a dock took it: as broken as it went in
   shipEverRetreated[slot] = rec.everRetreated;
   awayCount[side]--;
   if (hp < 0) { statRepaired[st]++; repairSideStats[side].mended++; if (rec.sq > 0) sqRepaired[rec.sq]++; } else repairSideStats[side].ejected++;
@@ -38671,7 +38825,7 @@ function fleetArrives(side, ev) {
       const parts = Math.ceil(n / squadronCap());
       for (let j = 0, at = 0; j < parts; j++) {
         const nj = Math.floor(n / parts) + (j < n % parts ? 1 : 0), r0 = rows[k];
-        const row = parts === 1 ? r0 : Object.assign({}, r0, { ships: nj, hull: Array.isArray(r0.hull) ? r0.hull.slice(at, at + nj) : r0.hull, shield: Array.isArray(r0.shield) ? r0.shield.slice(at, at + nj) : r0.shield });
+        const row = parts === 1 ? r0 : Object.assign({}, r0, { ships: nj, hull: Array.isArray(r0.hull) ? r0.hull.slice(at, at + nj) : r0.hull, shield: Array.isArray(r0.shield) ? r0.shield.slice(at, at + nj) : r0.shield, parts: Array.isArray(r0.parts) ? r0.parts.slice(at, at + nj) : r0.parts });   // (v46: the broken parts too)
         squads.push({ type: t, n: nj, officer: j === 0 ? (r0.officer || null) : null, row: row });   // (row: v24, the campaign's hook below reads the health and fuel it carries)
         at += nj;
       }
@@ -42047,7 +42201,7 @@ function addDesignVersionDuringBattle(rec, previous, scriptSide) {   // scriptSi
 //
 //   THE RECORD (one per design, rec.doctrine, made by docNew):
 //     style        the Style tile, which is also the role: 'auto', or line, battery, light, dragoons, skirmish, escort, pd (DOC_STYLES)
-//     c            the plain choices, each 'auto' or a value (DOC_CHOICES): range, move, facing, flank, fire, fallback, leave, outnumbered, nerve,
+//     c            the plain choices, each 'auto' or a value (DOC_CHOICES): range, move, facing, flank, fire, fallback, leave, repair (v46), outnumbered, nerve,
 //                  escortDuty, pdDuty, squadSize
 //     targets      the Targets list, first to last: 'size:small', 'size:escort', 'size:line', 'size:capital', or 'type:<ship type id>'. Empty = Auto.
 //     special      special orders, exceptions against one enemy type: [{ enemy: <type id>, key: range | move | facing | flank, value }]
@@ -42122,6 +42276,8 @@ const DOC_CHOICES = {
                  tip: 'A ship whose shield drops below this while under fire pulls back out of reach to let it recharge, then returns. Only ships with shields.' },
   leave:       { name: 'Leave the fight below', kind: 'slider', group: 'pull', unit: '%', min: 0, max: 60, step: 5, zero: 'never',
                  tip: 'A ship below this much shield (or hull, with no shield) leaves the fight. One with a shield comes back when it recovers; one without goes home for good.' },
+  repair:      { name: 'Go for repairs below', kind: 'slider', group: 'pull', unit: '% hull', min: 0, max: 80, step: 5, zero: 'never',   // (v46, repair update 1)
+                 tip: 'A ship whose hull drops below this flies to one of our stations at this AO to be mended, then comes back. Needs a standing station of ours here.' },
   outnumbered: { name: 'Outnumbered at', kind: 'buttons', group: 'pull', tip: 'The squadron pulls back when the enemy near it is this much stronger.',
                  options: [['1.5', '1.5 to 1', 'Pulls back early.'], ['2', '2 to 1', ''], ['3', '3 to 1', 'Holds on against long odds.'], ['never', 'Never', 'Never pulls back for the odds.']] },
   nerve:       { name: 'Nerve', kind: 'buttons', group: 'pull', tip: 'How much danger the ships accept. Bold officers stay longer than this, cautious ones leave sooner.',
@@ -42246,6 +42402,7 @@ function docAutoChoice(rec, k) {
     case 'fire': return b.ammo ? { v: 'auto', why: 'by weapon: missiles about 35%, slugs 20%, beams 15%' } : { v: 'auto', why: 'its guns never run dry, so they always take long shots' };
     case 'fallback': return b.shield > 0 ? { v: b.heavy ? 60 : 60, why: 'falls back to recharge its shield at 60%' } : { v: 0, why: 'no shield to recharge' };
     case 'leave': return { v: 0, why: 'it stays in the fight; its officer and its nerve decide when it breaks' };
+    case 'repair': return { v: SETTINGS.repairAutoBelow, why: 'a dock mends it in a few minutes, so it goes early and comes back whole (only where we have a station)' };   // (v46)
     case 'outnumbered': return { v: 'auto', why: 'at about ' + (Math.round(SETTINGS.overwhelmEnter * 10) / 10) + ' to 1' };
     case 'nerve': return { v: 'careful', why: 'careful: stays level with its line' };
     case 'escortDuty': return (b.small || b.unmanned) ? { v: 'auto', why: 'a fighter or drone: Commodores send it up as CAP' } : { v: 'auto', why: 'Commodores decide from the Division\'s numbers' };
@@ -42296,7 +42453,7 @@ function docDefaultBoxes(t, campaignRow) {
   const b = SHIP_TYPES[t], fresh = SETTINGS.newSetupDefaults === 1;
   const o = { engage: 'medium', priority: fresh ? 'smart' : 'nearest', kite: fresh ? 'auto' : 'off', flank: fresh ? 'auto' : 'off', tactic: 'auto', facing: 'auto', evasion: 'auto',
               fallbackBelow: (fresh && b.shield > 0 && b.shieldRecharge > 0) ? 60 : 0, breakOff: fresh ? 4 : 0, outnumbered: SETTINGS.overwhelmEnter, formation: 'auto',
-              fireAt: 'auto', selfPreservation: 'careful', role: 'auto', retreatBelow: 0, freshSide: 'auto', crossT: 'auto' };
+              fireAt: 'auto', selfPreservation: 'careful', role: 'auto', retreatBelow: 0, freshSide: 'auto', crossT: 'auto', repairBelow: 0 };
   if (campaignRow && (typeId[t] === 'capital' || typeId[t] === 'lance' || (typeof campaignV3Heavy === 'function' && campaignV3Heavy(typeId[t]))))
     Object.assign(o, { engage: 'max', priority: 'smart', kite: 'auto', flank: 'auto', fallbackBelow: 60, breakOff: 4 });   // (the campaign's heavy-hull rule, 06e: Auto keeps it)
   return o;
@@ -42321,6 +42478,7 @@ function docApplyToRow(row, t, opts) {
   if (c.fire.v !== 'auto' && SETTINGS.fireAtBars[c.fire.v] !== undefined) row.fireAt = c.fire.v;
   if (set('fallback')) row.fallbackBelow = c.fallback.v;
   if (set('leave')) row.retreatBelow = c.leave.v;
+  if (opts.campaign === true) row.repairBelow = c.repair.v;            // (v46) campaign battles only: the Test range has no stations, so it never goes for repairs
   if (c.outnumbered.v !== 'auto') row.outnumbered = c.outnumbered.v === 'never' ? 0 : Number(c.outnumbered.v);
   if (c.nerve.v !== 'auto') row.selfPreservation = c.nerve.v;
   if (c.squadSize.src !== 'auto') row.squadSize = c.squadSize.v;
@@ -42349,6 +42507,12 @@ function docLoadType(r, t, st) {
                                  special: Array.isArray(r.docSpecial) ? r.docSpecial.slice() : [], squadWith: r.docSquadWith || null };
 }
 function docBattleOf(st) { return docBattle[(st / TYPE_COUNT) | 0][typeId[st % TYPE_COUNT]] || null; }
+// (v46) "Go for repairs below" (% hull) of a design as its doctrine resolves it (Auto for a design with no record yet); 0 for a type with no design.
+function docRepairBelow(t) {
+  const rec = SHIP_TYPES[t];
+  if (!rec || !rec.design) return 0;
+  return docResolve(docOf(rec) || docNew(), rec).c.repair.v;
+}
 // The size group of a ship type ('size:small' ...): its Bureau size class, else its size class in the battle's table.
 function docSizeGroupOf(t) {
   const T = SHIP_TYPES[t], cls = T && T.summary && T.summary.sizeClass ? T.summary.sizeClass : (T && T.sizeClassV3) || '';
@@ -50676,14 +50840,20 @@ function cmHullsOfRecords(recs) {
   for (const f of recs) for (const g of f.groups) {
     if (!(g.count > 0)) continue;
     const t = SHIP_TYPES[typeIndexById(g.design || g.type)], name = t ? t.name : (g.design || g.type);
-    const r = by[name] || (by[name] = { name: name, count: 0, hullSum: 0, hullN: 0, jumps: Infinity, jumpsMax: 0 });
+    const r = by[name] || (by[name] = { name: name, count: 0, hullSum: 0, hullN: 0, jumps: Infinity, jumpsMax: 0, crippled: 0, wrecked: [] });
     r.count += g.count;
     for (const v of g.hull) { r.hullSum += v; r.hullN++; }
+    for (let k = 0; k < g.count; k++) if (campaignShipCrippled(g, k)) {   // (v46) ships with wrecked parts, and which parts
+      r.crippled++;
+      const w = typeof bbWreckedOf === 'function' ? bbWreckedOf(campaignShipParts(g, k), typeIndexById(g.design || g.type)) : { names: [] };
+      for (const nm of w.names) if (r.wrecked.indexOf(nm) < 0) r.wrecked.push(nm);
+    }
     r.jumps = Math.min(r.jumps, g.jumps); r.jumpsMax = Math.max(r.jumpsMax, g.jumpsMax);
   }
   return hullCountsSorted(Object.keys(by).reduce(function (o, k) { o[k] = by[k].count; return o; }, {})).map(function (row) {
     const r = by[row.name], hull = r.hullN ? Math.round(r.hullSum / r.hullN * 100) : 100;   // (a ship with no hull entry is whole)
     const bits = []; if (hull < 100) bits.push('hull ' + hull + '%'); if (r.jumpsMax > 0 && r.jumps < r.jumpsMax) bits.push(r.jumps + '/' + r.jumpsMax + ' transfers');
+    if (r.crippled > 0) bits.push(r.crippled + ' crippled' + (r.wrecked.length ? ' (' + r.wrecked.slice(0, 3).join(', ') + ' wrecked)' : ''));   // (v46)
     row.note = bits.join(' · '); return row;
   });
 }
@@ -51450,6 +51620,7 @@ const DISPATCH_LINES = {
   'brief.res.designWaits':     { kind: 'res',   crit: false, from: 'Logistics Directorate', title: '{design} waits on {res}', text: '{design} waits on {res}: {rate} a week against {want} needed. Its ships are built only as fast as our {res} allows; holding the places that make it brings more.' },   // (v31 B1) a design held up by a resource (06f)
   'brief.res.designFed':       { kind: 'res',   crit: false, from: 'Logistics Directorate', title: '{design}: {res} again', text: '{text}' },   // (v31 B1) ... and when it no longer waits
   'brief.res.noJump':         { kind: 'res',   crit: false, from: 'Logistics Directorate', title: 'No fuel to leave',      text: '{text}' },
+  'brief.res.dockQueue':      { kind: 'res',   crit: false, from: 'Logistics Directorate', title: 'Repair docks full',     text: '{text}' },   // (v46) a long queue at one of our stations' docks
   'brief.res.planReady':       { kind: 'research', crit: false, from: 'Design Bureau', title: '{design} can now be built', text: 'Your plan {design} can now be built: research has opened its last missing part. Activate it in the Design Bureau (Designs) when you want the yards to build it.' },   // (v32) a library plan's research is done (section 10h)
   'brief.res.berthOpen':       { kind: 'res',   crit: false, from: 'Logistics Directorate', title: 'Berth open',            text: '{text}' },   // (Bureau v2 stop 5) a new berth at one of our yards (06k)
   'brief.res.berthIdle':       { kind: 'res',   crit: false, from: 'Logistics Directorate', title: 'Berths without a design', text: '{text}' },   // ... and the mild warning when no active design uses a size
@@ -51826,6 +51997,7 @@ function dispatchWatch() {
     else if (line.kind === 'berth' && ourBerthLine(line.text)) dispatchAdd('brief.res.berthOpen', { text: line.text.charAt(0).toUpperCase() + line.text.slice(1) }, 'map');   // (Bureau v2 stop 5) our berths, not the aliens'
     else if (line.kind === 'design' && line.planReady) dispatchAdd('brief.res.planReady', { design: line.planReady }, 'map');   // (v32) a library plan can now be built (section 10h)
     else if (line.kind === 'berthIdle') dispatchAdd('brief.res.berthIdle', { text: line.text }, 'map');
+    else if (line.kind === 'dockQueue') dispatchAdd('brief.res.dockQueue', { text: line.text }, 'ao');   // (v46, section 5j)
     else if (line.kind === 'pop' && line.pop) {                         // (v27.1, D3) population: souls lost, a colony's milestone (06l)
       const P = line.pop, go = P.aoId === c.battle.ao ? 'ao' : 'ao:' + P.aoId;
       if (P.side === 1) { /* (v31 A2) the aliens' people: their hive burnt out has its own line (dispatchDevLine) */ }
@@ -66596,7 +66768,7 @@ BUREAU2_SCREEN_API.testRange = { run: testRangeRun, state: testRange, plan: func
 //   adopted habits come along in its copy code and into every new campaign. A doctrine changed in the Bureau after the save updates the plan's copy.
 //   DOCTRINE TEMPLATES (LIBRARY.templates: [{ name, doctrine, savedAt }]) live here too, so they carry over as well. A plan from before v37 has no doctrine: Auto.
 // =====================================================================
-const GAME_VERSION = 'v44';                       // the game version written on every saved plan (raise it with each new build)
+const GAME_VERSION = 'v46';                       // the game version written on every saved plan (raise it with each new build)
 const LIBRARY_KEY = 'engineersWar.library';
 const LIBRARY_FORMAT = 1;
 const LIBRARY_CODE_SHIP = 'EW-SHIP-1:', LIBRARY_CODE_LIB = 'EW-LIB-1:';
@@ -67300,7 +67472,7 @@ function b2RenderDoc() {
   if (R.targets.src === 'set') h += '<div class="tg"><button type="button" data-dtgt="clear">Targets back to Auto</button></div>';
   h += '</section>';
   // 4 Pulling back
-  h += '<section class="para"><h4><span class="no">&sect;4</span>Pulling back<small>when it breaks off</small></h4>' + b2DocChoiceRow('fallback', R) + b2DocChoiceRow('leave', R) + b2DocChoiceRow('outnumbered', R) + b2DocChoiceRow('nerve', R) + '</section>';
+  h += '<section class="para"><h4><span class="no">&sect;4</span>Pulling back<small>when it breaks off</small></h4>' + b2DocChoiceRow('fallback', R) + b2DocChoiceRow('leave', R) + b2DocChoiceRow('repair', R) + b2DocChoiceRow('outnumbered', R) + b2DocChoiceRow('nerve', R) + '</section>';
   h += '</div><div class="dcol">';
   // 5 Duties
   h += '<section class="para"><h4><span class="no">&sect;5</span>Duties<small>the Commodores read these</small></h4>' + b2DocChoiceRow('escortDuty', R) + b2DocChoiceRow('pdDuty', R) + '</section>';
