@@ -29,7 +29,7 @@
   document.documentElement.classList.add('ew-touch');
 })();
 </script>
-<title>Engineer's War v78.3 - large tanks</title>
+<title>Engineer's War v78.4 - quiet AO Admirals</title>
 <!-- (v17) The shared look: theme-v0.4.css from the UI folder, built in word for word (tools/build.js). It only styles its own named parts
      (.mode-front, .panel, .btn ...), plus a few page-wide basics that the rules just below undo for the older screens. -->
 <style>
@@ -22235,7 +22235,7 @@ function campaignLateAdmirals() {
     createAdmiral(side, choice);
     anyAdmiral = true;
     const a = admirals[side];
-    campaignLog('battle', SIDE_NAMES[side] + ' had no Admiral at ' + campaignAoName(campaign.battle.ao) + ': ' + (a && a.officer ? a.officer.name : 'an Admiral') + ' takes command at ' + fmtClock(simTime) + ' of the battle.');
+    if (!campaignPeekState) campaignLog('battle', SIDE_NAMES[side] + ' had no Admiral at ' + campaignAoName(campaign.battle.ao) + ': ' + (a && a.officer ? a.officer.name : 'an Admiral') + ' takes command at ' + fmtClock(simTime) + ' of the battle.');
     // (v49) the Divisions this side's squadrons were in when the battle last stopped are made again, as they were (fleetArrives held them back: no Admiral then)
     const pend = link.pendingDivs[side];
     link.pendingDivs[side] = [];
@@ -22687,8 +22687,13 @@ function campaignPeekBattle(aoId) {
   campaignPeekState = { aoId: id, keep: keep, logLen: campaign.log.length, roster: copyJson(OFFICER_ROSTER), rng: campaignRngState };
   campaign.battle.ao = id;                                      // (the look may be at any AO: the build reads the front's id; put back at the end)
   if (!campaignWakeBattle('the player looks at the quiet AO', true)) { campaignPeekEnd(); return false; }
+  // (v78.4, Alex: "no division or fleet tags, and all the ships are moving to a single point") The battle makes a side's Admiral only when the side has ships as it
+  // starts, and a campaign's ships always come in just after that, so a real wake gets its Admirals a moment later (campaignLateAdmirals, from campaignBattleStep).
+  // A look never runs campaignBattleStep, so it had no Admiral at all: no Divisions, no Fleets, and every squadron flew off towards the far side on its own.
+  // The look now gets its Admirals as soon as its ships are on the field, the same way, so the garrisons form their Divisions and Fleets and hold their places.
   const step = SETTINGS.simStep;                                // one battle second, so the garrisons placed at 0 s are on the field
   for (let n = Math.round(1 / step); n > 0 && battleRunning; n--) simulateStep(step);
+  campaignLateAdmirals();                                       // (v78.4, above)
   campaign.battle.state = 'parked';                             // (v27.3) the battle keeps running for the look (the main loop steps it at the speed chosen), but
                                                                 // parked: campaignBattleStep and the Dispatches ignore it, and simulateStep holds fire
   return true;
@@ -23545,9 +23550,12 @@ function campaignBoostGrow() {
   }
 }
 // A side's multiplier on all its boost: its propulsion tier, and its council markers (stop 8).
+// (v78.4, Alex: the Delvers' surge sat fuelling for 12 weeks) the debug sliders scale the boost too: Shipbuilding for us, Alien ships for the aliens (24l),
+// so that many more ships can also be fuelled and sent.
 function campaignBoostMult(side) {
   const k = Math.max(0, Math.min(PROPULSION_TIERS.length - 1, Math.floor(campaign.propulsion[side] || 0)));
-  return PROPULSION_TIERS[k].boostMult * (1 + SETTINGS.boostPerMarker * Math.max(0, campaign.markers[side] || 0)) * (side === 0 ? 1 + researchRate('boost') : 1);   // (v30 C1: Better propellants, 06m)
+  return PROPULSION_TIERS[k].boostMult * (1 + SETTINGS.boostPerMarker * Math.max(0, campaign.markers[side] || 0)) * (side === 0 ? 1 + researchRate('boost') : 1)   // (v30 C1: Better propellants, 06m)
+         * (typeof campaignDebugMul === 'function' ? campaignDebugMul(side === 0 ? 'ships' : 'aliens') : 1);
 }
 // Sets every boost row's perWeek (FU a week) from the settings and the AOs' state now (called every tick, so a siege takes effect at once; usedThisWeek is left as it is).
 function campaignUpdateBoost() {
@@ -60451,8 +60459,9 @@ document.addEventListener('keydown', function (e) {
 //     - our berths: each berth we have counts as that many berths, so that many ships can be built side by side in it (06n campaignDevBerthsUsable)
 //     - build speed: each berth puts that many times the Alloys a day into its ship, so ships come out sooner (06f campaignProduceWeek)
 //     - laying a new berth takes that many times less time (06k campaignV3LayBerth; never under 1 week)
+//     - (v78.4) our boost (the FU a week that fuels ships for a transfer) at every AO (06f campaignBoostMult)
 //   ALIEN SHIPS (campaign.debug.aliens): the same for the aliens' yards: their Alloys a week, each of their berths counts as that many, and each builds
-//     that many times faster. So the Swarm and the Delvers build that many more ships. (The Sylphs build nothing: their pilots come one by one, unchanged.)
+//     that many times faster, and (v78.4) their boost, so the extra ships can be fuelled and sent too. So the Swarm and the Delvers build that many more ships. (The Sylphs build nothing: their pilots come one by one, unchanged.)
 //   EARTH RESEARCH (campaign.debug.research): Earth's research points a week (06m researchRpWeek). Labs out on the map are not changed.
 const DEBUG_MUL_MAX = 10;
 // The multiplier of one tool now: 'ships', 'aliens' or 'research'. 1 with no campaign or when never moved.
@@ -60478,8 +60487,8 @@ function cmDebugSheetHtml() {
       '<b id="dbgVal-' + key + '">x' + v + '</b></span></div>';
   };
   return '<p>Testing tools. They change only this war, and are saved with it. x1 is the normal game.</p>' +
-    slider('ships', 'Shipbuilding', 'Our Alloys and every other resource a week, how many ships each berth builds at once, how fast each ship is built, and how fast new berths are laid. The aliens are not changed.') +
-    slider('aliens', 'Alien ships', 'The aliens\' Alloys a week, how many ships each of their berths builds at once and how fast. The Swarm and the Delvers build that many more ships; the Sylphs (who build nothing) are not changed.') +
+    slider('ships', 'Shipbuilding', 'Our Alloys and every other resource a week, how many ships each berth builds at once, how fast each ship is built, how fast new berths are laid, and our boost (fuel for transfers). The aliens are not changed.') +
+    slider('aliens', 'Alien ships', 'The aliens\' Alloys a week, how many ships each of their berths builds at once and how fast, and their boost (fuel for transfers). The Swarm and the Delvers build that many more ships; the Sylphs (who build nothing) are not changed.') +
     slider('research', 'Earth research points', 'Earth\'s research points a week. Labs out on the map are not changed.') +
     '<p class="note-ai" id="dbgNow">' + cmDebugNowText() + '</p>' +
     '<div class="row"><button type="button" class="btn" data-cm="sheet" data-id="menu">Back to the menu</button><button type="button" class="btn btn-ghost" data-cm="sheet" data-id="close">Back to the war</button></div>';
