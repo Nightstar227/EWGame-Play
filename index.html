@@ -23284,7 +23284,7 @@ function campaignAlloysIncome(side) {
   const aos = campaignAos();
   for (let k = 0; k < aos.length; k++) if (aos[k].owner === 1 && campaign.ao[aos[k].id] && campaign.ao[aos[k].id].securedBy === 0) lost++;   // (every AO they held at the start that we have since secured)
   const core = S.alienAlloysStart * e.growth[1] * Math.max(0, 1 - S.alienNodeLossShare * lost);
-  return Math.max(0, (core + S.alienAlloysPerStep * Math.max(0, Math.floor(campaign.waveStep))) * campaignAlienIncomeMul());   // (v31 C2) x the director's income bonus (06g alienIncomeBonus; 1 when none)
+  return Math.max(0, (core + S.alienAlloysPerStep * Math.max(0, Math.floor(campaign.waveStep))) * campaignAlienIncomeMul() * campaignDebugMul('aliens'));   // (v31 C2) x the director's income bonus (06g alienIncomeBonus; 1 when none) (v78.2: x the debug menu's Alien ships, 7w)
 }
 // At each dawn (and at the start): the economy grows, and this week's Alloys a week are worked out and kept where the map reads them.
 function campaignEconWeek(grow) {
@@ -24064,7 +24064,7 @@ function campaignProduceWeek(yardId, side, alloys, room) {
   // (v39) called once a building day (campaignYardsDay): a berth's capacity is its class's berthAlloysPerWeek spread over the week's days, and "this week"
   // below means this building day (the name of the function stayed; `week` holds the day's number).
   const y = campaign.yards[yardId], S = SETTINGS, days = campaignBuildDays(), week = campaignDayIndex(campaign.week), per = {};
-  const pace = side === 0 ? campaignDevYardPace(yardId) * campaignDebugMul('ships') : 1;    // (v61, s6d) our new yard builds at a quarter pace until its people arrive (v78.2: x the debug menu's Shipbuilding, 7w)
+  const pace = side === 0 ? campaignDevYardPace(yardId) * campaignDebugMul('ships') : campaignDebugMul('aliens');    // (v61, s6d) our new yard builds at a quarter pace until its people arrive (v78.2: x the debug menu's Shipbuilding, or Alien ships for theirs, 7w)
   for (const cls in (S.berthAlloysPerWeek || {})) per[cls] = S.berthAlloysPerWeek[cls] / days * pace;
   const out = { spent: 0, built: {} };
   if (y.side !== side) { y.side = side; y.credit = {}; y.work = []; y.capUsed = {}; }   // (the yard changed hands: its half-built ships are lost)
@@ -28706,8 +28706,8 @@ function campaignDevBerthsUsable(yardId, have) {
     const s = campaignDevSurfaceBerths();
     for (const cls in s) if (campaignDevSurfaceLaunches(cls)) out[cls] = (out[cls] || 0) + s[cls];
   }
-  // (v78.2) the debug menu's Shipbuilding (7w): each of OUR berths counts as that many
-  const dm = campaign.yards && campaign.yards[yardId] && campaign.yards[yardId].side === 0 ? campaignDebugMul('ships') : 1;
+  // (v78.2) the debug menu (7w): each of OUR berths counts as Shipbuilding's many, each of THEIRS as Alien ships' many
+  const ys = campaign.yards && campaign.yards[yardId] ? campaign.yards[yardId].side : -1, dm = ys === 0 ? campaignDebugMul('ships') : (ys === 1 ? campaignDebugMul('aliens') : 1);
   if (dm !== 1) for (const cls in out) out[cls] *= dm;
   return out;
 }
@@ -57331,7 +57331,7 @@ function cmRenderSheet() {
       '<div class="sec-h" style="margin:0">Display</div><div class="opt"><span class="label">Planet backdrops in the battle</span><span>' + seg('backdrops', [['On', 1], ['Off', 0]]) + '</span>' +
       '<span class="label">Pause the war when the front is lost</span><span>' + seg('dispatchPause', [['On', 1], ['Off', 0]]) + '</span>' +
       '<span class="label">Screen effects</span><span>' + seg('effects', [['Full', 'full'], ['Subtle', 'subtle'], ['Off', 'off']]) + '</span></div>' +
-      '<div class="row">' + (campaign ? '<button type="button" class="btn" data-cm="sheet" data-id="close">Back to the war</button>' : '') + '<button type="button" class="btn btn-ghost" data-cm="sheet" data-id="debug" title="(v78.2) Testing tools: Shipbuilding and Earth research x1 to x10">Debug menu</button>' + '<button type="button" class="btn btn-ghost" data-cm="sheet" data-id="main" title="The main menu (v28): new campaign, load, settings, Proving grounds. The war waits.">Main menu</button><button type="button" class="btn btn-ghost" data-cm="sheet" data-id="setup">Proving grounds (setup screen)</button></div>';
+      '<div class="row">' + (campaign ? '<button type="button" class="btn" data-cm="sheet" data-id="close">Back to the war</button>' : '') + '<button type="button" class="btn btn-ghost" data-cm="sheet" data-id="debug" title="(v78.2) Testing tools: Shipbuilding, Alien ships and Earth research x1 to x10">Debug menu</button>' + '<button type="button" class="btn btn-ghost" data-cm="sheet" data-id="main" title="The main menu (v28): new campaign, load, settings, Proving grounds. The war waits.">Main menu</button><button type="button" class="btn btn-ghost" data-cm="sheet" data-id="setup">Proving grounds (setup screen)</button></div>';
   }
   if (w === 'debug') body = cmDebugSheetHtml();                  // (v78.2) the debug menu (7w)
   el.innerHTML = '<section class="panel"><div class="panel-head">' + (w === 'debug' ? 'Debug menu' : (campaign ? 'Campaign menu' : 'Campaign')) + '</div><div class="panel-body">' + body + '</div></section>';
@@ -60442,9 +60442,11 @@ document.addEventListener('keydown', function (e) {
 //     - our berths: each berth we have counts as that many berths, so that many ships can be built side by side in it (06n campaignDevBerthsUsable)
 //     - build speed: each berth puts that many times the Alloys a day into its ship, so ships come out sooner (06f campaignProduceWeek)
 //     - laying a new berth takes that many times less time (06k campaignV3LayBerth; never under 1 week)
+//   ALIEN SHIPS (campaign.debug.aliens): the same for the aliens' yards: their Alloys a week, each of their berths counts as that many, and each builds
+//     that many times faster. So the Swarm and the Delvers build that many more ships. (The Sylphs build nothing: their pilots come one by one, unchanged.)
 //   EARTH RESEARCH (campaign.debug.research): Earth's research points a week (06m researchRpWeek). Labs out on the map are not changed.
 const DEBUG_MUL_MAX = 10;
-// The multiplier of one tool now: 'ships' or 'research'. 1 with no campaign or when never moved.
+// The multiplier of one tool now: 'ships', 'aliens' or 'research'. 1 with no campaign or when never moved.
 function campaignDebugMul(key) {
   const d = campaign && campaign.debug, v = d ? +d[key] : 1;
   return v >= 1 ? Math.min(DEBUG_MUL_MAX, v) : 1;
@@ -60452,9 +60454,9 @@ function campaignDebugMul(key) {
 function campaignDebugSet(key, v) {
   if (!campaign) return;
   const n = Math.max(1, Math.min(DEBUG_MUL_MAX, Math.round(+v || 1)));
-  if (!campaign.debug) campaign.debug = { ships: 1, research: 1 };
+  if (!campaign.debug) campaign.debug = { ships: 1, aliens: 1, research: 1 };
   campaign.debug[key] = n;
-  if (key === 'ships' && campaign.econ) campaignEconWeek(false);   // this week's Alloys a week are worked out again at once (the yards read them each day)
+  if ((key === 'ships' || key === 'aliens') && campaign.econ) campaignEconWeek(false);   // this week's Alloys a week are worked out again at once (the yards read them each day)
 }
 // The sheet's body (24f3 cmRenderSheet puts it in the menu sheet when cmState.sheet is 'debug').
 function cmDebugSheetHtml() {
@@ -60468,6 +60470,7 @@ function cmDebugSheetHtml() {
   };
   return '<p>Testing tools. They change only this war, and are saved with it. x1 is the normal game.</p>' +
     slider('ships', 'Shipbuilding', 'Our Alloys and every other resource a week, how many ships each berth builds at once, how fast each ship is built, and how fast new berths are laid. The aliens are not changed.') +
+    slider('aliens', 'Alien ships', 'The aliens\' Alloys a week, how many ships each of their berths builds at once and how fast. The Swarm and the Delvers build that many more ships; the Sylphs (who build nothing) are not changed.') +
     slider('research', 'Earth research points', 'Earth\'s research points a week. Labs out on the map are not changed.') +
     '<p class="note-ai" id="dbgNow">' + cmDebugNowText() + '</p>' +
     '<div class="row"><button type="button" class="btn" data-cm="sheet" data-id="menu">Back to the menu</button><button type="button" class="btn btn-ghost" data-cm="sheet" data-id="close">Back to the war</button></div>';
@@ -60476,7 +60479,7 @@ function cmDebugSheetHtml() {
 function cmDebugNowText() {
   if (!campaign || !campaign.econ) return '';
   const rp = typeof researchRpWeek === 'function' ? researchRpWeek() : null;
-  return 'Now: ' + fmtWhole(campaign.econ.alloys[0] || 0) + ' Alloys a week' + (rp ? ', Earth gives ' + fmtWhole(rp.earth) + ' research points a week' : '') + '.';
+  return 'Now: ' + fmtWhole(campaign.econ.alloys[0] || 0) + ' Alloys a week (the aliens ' + fmtWhole(campaign.econ.alloys[1] || 0) + ')' + (rp ? ', Earth gives ' + fmtWhole(rp.earth) + ' research points a week' : '') + '.';
 }
 // The sliders' moves: kept at once, the top bar redrawn.
 function cmDebugSheetWire(el) {
