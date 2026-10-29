@@ -14420,9 +14420,10 @@ function resolveHit(a, t, vx, vy, facing, sqA, stateA, saIn, dmgIn, dtIn, trIn, 
   // Step 2: shields soak up damage first.
   let shieldPts = 0, absorbed = 0;
   const shield = shipShield[t];
+  const tough = dbgTough[shipSide[t]];                   // (v78.5, section 7w) the debug menu's toughness for the target's side: shields, hull and parts take that many times less (x1 = the normal game)
   if (shield > 0) {
     const cost = dmgShieldCost[dtype];
-    const needed = damage * cost;
+    const needed = damage * cost / tough;
     if (needed <= shield) {                      // the shield soaks the whole hit (always true if this damage type costs the shield nothing)
       shieldPts = needed;
       absorbed = damage;
@@ -14430,7 +14431,7 @@ function resolveHit(a, t, vx, vy, facing, sqA, stateA, saIn, dmgIn, dtIn, trIn, 
       damage = 0;
     } else {                                     // the shield collapses; the rest goes through
       shieldPts = shield;
-      absorbed = shield / cost;                  // (cost is above 0 here, or the shield would have soaked the hit)
+      absorbed = shield * tough / cost;          // (cost is above 0 here, or the shield would have soaked the hit)
       damage -= absorbed;
       shipShield[t] = 0;
     }
@@ -14445,15 +14446,15 @@ function resolveHit(a, t, vx, vy, facing, sqA, stateA, saIn, dmgIn, dtIn, trIn, 
     bbBeamTicks2 = tkIn > 0 ? tkIn : 0;   // (v30 B2) a beam: the armour pass subtracts the armour from each of its ticks in full (spec 7.1)
     if (stV3[stt] === 1 && bbLof === 1) through = bbArmourPass(a, t, stt, facing, damage, dtype, trIn === undefined ? 0 : trIn, sa);   // (v30 B1, section 5vb) the line-of-fire pick: the square hit, and only the plates in front of it
     else {
-      through = damage - stArmor[stt * 4 + facing] * dmgArmorEffect[dtype];
+      through = damage - stArmor[stt * 4 + facing] * dmgArmorEffect[dtype] * dbgArmour[shipSide[t]];   // (v78.5) x the debug menu's armour for the target's side
       const floor = damage * SETTINGS.minArmorPassFraction;
       if (through < floor) through = floor;      // armor can never stop everything
     }
     armorBlocked = damage - through;
     if (fxRec) fxHitNote(t, stV3[stt] === 1 && bbLof === 1 && bbHitShip === t ? bbHitPart : -1, stV3[stt] === 1 && bbLof === 1 && bbHitShip === t ? bbHitDeflected : 0, 0);   // (v33, display only)
-    const hp = shipHp[t];
-    if (through >= hp) { hullLoss = hp; over = through - hp; shipHp[t] = 0; }
-    else { hullLoss = through; shipHp[t] = hp - through; }
+    const hp = shipHp[t], hit = through / tough;          // (v78.5) the hull takes the debug menu's toughness times less
+    if (hit >= hp) { hullLoss = hp; over = hit - hp; shipHp[t] = 0; }
+    else { hullLoss = hit; shipHp[t] = hp - hit; }
   }
   shipShieldDelay[t] = SETTINGS.shieldRechargeDelay;     // being hit pauses shield recharge
 
@@ -14471,7 +14472,7 @@ function resolveHit(a, t, vx, vy, facing, sqA, stateA, saIn, dmgIn, dtIn, trIn, 
   statTakenFacing[stt * 4 + facing] += dealt;
   statTakenType[stt * DMG_COUNT + dtype] += dealt;
 
-  if (damage > 0 && shipHp[t] > 0 && SETTINGS.moduleDamage === 1 && stDesigned[stt] === 1) moduleHit(t, stt, facing, damage, hullLoss, sa);   // (v20, section 5v) parts knocked out
+  if (damage > 0 && shipHp[t] > 0 && SETTINGS.moduleDamage === 1 && stDesigned[stt] === 1) moduleHit(t, stt, facing, damage, hullLoss * tough, sa);   // (v20, section 5v) parts knocked out
 
   // Destroyed? (Whether a damaged ship breaks off is decided later, when it next thinks.)
   if (shipHp[t] <= 0) {
@@ -15619,18 +15620,19 @@ function resolvePdHit(a, sa, t, vx, vy) {
   const ahead = vx * shipCos[t] + vy * shipSin[t], toRight = vy * shipCos[t] - vx * shipSin[t];
   const facing = Math.abs(ahead) >= Math.abs(toRight) ? (ahead >= 0 ? FACING_FRONT : FACING_REAR) : (toRight > 0 ? FACING_RIGHT : FACING_LEFT);
   let shieldPts = 0;
-  const shield = shipShield[t];
+  const shield = shipShield[t], tough = dbgTough[shipSide[t]];   // (v78.5, section 7w) the debug menu's toughness and armour for the target's side
   if (shield > 0) {
     const cost = dmgShieldCost[dtype];
-    const needed = damage * cost;
+    const needed = damage * cost / tough;
     if (needed <= shield) { shieldPts = needed; shipShield[t] = shield - needed; damage = 0; }
-    else { shieldPts = shield; damage -= shield / cost; shipShield[t] = 0; }
+    else { shieldPts = shield; damage -= shield * tough / cost; shipShield[t] = 0; }
   }
   let hullLoss = 0;
   if (damage > 0) {
-    let through = damage - stArmor[stt * 4 + facing] * dmgArmorEffect[dtype];
+    let through = damage - stArmor[stt * 4 + facing] * dmgArmorEffect[dtype] * dbgArmour[shipSide[t]];
     const floor = damage * SETTINGS.minArmorPassFraction;
     if (through < floor) through = floor;
+    through /= tough;
     const hp = shipHp[t];
     hullLoss = through >= hp ? hp : through;
     shipHp[t] = hp - hullLoss;
@@ -15873,7 +15875,7 @@ function moduleHit(t, stt, facing, damage, through, sa) {
 // Damage to one part. Returns true if it was knocked out. A volatile part explodes when it goes (depth: how far a chain of explosions has run).
 function mdDamagePart(t, ms, id, dmg, stat, depth) {
   if (ms.out[id] !== 0) return false;
-  ms.hp[id] -= dmg;
+  ms.hp[id] -= dmg / dbgTough[shipSide[t]];                         // (v78.5, section 7w) parts take the debug menu's toughness times less
   if (ms.hp[id] > 0) return false;
   ms.hp[id] = 0;
   ms.out[id] = 1;
@@ -15889,7 +15891,7 @@ function mdDamagePart(t, ms, id, dmg, stat, depth) {
   if (u.volatile > 0 && depth < 3) {
     stat.blasts++;
     if (sndLive) soundBlast(t, u);                 // (v28, section 6t) remembered for the sound of the ship's death: sound only
-    const hull = u.volatile * SETTINGS.blastToHull;
+    const hull = u.volatile * SETTINGS.blastToHull / dbgTough[shipSide[t]];   // (v78.5) the hull takes the debug menu's toughness times less
     shipHp[t] = Math.max(0, shipHp[t] - hull);
     if (shipHp[t] > 0) {
       for (let k = 0; k < u.neighbours.length; k++) {
@@ -17071,7 +17073,7 @@ function bbArmourPass(a, t, stt, facing, damage, dtype, traits, sa) {
   const lof = info ? info.lof : null;
   bbHitShip = t; bbHitCell = -1; bbHitPart = -1; bbHitTraits = traits; bbHitAblative = -1; bbHitDeflected = 0; bbHitOuterPlate = -1; bbHitShed = 0;
   if (!lof) {                                                            // (no layout: the old four-side armour)
-    let th = damage - stArmor[stt * 4 + facing] * bbPlateEffect(dtype);
+    let th = damage - stArmor[stt * 4 + facing] * bbPlateEffect(dtype) * dbgArmour[shipSide[t]];   // (v78.5, section 7w) x the debug menu's armour
     const fl = damage * SETTINGS.bbMinArmorPass;
     return th < fl ? fl : th;
   }
@@ -17103,6 +17105,7 @@ function bbArmourPass(a, t, stt, facing, damage, dtype, traits, sa) {
     if (facing === 0 ? x >= W - 1 : (facing === 1 ? x <= 0 : (facing === 2 ? y <= 0 : y >= H - 1))) break;
     k = plateAt[facing * N + k + step];
   }
+  { const A = dbgArmour[shipSide[t]]; armour *= A; deflecting *= A; }   // (v78.5, section 7w) the plates count the debug menu's armour times more (x1 = the normal game)
   const stat = bbStatFor(shipSide[t], shipType[t]);
   // 3. the traits
   const proj = bbIsProjectile(dtype);
@@ -17272,7 +17275,7 @@ function bbCutTrack(t, ms, stat) {
 function bbDamagePart(t, ms, id, dmg, stat, depth) {
   if (ms.out[id] !== 0 || !(dmg > 0)) return false;
   const info = ms.bb, U = info.units, u = U[id];
-  ms.hp[id] -= dmg;
+  ms.hp[id] -= dmg / dbgTough[shipSide[t]];                            // (v78.5, section 7w) parts take the debug menu's toughness times less
   if (u.reactor === 1 && SETTINGS.reactorWallShare > 0) {
     const rooms = info.wallRooms[id];
     if (rooms) for (let k = 0; k < rooms.length; k++) if (ms.out[rooms[k]] === 0) { stat.v3.walls++; bbStats.reactorWalls++; bbDamagePart(t, ms, rooms[k], dmg * SETTINGS.reactorWallShare, stat, depth + 1); }
@@ -17288,7 +17291,7 @@ function bbDamagePart(t, ms, id, dmg, stat, depth) {
     const kind = info.blastKind[id], cap = info.storeCap[kind];
     blast *= cap > 0 ? Math.max(0, Math.min(1, bbStore[t * BB_SK + kind] / cap)) : 1;
   }
-  bbWreckCheck(ms, id, dmg, blast > 0 && depth < BB_BLAST.chainDepth);   // (v46) a huge hit, a blast, or a second loss after a patch wrecks it
+  bbWreckCheck(ms, id, dmg / dbgTough[shipSide[t]], blast > 0 && depth < BB_BLAST.chainDepth);   // (v46) a huge hit, a blast, or a second loss after a patch wrecks it
   if (u.store > 0) {                                                   // a magazine (or capacitor) lost takes its share of its own store with it
     // (v30 Bfix) only the store the part holds: a gun magazine its share of the rounds, a missile magazine its share of its size's missiles, a capacitor
     // its share of the charge (B2 took a share of the rounds AND the missiles for any magazine)
@@ -17303,9 +17306,10 @@ function bbDamagePart(t, ms, id, dmg, stat, depth) {
     if (sndLive) soundBlast(t, u);                 // (v28, section 6t) remembered for the sound of the ship's death: sound only
     if (depth > 0) { stat.v3.chains++; bbStats.chains++; }
     if (depth === 0) bbChainHp0 = shipHp[t];                                   // (v30 Bfix) the hull when this chain began, for the report
-    bbStats.blastHull += Math.min(shipHp[t], blast * SETTINGS.blastToHull);
+    const blastHull = blast * SETTINGS.blastToHull / dbgTough[shipSide[t]];   // (v78.5) the hull takes the debug menu's toughness times less
+    bbStats.blastHull += Math.min(shipHp[t], blastHull);
     const wasUp = shipHp[t] > 0;
-    shipHp[t] = Math.max(0, shipHp[t] - blast * SETTINGS.blastToHull);
+    shipHp[t] = Math.max(0, shipHp[t] - blastHull);
     if (wasUp && shipHp[t] <= 0) {                                             // (the hull went in the blast: resolveHit sees the 0 and destroys the ship)
       bbStats.blastKills++; stat.v3.blastKills++;
       if (bbChainHp0 >= BB_FRESH_SHARE * stHull[shipSide[t] * TYPE_COUNT + shipType[t]]) { bbStats.blastKillsFresh++; stat.v3.blastKillsFresh++; }
@@ -17314,7 +17318,7 @@ function bbDamagePart(t, ms, id, dmg, stat, depth) {
       for (let k = 0; k < u.neighbours.length; k++) {
         const v = u.neighbours[k];
         if (ms.out[v] !== 0) continue;
-        if (U[v].blocks === 1) { ms.hp[v] -= blast * SETTINGS.blastToParts * 0.5; if (ms.hp[v] <= 0) { ms.hp[v] = 0; ms.out[v] = 1; bbWreckCheck(ms, v, blast * SETTINGS.blastToParts * 0.5, false); stat.out++; bbStats.partsOut++; stat.byFam[U[v].name] = (stat.byFam[U[v].name] || 0) + 1; if (U[v].role === 'armour') bbStats.platesOut++; } continue; }   // (a bulkhead: takes the blast, passes nothing on)
+        if (U[v].blocks === 1) { ms.hp[v] -= blast * SETTINGS.blastToParts * 0.5 / dbgTough[shipSide[t]]; if (ms.hp[v] <= 0) { ms.hp[v] = 0; ms.out[v] = 1; bbWreckCheck(ms, v, blast * SETTINGS.blastToParts * 0.5, false); stat.out++; bbStats.partsOut++; stat.byFam[U[v].name] = (stat.byFam[U[v].name] || 0) + 1; if (U[v].role === 'armour') bbStats.platesOut++; } continue; }   // (a bulkhead: takes the blast, passes nothing on)
         bbDamagePart(t, ms, v, blast * SETTINGS.blastToParts, stat, depth + 1);
       }
     }
@@ -17717,8 +17721,9 @@ function bbAcidTick(i, ms, dt) {
   for (let k = 0; k < ms.acid.length; k++) {
     const p = ms.acid[k], part = p.part;
     if (ms.out[part] === 1) continue;                                        // (the plate is gone: the patch goes with it)
-    let eat = p.rate * dt; if (eat > p.left) eat = p.left; if (eat > ms.hp[part]) eat = ms.hp[part];
-    ms.hp[part] -= eat; p.left -= eat; bbStats.acidEaten += eat;
+    const tough = dbgTough[shipSide[i]];                                       // (v78.5, section 7w) a tougher plate is eaten that many times slower
+    let eat = p.rate * dt; if (eat > p.left) eat = p.left; if (eat > ms.hp[part] * tough) eat = ms.hp[part] * tough;
+    ms.hp[part] -= eat / tough; p.left -= eat; bbStats.acidEaten += eat;
     if (ms.hp[part] <= 1e-9) {
       ms.hp[part] = 0; ms.out[part] = 1; changed = true; bbWreckCheck(ms, part, 0, false);
       stat.out++; bbStats.partsOut++; bbStats.platesOut++; bbStats.acidPlatesOut++; stat.v3.acidPlatesOut++;
@@ -60463,7 +60468,21 @@ document.addEventListener('keydown', function (e) {
 //   ALIEN SHIPS (campaign.debug.aliens): the same for the aliens' yards: their Alloys a week, each of their berths counts as that many, and each builds
 //     that many times faster, and (v78.4) their boost, so the extra ships can be fuelled and sent too. So the Swarm and the Delvers build that many more ships. (The Sylphs build nothing: their pilots come one by one, unchanged.)
 //   EARTH RESEARCH (campaign.debug.research): Earth's research points a week (06m researchRpWeek). Labs out on the map are not changed.
+//   (v78.5, Alex 29 Oct) TOUGHNESS AND ARMOUR, one pair per side, to look for the point where ships live long enough for the battle to stay live all the time:
+//     - OUR TOUGHNESS (campaign.debug.ourTough) and ALIEN TOUGHNESS (alienTough): that side's ships, stations and yard take that many times less damage to their
+//       shields, hull and every part (section 5 resolveHit, 5v mdDamagePart, 5vb bbDamagePart, their blasts and the Swarm's acid). Worked as "less damage" rather
+//       than "more hit points", so a ship's share of hull left is kept when the slider moves in the middle of a battle, and repairs mend to the same maximum.
+//     - OUR ARMOUR (ourArmour) and ALIEN ARMOUR (alienArmour): that side's armour stops that many times more (the old four-side armour, and a Bureau v2 ship's
+//       plates on the line of fire, which also deflect shells that many times bigger). The floor (some damage always gets through) is unchanged.
+//     They count only in the campaign's battle and in a look at a quiet AO; a test battle from the setup screen is never changed.
 const DEBUG_MUL_MAX = 10;
+// (v78.5) This step's toughness and armour per side (read in the combat code; 1 = the normal game). debugDefenceRefresh sets them at the start of each step.
+const dbgTough = new Float64Array([1, 1]), dbgArmour = new Float64Array([1, 1]);
+function debugDefenceRefresh() {
+  const on = campaign !== null && campaign !== undefined && (campaignBattleActive || campaignPeekState !== null);
+  dbgTough[0] = on ? campaignDebugMul('ourTough') : 1; dbgTough[1] = on ? campaignDebugMul('alienTough') : 1;
+  dbgArmour[0] = on ? campaignDebugMul('ourArmour') : 1; dbgArmour[1] = on ? campaignDebugMul('alienArmour') : 1;
+}
 // The multiplier of one tool now: 'ships', 'aliens' or 'research'. 1 with no campaign or when never moved.
 function campaignDebugMul(key) {
   const d = campaign && campaign.debug, v = d ? +d[key] : 1;
@@ -60472,8 +60491,9 @@ function campaignDebugMul(key) {
 function campaignDebugSet(key, v) {
   if (!campaign) return;
   const n = Math.max(1, Math.min(DEBUG_MUL_MAX, Math.round(+v || 1)));
-  if (!campaign.debug) campaign.debug = { ships: 1, aliens: 1, research: 1 };
+  if (!campaign.debug) campaign.debug = { ships: 1, aliens: 1, research: 1, ourTough: 1, ourArmour: 1, alienTough: 1, alienArmour: 1 };
   campaign.debug[key] = n;
+  debugDefenceRefresh();                                           // (v78.5) toughness and armour count from the next hit
   if ((key === 'ships' || key === 'aliens') && campaign.econ) campaignEconWeek(false);   // this week's Alloys a week are worked out again at once (the yards read them each day)
 }
 // The sheet's body (24f3 cmRenderSheet puts it in the menu sheet when cmState.sheet is 'debug').
@@ -60490,6 +60510,10 @@ function cmDebugSheetHtml() {
     slider('ships', 'Shipbuilding', 'Our Alloys and every other resource a week, how many ships each berth builds at once, how fast each ship is built, how fast new berths are laid, and our boost (fuel for transfers). The aliens are not changed.') +
     slider('aliens', 'Alien ships', 'The aliens\' Alloys a week, how many ships each of their berths builds at once and how fast, and their boost (fuel for transfers). The Swarm and the Delvers build that many more ships; the Sylphs (who build nothing) are not changed.') +
     slider('research', 'Earth research points', 'Earth\'s research points a week. Labs out on the map are not changed.') +
+    slider('ourTough', 'Our toughness', 'Our ships, stations and yard take this many times less damage to their shields, hull and every part. A damaged ship keeps its share of hull when you move it. Only in the war\'s battle.') +
+    slider('ourArmour', 'Our armour', 'Our armour stops this many times more of each hit (the plates on a designed ship, which also turn away bigger shells). Some damage always gets through. Only in the war\'s battle.') +
+    slider('alienTough', 'Alien toughness', 'The aliens\' ships, stations and nests take this many times less damage to their shields, hull and every part. Only in the war\'s battle.') +
+    slider('alienArmour', 'Alien armour', 'The aliens\' armour stops this many times more of each hit. Some damage always gets through. Only in the war\'s battle.') +
     '<p class="note-ai" id="dbgNow">' + cmDebugNowText() + '</p>' +
     '<div class="row"><button type="button" class="btn" data-cm="sheet" data-id="menu">Back to the menu</button><button type="button" class="btn btn-ghost" data-cm="sheet" data-id="close">Back to the war</button></div>';
 }
@@ -75598,6 +75622,7 @@ let simStepsCounted = 0, simMillisCounted = 0;  // steps simulated and the time 
 
 // One fixed step of the battle.
 function simulateStep(dt) {
+  debugDefenceRefresh();                        // (v78.5, section 7w) the debug menu's toughness and armour for this step (x1 outside a campaign battle)
   const peek = SETTINGS.campaignModel === 1 && campaignPeekState !== null;   // (v27.3, section 5z) a look at a quiet AO: the ships move about, but nobody fires and the battle never ends
   updateReinforcements();                       // reinforcements that are due appear (section 5i)
   updateRepair();                               // docks, queues and ships coming back from repair (section 5j)
