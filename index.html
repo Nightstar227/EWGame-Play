@@ -29,7 +29,7 @@
   document.documentElement.classList.add('ew-touch');
 })();
 </script>
-<title>Engineer's War v76 - the Delver war</title>
+<title>Engineer's War v78 - the Sylph war</title>
 <!-- (v17) The shared look: theme-v0.4.css from the UI folder, built in word for word (tools/build.js). It only styles its own named parts
      (.mode-front, .panel, .btn ...), plus a few page-wide basics that the rules just below undo for the older screens. -->
 <style>
@@ -5947,6 +5947,21 @@ const SETTINGS = {
   delverJumpOutSeconds: 90,   // ... seconds after it arrived
   delverJumpOutHull: 0.7,     // ... or at once when its hull is under this share
   delverGrid: 1,              // 1 = Delver drones fly as square blocks in lock step (the perfect grids); 0 = like any ship
+  // (v77, build D of notes/plans/aliens/delver-sylph-tier01.md) THE SYLPHS' BATTLE RULES (section 5vc). Placeholders.
+  sylphBarrierModel: 1,       // 1 = a Sylph ship's Barrier (its emitters' pool, 02c sy_barrier) takes every hit first and fills again when left alone; 0 = off
+  sylphBarrierLight: 0.25,    // ... the share of its damage a laser or a light slug does to the Barrier (heavy slugs, Piercing shots and warheads do all of it)
+  sylphBarrierHeavyShot: 40,  // ... a slug (kinetic hit) of this much damage or more counts as heavy
+  sylphBarrierDelay: 4,       // ... seconds without a hit before the Barrier starts to fill again
+  sylphBarrierRefill: 8,      // ... seconds to fill a Barrier from empty
+  sylphAceModel: 1,           // 1 = each Sylph ship has a named Ace pilot (a house, a rank 0-4): higher ranks dodge better and hit parts more; 0 = plain ships
+  sylphDodgePerRank: 0.08,    // ... a shot at a Sylph ship hits this much less often per rank (rank 4: x0.68)
+  sylphPartAimPerRank: 0.12,  // ... a Sylph shot that lands on bare hull is moved onto a working part with this chance per rank (rank 4: 48%)
+  sylphGoalsModel: 1,         // 1 = each pilot picks a play goal on arrival (Tailpipe, Chase, Show-off, Trophy, Cull; Raze when bored) and fires when the goal says; 0 = they fight like any ship
+  sylphLeaveHull: 0.5,        // a pilot leaves the battle once its Barrier is down and its hull is under this share
+  sylphGoalPatience: 45,      // seconds a goal that holds fire (Tailpipe, Show-off) waits at most before the pilot fires anyway
+  sylphShowOffSeconds: 20,    // Show-off: seconds the pilot sits in our biggest group's guns before firing
+  sylphChaseScareSeconds: 30, // Chase: seconds the pilot only needles its prey (lets it run) before it kills it
+  sylphTailpipeAngle: 120,    // Tailpipe: the pilot counts as behind its target when it is more than this many degrees off the target's nose
   droneNoRepair: 1,           // (v73, Alex 29 Oct) 1 = a crewless ship (drone CPU or nerve knot bridge) mends nothing in battle, only at docks; 0 = its damage control works as before
   repairPartsWeeks: 1,        // (v46) a ship gets all its broken parts back (wrecked ones too) after this many war weeks where its hull is mended (off the front, or at a station of ours while the battle is parked)
   campaignShipsPerOfficer: 12,   // a launch from a yard's pool takes one officer from the home pool (roster officers in no fleet) for every this many ships
@@ -5995,7 +6010,9 @@ const SETTINGS = {
               'Veil drone': { week: 0, weight: 1 },
               Breaker: { week: 0, weight: 2, berths: { corvette: 2 } },
               'Drone tender': { week: 0, weight: 1, berths: { destroyer: 1 } },
-              'Driver rock': { week: 10, weight: 1, berths: { destroyer: 1 }, tier: 2 } }
+              'Driver rock': { week: 10, weight: 1, berths: { destroyer: 1 }, tier: 2 } },
+    // (v78) the Sylphs build nothing (06s): their rows only name their ships for the screens; their pilots decide who flies what
+    sylph: { Duelist: { week: 0, weight: 1 }, Courser: { week: 0, weight: 1 }, "Lord's blade": { week: 0, weight: 1 } }
   },
   // (v76) THE OTHER ENEMIES' OWN RULES: any alien setting named here takes the place of the one above in that enemy's war (06d2 alienSettings). The Swarm
   //  uses the settings above as they are. The Delvers' Admiral is very careful (plan s2.3): a high bar to attack (it gathers until it is clearly stronger), an
@@ -6008,8 +6025,20 @@ const SETTINGS = {
               alienPullBackRatio: 0.6,     // pull back from their own AO under assault below 60% of our strength there (the Swarm: 25%)
               alienGarrisonCap: 300,       // a full garrison at the front is 300 ships (the Swarm: 2,500)
               alienFirstPool: 6,           // the first wave: 6 drones
-              campaignAlienGarrison: 6 }   // each AO they hold at the start: 6 drones
+              campaignAlienGarrison: 6 },  // each AO they hold at the start: 6 drones
+    sylph: { alienFirstPool: 0, campaignAlienGarrison: 0, alienOpeningWaves: {} }   // (v78) no ships wait anywhere: the Sylphs' pilots raid (06s)
   },
+  // (v78, build E: THE SYLPH WAR, 06s; plan s3.3) All numbers are first placeholders.
+  sylphFirstRaidWeek: 2,      // the first Sylph's first raid sets out in this war week
+  sylphRaidWeeks: 4,          // ... and the next raids every this many weeks after the last one ended (x0.5 while mowing the lawn, x0.75 once we are worthy; jittered 30%)
+  sylphRaidGiveUpWeeks: 6,    // a raid that has not reached the battle this many weeks after it set out is given up (its pilots are home again)
+  sylphWordStep: 3,           // every this much word of the fight brings one more Sylph (a raid scores 0 to about 4.5)
+  sylphMowRatio: 3,           // MOWING THE LAWN: our fleets' worth over this many times the Sylphs' fair fight ...
+  sylphMowWeeks: 4,           // ... for this many weeks running turns them aggressive (and one more Sylph comes every this many weeks while it lasts)
+  sylphBoredShips: 3,         // a raid that finds fewer of our ships than this in the battle a minute in turns on our stations and people
+  sylphFeudWeeks: 2,          // a killed Sylph's relative (one rank higher, same house) comes this many weeks later
+  sylphRaidsPerRank: 1,       // a pilot rises a rank after this many raids survived (rank 2 flies a Courser, rank 4 a Lord's blade)
+  sylphMaxPilots: 12,         // never more Sylphs than this at once (this pass: no ark, no harvester)
   // (v69, Tier 2 plan s5a, Alex's P1) WHEN THE SWARM GOES TIER 2: its Tier 2 rows (alienRoster's `tier2: true`) come online when we finish the Cruiser project,
   //  or when the first ship of ours that needs Helium-3 to build (a fusion reactor, torch or tank on board) leaves a yard, or at this war week, whichever comes
   //  first. From then on the Swarm's places follow our tier cap (tiers 4 and 5 on big worlds, plan 4c). Its nests must still be old enough (swarmNestAgeWeeks).
@@ -10473,7 +10502,32 @@ const MODULES_V3 = [
   { id: 'dv_layered', name: 'Layered rock', cat: 'defence', sub: 'Armour', line: 'alien', w: 1, h: 1, sizes: true, maxSize: 5, shrink: false, role: 'armour', cost: 1.4, armourBase: 5, hpMul: 1.5, res: 'structure', alien: true, faction: 'delver', traits: ['Spaced', 'Ablative', 'Layered'],
     rule: 'Size piece. Rock and metal in layers: Spaced and Ablative at once (it stops Piercing and soaks beams) and thicker than steel (armour 5 a square x the block\'s side), but heavy.' },
   { id: 'dv_cradle', name: 'Drone cradle', cat: 'ports', sub: 'Hangars', line: 'alien', w: 12, h: 5, role: 'room', edge: true, lane: 'door', hangar: true, holds: 'small', minHull: 'destroyer', cost: 10, power: 0, powerClass: 'rest', crew: 1, res: 'magnetic', alien: true, faction: 'delver',
-    rule: 'On the outside, with a clear lane out of its mouth. A cradle the size of the one Delver drone (a Small craft) it holds, which it launches in battle. Destroyers and up.' }
+    rule: 'On the outside, with a clear lane out of its mouth. A cradle the size of the one Delver drone (a Small craft) it holds, which it launches in battle. Destroyers and up.' },
+  // ---- (v77, build D of notes/plans/aliens/delver-sylph-tier01.md) THE SYLPHS' PARTS. Chrome and gold, made in the internal mode like the Swarm's and the
+  //      Delvers'. The Sylphs start at their top technology: every part is far better than ours for its size, so a Sylph ship fights like one of ours
+  //      three or four sizes bigger. A Sylph ship is flown by one to three Sylphs, each on a throne (the pilots: section 5vc, the Ace trait); its weapons
+  //      are the lance (a heavy, precise shot straight ahead) and the needle (a light fast gun all round), neither needs ammunition; the Barrier emitter
+  //      throws the shield pool section 5vc keeps (it takes hits first and comes back fast when left alone; lasers and light slugs do little to it, it is
+  //      NOT Magnetic). Every number is a first placeholder. `faction: 'sylph'` marks them. ----
+  { id: 'sy_throne', name: 'Pilot\'s throne', cat: 'crew', sub: 'Bridges', line: 'alien', w: 2, h: 2, role: 'room', bridge: true, cost: 14, power: 0, powerClass: 'bridge', crew: 1, houses: 130, lifeSupport: 130, res: 'general', alien: true, faction: 'sylph', coversCrew: 6, traits: ['Ace'],
+    rule: 'The one Sylph\'s seat that flies the ship: a throne of chrome and gold, and under it the quiet servitors a hull needs (it houses and keeps alive the crew of a destroyer, up to 130, and works six crew\'s worth of parts). Exactly one per ship. The pilot is an Ace: a named pilot with a house and a rank.' },
+  { id: 'sy_seat', name: 'Sylph\'s seat', cat: 'crew', sub: 'Quarters', line: 'alien', w: 2, h: 2, role: 'room', cost: 8, power: 0, powerClass: 'rest', crew: 1, houses: 1, lifeSupport: 1, res: 'general', alien: true, faction: 'sylph', traits: ['Ace'],
+    rule: 'A second (or third) Sylph\'s seat beside the throne: a room for one, housed and kept alive. The Courser carries one, the Lord\'s blade two.' },
+  { id: 'sy_drive', name: 'Grace drive', cat: 'drives', sub: 'Rockets', line: 'alien', w: 3, h: 2, role: 'machine', dir: 'push', lane: 'exhaust', mass: 3, cost: 10, driveMul: 2.4, boostFactor: 1.6, volatile: 0, heat: 0, pairs: '', res: 'magnetic', alien: true, faction: 'sylph',
+    fuel: { type: 'volatiles', eff: 4 },
+    rule: 'A singing drive: a chemical rocket\'s thrust x2.4 a square, and it goes three times as far on its fuel. Must sit on the stern edge, touching its tank.' },
+  { id: 'sy_lance', name: 'Lance', cat: 'weapons', sub: 'Lances', line: 'alien', w: 6, h: 1, role: 'machine', dir: 'front', cost: 40, power: 0, heat: 0, crew: 0, family: 'Kinetic', traits: ['Piercing'], res: 'magnetic', alien: true, faction: 'sylph',
+    weapon: { damage: 90, damageType: 'kinetic', range: 2200, fireRate: 0.2, arc: 8, ammo: '', power: 3 },
+    rule: 'A spear of light along the hull: every 5 seconds one heavy, precise shot straight ahead (90, Piercing, a Heavy Cannon\'s punch at a Medium Cannon\'s size) a long way. No ammunition, no heat; needs power.' },
+  { id: 'sy_needle', name: 'Needle', cat: 'weapons', sub: 'Lances', line: 'alien', w: 2, h: 1, role: 'external', edge: true, cost: 10, power: 0, heat: 0, crew: 0, family: 'Kinetic', traits: [], res: 'magnetic', alien: true, faction: 'sylph',
+    weapon: { damage: 6, damageType: 'kinetic', range: 1300, fireRate: 2.5, arc: 360, ammo: '', power: 0.5 },
+    rule: 'On the outside: a light fast gun all round, a 6 needle every 0.4 seconds. No ammunition, no heat.' },
+  { id: 'sy_barrier', name: 'Barrier emitter', cat: 'electronics', sub: 'Shields', line: 'alien', w: 3, h: 3, role: 'machine', cost: 30, power: -4, powerClass: 'shields', heat: 0, crew: 0, barrier: 260, res: 'magnetic', alien: true, faction: 'sylph', traits: ['Barrier'],
+    rule: 'Throws the Barrier: a pool of 260 that takes every hit first, and fills again fast (about 8 seconds from empty) once nothing has hit the ship for 4 seconds. Lasers and light slugs do a quarter of their damage to it; heavy slugs, Piercing shots and warheads do full damage. Not Magnetic. A knocked-out emitter leaves the pool to drain and never fill again.' },
+  { id: 'sy_song', name: 'Song reactor', cat: 'power', sub: 'Reactors', line: 'alien', w: 3, h: 3, role: 'machine', conducts: true, cost: 30, power: 24, heat: 0, crew: 0, volatile: 0, reactor: true, noBlast: true, res: 'magnetic', alien: true, faction: 'sylph',
+    rule: 'A humming crystal: 24 power from a 3 x 3 room, no heat, and it does not blow up when it dies.' },
+  { id: 'sy_chrome', name: 'Chrome skin', cat: 'defence', sub: 'Armour', line: 'alien', w: 1, h: 1, sizes: true, maxSize: 5, shrink: false, role: 'armour', cost: 1, armourBase: 3, hpMul: 1.2, res: 'structure', alien: true, faction: 'sylph', traits: [],
+    rule: 'Size piece. The Sylphs\' mirror-bright hull: light and tough (armour 3 a square x the block\'s side, 1.2 hit points a square), not Deflecting: the Barrier does the stopping.' }
 ];
 
 // ---- The automatic part: finished numbers per module, mark and size. ----
@@ -11473,6 +11527,7 @@ function resetBattleState() {
   fgReset();                                      // (v52, section 5jf) no carriers, bays or fighters known yet
   cplReset();                                      // (v66, section 5jc) no tows or meals yet
   dvResetBattle();                                 // (v75, section 5vc) no jamming bubbles or jumps yet
+  syResetBattle();                                 // (v77, section 5vc) no Sylph pilots yet
 }
 
 // Where the fleets start. Normally the SETTINGS numbers; a test scenario can use a smaller area (see section 2h).
@@ -11511,6 +11566,7 @@ function spawnShip(side, type, atX, atY) {
   fgResetShip(slot);                              // (v52, section 5jf) a slot used again is no fighter and no carrier until said so
   cplResetShip(slot);                              // (v66, section 5jc) ... and not crippled, towed or being eaten
   dvResetShip(slot);                               // (v75, section 5vc) its arrival time (a Delver tender's jump out)
+  syResetShip(slot);                               // (v77, section 5vc) a slot used again carries no Sylph pilot or Barrier yet
   if (atX === undefined) {
     // Each fleet starts in a tall, thin strip, which makes a long battle line.
     const along = spawnLayout.edgeMargin + rand() * spawnLayout.bandWidth;
@@ -13621,6 +13677,10 @@ function resolveHit(a, t, vx, vy, facing, sqA, stateA, saIn, dmgIn, dtIn, trIn, 
   else if (stFalloff[sa] > 0) base *= falloffAt(sa, Math.sqrt(vx * vx + vy * vy));   // (v18) a laser loses damage with distance ((vx, vy) is the shot's whole length here)
   const adjusted = base * dmgVsClass[dtype * CLASS_COUNT + typeClass[shipType[t]]];
   let damage = adjusted;
+
+  // (v77, section 5vc) a Sylph ship's Barrier takes the hit before anything else (lasers and light slugs do only a share of their damage to it)
+  if (syBarrier[t] > 0 && damage > 0) damage = syBarrierTake(t, damage, dtype, trIn === undefined ? 0 : trIn);
+  syShotBy = shipAlive[a] === 1 && syPilots[a] ? a : -1;   // (v77) who fired, for the Ace's part aim in bbModuleHit (-1 = not a Sylph pilot)
 
   // Step 2: shields soak up damage first.
   let shieldPts = 0, absorbed = 0;
@@ -15864,6 +15924,8 @@ function bbFire(i, st, dt, withdrawing, deferred) {
   if (wm1) for (let k = 1; k < BB_SK; k++) if (info.storeRefill[k] > 0 && bbStore[i * BB_SK + k] < info.storeCap[k]) { const s = bbStore[i * BB_SK + k] + info.storeRefill[k] * dt; bbStore[i * BB_SK + k] = s > info.storeCap[k] ? info.storeCap[k] : s; }
   const shipTgt = withdrawing ? retreatFireTarget(i, st) : shipTarget[i];
   const shipTgtOk = shipTgt >= 0 && shipAlive[shipTgt] === 1 && shipSide[shipTgt] !== shipSide[i];
+  // (v77, section 5vc) a Sylph pilot whose play goal says "not yet" holds every gun (the cooldowns stay ready for the moment it says fire)
+  if (syHoldsFire(i)) { for (let g = 0; g < nG; g++) bbCool[b + g] = 0; shipCooldown[i] = 0; return; }
   // (v30 S1) a burst sac body's sac is never fired as a gun (section 5's ship loop tries the burst itself, every step, whatever state the body is in)
   let firedAny = false;
   for (let g = 0; g < nG; g++) {
@@ -15898,6 +15960,8 @@ function bbFire(i, st, dt, withdrawing, deferred) {
       }
       target = gt; bbTgt[b + g] = gt; ownTarget = true;
     } else { bbTgt[b + g] = -1; if (g === 0 && smartTactics) shipGunMissSince[i] = -1; }
+    // (v77, section 5vc) a Sylph pilot's goal may forbid this target (a Cull kills one class only; a Chase scares its prey with needles first): the group waits
+    if (!syMayShoot(i, grp, target)) { bbCool[b + g] = SETTINGS.holdRetrySeconds * reaction; continue; }
     const inv = d > 1e-9 ? 1 / d : 0;
     let shots = live;
     // The hit chance (section 5), from the group's own numbers and the target's Profile.
@@ -15916,6 +15980,7 @@ function bbFire(i, st, dt, withdrawing, deferred) {
     else if (grp.proj === 1) p = hitChanceFalloff(grp.range, grp.scatterMul * fgJam[i] * jamScatter, grp.tracking, grp.dodgeWindow, grp.flightTime, grp.guidance, grp.flightRef, d, sig, omega, shipJinkSpeed[target], dodgeAcc, aimMul) * (jamP < 1 ? jamP : 1);   // (v30 B1) the falloff curve
     else p = hitChanceWith(grp.spread * fgJam[i] * jamScatter, grp.tracking, grp.dodgeWindow, grp.flightTime, grp.guidance, grp.flightRef, d, sig, omega, shipJinkSpeed[target], dodgeAcc, aimMul) * (jamP < 1 ? jamP : 1);
     if (!(p === p)) { gunneryNaN++; p = SETTINGS.minHitChance; }
+    if (syDodge[target] > 0) p *= 1 - syDodge[target];   // (v77, section 5vc) a Sylph Ace at the controls slips the shot more often, the higher its rank
     // (v30 B2) FLAK against small craft: a Flak shell bursts near its target instead of having to strike it, so it is bbFlakSmallBonus likelier to tell
     // against a drone or a fighter (size <= pdSmallSize). Flak batteries do the same to missiles in point defence (bbPdFire).
     if ((grp.traits & BB_TRAIT_BITS.Flak) && typeSize[shipType[target]] <= SETTINGS.pdSmallSize) { p *= 1 + SETTINGS.bbFlakSmallBonus; if (p > SETTINGS.maxHitChance) p = SETTINGS.maxHitChance; }
@@ -16392,6 +16457,7 @@ function bbModuleHit(t, stt, facing, damage, through, sa) {
     }
     // (v30 B2, spec 4.4) a FOLDING radiator that is pulled in is not there to be hit: the shot passes into the hull
     if (!ablative && part >= 0 && info.foldPart[part] === 1 && bbFolded(t)) part = -1;
+    if (part < 0 && through > 0 && syShotBy >= 0) part = syAimPart(t, ms, mi, U);   // (v77, section 5vc) a Sylph Ace's shot on bare hull is moved onto a working part, the higher its rank the more often
     if (part >= 0) {
       if (ms.out[part] === 0 && through > 0) {
         const plate = (info.lof.cellFlags[bbHitCell] & BB_PF_WALL) !== 0 || U[part].role === 'armour';
@@ -17316,6 +17382,345 @@ function dvGridSquadron(sq) { return SETTINGS.delverGrid === 1 && sqType[sq] >= 
 
 // For the tools: what these rules have done in this battle.
 function dvPicture() { return { jumpedOut: dvStats.jumpedOut, jammedMissiles: dvStats.jammedMissiles, jammedShots: dvStats.jammedShots, tetherHeld: dvStats.tetherHeld, jammers: [dvJammers[0].length, dvJammers[1].length] }; }
+
+// =====================================================================
+// THE SYLPHS' BATTLE RULES  (v77, build D of notes/plans/aliens/delver-sylph-tier01.md s3.2)
+//   A Sylph ship is a type with `faction: 'sylph'` (the stock Duelist, Courser and Lord's blade, 35f). Three rules, all here:
+//   * THE BARRIER (SETTINGS.sylphBarrierModel): the ship's Barrier emitters (02c sy_barrier: its type's summary.barrier, the pools added up) make a pool that
+//     takes every hit before the shields, the armour and the hull (05 resolveHit asks syBarrierTake). Lasers and light slugs (a kinetic hit under
+//     sylphBarrierHeavyShot) do only sylphBarrierLight (a quarter) of their damage to the pool; heavy slugs, Piercing shots and warheads do all of it. A hit
+//     that empties the pool goes on through with what is left. The pool fills again (sylphBarrierRefill seconds from empty) once nothing has hit the ship for
+//     sylphBarrierDelay seconds; a knocked-out emitter leaves it to drain and never fill. It is NOT Magnetic: nothing in the Magnetic rules touches it.
+//   * THE ACES (sylphAceModel): every Sylph ship in the battle has a named pilot with a house (Aurel, Vesper or Carmine to start: UI/alien-art.js has their
+//     colours) and a rank 0-4. The campaign (build E) names the pilot with sySetPilot(slot, { name, house, rank }) when the ship enters; a ship nobody named
+//     gets one made up from the battle's seed, the same every time the battle is replayed. A higher rank is hit sylphDodgePerRank less often per rank
+//     (05f bbFire reads syDodge) and moves a shot that landed on bare hull onto a working part sylphPartAimPerRank more often per rank (bbModuleHit asks
+//     syAimPart). Who died or left is kept for the campaign: syPilotsLost() hands the list over and clears it.
+//   * THE PLAY GOALS (sylphGoalsModel): on arrival each pilot picks ONE goal and the battle log says so in one line (logEvent, on our side's radio; the
+//     syGoalHook callback hears it too). The goals, in plain words:
+//       Tailpipe   holds every gun until it is behind its target (more than sylphTailpipeAngle off the target's nose), then fires. It circles to get there.
+//       Chase      picks our loneliest ship and harries it: for sylphChaseScareSeconds only its needles, only at the prey; then everything.
+//       Show-off   closes right in on our biggest squadron and holds fire for sylphShowOffSeconds once it is among them (to show off the Barrier), then fires.
+//       Trophy     goes for our biggest ship; once it dies, the pilot leaves.
+//       Cull       kills one class of ship only (the class we have most of); once none is left, the pilot leaves.
+//       Raze       (only when the campaign says the Sylphs are bored: syMood 'bored') turns on our station, the nearest of our facility ships, and leaves once it is gone.
+//     With syMood 'mow' (build E: we build too fast) the pilot takes Trophy or Cull aimed at our biggest ships. A goal that holds fire gives up waiting after
+//     sylphGoalPatience seconds and fires anyway. Every pilot leaves (leaveBattle, as a Delver jump out) when its Barrier is down and its hull is under
+//     sylphLeaveHull. A Sylph squadron flies loose, never in formation: each pilot plays its own game.
+//   Hooks: spawnShip syResetShip, the battle reset syResetBattle, main loop syStep, bbFire syHoldsFire and syMayShoot, chooseShipTactic syTactic, the
+//   ship icons syHouseColour. Numbers are first placeholders.
+// =====================================================================
+let syMood = '';                                   // set by the campaign (build E): '' = an ordinary raid, 'bored' = raze our station, 'mow' = cut our biggest ships down
+let syGoalHook = null;                             // the campaign may listen: function (slot, pilot, goal, line) when a goal is picked
+let syPilots = [];                                 // [slot] null, or the pilot record { name, house, rank, type, goal, ... } (see syMakePilot)
+let syBarrier = new Float64Array(0);                   // [slot] the Barrier pool now
+let syBarMax = new Float64Array(0);                // [slot] ... and full
+let syHitAt = new Float64Array(0);                 // [slot] when the ship was last hit (the pool waits sylphBarrierDelay after it)
+let syDodge = new Float32Array(0);                 // [slot] the share of shots the pilot slips (0 for everyone but a Sylph Ace)
+let syShotBy = -1;                                 // set by resolveHit: the slot of a Sylph pilot whose shot is landing now, else -1 (bbModuleHit reads it)
+const syLost = [];                                 // the pilots lost this battle, not yet handed to the campaign: { name, house, rank, type, how: 'killed' | 'left', why, hurt }
+const syTypeCache = new Map();                     // ship type record -> { sylph, barrier }
+const syStats = { soaked: 0, broken: 0, goals: {}, left: 0, killed: 0, released: 0, aimed: 0 };
+let sySeedCount = 0;                               // how many pilots have been made up this battle (part of each one's seed)
+const SY_HOUSES = ['Aurel', 'Vesper', 'Carmine'];  // the houses in the war to start with (UI/alien-art.js knows five)
+const SY_HOUSE_COLOURS = { Aurel: '#23459a', Vesper: '#6a2f8f', Ossane: '#1e7350', Lirien: '#e2ddcf', Carmine: '#9a1e24' };   // the banner colours, when alien-art.js is not loaded
+const SY_NAME_A = ['Ael', 'Cor', 'Ith', 'Lu', 'Mar', 'Ser', 'Tha', 'Vel', 'Yr', 'Ori', 'Cas', 'Nim'];
+const SY_NAME_B = ['ian', 'ion', 'ael', 'is', 'enne', 'eth', 'os', 'ande', 'wyn', 'ique', 'ar', 'ys'];
+const SY_GOALS = ['tailpipe', 'chase', 'showoff', 'trophy', 'cull'];
+
+function syEnsure() {
+  if (syBarrier.length === MAX_SHIPS) return;
+  syBarrier = new Float64Array(MAX_SHIPS); syBarMax = new Float64Array(MAX_SHIPS); syHitAt = new Float64Array(MAX_SHIPS); syDodge = new Float32Array(MAX_SHIPS);
+  syPilots = new Array(MAX_SHIPS).fill(null);
+}
+// (spawnShip, section 3) a slot used again starts clean; a pilot still written there died with its ship
+function syResetShip(slot) {
+  syEnsure();
+  if (syPilots[slot]) syPilotGone(slot, 'killed', '');
+  syPilots[slot] = null; syBarrier[slot] = 0; syBarMax[slot] = 0; syHitAt[slot] = -1e9; syDodge[slot] = 0;
+}
+// (a new battle) nothing known yet
+function syResetBattle() {
+  syEnsure();
+  syPilots.fill(null); syBarrier.fill(0); syBarMax.fill(0); syHitAt.fill(-1e9); syDodge.fill(0);
+  syLost.length = 0; syTypeCache.clear(); sySeedCount = 0; syShotBy = -1;
+  syStats.soaked = 0; syStats.broken = 0; syStats.goals = {}; syStats.left = 0; syStats.killed = 0; syStats.released = 0; syStats.aimed = 0;
+}
+// What a ship type is to these rules, worked out once per type record.
+function syTypeOf(t) {
+  const rec = SHIP_TYPES[t];
+  if (!rec) return { sylph: false, barrier: 0 };
+  let v = syTypeCache.get(rec);
+  if (v === undefined) {
+    const S = rec.summary || {};
+    v = { sylph: rec.faction === 'sylph', barrier: S.barrier > 0 ? S.barrier : 0 };
+    syTypeCache.set(rec, v);
+  }
+  return v;
+}
+function syIsSylph(i) { return shipAlive[i] === 1 && syTypeOf(shipType[i]).sylph; }
+
+// ---- THE PILOTS ----
+// A small random stream of its own (the same mixing as rand), seeded from the battle's seed and the pilot's number, so nothing else in the battle shifts.
+function syRandomFor(n) {
+  let s = ((battleSeed | 0) ^ 0x5bd1e995) + Math.imul(n + 1, 0x27d4eb2f) | 0;
+  return function () { s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+function syHouseColourOf(house) {
+  if (typeof ALIEN_ART !== 'undefined' && ALIEN_ART.sylph && ALIEN_ART.sylph.house) { const h = ALIEN_ART.sylph.house(house); if (h && h.ban) return h.ban; }
+  return SY_HOUSE_COLOURS[house] || '#9a1e24';
+}
+// A pilot made up for ship i (nobody named it): a name, a house and a rank 0-2, the same every replay of this battle.
+function syMakePilot(i) {
+  const r = syRandomFor(sySeedCount++ * 1000 + i);
+  const name = SY_NAME_A[Math.floor(r() * SY_NAME_A.length)] + SY_NAME_B[Math.floor(r() * SY_NAME_B.length)];
+  const house = SY_HOUSES[Math.floor(r() * SY_HOUSES.length)];
+  const rank = SETTINGS.sylphAceModel === 1 ? Math.floor(r() * 3) : 0;
+  return sySetPilot(i, { name: name, house: house, rank: rank, rnd: r });
+}
+// THE API FOR THE CAMPAIGN (build E): name the pilot of the Sylph ship in slot `slot` when it enters the battle. { name, house, rank } (any left out is made
+// up). Returns the pilot record. The record keeps: name, house, rank, type (the ship type's name), slot, goal ('' until picked), goalTarget (a slot), goalClass
+// (Cull: the hull class it hunts), told (the radio line), hold (holding fire now), arrivedAt, colour (the house's banner colour).
+function sySetPilot(slot, o) {
+  syEnsure();
+  const old = syPilots[slot], r = (o && o.rnd) || syRandomFor(sySeedCount++ * 1000 + slot + 500);
+  const p = old || { slot: slot, type: SHIP_TYPES[shipType[slot]] ? SHIP_TYPES[shipType[slot]].name : '?', goal: '', goalTarget: -1, goalClass: '', goalAt: -1, told: false, hold: false, released: false, showSince: -1, orbitDir: r() < 0.5 ? -1 : 1, arrivedAt: simTime, closed: false };
+  p.name = (o && typeof o.name === 'string' && o.name) ? o.name : (p.name || SY_NAME_A[Math.floor(r() * SY_NAME_A.length)] + SY_NAME_B[Math.floor(r() * SY_NAME_B.length)]);
+  p.house = (o && typeof o.house === 'string' && o.house) ? o.house : (p.house || SY_HOUSES[Math.floor(r() * SY_HOUSES.length)]);
+  p.rank = (o && typeof o.rank === 'number') ? Math.max(0, Math.min(4, Math.round(o.rank))) : (typeof p.rank === 'number' ? p.rank : 0);
+  p.colour = syHouseColourOf(p.house);
+  syPilots[slot] = p;
+  syDodge[slot] = SETTINGS.sylphAceModel === 1 ? SETTINGS.sylphDodgePerRank * p.rank : 0;
+  if (!old) { const v = syTypeOf(shipType[slot]); syBarMax[slot] = SETTINGS.sylphBarrierModel === 1 ? v.barrier : 0; syBarrier[slot] = syBarMax[slot]; }
+  return p;
+}
+function syPilotOf(slot) { return syPilots[slot] || null; }
+// The pilots lost since the last call ({ name, house, rank, type, how: 'killed' | 'left', why: '' | 'hurt' | 'done', hurt: true when it left hurt }); the list is cleared. Poll it each step (06s does).
+function syPilotsLost() { const out = syLost.slice(); syLost.length = 0; return out; }
+function syPilotGone(slot, how, why) {
+  const p = syPilots[slot];
+  if (!p || p.closed) return;
+  p.closed = true;
+  syLost.push({ name: p.name, house: p.house, rank: p.rank, type: p.type, how: how, why: why || '', hurt: how === 'left' && why === 'hurt' });
+  if (how === 'killed') syStats.killed++; else syStats.left++;
+}
+function syPilotTitle(p) { return p.name + ' of house ' + p.house; }
+function syHouseColour(i) { const p = syPilots[i]; return p ? p.colour : ''; }
+
+// ---- THE BARRIER ----
+// (05 resolveHit) The Barrier of ship t takes a hit of `damage` (type dtype, trait bits traits). Returns what gets through to the shields and armour.
+function syBarrierTake(t, damage, dtype, traits) {
+  const name = DAMAGE_TYPES[dtype] ? DAMAGE_TYPES[dtype].name : 'kinetic';
+  let share = SETTINGS.sylphBarrierLight;                                        // lasers, light slugs, point-defence fire
+  if ((traits & BB_TRAIT_BITS.Piercing) || name === 'missile') share = 1;        // Piercing shots and warheads
+  else if (name === 'kinetic' && damage >= SETTINGS.sylphBarrierHeavyShot) share = 1;   // heavy slugs
+  syHitAt[t] = simTime;
+  const toPool = damage * share, pool = syBarrier[t];
+  if (toPool <= pool) { syBarrier[t] = pool - toPool; syStats.soaked += damage; return 0; }
+  const left = share > 0 ? (toPool - pool) / share : 0;
+  syBarrier[t] = 0; syStats.soaked += damage - left; syStats.broken++;
+  return left;
+}
+// Does ship i still have a working Barrier emitter? (Only asked once a part of the ship has been hit: mdShip.)
+function syEmitterUp(i) {
+  if (mdShip[i] !== 1) return true;
+  const ms = mdState[i];
+  if (!ms || !ms.bb) return true;
+  const U = ms.bb.units;
+  let any = false;
+  for (let k = 0; k < U.length; k++) if (U[k].fam === 'sy_barrier') { if (ms.out[k] === 0) return true; any = true; }
+  return !any;
+}
+
+// ---- THE ACES ----
+// (bbModuleHit) The Sylph pilot syShotBy has put a shot on bare hull of ship t: with sylphPartAimPerRank x its rank, move it onto a working part inside (never
+// a plate or a bulkhead). Returns the unit, or -1 to leave the hit on the hull.
+function syAimPart(t, ms, mi, U) {
+  const p = syShotBy >= 0 ? syPilots[syShotBy] : null;
+  if (!p || SETTINGS.sylphAceModel !== 1 || p.rank <= 0 || !mi || !mi.internal) return -1;
+  if (mdRand() >= SETTINGS.sylphPartAimPerRank * p.rank) return -1;
+  let n = 0;
+  for (let k = 0; k < mi.internal.length; k++) { const id = mi.internal[k]; if (ms.out[id] === 0 && U[id].role !== 'armour' && U[id].blocks !== 1) n++; }
+  if (n === 0) return -1;
+  let pick = Math.floor(mdRand() * n);
+  for (let k = 0; k < mi.internal.length; k++) { const id = mi.internal[k]; if (ms.out[id] === 0 && U[id].role !== 'armour' && U[id].blocks !== 1) { if (pick === 0) { syStats.aimed++; return id; } pick--; } }
+  return -1;
+}
+
+// ---- THE PLAY GOALS ----
+function syClassOf(t) { const S = SHIP_TYPES[t] && SHIP_TYPES[t].summary; return S && S.sizeClass ? S.sizeClass : ''; }
+function syClassName(cls) { const h = typeof HULL_BY_ID !== 'undefined' ? HULL_BY_ID[cls] : null, n = (h ? h.name : cls).toLowerCase(); return /craft$/.test(n) ? n : n + 's'; }   // "frigates", "small craft"
+// What we call one of our ships on the radio: "the Harrier of Squadron B3" (a facility: "the station").
+function syShipWords(j) {
+  const st = shipSide[j] * TYPE_COUNT + shipType[j];
+  if (stImmobile[st] === 1) return 'the ' + typeName[shipType[j]].toLowerCase();
+  const sq = shipSquad[j];
+  return 'the ' + typeName[shipType[j]] + (sq > 0 ? ' of Squadron ' + squadronLabel(sq) : '');
+}
+function syDist2(i, j) { const dx = shipX[j] - shipX[i], dy = shipY[j] - shipY[i]; return dx * dx + dy * dy; }
+// The enemy ships of pilot i that a goal can want: mobile = the ones that fly, still = the facilities (stations).
+function syEnemies(i, cls) {
+  const enemy = 1 - shipSide[i], mobile = [], still = [];
+  for (let j = 0; j < highWater; j++) {
+    if (shipAlive[j] !== 1 || shipSide[j] !== enemy) continue;
+    if (cls && syClassOf(shipType[j]) !== cls) continue;
+    if (stImmobile[enemy * TYPE_COUNT + shipType[j]] === 1) still.push(j); else mobile.push(j);
+  }
+  return { mobile: mobile, still: still };
+}
+function syNearest(i, list) { let best = -1, bd = Infinity; for (let k = 0; k < list.length; k++) { const d = syDist2(i, list[k]); if (d < bd) { bd = d; best = list[k]; } } return best; }
+function syBiggest(i, list) { let best = -1, bs = -1; for (let k = 0; k < list.length; k++) { const s = typeSize[shipType[list[k]]]; if (s > bs || (s === bs && syDist2(i, list[k]) < syDist2(i, best))) { bs = s; best = list[k]; } } return best; }
+// The loneliest: the enemy with the fewest friends within 600 (ties: the nearest).
+function syLoneliest(i, list) {
+  let best = -1, bn = Infinity;
+  for (let k = 0; k < list.length; k++) {
+    const j = list[k]; let n = 0;
+    for (let q = 0; q < list.length; q++) if (q !== k && syDist2(j, list[q]) <= 600 * 600) n++;
+    if (n < bn || (n === bn && syDist2(i, j) < syDist2(i, best))) { bn = n; best = j; }
+  }
+  return best;
+}
+// The nearest member of the enemy's biggest squadron.
+function syBigGroup(i, list) {
+  const count = {}; let bestSq = -1, bn = 0;
+  for (let k = 0; k < list.length; k++) { const sq = shipSquad[list[k]]; if (sq <= 0) continue; count[sq] = (count[sq] || 0) + 1; if (count[sq] > bn) { bn = count[sq]; bestSq = sq; } }
+  if (bestSq < 0) return syNearest(i, list);
+  return syNearest(i, list.filter(function (j) { return shipSquad[j] === bestSq; }));
+}
+// The hull class we have most of among the ships that fly (syMood 'mow': the biggest class present).
+function syCullClass(list, biggest) {
+  const count = {}; let best = '', bn = 0, br = -1;
+  for (let k = 0; k < list.length; k++) {
+    const cls = syClassOf(shipType[list[k]]); if (!cls) continue;
+    count[cls] = (count[cls] || 0) + 1;
+    const rank = typeof HULL_BY_ID !== 'undefined' && HULL_BY_ID[cls] ? HULL_BY_ID[cls].rank : 0;
+    if (biggest ? rank > br : count[cls] > bn) { bn = count[cls]; br = rank; best = cls; }
+  }
+  return best;
+}
+// Pilot i picks its goal (once there is something to pick on) and the radio says so. Returns true once picked.
+function syPickGoal(i, p) {
+  const E = syEnemies(i, '');
+  if (E.mobile.length === 0 && E.still.length === 0) return false;
+  const r = syRandomFor(i * 7 + 99 + sySeedCount);
+  let goal = '', target = -1, cls = '';
+  if (syMood === 'bored' && E.still.length > 0) goal = 'raze';
+  else if (syMood === 'mow') goal = r() < 0.5 ? 'trophy' : 'cull';
+  else goal = SY_GOALS[Math.floor(r() * SY_GOALS.length)];
+  if (E.mobile.length === 0) goal = 'raze';                               // only stations here: nothing else to play with
+  if (goal === 'cull') { cls = syCullClass(E.mobile, syMood === 'mow'); if (!cls) goal = 'trophy'; }
+  switch (goal) {
+    case 'tailpipe': target = syNearest(i, E.mobile); break;
+    case 'chase': target = syLoneliest(i, E.mobile); break;
+    case 'showoff': target = syBigGroup(i, E.mobile); break;
+    case 'trophy': target = syBiggest(i, E.mobile); break;
+    case 'cull': target = syNearest(i, syEnemies(i, cls).mobile); break;
+    case 'raze': target = E.still.length > 0 ? syNearest(i, E.still) : syBiggest(i, E.mobile); break;
+  }
+  if (target < 0) return false;
+  p.goal = goal; p.goalTarget = target; p.goalClass = cls; p.goalAt = simTime; p.released = false; p.showSince = -1;
+  p.hold = goal === 'tailpipe' || goal === 'showoff';
+  syStats.goals[goal] = (syStats.goals[goal] || 0) + 1;
+  // the radio line (plain words, said once per goal)
+  const who = 'Contact ' + syPilotTitle(p);
+  let line;
+  if (goal === 'tailpipe') line = who + ' is holding fire and working round behind ' + syShipWords(target) + '.';
+  else if (goal === 'chase') line = who + ' is chasing ' + syShipWords(target) + '.';
+  else if (goal === 'showoff') line = who + ' is coming straight at Squadron ' + (shipSquad[target] > 0 ? squadronLabel(shipSquad[target]) : '?') + ', guns silent.';
+  else if (goal === 'trophy') line = who + ' is going for ' + syShipWords(target) + ', our biggest ship.';
+  else if (goal === 'cull') line = who + ' is hunting our ' + syClassName(cls) + '.';
+  else { const place = typeof campaignOn === 'function' && campaignOn() && campaign.battle ? campaignAoName(campaign.battle.ao) : ''; line = who + ' has turned on the station' + (place ? ' at ' + place : '') + '.'; }
+  logEvent(1 - shipSide[i], line);
+  p.told = true;
+  if (typeof syGoalHook === 'function') syGoalHook(i, p, goal, line);
+  return true;
+}
+// Is pilot i behind ship j (more than sylphTailpipeAngle off j's nose)?
+function syBehind(i, j) {
+  const dx = shipX[i] - shipX[j], dy = shipY[i] - shipY[j], d = Math.sqrt(dx * dx + dy * dy);
+  if (d < 1e-6) return false;
+  const c = (dx * shipCos[j] + dy * shipSin[j]) / d;   // 1 = dead ahead of j, -1 = dead astern
+  return c < Math.cos(SETTINGS.sylphTailpipeAngle * Math.PI / 180);
+}
+// Each step, pilot i keeps its goal: a new target when the old one is gone, the hold on its guns, and leaving when the goal is done.
+function syKeepGoal(i, p) {
+  let t = p.goalTarget;
+  const gone = t < 0 || shipAlive[t] !== 1 || shipSide[t] === shipSide[i];
+  if (gone) {
+    if (p.goal === 'trophy' || p.goal === 'raze') { syLeave(i, 'done'); return; }
+    if (p.goal === 'cull') { const next = syNearest(i, syEnemies(i, p.goalClass).mobile); if (next < 0) { syLeave(i, 'done'); return; } p.goalTarget = t = next; }
+    else if (p.goal === 'tailpipe') { const E = syEnemies(i, ''); const next = syNearest(i, E.mobile); if (next < 0) { p.goal = ''; return; } p.goalTarget = t = next; }
+    else { p.goal = ''; p.hold = false; return; }          // Chase and Show-off: the game is over, pick a new one (told again)
+  }
+  // the ship fights the goal's target (the movement code keeps it while the retarget timer stays up)
+  shipTarget[i] = t; if (shipRetarget[i] < 2) shipRetarget[i] = 2;
+  const sq = shipSquad[i]; if (sq > 0 && sqLeader[sq] === i) sqTarget[sq] = t;
+  if (p.hold) {
+    const waited = simTime - p.goalAt;
+    let fire = waited >= SETTINGS.sylphGoalPatience;
+    if (p.goal === 'tailpipe') { if (syBehind(i, t) && syDist2(i, t) <= 2200 * 2200) fire = true; }
+    else if (p.goal === 'showoff') {
+      if (p.showSince < 0 && (syDist2(i, t) <= 1500 * 1500 || simTime - syHitAt[i] < 1)) p.showSince = simTime;
+      if (p.showSince >= 0 && simTime - p.showSince >= SETTINGS.sylphShowOffSeconds) fire = true;
+    }
+    if (fire) { p.hold = false; p.released = true; syStats.released++; }
+  }
+}
+// (05f bbFire) Is pilot i holding every gun right now?
+function syHoldsFire(i) { const p = syPilots[i]; return !!p && p.hold === true && SETTINGS.sylphGoalsModel === 1; }
+// (05f bbFire) May pilot i's weapon group grp shoot at ship j? A Cull shoots only its class; a Chase, while scaring, only needles and only its prey.
+function syMayShoot(i, grp, j) {
+  const p = syPilots[i];
+  if (!p || p.goal === '' || SETTINGS.sylphGoalsModel !== 1) return true;
+  if (p.goal === 'cull') return syClassOf(shipType[j]) === p.goalClass || stImmobile[shipSide[j] * TYPE_COUNT + shipType[j]] === 1;
+  if (p.goal === 'chase' && simTime - p.goalAt < SETTINGS.sylphChaseScareSeconds) return j === p.goalTarget && grp.part === 'sy_needle';
+  return true;
+}
+// (07 chooseShipTactic) How pilot i flies its goal: a Tailpipe circles its target to get behind it; a Show-off, a Trophy and a Raze close right in.
+function syTactic(i, cap) {
+  const p = syPilots[i];
+  if (!p || p.goal === '' || SETTINGS.sylphGoalsModel !== 1) return;
+  if (p.goal === 'tailpipe' && p.hold) { shipTactic[i] = TACTIC_ORBIT; shipRing[i] = Math.min(cap, 900); shipOrbit[i] = p.orbitDir; }
+  else if (p.goal === 'showoff' || p.goal === 'trophy' || p.goal === 'raze') { shipTactic[i] = TACTIC_CLOSE; shipRing[i] = Math.min(cap, 600); }
+}
+// A pilot leaves the battle alive: a flash, a line, and (in a campaign) it goes home as any ship that gets away.
+function syLeave(i, why) {
+  const p = syPilots[i];
+  addFlash(shipX[i], shipY[i], typeSize[shipType[i]] * 1.5, 1, i);
+  if (p) logEvent(1 - shipSide[i], 'Contact ' + syPilotTitle(p) + (why === 'hurt' ? ' breaks off, hurt, and leaves at ' : ' has what it came for and leaves at ') + fmtClock(simTime) + '.');
+  syPilotGone(i, 'left', why);
+  leaveBattle(i);
+  syPilots[i] = null;
+}
+
+// Each step (section 11): pilots for new Sylph ships, the Barriers filling, the goals kept, the hurt and the done leaving, and the dead written down.
+function syStep(dt) {
+  syEnsure();
+  const barrier = SETTINGS.sylphBarrierModel === 1, goals = SETTINGS.sylphGoalsModel === 1;
+  for (let i = 0; i < highWater; i++) {
+    if (shipAlive[i] !== 1) { if (syPilots[i]) { syPilotGone(i, 'killed', ''); syPilots[i] = null; } continue; }
+    if (!syTypeOf(shipType[i]).sylph) continue;
+    const p = syPilots[i] || syMakePilot(i);
+    // bold, but not stupid: Barrier down and hull under half, and the pilot goes home (judged before the pool fills again this step)
+    const st = shipSide[i] * TYPE_COUNT + shipType[i];
+    if (syBarrier[i] <= 0 && shipHp[i] < SETTINGS.sylphLeaveHull * stHull[st]) { syLeave(i, 'hurt'); continue; }
+    // the Barrier fills again once left alone (not with its emitters knocked out)
+    if (barrier && syBarMax[i] > 0) {
+      if (!syEmitterUp(i)) syBarMax[i] = 0;
+      else if (syBarrier[i] < syBarMax[i] && simTime - syHitAt[i] >= SETTINGS.sylphBarrierDelay) { const v = syBarrier[i] + syBarMax[i] / Math.max(0.5, SETTINGS.sylphBarrierRefill) * dt; syBarrier[i] = v > syBarMax[i] ? syBarMax[i] : v; }
+      if (syBarrier[i] > syBarMax[i]) syBarrier[i] = syBarMax[i];
+    }
+    if (!goals) continue;
+    const sq = shipSquad[i]; if (sq > 0 && sqFormation[sq] === 1) sqFormation[sq] = 0;   // each pilot plays its own game
+    if (p.goal === '') syPickGoal(i, p); else syKeepGoal(i, p);
+  }
+}
+// For the tools: what these rules have done in this battle.
+function syPicture() {
+  const pilots = [];
+  for (let i = 0; i < highWater; i++) if (syPilots[i]) { const p = syPilots[i]; pilots.push({ slot: i, name: p.name, house: p.house, rank: p.rank, type: p.type, goal: p.goal, hold: p.hold, barrier: Math.round(syBarrier[i]), barrierMax: Math.round(syBarMax[i]), hull: Math.round(shipHp[i]) }); }
+  return { soaked: Math.round(syStats.soaked), broken: syStats.broken, goals: syStats.goals, released: syStats.released, left: syStats.left, killed: syStats.killed, aimed: syStats.aimed, pilots: pilots, lostPending: syLost.length };
+}
 // =====================================================================
 // 5a. OBJECTIVES  (the facilities a siege is fought over: putting them on the map, how ships treat them, and how a battle with an objective ends)
 //
@@ -19952,7 +20357,8 @@ const ALIEN_FACTIONS = {
   delver: { id: 'delver', name: 'The Delvers', short: 'the Delvers', adj: 'Delver', yard: 'foundry', ready: true, bonusAo: null,
             foundries: { ceres: 1, nereid: 1, pluto: 1 },   // (v76) the Delvers build only at yards on rocky small bodies: Ceres, Nereid, Pluto (campaignYardSide)
             blurb: 'Few, careful and long-ranged. Drones do the fighting under jammers; their crewed ships jump away when threatened.' },
-  sylph:  { id: 'sylph',  name: 'The Sylphs',  short: 'the Sylphs',  adj: 'Sylph',  yard: 'eyrie',   ready: false, bonusAo: null,
+  sylph:  { id: 'sylph',  name: 'The Sylphs',  short: 'the Sylphs',  adj: 'Sylph',  yard: 'eyrie',   ready: true, bonusAo: null,
+            foundries: {},   // (v78) the Sylphs build nothing at any yard: their war is their pilots (06s)
             blurb: 'At first only one Sylph, playing at war. Its ships fight like ours three sizes bigger, and every kill brings its relatives.' }
 };
 // The enemy of the running campaign ('swarm' with no campaign: test battles, the Proving grounds), its row, and "is it the Swarm?".
@@ -21063,6 +21469,7 @@ function campaignBattleStep(battleSeconds) {
   campaignTick(battleSeconds * SETTINGS.warHoursPerBattleSecond / 24);
   if (!campaignBattleActive || !campaign || campaign.battle.state !== 'live') return;
   campaignLinkStep();
+  if (sylphWarOn()) sylphWarBattleStep(battleSeconds);   // (v78, 06s) the Sylphs' pilots in their ships, the raid watched
 }
 function campaignEnemyPresent(side) {               // has the side ships in the battle: on the map (facilities apart), at the staging point, away in repair, or still to enter?
   if (shipCount[side] - facilityCount[side] > 0 || stagedShipCount(side) > 0 || awayCount[side] > 0) return true;
@@ -24400,6 +24807,8 @@ function campaignAlienSurgeShips(need) {
 
 function campaignAliensWeek() {
   const ai = campaign.ai, A = ai.alien, S = alienSettings(), front = campaignFrontId(), frontName = campaignAoName(front);
+  // (v78) the Sylphs' war has no roster, yards or waves of this kind: their pilots raid instead (06s sylphWarWeek)
+  if (sylphWarOn()) { campaignAiRejoin(1); campaignAiWaveBook(); sylphWarWeek(front); return; }
   // 1. The roster schedule: rows coming online, the step (the aliens' Alloys and boost).
   campaignAlienRosterStep('');
   campaignAiRejoin(1);
@@ -24625,7 +25034,7 @@ function campaignStartGarrisons(v3, aoId, ownCount) {
   const first = Math.max(0, Math.floor(alienSettings().alienFirstPool));   // (v76: the enemy's own number)   // (v31 C2) the first wave's ships wait in their pool: alienFirstPool, of the roster's first row
   const firstType = v3 ? v3.firstWave : 'drone';
   campaign.pools[1][firstType] = (campaign.pools[1][firstType] || 0) + first;
-  return { first: first, firstType: firstType, name: v3 ? SHIP_TYPES[typeIndexById(firstType)].name + 's' : 'drones' };
+  return { first: first, firstType: firstType, name: v3 && typeIndexById(firstType) >= 0 ? SHIP_TYPES[typeIndexById(firstType)].name + 's' : (v3 ? 'ships' : 'drones') };
 }
 // (v29, Alex's playtest: Wasps and Pickets still stood at Earth) With "only your designs" (campaignStockBuild 0) the starting garrison is no longer the
 // premade Wasps and Pickets: the same number of ships, all of the player's own design. Which design: one the yards are building (active) first, then the
@@ -25862,7 +26271,8 @@ const CAMPAIGN_V3_STOCK = ['Wasp', 'Picket', 'Harrier', 'Halberd', 'Partisan', '
                            'Mite', 'Hatcher',   // (v52) the Swarm's tiny craft and its brood ship (the Mite first: the Hatcher's pouches hold it by its fixed id)
                            'Brood', 'Hive warden', 'Mother',   // (v69) the Swarm's Tier 2 bodies, after the Mite and Swarmling their pouches hold (the Hive warden carries Mites now)
                            'Trainer', 'Sentry', 'Seeker probe', 'Hive constructor',   // (v27 C3) the tutorial's ships: our Trainer and Sentry, the Swarm's probe and construction ship
-                           'Spike drone', 'Seeker drone', 'Veil drone', 'Breaker', 'Driver rock', 'Drone tender'];   // (v75) the Delvers (the drones first: the tender's cradles hold them)
+                           'Spike drone', 'Seeker drone', 'Veil drone', 'Breaker', 'Driver rock', 'Drone tender',   // (v75) the Delvers (the drones first: the tender's cradles hold them)
+                           'Duelist', 'Courser', 'Lord\'s blade'];   // (v77) the Sylphs
 // (v27 C3) The two stock designs the TUTORIAL has the player make. While a tutorial campaign runs (campaign.earthOnly) they are not installed, so the player's own
 // "Trainer" and "Sentry" are the first of their names (not "Trainer v2"); nor are they when the player already has a design of that name. A campaign with the
 // tutorial off gets them as stock designs, as if the tutorial had been played (neither is active: both are Local, and only the front's yard builds Local ships).
@@ -29221,6 +29631,202 @@ Object.assign(CAMPAIGN_API, {
   slips: function (yardId) { return campaignSupplySlips(yardId || ''); }                                   // (v67) the slipway board's lines
 });
 // =====================================================================
+// 5z (continued). THE SYLPH WAR  (v78, build E of notes/plans/aliens/delver-sylph-tier01.md, section 3.3; all numbers are first placeholders)
+//
+//   A war against the Sylphs is not fought like the Swarm's or the Delvers'. They hold no yards and build nothing: every Sylph is a named PILOT with a
+//   house and a rank, and the war is the list of those pilots (campaign.sylph.pilots). The Swarm's wave brain is not used: each war week the aliens' week
+//   (06g campaignAliensWeek) hands over to sylphWarWeek here.
+//
+//   * THE START: ONE Sylph, a rank 0 pilot of one house flying a Duelist, comes in from the outer planets. Their places beyond Mars are empty of ships.
+//   * RAIDS, NOT FRONTS: every sylphRaidWeeks (jittered) the pilots at home set out together for the AO we fight at (the front: only one battle at a time),
+//     as a wave would. In the battle each ship gets its pilot (05g sySetPilot, build D) and plays its goal. A pilot who leaves the battle alive goes home to
+//     a gas giant to refuel, and ranks up for surviving (rank 2 flies a Courser, rank 4 a Lord's blade). The raid is over when none of its ships is left.
+//   * WORD OF THE FIGHT: each raid is scored when it ends: our ships there, whether we engaged, whether we hurt them, how long it lasted. The word adds up;
+//     every sylphWordStep of it brings one more Sylph (a new rank 0 pilot of a house drawn at random).
+//   * MOWING THE LAWN (Alex 29 Oct): while our fleets' strength is over sylphMowRatio x the Sylphs' "fair fight" (their pilots' ships' worth) for
+//     sylphMowWeeks weeks running, they turn aggressive: raids come twice as often, one more Sylph comes every sylphMowWeeks weeks, and their goals aim at
+//     our newest and biggest ships (syMood 'mow').
+//   * BORED SYLPHS: a raid that finds fewer than sylphBoredShips of our ships in the battle turns on the stations and the people instead (syMood 'bored':
+//     they fly over our places, and the bombardment of section 06n does the rest). The Dispatches say so.
+//   * THE FEUD LADDER: killing a Sylph brings a relative one rank higher from the same house after us, sylphFeudWeeks later.
+//   * THE FIRST KILL: we are worthy. Two more Sylphs come at once, raids come more often, and their ark is said to hide in Jupiter (a Dispatch and the flag
+//     campaign.sylph.ark; the ark fight itself is later).
+//   The Dispatches tell each of these in plain words (24g lines 'brief.enemy.sylph' and 'brief.enemy.sylphCrit').
+//
+//   campaign.sylph = { pilots: [{ id, name, house, rank, alive, at: 'home'|'raid', raids, kills, came }], nextId, nextRaid, raid: null | { week, ids,
+//     arrived, arrivedAt, ourMax, hurt, secs, bored }, word, kills, worthy, ark, mowWeeks, mow, due: [{ week, house, rank, why }], told: {} }
+// =====================================================================
+const SYLPH_HOUSES = ['Aurel', 'Vesper', 'Carmine'];
+const SYLPH_NAMES = ['Ilien', 'Sorale', 'Thessaly', 'Corvane', 'Mirelle', 'Ashan', 'Velisse', 'Oriel', 'Lysander', 'Peregrine', 'Seraphine', 'Tamsin',
+                     'Evander', 'Rosalind', 'Caspian', 'Isolde', 'Lucan', 'Marisol', 'Ondine', 'Fenwick'];
+const SYLPH_RANK_SHIP = ['Duelist', 'Duelist', 'Courser', 'Courser', "Lord's blade"];   // the ship a pilot of each rank flies
+const SYLPH_RANK_NAME = ['Squire', 'Blade', 'Knight', 'Champion', 'Lord'];
+
+function sylphWarOn() { return !!campaign && alienFactionId() === 'sylph'; }
+function sylphNews(title, text, crit) { if (typeof dispatchAdd === 'function') dispatchAdd(crit ? 'brief.enemy.sylphCrit' : 'brief.enemy.sylph', { title: title, text: text }, 'map'); campaignLog('sylph', title + ': ' + text); }
+function sylphPilotWords(p) { return SYLPH_RANK_NAME[p.rank] + ' ' + p.name + ' of House ' + p.house; }
+function sylphShipOf(p) { return SYLPH_RANK_SHIP[Math.max(0, Math.min(SYLPH_RANK_SHIP.length - 1, p.rank))]; }
+
+function sylphState() {
+  if (!campaign.sylph) {
+    campaign.sylph = { pilots: [], nextId: 1, nextRaid: SETTINGS.sylphFirstRaidWeek, raid: null, word: 0, kills: 0, worthy: false, ark: '', mowWeeks: 0, mow: false, due: [], told: {} };
+    const p = sylphNewPilot(SYLPH_HOUSES[Math.floor(campaignRand() * SYLPH_HOUSES.length)], 0);
+    sylphNews('One Sylph', 'A single Sylph ship, a Duelist flown by ' + sylphPilotWords(p) + ', has come in from the outer planets. It holds no ground and wants none: it has come to play at war. How we fight it decides how many more follow.', true);
+  }
+  return campaign.sylph;
+}
+// A new pilot joins the Sylphs at home (a name not in use, drawn from the campaign's stream).
+function sylphNewPilot(house, rank) {
+  const S = campaign.sylph, used = {};
+  for (const q of S.pilots) used[q.name] = 1;
+  const free = SYLPH_NAMES.filter(function (n) { return !used[n]; });
+  const name = free.length ? free[Math.floor(campaignRand() * free.length)] : 'Sylph ' + S.nextId;
+  const p = { id: S.nextId++, name: name, house: house, rank: Math.max(0, Math.min(4, rank)), alive: true, at: 'home', raids: 0, kills: 0, came: Math.round(campaign.week * 100) / 100 };
+  S.pilots.push(p);
+  return p;
+}
+function sylphLiving() { return campaign.sylph ? campaign.sylph.pilots.filter(function (p) { return p.alive; }) : []; }
+
+// Our fleets' strength (every fleet of ours on the map and the live battle's ships) against the Sylphs' "fair fight" (their living pilots' ships' worth).
+function sylphOurWorth() {
+  let w = 0;
+  for (const f of campaign.fleets) if (f.side === 0) for (const g of f.groups) w += g.count * campaignShipWorth(g.type);
+  if (campaignBattleLive()) w += campaignSideAtFront(0).worth;
+  return w;
+}
+function sylphFairWorth() { let w = 0; for (const p of sylphLiving()) { const id = campaignV3IdOf(sylphShipOf(p)); if (typeIndexById(id) >= 0) w += campaignShipWorth(id); } return w; }
+
+// THE WEEK (from 06g campaignAliensWeek, at each dawn): the pilots who are due arrive, the lawn is measured, a raid is ended or sent.
+function sylphWarWeek(front) {
+  const S = sylphState(), R = SETTINGS, week = campaign.week;
+  // the Sylphs keep no fleets on the map: a ship that left a battle has gone home to refuel (its pilot is at home). Fleets on their way to the front stay.
+  // (while a raid is under way nothing is touched: its ships may still be fuelling up at their rear before they set out)
+  if (!S.raid) { for (let k = campaign.fleets.length - 1; k >= 0; k--) if (campaign.fleets[k].side === 1) campaign.fleets.splice(k, 1); campaign.pools[1] = {}; }
+  // 1. pilots due (the feud ladder, the word of the fight, the first kill, the lawn)
+  for (let k = S.due.length - 1; k >= 0; k--) {
+    const d = S.due[k];
+    if (week + 1e-9 < d.week) continue;
+    S.due.splice(k, 1);
+    if (sylphLiving().length >= R.sylphMaxPilots) continue;
+    const p = sylphNewPilot(d.house, d.rank);
+    sylphNews('Another Sylph comes', sylphPilotWords(p) + ' has arrived from the outer planets, flying a ' + sylphShipOf(p) + '. ' + d.why, d.rank >= 2);
+  }
+  // 2. mowing the lawn
+  const ours = sylphOurWorth(), fair = sylphFairWorth();
+  if (fair > 0 && ours > R.sylphMowRatio * fair) S.mowWeeks++; else S.mowWeeks = 0;
+  const mow = S.mowWeeks >= R.sylphMowWeeks;
+  if (mow && !S.mow) sylphNews('The Sylphs turn on us', 'We have grown too fast for their liking: our fleets are worth more than ' + R.sylphMowRatio + ' times what the Sylphs can answer. They no longer play: their raids will come more often, with more of them, and go for our newest and biggest ships.', true);
+  S.mow = mow;
+  if (mow && S.mowWeeks % R.sylphMowWeeks === 0) S.due.push({ week: week, house: SYLPH_HOUSES[Math.floor(campaignRand() * SYLPH_HOUSES.length)], rank: 1, why: 'The Sylphs send more of their own to cut us down to size.' });
+  // 3. the raid under way: ended when none of its ships is left, or given up when it never arrived
+  if (S.raid) {
+    const r = S.raid;
+    if (r.arrived && !sylphShipsInBattle()) sylphRaidEnds('gone');
+    else if (!r.arrived && week - r.week > R.sylphRaidGiveUpWeeks) sylphRaidEnds('never');
+    return;
+  }
+  // 4. a new raid when it is due: every pilot at home sets out for the front as one wave
+  if (week + 1e-9 < S.nextRaid) return;
+  const home = sylphLiving().filter(function (p) { return p.at === 'home'; });
+  const target = campaignAttackTarget(1);
+  if (!home.length || !target) return;
+  const pool = {};
+  for (const p of home) { const id = campaignV3IdOf(sylphShipOf(p)); if (typeIndexById(id) >= 0) pool[id] = (pool[id] || 0) + 1; }
+  if (!Object.keys(pool).length) return;                          // (their ships are not in this game: nothing to send)
+  campaign.pools[1] = pool;
+  campaignAlienLaunch(target, 'surge', 'a Sylph raid');
+  for (const p of home) p.at = 'raid';
+  S.raid = { week: week, ids: home.map(function (p) { return p.id; }), arrived: false, arrivedAt: -1, ourMax: 0, hurt: 0, secs: 0, bored: false, target: target };
+  sylphNews('A Sylph raid', home.map(sylphPilotWords).join(', ') + (home.length > 1 ? ' have' : ' has') + ' set out for ' + campaignAoName(target) + '. They are coming to play, not to stay.', false);
+}
+// The raid is over: it is scored (the word of the fight), its pilots go home to refuel, and the next raid is set.
+function sylphRaidEnds(how) {
+  const S = campaign.sylph, R = SETTINGS, r = S.raid;
+  S.raid = null; syMoodSet('');
+  for (let k = campaign.fleets.length - 1; k >= 0; k--) if (campaign.fleets[k].side === 1) campaign.fleets.splice(k, 1);   // (the ships that got away are home refuelling)
+  campaign.pools[1] = {};
+  for (const p of S.pilots) if (p.alive && p.at === 'raid') p.at = 'home';
+  const every = R.sylphRaidWeeks * (S.mow ? 0.5 : 1) * (S.worthy ? 0.75 : 1);
+  S.nextRaid = campaign.week + Math.max(1, every * (1 + 0.3 * (2 * campaignRand() - 1)));
+  if (how !== 'gone') return;
+  // the word of the fight: many of our ships there, ours engaging, hurting them, and a long fight all spread it
+  const many = Math.min(1.5, r.ourMax / 20), engaged = r.ourMax >= R.sylphBoredShips ? 1 : 0, hurt = Math.min(1.5, r.hurt * 0.5), long = r.secs > 180 ? 0.5 : 0;
+  const got = Math.round((many + engaged + hurt + long) * 100) / 100;
+  S.word += got;
+  campaignLog('sylph', 'The Sylph raid is over: word of the fight +' + got + ' (now ' + Math.round(S.word * 100) / 100 + ').');
+  while (S.word >= R.sylphWordStep) {
+    S.word -= R.sylphWordStep;
+    S.due.push({ week: campaign.week + 1, house: SYLPH_HOUSES[Math.floor(campaignRand() * SYLPH_HOUSES.length)], rank: 0, why: 'Word of the last fight has spread among the Sylphs: this one wants a turn.' });
+  }
+  sylphNews('The Sylphs leave', 'The raid is over and the Sylphs have gone back to the gas giants to refuel. ' + (got >= 2 ? 'It was a good fight by their measure: word of it will spread.' : 'It was a poor fight by their measure.'), false);
+}
+function sylphShipsInBattle() {
+  if (!campaignBattleLive()) return 0;
+  let n = 0;
+  for (let i = 0; i < highWater; i++) if (shipAlive[i] === 1 && shipSide[i] === 1 && SHIP_TYPES[shipType[i]] && SHIP_TYPES[shipType[i]].faction === 'sylph') n++;
+  return n;
+}
+// A pilot is killed: the feud ladder, and the first kill.
+function sylphPilotKilled(p) {
+  const S = campaign.sylph, R = SETTINGS;
+  p.alive = false; p.at = 'dead'; S.kills++;
+  sylphNews('A Sylph killed', 'We have killed ' + sylphPilotWords(p) + '. House ' + p.house + ' will not let it rest: a relative is coming for us.', true);
+  S.due.push({ week: campaign.week + R.sylphFeudWeeks, house: p.house, rank: Math.min(4, p.rank + 1), why: 'House ' + p.house + ' sends them to avenge ' + p.name + '.' });
+  if (!S.worthy) {
+    S.worthy = true; S.ark = 'jupiter';
+    for (let k = 0; k < 2; k++) S.due.push({ week: campaign.week + 2, house: SYLPH_HOUSES[Math.floor(campaignRand() * SYLPH_HOUSES.length)], rank: 0, why: 'We have shown we are worth fighting.' });
+    sylphNews('We are worthy', 'Our first kill has been noticed. The Sylphs now think us worth a real war: they will come in numbers. Naval Intelligence says their ark hides somewhere in the clouds of Jupiter.', true);
+  }
+}
+
+// THE BATTLE STEP (from 06e campaignBattleStep, while the battle is live): pilots are put in their ships, the raid is watched, losses are read back.
+let sylphBattleWake = -1;
+const sylphSlotPilot = new Map();   // battle slot -> pilot id (this battle)
+function syMoodSet(m) { if (typeof syMood !== 'undefined') syMood = m; }
+function sylphWarBattleStep(dt) {
+  if (!sylphWarOn() || !campaign.sylph) return;
+  const S = campaign.sylph, R = SETTINGS;
+  if (sylphBattleWake !== campaign.battle.wakes) { sylphBattleWake = campaign.battle.wakes; sylphSlotPilot.clear(); }
+  // losses read back from the battle (build D: syPilotsLost lists the pilots killed or gone since the last look)
+  if (typeof syPilotsLost === 'function') {
+    for (const l of syPilotsLost()) {
+      const p = S.pilots.find(function (q) { return q.alive && q.name === l.name; });
+      if (!p) continue;
+      for (const [slot, id] of sylphSlotPilot) if (id === p.id) sylphSlotPilot.delete(slot);
+      if (l.how === 'killed') sylphPilotKilled(p);
+      else { p.raids++; if (S.raid) S.raid.hurt += l.hurt ? 1 : 0; if (p.rank < 4 && p.raids % R.sylphRaidsPerRank === 0) { p.rank++; campaignLog('sylph', sylphPilotWords(p) + ' survived the fight and rises in rank.'); } }
+    }
+  }
+  // every Sylph ship in the battle gets its pilot (one already flying it, else a pilot of the raid of that ship, else a pilot made up for it)
+  let n = 0;
+  for (let i = 0; i < highWater; i++) {
+    if (shipAlive[i] !== 1 || shipSide[i] !== 1) continue;
+    const rec = SHIP_TYPES[shipType[i]];
+    if (!rec || rec.faction !== 'sylph') continue;
+    n++;
+    if (sylphSlotPilot.has(i)) continue;
+    const taken = {}; for (const id of sylphSlotPilot.values()) taken[id] = 1;
+    let p = S.pilots.find(function (q) { return q.alive && !taken[q.id] && q.at === 'raid' && sylphShipOf(q) === rec.name; })
+         || S.pilots.find(function (q) { return q.alive && !taken[q.id] && sylphShipOf(q) === rec.name; });
+    if (!p) { p = sylphNewPilot(SYLPH_HOUSES[i % SYLPH_HOUSES.length], SYLPH_RANK_SHIP.indexOf(rec.name)); p.at = 'raid'; }
+    sylphSlotPilot.set(i, p.id);
+    if (typeof sySetPilot === 'function') sySetPilot(i, { name: p.name, house: p.house, rank: p.rank });
+  }
+  const r = S.raid;
+  if (!r) return;
+  if (n > 0 && !r.arrived) { r.arrived = true; r.arrivedAt = simTime; }
+  if (!r.arrived) return;
+  r.secs += dt;
+  const ours = shipCount[0] - facilityCount[0];
+  if (ours > r.ourMax) r.ourMax = ours;
+  // bored: a minute in, too few of our ships to play with
+  if (!r.bored && simTime - r.arrivedAt > 60 && ours < R.sylphBoredShips) {
+    r.bored = true;
+    sylphNews('Bored Sylphs', 'The Sylphs found almost nobody to fight at ' + campaignAoName(campaign.battle.ao) + '. Bored, they have turned on our stations and our people.', true);
+  }
+  syMoodSet(r.bored ? 'bored' : (S.mow ? 'mow' : ''));
+}
+// =====================================================================
 // 5b. COMMAND STRUCTURE AND SHIP BEHAVIOR  (fleets, squadrons, officers, ship states)
 //
 //   FLEET (one per side)  ->  SQUADRON (ships of one type, grouped by SETUP "squadron size")  ->  SHIP
@@ -30278,6 +30884,7 @@ function chooseShipTactic(i, st, m, sq) {
   if (tac === TACTIC_STANDOFF || tac === TACTIC_KITE) ring *= officerStandoffMul(o);
   if (ring > cap) ring = cap;
   shipTactic[i] = tac; shipRing[i] = ring; shipWhy[i] = why;
+  syTactic(i, cap);   // (v77, section 5vc) a Sylph pilot flies its play goal's way instead (circling to get behind, or closing right in)
 }
 
 // (v38) CROSSING THE T. A squadron holding a broadside line slides along its own line to the near end of the enemy's line (the enemy squadron it fights
@@ -48684,7 +49291,8 @@ function drawShipIcons(left, top, right, bottom, minSize) {
     const close = closeWants(i, px);
     if (close !== null) { closeDrawShip(i, close, sx, sy, z, g < 2 ? SETTINGS.colors.ship[side] : paintColors[g], closeDtSim); continue; }
     ctx.setTransform(-s, c, -c, -s, sx, sy);
-    const sprite = g < 2 ? iconSprite[st] : paintSpriteFor(g, st, side, shipType[i], px, lod === ICON_SILHOUETTE);
+    const houseCol = g < 2 ? syHouseColour(i) : '';                // (v77, section 5vc) a Sylph ship wears its pilot's house colour
+    const sprite = houseCol !== '' ? shipSprite(shipIconFor(shipType[i], side), houseCol, px, lod === ICON_SILHOUETTE) : (g < 2 ? iconSprite[st] : paintSpriteFor(g, st, side, shipType[i], px, lod === ICON_SILHOUETTE));
     if (sprite !== null) ctx.drawImage(sprite, -px / 2, -px / 2, px, px);
     else { ctx.translate(-px / 2, -px / 2); drawIconVectorOnMap(shipIconFor(shipType[i], side), g < 2 ? SETTINGS.colors.ship[side] : paintColors[g], px); }
   }
@@ -56568,6 +57176,9 @@ const DISPATCH_LINES = {
   'brief.enemy.freshBrood':    { kind: 'enemy', crit: true,  from: 'Deep Watch, Kuiper',  title: 'A new brood arrives',     text: '{text}' },
   'brief.enemy.earlyDesign':   { kind: 'enemy', crit: false, from: 'Naval Intelligence',  title: 'A new Swarm design, early', text: '{text}' },
   'brief.perf.swarmFeedSlows': { kind: 'perf',  crit: false, from: 'Naval Intelligence',  title: 'The Swarm\'s feed slows', text: '{text}' },
+  // (v78, 06s) the Sylph war's news: the caller writes the title and the text
+  'brief.enemy.sylph':         { kind: 'enemy', crit: false, from: 'Naval Intelligence',  title: '{title}', text: '{text}' },
+  'brief.enemy.sylphCrit':     { kind: 'enemy', crit: true,  from: 'Naval Intelligence',  title: '{title}', text: '{text}' },
   'brief.enemy.swarmGathers':  { kind: 'enemy', crit: false, from: 'Naval Intelligence',  title: 'The Swarm gathers at {rear}', text: 'The Swarm is holding its ships back at {rear} instead of feeding them in: it is saving up for one big surge on {ao}, about {ships} ships. When it comes, it comes all at once.' },
   // (v37) doctrine (section 5kd's 'doctrine' log lines: the words are the log line's; the button opens the design's Doctrine tab)
   'brief.off.docFinding':      { kind: 'off',   crit: false, from: 'Officers\' notes',     title: 'A better way to fight: {design}', text: '{text}' },
@@ -68588,6 +69199,7 @@ function passNumbersV3(L, a) {
     weapons: groups, recoil: recoil, spinal: a.spinal, pd: pdN > 0 ? Object.assign({ mounts: pdN }, a.pd) : null, scatterMul: roundTo(scatter, 4), jam: a.jam, bridgeBonus: bridgeBonus,
     jamBubble: L.parts.reduce(function (r, u) { return u.working && u.m.jamBubble > r ? u.m.jamBubble : r; }, 0),   // (v75) the widest working Delver Veil jammer's bubble (section 5vb)
     tetherReach: L.parts.reduce(function (r, u) { return u.working && u.m.tetherReach > r ? u.m.tetherReach : r; }, 0),   // (v76) the widest working Tether (05g dvTetherHolds)
+    barrier: L.parts.reduce(function (r, u) { return u.working && u.m.barrier > 0 ? r + u.m.barrier : r; }, 0),   // (v77) the Sylph Barrier pool: every working Barrier emitter added up (05g syTypeOf)
     power: { made: a.powerMade, used: a.powerUsed, chart: chart, cutAt: cutAt, weaponsRatio: roundTo(a.powerRatio, 3), reactors: L.parts.filter(function (u) { return u.s.power > 0; }).length },
     // (v30 A1) heat: the meter is HEAT_RULES.meter plus the heat sinks (limit); gunNet is the heat a second of every weapon firing beyond what the radiators shed
     heat: { made: roundTo(a.heatMade || 0, 2), shed: roundTo(a.heatShed || 0, 2), idleNet: roundTo(a.heatIdleNet, 2), gunNet: roundTo(a.heatGunNet, 2), sink: a.heatSink || 0, limit: a.heatLimit },
@@ -72856,7 +73468,35 @@ const STOCK_DESIGNS_V3 = [
     mirror: [['dv_drive', 0, 4, 0], ['dv_drive', 0, 6, 0], ['tank_vol', 3, 2, 0, 2, 2], ['tank_vol', 3, 4, 0, 2, 2], ['tank_vol', 3, 6, 0, 2, 1], ['tank_vol', 4, 6, 0, 2, 1],
              ['dv_cradle', 5, 1, 0, 1, 1, null, 'Spike drone'], ['dv_cradle', 21, 1, 0, 1, 1, null, 'Seeker drone'], ['dv_slug_t', 38, 2, 0]],
     tracks: { passage: [[5, 7, 36, 7], [5, 8, 36, 8], [40, 7, 45, 7], [40, 8, 45, 8]] },
-    plates: { id: 'dv_layered', strips: [[34, 37, 1], [41, 42, 2], [43, 45, 4], [37, 45, 5], [46, 47, 6]] } }
+    plates: { id: 'dv_layered', strips: [[34, 37, 1], [41, 42, 2], [43, 45, 4], [37, 45, 5], [46, 47, 6]] } },
+
+  // ======== (v77, build D of notes/plans/aliens/delver-sylph-tier01.md) THE SYLPHS: few, proud, at their top technology from the first day. Chrome and gold on
+  //          our own Standard frames (the close look draws them from UI/alien-art.js in their house colours), made in the internal mode on the Sylph parts
+  //          (02c-3). `faction: 'sylph'`. Each is flown by one to three Sylphs (a throne each: the Ace pilots and their play goals, section 5vc), fights like one
+  //          of ours three or four sizes bigger, and leaves when its Barrier is down and its hull half gone. Numbers are first placeholders. ========
+  // ---- Corvette: the Duelist, the very first Sylph ship (and the Sylphs' "fighter"). One Sylph, one lance, four needles, one Barrier emitter, three drives. ----
+  { name: 'Duelist', side: 'alien', faction: 'sylph', role: 'Sylph duellist', icon: 'A27', note: 'one Sylph on a corvette: a lance straight ahead, four needles, a Barrier that shrugs off lasers and light guns. Fights like a cruiser',
+    hull: 'corvette', frames: ['std_corvette'], jumps: 1,
+    parts: [['sy_drive', 0, 5, 0], ['tank_vol', 3, 5, 0, 1, 2], ['tank_vol', 5, 5, 0, 1, 2], ['sy_song', 7, 4, 0], ['sy_barrier', 10, 4, 0], ['sy_throne', 14, 4, 0], ['airlock', 17, 1, 0], ['sy_lance', 23, 5, 0]],
+    mirror: [['sy_drive', 0, 3, 0], ['tank_vol', 3, 3, 0, 1, 2], ['tank_vol', 5, 3, 0, 1, 2], ['sy_needle', 12, 1, 0], ['sy_needle', 19, 1, 0]],
+    tracks: { passage: [[16, 3, 17, 3], [16, 4, 16, 5]] },
+    plates: { id: 'sy_chrome', strips: [[3, 11, 1], [14, 16, 1], [21, 21, 1], [4, 11, 2], [14, 16, 2], [19, 26, 2], [7, 15, 3], [18, 26, 3], [22, 25, 4]] } },
+  // ---- Frigate: the Courser, the scooping raider. Two Sylphs (a throne and a seat), two lances, four needles, two Barrier emitters, big tanks for a long raid (two jumps). ----
+  { name: 'Courser', side: 'alien', faction: 'sylph', role: 'Sylph raider', icon: 'A28', note: 'two Sylphs on a frigate: two lances, four needles, two Barrier emitters and the fuel for a long raid. Fights like a capital ship',
+    hull: 'frigate', frames: ['std_frigate'], jumps: 2,
+    parts: [['sy_drive', 0, 6, 0], ['tank_vol', 3, 6, 0, 1, 2], ['tank_vol', 5, 6, 0, 1, 2], ['tank_vol', 7, 6, 0, 1, 2], ['sy_song', 12, 5, 0], ['sy_barrier', 12, 2, 0], ['sy_barrier', 12, 8, 0], ['sy_throne', 16, 4, 0], ['sy_seat', 16, 8, 0], ['airlock', 19, 1, 0]],
+    mirror: [['sy_drive', 0, 4, 0], ['tank_vol', 3, 4, 0, 1, 2], ['tank_vol', 5, 4, 0, 1, 2], ['tank_vol', 7, 4, 0, 1, 2], ['tank_vol', 3, 1, 0, 1, 3],
+             ['sy_needle', 22, 1, 0], ['sy_needle', 26, 1, 0], ['sy_lance', 27, 5, 0]],
+    tracks: { passage: [[18, 3, 18, 9], [19, 3, 20, 3], [21, 3, 21, 9], [19, 9, 21, 9]] },
+    plates: { id: 'sy_chrome', strips: [[6, 11, 1], [15, 17, 1], [24, 25, 1], [6, 11, 2], [15, 17, 2], [21, 27, 2], [6, 11, 3], [15, 17, 3], [22, 30, 3], [29, 34, 4]] } },
+  // ---- Destroyer: the Lord's blade, a house lord's ship, the top of the feud ladder for now. Three Sylphs (a throne and two seats), four lances, six needles, three Barrier emitters. ----
+  { name: 'Lord\'s blade', side: 'alien', faction: 'sylph', role: 'Sylph lord', icon: 'A29', note: 'three Sylphs on a destroyer: four lances, six needles, three Barrier emitters, four drives. A house lord\'s own ship; fights like a titan',
+    hull: 'destroyer', frames: ['std_destroyer'], jumps: 1,
+    parts: [['tank_vol', 3, 7, 0, 1, 2], ['tank_vol', 5, 7, 0, 1, 2], ['sy_barrier', 13, 6, 0], ['sy_throne', 18, 7, 0]],
+    mirror: [['sy_drive', 0, 4, 0], ['sy_drive', 0, 6, 0], ['tank_vol', 3, 4, 0, 1, 3], ['tank_vol', 6, 4, 0, 1, 3], ['sy_song', 10, 3, 0], ['sy_barrier', 13, 3, 0], ['sy_seat', 18, 4, 0], ['airlock', 22, 1, 0],
+             ['sy_needle', 26, 1, 0], ['sy_needle', 30, 1, 0], ['sy_needle', 34, 1, 0], ['sy_lance', 38, 6, 0], ['sy_lance', 38, 7, 0]],
+    tracks: { passage: [[20, 3, 20, 12], [17, 3, 17, 12], [17, 3, 23, 3], [17, 12, 23, 12]], conduit: [[12, 6, 12, 8]] },
+    plates: { id: 'sy_chrome', strips: [[3, 21, 1], [24, 25, 1], [28, 29, 1], [32, 33, 1], [3, 21, 2], [24, 43, 2], [3, 9, 3], [24, 35, 3], [24, 36, 4], [37, 44, 5]] } }
 ];
 // ---------------------------------------------------------------------
 // Building a stock design from its spec
@@ -74100,6 +74740,7 @@ function simulateStep(dt) {
   updateMovementAndTargeting(dt);
   cplStep(dt);                                   // (v66) ... their moves, and the look for crippled ships and the Swarm's meals
   if (!peek) dvStep();                           // (v75, section 5vc) a crewed Delver ship whose time is up, or who is hurt, jumps away
+  if (!peek) syStep(dt);                         // (v77, section 5vc) the Sylph pilots: Barriers fill, goals are picked and kept, the hurt and the done leave
   if (!peek) {
     if (SETTINGS.weaponModel === 1) { updateMissiles(dt); updatePD(dt); updatePdTracers(dt); }   // (v18) missiles fly, and hit or miss (section 5r); point defence fires (5s)
     updateCombat(dt);
