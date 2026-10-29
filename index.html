@@ -29,7 +29,7 @@
   document.documentElement.classList.add('ew-touch');
 })();
 </script>
-<title>Engineer's War v78.2 - debug menu</title>
+<title>Engineer's War v78.3 - large tanks</title>
 <!-- (v17) The shared look: theme-v0.4.css from the UI folder, built in word for word (tools/build.js). It only styles its own named parts
      (.mode-front, .panel, .btn ...), plus a few page-wide basics that the rules just below undo for the older screens. -->
 <style>
@@ -2151,6 +2151,7 @@ hr.rule { border:0; border-top:var(--line-w) solid var(--line); margin:var(--sp-
 #bureau2Screen .mk button { font: 600 10px var(--font-data); padding: 0 4px; border: 1px solid var(--line-strong); color: var(--dim); background: transparent; cursor: pointer; }
 #bureau2Screen .mk button.on { color: var(--ink); background: var(--text); border-color: var(--text); }
 #bureau2Screen .mk button.lk { border-style: dashed; opacity: .6; }
+#bureau2Screen .sizes button.lk { border-style: dashed; opacity: .6; }   /* (v78.3) a tank size research has not opened yet */
 #bureau2Screen .pr .meta { grid-column: 2 / 4; display: flex; flex-wrap: wrap; align-items: center; gap: 3px 8px; font: 500 11px var(--font-data); color: var(--dim); }
 #bureau2Screen .sizes { display: inline-flex; gap: 3px; }
 #bureau2Screen .sizes button { padding: 0 4px; border: 1px solid var(--line-strong); color: var(--text); background: transparent; font: 600 10.5px var(--font-data); cursor: pointer; }
@@ -10033,7 +10034,8 @@ function partStats(id, mk) {
 const BUREAU_RULES = {
   shrinkPerMark: 0.85,       // a mark's footprint area x this (rounded to a usable shape), never below shrinkFloor x the Mk I area ...
   shrinkFloor: 0.45,         // (so a Mk IV part is about half its Mk I area, and a 2 x 2 gun never becomes a 1 x 1)
-  sizeBonus: [0, 1, 1.10, 1.20],   // (sizeBonus: true rows only: tanks, gun magazines) a 2 x 2 block does 10% more than four 1 x 1s, a 3 x 3 20% more than nine
+  sizeBonus: [0, 1, 1.10, 1.20, 1.30, 1.40],   // (sizeBonus: true rows only: tanks, gun magazines) a 2 x 2 block does 10% more than four 1 x 1s, a 3 x 3 20% more than nine;
+                                               // (v78.3) the big tanks: a 4 x 4 30% more than sixteen, a 5 x 5 40% more than twenty-five
   laneLength: 2,             // squares out from a drive's exhaust face, a hangar door or a supply port that must be clear
   jumpChoices: [0, 1, 2, 3], // the jump counts a design can be fuelled for: 0 = Local (v27 A2; FUEL_RULES.localJumps), then 1, 2 or 3
   balanceFullOffset: 0.35,   // Balance reads 0% when the thrust line passes this share of the hull's height off the centre of mass
@@ -10871,6 +10873,8 @@ function buildPartStatsV3(id, mk, opt) {
 //   line     the research line the part belongs to (the kit's marks per line: BUREAU_TIER0.lineMarks)
 //   build    'gun' | 'launcher' | 'emitter': a BUILT part (its picks live on the part record: BUILD_LINES above). weaponLine: true marks it a weapon for the zones
 //   maxSize  a size piece's biggest side (plates and heat sinks go to 5 x 5); sizeBonus: true = the old +10% / +20% for 2 x 2 and 3 x 3 blocks (tanks, gun magazines)
+//   openSize (v78.3) a size piece's biggest side before research: the bigger sizes up to maxSize need a project (the kit's lineSizes; fuel tanks: 4 x 4
+//            and 5 x 5 come with "Large tanks")
 //   armourBase  a plate: armour a square = this x the block's side (s3.2); its mass is +1 per 4 armour
 //   hpMul    hit points a square x this (ablative plate: about 2x steel's)
 //   driveMul a drive: thrust = Mk I squares x DRIVE_RULES.thrustPerSquare x this (s4.2)
@@ -11050,12 +11054,12 @@ const MODULES_V3 = [
     rule: 'The strongest drive: x1.7 a chemical rocket\'s push a square, and a transfer costs x0.8 the fuel. Burns Helium-3 (1 to build): pair it with a fusion reactor, or carry two fuels. (Tier 2: Fusion torch.)' },
   { id: 'rcs', name: 'RCS jets', cat: 'drives', sub: 'RCS', line: 'drive', w: 2, h: 1, role: 'external', edge: true, mass: 1, cost: 3, power: -1, powerClass: 'drives', rcsThrust: 3000, ownFuel: true, res: 'nuclear', traits: ['Rolling'],
     rule: 'On the outside. Turns and slides the ship, and counters off-centre thrust. Brings its own fuel. Far from the centre it turns the ship better.' },
-  { id: 'tank_vol', name: 'Volatiles tank', cat: 'drives', sub: 'Fuel', line: 'tank', w: 1, h: 1, sizes: true, sizeBonus: true, role: 'machine', cost: 0.6, tank: { type: 'volatiles', cap: 1 }, volatile: 1, res: 'volatile',
-    rule: 'Size piece. Each square holds 0.2 FU of Volatiles at Mk I (a 2 x 2 tank 0.88 FU, a 3 x 3 tank 2.16 FU; more at higher marks). Rockets, nuclear rockets and ion drives must touch their tanks or be joined to them by fuel line. Blows up when destroyed.' },
-  { id: 'tank_fissiles', name: 'Fissiles tank', cat: 'drives', sub: 'Fuel', line: 'tank', w: 1, h: 1, sizes: true, sizeBonus: true, role: 'machine', cost: 1.2, tank: { type: 'fissiles', cap: 1 }, res: 'volatile',
-    rule: 'Size piece. Each square holds 0.2 FU of Fissiles at Mk I (a 3 x 3 tank 2.16 FU), for a fission reactor, which must touch it or be joined to it by fuel line.' },
-  { id: 'tank_he3', name: 'Helium-3 tank', cat: 'drives', sub: 'Fuel', line: 'tank', w: 1, h: 1, sizes: true, sizeBonus: true, role: 'machine', cost: 1, tank: { type: 'helium3', cap: 1 }, volatile: 1, res: 'volatile',
-    rule: 'Size piece. Each square holds 0.2 FU of Helium-3 at Mk I (a 3 x 3 tank 2.16 FU), for a fusion reactor or torch, which must touch it or be joined to it by fuel line.' },
+  { id: 'tank_vol', name: 'Volatiles tank', cat: 'drives', sub: 'Fuel', line: 'tank', w: 1, h: 1, sizes: true, maxSize: 5, openSize: 3, sizeBonus: true, role: 'machine', cost: 0.6, tank: { type: 'volatiles', cap: 1 }, volatile: 1, res: 'volatile',
+    rule: 'Size piece. Each square holds 0.2 FU of Volatiles at Mk I (a 2 x 2 tank 0.88 FU, a 3 x 3 tank 2.16 FU; after "Large tanks" a 4 x 4 tank 4.16 FU and a 5 x 5 tank 7 FU; more at higher marks). Rockets, nuclear rockets and ion drives must touch their tanks or be joined to them by fuel line. Blows up when destroyed.' },
+  { id: 'tank_fissiles', name: 'Fissiles tank', cat: 'drives', sub: 'Fuel', line: 'tank', w: 1, h: 1, sizes: true, maxSize: 5, openSize: 3, sizeBonus: true, role: 'machine', cost: 1.2, tank: { type: 'fissiles', cap: 1 }, res: 'volatile',
+    rule: 'Size piece. Each square holds 0.2 FU of Fissiles at Mk I (a 3 x 3 tank 2.16 FU; 4 x 4 and 5 x 5 after "Large tanks"), for a fission reactor, which must touch it or be joined to it by fuel line.' },
+  { id: 'tank_he3', name: 'Helium-3 tank', cat: 'drives', sub: 'Fuel', line: 'tank', w: 1, h: 1, sizes: true, maxSize: 5, openSize: 3, sizeBonus: true, role: 'machine', cost: 1, tank: { type: 'helium3', cap: 1 }, volatile: 1, res: 'volatile',
+    rule: 'Size piece. Each square holds 0.2 FU of Helium-3 at Mk I (a 3 x 3 tank 2.16 FU; 4 x 4 and 5 x 5 after "Large tanks"), for a fusion reactor or torch, which must touch it or be joined to it by fuel line.' },
   // (v36, Alex 26 Oct) the fuel line: a free-form track like the power conduit, for every kind of fuel
   { id: 'fuelline', name: 'Fuel line', cat: 'drives', sub: 'Fuel line', line: 'fittings', w: 1, h: 1, role: 'track', track: 'fuelline', cost: 0.2, res: 'general', colour: FUEL_LINE_COLOUR,
     rule: 'Free-form. Carries fuel from the tanks to the drives and reactors that burn it, for any kind of fuel. Tanks carry it on through themselves. It may share a square with a passage, a conduit and the hoist.' },
@@ -11380,7 +11384,7 @@ function moduleStats(id, mk, sz, opt, keepMk) {
   s.squares = s.w * s.h;
   if (m.sizes) {
     // per-square numbers x the squares; the stores and a few "better" numbers get the old size bonus where the row asks for it (tanks, gun magazines)
-    const n = sz * sz, bonus = m.sizeBonus ? BUREAU_RULES.sizeBonus[Math.min(sz, 3)] : 1;
+    const n = sz * sz, bonus = m.sizeBonus ? BUREAU_RULES.sizeBonus[Math.min(sz, BUREAU_RULES.sizeBonus.length - 1)] : 1;
     const perSquare = ['mass', 'cost', 'alloys', 'iridium', 'helium3', 'rareEarths', 'fissiles', 'antimatter', 'volatile', 'crew', 'power', 'heat'];
     for (let k = 0; k < perSquare.length; k++) if (typeof s[perSquare[k]] === 'number') s[perSquare[k]] = s[perSquare[k]] * n;
     const bonused = ['houses', 'heatCap', 'lifeSupport', 'cooling'];
@@ -11394,7 +11398,7 @@ function moduleStats(id, mk, sz, opt, keepMk) {
   if (s.power) s.power = powerStepV3(s.power);
   // (v27 A2) fuel in FU: a tank holds FUEL_RULES.tankPerSquare for its mark, per square, with the size bonus (the module's cap is a multiplier, 1 = a normal
   // tank); a burner's efficiency is its own, or, for starting tech (fuel.start), FUEL_RULES.startEfficiency for its mark
-  if (m.tank) { const n = m.sizes ? sz * sz : 1, bonus = m.sizes && m.sizeBonus ? BUREAU_RULES.sizeBonus[Math.min(sz, 3)] : 1; s.tank = { type: m.tank.type, cap: m.tank.cap * FUEL_RULES.tankPerSquare[mk - 1] * n * bonus }; }
+  if (m.tank) { const n = m.sizes ? sz * sz : 1, bonus = m.sizes && m.sizeBonus ? BUREAU_RULES.sizeBonus[Math.min(sz, BUREAU_RULES.sizeBonus.length - 1)] : 1; s.tank = { type: m.tank.type, cap: m.tank.cap * FUEL_RULES.tankPerSquare[mk - 1] * n * bonus }; }
   if (m.fuel) s.fuel = { type: m.fuel.type, eff: m.fuel.start ? FUEL_RULES.startEfficiency[mk - 1] : m.fuel.eff, start: !!m.fuel.start };
   if (s.weapon) s.weapon = Object.assign({ interval: s.weapon.fireRate > 0 ? roundTo(1 / s.weapon.fireRate, 3) : 0, roundsPerShot: 1, heatShot: 0, mountKind: 'fixed' }, s.weapon);
   s.locked = mark.locked || m.locked;
@@ -11496,6 +11500,7 @@ const OPTION_TECH = {
 const TECH_EXTRA = {
   'Chemical guns Mk II': { lineMarks: { gun: 2 } }, 'Missiles Mk II': { lineMarks: { missile: 2 } }, 'Steel Mk II': { lineMarks: { plate: 2 } },
   'Fission Mk II': { lineMarks: { fission: 2 } }, 'Tanks II': { lineMarks: { tank: 2 } },
+  'Large tanks': { lineSizes: { tank: 5 } },   // (v78.3, Alex 29 Oct) 4 x 4 and 5 x 5 fuel tanks of every kind (the size pieces' openSize, bureauKitSizeFor)
   'Frigate': { hulls: ['frigate'], frames: ['std_frigate'] }, 'Destroyer': { hulls: ['destroyer'], frames: ['std_destroyer'] },
   'Carrier fighters': { hulls: ['tiny'], frames: ['std_tiny'] },   // (v51) the Tiny craft hull and its frame come with the first fighter project
   // (v68, Tier 2 plan s2b) the Tier 2 marks, and the two big hulls with their one-piece frames (their sections open with the hull: openWithHull)
@@ -27790,6 +27795,8 @@ const RESEARCH_PROJECTS = [
   { id: 'fission',    name: 'Fission reactors',          branch: 'power', step: 1, kind: 'new',    needs: [], tags: ['Power', 'New tech'], uses: ['Fissiles'], text: 'The Small (3 x 3) and Standard (4 x 4) fission reactors and the Fissiles tank. Each reactor uses Fissiles to build.' },
   { id: 'fissionmk2', name: 'Fission Mk II',             branch: 'power', step: 2, kind: 'mark',   needs: ['fission'], tags: ['Power', 'Civilian', 'Mark'], spin: { alloys: 0.10, fissiles: 0.25 }, text: 'Smaller Mk II fission reactors; power for the yards: +10% Alloys, +25% Fissiles.' },
   { id: 'iondrive',   name: 'Ion drives',                branch: 'power', step: 1, kind: 'new',    needs: [], tags: ['Drives', 'Fuel', 'New tech'], uses: ['Rare earths'], text: 'Ion drives (3 x 1 and 4 x 2): no push in battle, but enough of them double a ship\'s fuel efficiency between battles.' },
+  // (v78.3, Alex 29 Oct) bigger tanks, early: right after the frigate, the first hull with room for a 4 x 4 or 5 x 5 tank
+  { id: 'bigtanks',   name: 'Large tanks',               branch: 'power', step: 2, kind: 'option', needs: ['frigate'], tags: ['Fuel', 'Shipyards'], text: '4 x 4 and 5 x 5 fuel tanks of every kind: 30% and 40% more fuel a square than single squares (a 3 x 3 gets 20%).' },
   { id: 'tanks2',     name: 'Tanks II',                  branch: 'power', step: 1, kind: 'mark',   needs: [], tags: ['Fuel', 'Mark'], text: 'Mk II tanks: more fuel a square.' },
   { id: 'propellant', name: 'Better propellants',        branch: 'power', step: 1, kind: 'option', needs: [], tags: ['Fuel', 'Drives', 'Civilian'], uses: ['Volatiles'], spin: { boost: 0.10, startDriveEff: 0.45 }, text: 'Chemical drives burn less (fuel efficiency x0.45); better launchers: +10% boost.' },
   { id: 'bigreactor', name: 'Large reactor',             branch: 'power', step: 2, kind: 'option', needs: ['fission', 'frigate'], tags: ['Power', 'Shipyards', 'Civilian'], uses: ['Fissiles'], spin: { fissiles: 0.25 }, text: 'The 5 x 5 fission reactor; better reactors at the mines: +25% Fissiles.' },
@@ -27866,7 +27873,7 @@ const RESEARCH_BY_NAME = {};
   for (const p of RESEARCH_PROJECTS) {
     p.needs = p.needs || []; p.uses = p.uses || [];
     p.opens = p.luna ? { modules: [], options: {} } : bureauTechOpens(p.name);   // (v65) the Luna prototype opens what its find gives (researchLunaFinished)
-    const n = p.opens.modules.length + Object.keys(p.opens.options).length + (p.opens.lineMarks ? 1 : 0) + (p.opens.hulls ? p.opens.hulls.length : 0);
+    const n = p.opens.modules.length + Object.keys(p.opens.options).length + (p.opens.lineMarks ? 1 : 0) + (p.opens.lineSizes ? 1 : 0) + (p.opens.hulls ? p.opens.hulls.length : 0);
     p.opensSomething = n > 0;
     if (!p.opensSomething && !p.crew && !p.spin && !p.map && !p.luna && !p.massProd && !p.dev && !p.develop && !p.counterJam) console.error('Research: "' + p.name + '" opens nothing in the Bureau and has no other effect.');
     RESEARCH_BY_ID[p.id] = p; RESEARCH_BY_NAME[p.name] = p;
@@ -28208,6 +28215,7 @@ function researchOpensText(id) {
     }
   }
   for (const key of order) bits.push(key + ' (' + picks[key].join(', ') + ')');
+  if (o.lineSizes) for (const line in o.lineSizes) bits.push((line === 'tank' ? 'fuel tanks' : line + ' parts') + ' up to ' + o.lineSizes[line] + ' x ' + o.lineSizes[line]);   // (v78.3)
   if (o.lineMarks) for (const line in o.lineMarks) bits.push('Mk ' + ['I', 'II', 'III', 'IV'][o.lineMarks[line] - 1] + ' ' + line + ' parts');
   if (o.hulls) for (const h of o.hulls) bits.push('the ' + (HULL_BY_ID[h] ? HULL_BY_ID[h].name : h) + ' hull');
   let t = bits.length ? 'Opens ' + bits.join(', ') + ' in the Bureau.' : '';
@@ -28238,6 +28246,7 @@ function researchDesignsThatCouldUse(id) {
   const lines = {}, o = p.opens;
   for (const line in o.options) lines[line] = true;
   if (o.lineMarks) for (const line in o.lineMarks) lines[line] = true;
+  if (o.lineSizes) for (const line in o.lineSizes) lines[line] = true;   // (v78.3)
   for (const m of o.modules) { const row = MODULE_BY_ID[m]; if (row) lines[row.line || row.id] = true; }
   const out = [];
   for (const rec of SHIP_TYPES) {
@@ -69170,13 +69179,14 @@ const BUREAU_PASSES = [
 // null = no kit: everything the marks and frames allow. The shape (02c, BUREAU_TIER0): { hulls, frames, marks, lineMarks, modules, options }.
 //   bureauKitAllows(kit, kind, id)            a list check: kind 'hulls' | 'frames' | 'modules' | 'marks' (the general marks list)
 //   bureauKitMark(kit, line)                   the highest mark open for a line (the general list, or lineMarks[line] when higher)
+//   bureauKitSizeFor(kit, m)                   (v78.3) the biggest size open for a size piece: its openSize, or lineSizes[line] when research raised it
 //   bureauKitAllowsOption(kit, line, axis, v)  is a pick open on a built line ('gun', 'role', 'culverin')
 //   bureauKitAllowsPart(kit, rec)              the whole part record: its module, its mark for its line, and every pick. Returns '' or the reason
 //   bureauKitOpen(kit, what)                   research opens things: what = { hulls, frames, modules, marks, lineMarks: { gun: 2 }, options: { gun: { role: [...] } } }
 //   bureauKitAdd(kit, kind, id)                the old one-list form (kept for callers: 'modules', 'coilgun'); an object is passed to bureauKitOpen
 // The checks below read it; the screen (section 10e) reads it to grey out the parts browser and the picks.
 function bureauKitCopy(kit) {
-  const out = { hulls: (kit.hulls || []).slice(), frames: (kit.frames || []).slice(), marks: (kit.marks || [1]).slice(), lineMarks: Object.assign({}, kit.lineMarks || {}), modules: (kit.modules || []).slice(), options: {} };
+  const out = { hulls: (kit.hulls || []).slice(), frames: (kit.frames || []).slice(), marks: (kit.marks || [1]).slice(), lineMarks: Object.assign({}, kit.lineMarks || {}), lineSizes: Object.assign({}, kit.lineSizes || {}), modules: (kit.modules || []).slice(), options: {} };
   for (const line in kit.options || {}) { out.options[line] = {}; for (const ax in kit.options[line]) out.options[line][ax] = kit.options[line][ax].slice(); }
   return out;
 }
@@ -69196,6 +69206,13 @@ function bureauKitMarkFor(kit, m, opt) {
   if (m.build === 'gun') { const o = partOptionsV3(m.id, opt), fam = GUN_FAMILIES[o.family]; if (fam && fam.markLine) best = Math.min(best, bureauKitMark(kit, fam.markLine)); }
   return best;
 }
+// (v78.3) The biggest size open for a size piece (a Volatiles tank: 3 until "Large tanks", then 5). No kit = every size its row has.
+function bureauKitSizeFor(kit, m) {
+  const top = m.maxSize || 3;
+  if (!kit || !m.sizes || !m.openSize) return top;
+  const raised = kit.lineSizes && m.line ? kit.lineSizes[m.line] || 0 : 0;
+  return Math.min(top, Math.max(m.openSize, raised));
+}
 function bureauKitAllowsOption(kit, line, axis, value) {
   if (!kit || !kit.options || !kit.options[line]) return true;
   const list = kit.options[line][axis];
@@ -69207,6 +69224,7 @@ function bureauKitAllowsPart(kit, rec) {
   if (!bureauKitAllows(kit, 'modules', m.id)) return m.name + ' is not in the kit';
   const mk = partTakesMarks(m) ? (rec.mk || 1) : 1;   // (v68) a part with no marks (a room, a battery) is always its one form, whatever an old premade design wrote
   if (mk > bureauKitMarkFor(kit, m, rec.opt)) return m.name + ' ' + MODULE_MARKS[mk - 1].name + ' needs research';   // (v68: a coilgun's own mark line counts too)
+  if (m.sizes && (rec.sz || 1) > bureauKitSizeFor(kit, m)) return m.name + ' ' + rec.sz + 'x' + rec.sz + ' needs research';   // (v78.3) a big tank
   if (m.build) {
     const o = partOptionsV3(m.id, rec.opt), line = BUILD_LINES[m.id];
     for (let k = 0; k < line.axes.length; k++) { const ax = line.axes[k]; if (!bureauKitAllowsOption(kit, m.id, ax.key, o[ax.key])) return ax.table[o[ax.key]].name + ' (' + ax.name.toLowerCase() + ') needs research'; }
@@ -69216,6 +69234,7 @@ function bureauKitAllowsPart(kit, rec) {
 function bureauKitOpen(kit, what) {
   if (!kit || !what) return;
   for (const k of ['hulls', 'frames', 'modules', 'marks']) if (Array.isArray(what[k])) for (let i = 0; i < what[k].length; i++) bureauKitAdd(kit, k, what[k][i]);
+  if (what.lineSizes) { if (!kit.lineSizes) kit.lineSizes = {}; for (const line in what.lineSizes) if (!(kit.lineSizes[line] >= what.lineSizes[line])) kit.lineSizes[line] = what.lineSizes[line]; }   // (v78.3)
   if (what.lineMarks) { if (!kit.lineMarks) kit.lineMarks = {}; for (const line in what.lineMarks) if (!(kit.lineMarks[line] >= what.lineMarks[line])) kit.lineMarks[line] = what.lineMarks[line]; }
   if (what.options) {
     if (!kit.options) kit.options = {};
@@ -70411,7 +70430,7 @@ const BUREAU2_API = {
   partStats: partStatsV3, options: partOptionsV3, optKey: optKeyV3, comboProblem: buildComboProblemV3, ring: mountRingV3, buildLines: BUILD_LINES, partRules: PART_RULES, classRules: HULL_CLASS_RULES,
   gunFamilies: GUN_FAMILIES, gunRoles: GUN_ROLES, gunTable: GUN_TABLE, weaponSizes: WEAPON_SIZES, mounts: MOUNT_OPTIONS, shells: SHELL_OPTIONS, launcherTypes: LAUNCHER_TYPES, launcherTable: LAUNCHER_TABLE,
   missileSizes: MISSILE_SIZES, warheads: WARHEAD_OPTIONS, motors: MOTOR_OPTIONS, shapes: SHAPE_OPTIONS, emitterTable: EMITTER_TABLE, lenses: LENS_OPTIONS, wavelengths: WAVELENGTH_OPTIONS,
-  kitOpen: bureauKitOpen, kitMark: bureauKitMark, kitAllowsOption: bureauKitAllowsOption, kitAllowsPart: bureauKitAllowsPart,
+  kitOpen: bureauKitOpen, kitMark: bureauKitMark, kitSizeFor: bureauKitSizeFor, kitAllowsOption: bureauKitAllowsOption, kitAllowsPart: bureauKitAllowsPart,
   // (v27 C2) the tutorial's frames and the crash-site prototypes
   lockOf: partLockV3, applyPresets: applyFramePresetsV3, removePresets: removeFramePresetsV3, trainerStart: trainerRefitStartV3, zones: zoneStatusV3,
   zoneKinds: ZONE_KINDS, partKind: bureauPartKind, crashPrototypes: CRASH_PROTOTYPES, unlockCrashPrototype: bureauUnlockCrashPrototype, resourceCharged: bureauResourceCharged
@@ -71098,6 +71117,9 @@ function b2MarkLocked(mk, line) {
   if (kit) return mk > bureauKitMark(kit, line || '');
   return !!(MODULE_MARKS[mk - 1] && MODULE_MARKS[mk - 1].locked);
 }
+// (v78.3) A size of a size piece that research has not opened yet (4 x 4 and 5 x 5 tanks before "Large tanks"), and the project that opens it.
+function b2SizeLocked(m, z) { return !b2.unlockAll && z > bureauKitSizeFor(b2Kit(), m); }
+function b2SizeTech(m) { for (const name in TECH_EXTRA) if (TECH_EXTRA[name].lineSizes && TECH_EXTRA[name].lineSizes[m.line]) return 'research "' + name + '" opens this size'; return 'needs research'; }
 function b2HullLocked(id) { return !bureauKitAllows(b2Kit(), 'hulls', id); }
 function b2FrameLocked(f) { return (f.locked && !b2.unlockAll) || !bureauKitAllows(b2Kit(), 'frames', f.id); }
 // (v58, stats-panels.md s3; v62 step-by-step-flow.md s3, Alex 29 Oct: only FORBIDDEN parts are hidden, never legal ones) Can a part ever be legal on this
@@ -71287,7 +71309,7 @@ function b2RenderParts() {
       if (m.track) meta += '<span>1×1 track</span>' + b2Term(m.track, 'free-form');
       else if (m.sizes) {
         const sizes = []; for (let z = 1; z <= m.maxSize; z++) sizes.push(z);
-        meta += '<span class="sizes">' + sizes.map(function (z) { const b = m.sizeBonus ? BUREAU_RULES.sizeBonus[Math.min(z, 3)] : 1; return '<button type="button" data-sz="' + z + '"' + (z === sz ? ' class="on"' : '') + '>' + z + '×' + z + (b > 1 ? ' <em>+' + Math.round((b - 1) * 100) + '%</em>' : '') + '</button>'; }).join('') + '</span>' + b2Term('sizebonus', 'size piece');
+        meta += '<span class="sizes">' + sizes.map(function (z) { const b = m.sizeBonus ? BUREAU_RULES.sizeBonus[Math.min(z, BUREAU_RULES.sizeBonus.length - 1)] : 1, zl = b2SizeLocked(m, z); return '<button type="button" data-sz="' + z + '" class="' + (z === sz ? 'on' : '') + (zl ? ' lk' : '') + '"' + (zl ? ' data-k="locked" title="Locked: ' + esc(b2SizeTech(m)) + '"' : '') + '>' + z + '×' + z + (b > 1 ? ' <em>+' + Math.round((b - 1) * 100) + '%</em>' : '') + '</button>'; }).join('') + '</span>' + b2Term('sizebonus', 'size piece');
       }
       else if (m.build) meta += '<span class="bname">' + esc(s.name) + '</span><span>' + s.w + '×' + s.h + '</span><span>' + esc(b2WeaponLine(s)) + '</span>';
       else if (!vars) meta += '<span>' + s.w + '×' + s.h + (mk > 1 && (s.w * s.h < m.w * m.h) ? ' (Mk I ' + m.w + '×' + m.h + ')' : '') + '</span>';
@@ -73509,7 +73531,8 @@ function b2Wire() {
       if (b2MarkLocked(mk, (MODULE_BY_ID[id] || {}).line)) { b2Toast('Mk ' + B2_ROMAN[mk] + ' needs research. Tick "Unlock everything (testing)" to try it.'); return; }
       b2.marks[id] = mk; if (b2.pick && b2.pick.id === id) b2.pick.mk = mk; b2RenderParts(); b2RenderInsp(); b2Draw(); return;
     }
-    if (ds.sz && t.closest('[data-mod]')) { const id = t.closest('[data-mod]').dataset.mod; b2.sizes[id] = +ds.sz; if (b2.pick && b2.pick.id === id) b2.pick.sz = +ds.sz; b2RenderParts(); b2RenderInsp(); b2Draw(); return; }
+    if (ds.sz && t.closest('[data-mod]')) { const id = t.closest('[data-mod]').dataset.mod; if (MODULE_BY_ID[id] && b2SizeLocked(MODULE_BY_ID[id], +ds.sz)) { b2Toast('A ' + ds.sz + '×' + ds.sz + ' ' + MODULE_BY_ID[id].name + ' is locked: ' + b2SizeTech(MODULE_BY_ID[id]) + '. Tick "Unlock everything (testing)" to try it.'); return; }   // (v78.3)
+      b2.sizes[id] = +ds.sz; if (b2.pick && b2.pick.id === id) b2.pick.sz = +ds.sz; b2RenderParts(); b2RenderInsp(); b2Draw(); return; }
     if (ds.stamp !== undefined) { b2.pick = { kind: 'sub', idx: +ds.stamp }; b2.tool = 'place'; b2RenderTools(); b2RenderInsp(); b2Toast('Click the sheet to stamp ' + SUBASSEMBLIES_V3[+ds.stamp].name + '; R turns it.'); return; }
     if (ds.sadel !== undefined) { SUBASSEMBLIES_V3.splice(+ds.sadel, 1); b2SavePrefs(); b2RenderBlocks(); return; }
     if (ds.refit) { b2OpenRecord(ds.refit, true); return; }
@@ -74750,6 +74773,7 @@ function libNeedsResearch(d, kit) {
     if (!bureauKitAllows(kit, 'modules', m.id)) add(m.tech || 'Tier 2');
     const mk = partTakesMarks(m) ? (p.mk || 1) : 1;   // (v68) a part with no marks has one form: an old premade design's "Mk II" room is not research
     if (mk > bureauKitMark(kit, m.line)) add(extraFor(function (x) { return x.lineMarks && x.lineMarks[m.line] >= mk; }));
+    if (m.sizes && (p.sz || 1) > bureauKitSizeFor(kit, m)) add(extraFor(function (x) { return x.lineSizes && x.lineSizes[m.line] >= p.sz; }));   // (v78.3) a big tank
     if (m.build === 'gun' && mk > bureauKitMarkFor(kit, m, p.opt)) { const fam = GUN_FAMILIES[partOptionsV3(m.id, p.opt).family]; if (fam && fam.markLine) add(extraFor(function (x) { return x.lineMarks && x.lineMarks[fam.markLine] >= mk; })); }   // (v68) a coilgun's own mark line
     if (m.build) {
       const o = partOptionsV3(m.id, p.opt), line = BUILD_LINES[m.id];
