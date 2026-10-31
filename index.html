@@ -29,7 +29,7 @@
   document.documentElement.classList.add('ew-touch');
 })();
 </script>
-<title>Engineer's War v92 - main (v91.2) plus Tier 3 stage 3: the Swarm's Tier 3 parts, the Leviathan titan and the Deep mother carrier</title>
+<title>Engineer's War v93 - main (v92) plus Tier 3 stage 4: the Delvers' Tier 2 and Tier 3 parts, the Hollow cruiser and the Mining ark</title>
 <!-- (v17) The shared look: theme-v0.4.css from the UI folder, built in word for word (tools/build.js). It only styles its own named parts
      (.mode-front, .panel, .btn ...), plus a few page-wide basics that the rules just below undo for the older screens. -->
 <style>
@@ -8012,6 +8012,7 @@ const SETTINGS = {
   delverJumpOutSeconds: 90,   // ... seconds after it arrived
   delverJumpOutHull: 0.7,     // ... or at once when its hull is under this share
   delverGrid: 1,              // 1 = Delver drones fly as square blocks in lock step (the perfect grids); 0 = like any ship
+  delverFoundry: 1,           // (v93) 1 = a Delver rock's drone foundry builds new drones during the battle (its part's seconds and alive numbers); 0 = it builds nothing
   // (v77, build D of notes/plans/aliens/delver-sylph-tier01.md) THE SYLPHS' BATTLE RULES (section 5vc). Placeholders.
   sylphBarrierModel: 1,       // 1 = a Sylph ship's Barrier (its emitters' pool, 02c sy_barrier) takes every hit first and fills again when left alone; 0 = off
   sylphBarrierLight: 0.25,    // ... the share of its damage a laser or a light slug does to the Barrier (heavy slugs, Piercing shots and warheads do all of it)
@@ -8079,7 +8080,10 @@ const SETTINGS = {
               'Veil drone': { week: 0, weight: 1 },
               Breaker: { week: 0, weight: 2, berths: { corvette: 2 } },
               'Drone tender': { week: 0, weight: 1, berths: { destroyer: 1 } },
-              'Driver rock': { week: 10, weight: 1, berths: { destroyer: 1 }, tier: 2 } },
+              'Driver rock': { week: 10, weight: 1, berths: { destroyer: 1 }, tier: 2 },
+              // (v93, Tier 3 plan s5a) the Delvers' Tier 2 rock comes with the Tier 2 trigger (our Cruiser project or first fusion ship), their ark with the Tier 3 one
+              'Hollow cruiser': { week: 30, weight: 1, berths: { cruiser: 1 }, tier2: true },
+              'Mining ark': { week: 80, weight: 1, berths: { titan: 1 }, tier3: true } },
     // (v78) the Sylphs build nothing (06s): their rows only name their ships for the screens; their pilots decide who flies what
     sylph: { Duelist: { week: 0, weight: 1 }, Courser: { week: 0, weight: 1 }, "Lord's blade": { week: 0, weight: 1 } }
   },
@@ -9888,6 +9892,21 @@ const TEST_SCENARIOS = [
       Object.assign(R(0, 'Partisan'), row, { count: 2, squadSize: 2 });
       Object.assign(R(1, 'Leviathan'), row, { count: 1, squadSize: 1 });
       Object.assign(R(1, 'Deep mother'), row, { count: 1, squadSize: 1 });
+    } },
+  // (v93, Tier 3 stage 4) The Delvers' Tier 3: our titan and two capitals against a Mining ark and two Hollow cruisers (with the Spike drones their cradles
+  // carry and the foundry builds). A look at the Mountain driver, the grav lances, the Deep veils, the machine nets, the shard throwers and the ark's jump.
+  { group: 'Bureau v2', id: 'bureau2_delver_t3', name: 'Bureau v2: Tier 3, the Colossus and two Bastions v a Mining ark and two Hollow cruisers', needs: ['Colossus', 'Bastion', 'Partisan', 'Mining ark', 'Hollow cruiser', 'Spike drone'],
+    note: '(v93) Blue: a Colossus titan, two Bastions and two Partisans. Red: a Mining ark titan and two Hollow cruisers, whose cradles carry four Spike drones; the ark\'s foundries cut more as the fight goes on. ' +
+          'Both are the stock Tier 3 designs, first numbers and not tuned.',
+    layout: { edgeMargin: 0.3, bandWidth: 0.05, verticalMargin: 0.3 },
+    settings: { tacticsModel: 1, movementModel: 1, hitModel: 1 },
+    setup: function (s, R) {
+      const row = { officer: 'neutral', engage: 'medium', kite: 'auto', flank: 'auto' };
+      Object.assign(R(0, 'Colossus'), row, { count: 1, squadSize: 1 });
+      Object.assign(R(0, 'Bastion'), row, { count: 2, squadSize: 2 });
+      Object.assign(R(0, 'Partisan'), row, { count: 2, squadSize: 2 });
+      Object.assign(R(1, 'Mining ark'), row, { count: 1, squadSize: 1 });
+      Object.assign(R(1, 'Hollow cruiser'), row, { count: 2, squadSize: 2 });
     } },
   // ---- Objectives: facilities and objectives. ----
   // ---- The siege scenario (section 2k): Blue holds a Shipyard near the left side, Red attacks from the right. This is the scenario the setup screen starts with. ----
@@ -11724,6 +11743,7 @@ const TRAITS = {
   Corrosive:     { kind: 'alien',   cls: 'chem', tip: 'Swarm acid. Eats the armour it hits and keeps eating until damage control deals with it.', by: ['Hardened'] },
   Regrowing:     { kind: 'alien',   cls: 'chem', tip: 'Swarm hulls heal in the field, out of contact.', vs: [] },
   'Heat-shedding': { kind: 'alien', cls: 'heat', tip: 'Swarm chitin that glows and sheds a laser\'s heat: no heating inside, and the beam builds only half its Focus.', vs: ['Focus', 'Heat'] },   // (v69)
+  Crystal:       { kind: 'alien',   cls: 'heat', tip: 'Delver cut crystal that scatters a beam: its Focus builds at half.', vs: ['Focus'] },   // (v93, Tier 3 stage 4) the crystal plate
   Weeping:       { kind: 'alien',   cls: 'heat', tip: 'Swarm hide that sheds its burning layers: a plasma hit does half and does not soften it. Grows back slowly.', vs: ['Melting'] },   // (v92)
   Jamming:       { kind: 'alien',   cls: 'chg',  tip: 'Delver jammers: your Guided weapons miss more and your fire control scatters more nearby.', by: [] },
   Layered:       { kind: 'alien',   cls: 'gen',  tip: 'Delver armour: Spaced and Ablative at once, and very heavy.', vs: ['Piercing', 'Focus'] },
@@ -12916,6 +12936,41 @@ const MODULES_V3 = [
     rule: 'Size piece. Rock and metal in layers: Spaced and Ablative at once (it stops Piercing and soaks beams) and thicker than steel (armour 5 a square x the block\'s side), but heavy.' },
   { id: 'dv_cradle', name: 'Drone cradle', cat: 'ports', sub: 'Hangars', line: 'alien', w: 12, h: 5, role: 'room', edge: true, lane: 'door', hangar: true, holds: 'small', minHull: 'destroyer', cost: 10, power: 0, powerClass: 'rest', crew: 1, res: 'magnetic', alien: true, faction: 'delver',
     rule: 'On the outside, with a clear lane out of its mouth. A cradle the size of the one Delver drone (a Small craft) it holds, which it launches in battle. Destroyers and up.' },
+  // ---- (v93, Tier 3 stage 4: notes/plans/ships/tier3-numbers-plan.md s5c, faction-modules-t0-t3.md s4b and s4c) THE DELVERS' TIER 2 AND TIER 3 PARTS.
+  //      Tier 2 fills their gaps (point defence, repairs on uncrewed rocks, an answer to our Counter-jamming, a cruiser gun, laser-scattering armour, the
+  //      drone net); Tier 3 is the Mining ark's kit (one great gun, grav lances, drone foundries, the jump spindle, the ark helm, shatter mines). The battle
+  //      rules are in 05g (dv...). Every number is the plan's first guess, not tuned. ----
+  { id: 'dv_shard', name: 'Shard thrower', cat: 'defence', sub: 'Point defence', line: 'alien', w: 2, h: 2, role: 'external', edge: true, cost: 12, power: 0, powerClass: 'pd', heat: 0, crew: 0, pdTier: 'gun', pd: true, traits: ['Intercepting'], res: 'magnetic', alien: true, faction: 'delver',
+    pdRange: 500, pdRate: 2, pdDamage: 8, pdKill: 0.3, pdCrossing: 0.8, pdStopShells: 0.03, pdAmmo: '',
+    rule: '(Tier 2) On the outside. Point defence: spits cut crystal at missiles twice a second (8 a hit, 30% to kill one) out to 500, and stops 3% of incoming shells a mount. Fed from the rock: no magazine.' },
+  { id: 'dv_deepveil', name: 'Deep veil', cat: 'electronics', sub: 'Electronic war', line: 'alien', w: 4, h: 4, role: 'machine', cost: 40, power: 0, heat: 0, crew: 0, jam: 0.14, jamBubble: 1400, res: 'magnetic', alien: true, faction: 'delver', traits: ['Jamming'],
+    rule: '(Tier 2) The bigger Veil: a jamming bubble 1,400 round the ship at 1.75 x a Veil jammer\'s strength (our Guided weapons fired into it miss 70% more, our guns scatter 35% more). Our Counter-jamming halves that, which still leaves it near a plain Veil. The strongest bubble over a target counts; bubbles do not stack.' },
+  { id: 'dv_deepmind', name: 'Deep mind', cat: 'crew', sub: 'Bridges', line: 'alien', w: 4, h: 4, role: 'room', bridge: true, machineMind: true, shipMind: true, coversCrew: 600, cost: 40, power: 0, powerClass: 'bridge', crew: 0, houses: 0, lifeSupport: 0, res: 'magnetic', alien: true, faction: 'delver',
+    rule: '(Tier 2) The Drone mind grown for a cruiser-size rock: a machine mind that works up to 600 of the crew the hull and parts need, so nothing aboard needs air or quarters. Nobody aboard: it never pulls back and mends nothing in battle (a Mending drone bay still works).' },
+  { id: 'dv_mendbay', name: 'Mending drone bay', cat: 'ports', sub: 'Support', line: 'alien', w: 6, h: 3, role: 'external', edge: true, cost: 30, power: 0, heat: 0, crew: 0, repairArm: { reach: 400, seconds: 60, hull: 20 }, droneMend: true, res: 'magnetic', alien: true, faction: 'delver',
+    rule: '(Tier 2) On the outside: little drones that fly to a Delver ship within 400 and mend one broken part a minute (or 20 hull when nothing is broken). The one repair an uncrewed Delver ship gets: a drone mind alone mends nothing.' },
+  { id: 'dv_slug_h', name: 'Heavy slug turret', cat: 'weapons', sub: 'Slug drivers', line: 'alien', w: 5, h: 3, role: 'external', edge: true, cost: 48, power: 0, heat: 0, crew: 2, family: 'Kinetic', traits: ['Piercing'], res: 'magnetic', alien: true, faction: 'delver',
+    weapon: { damage: 120, damageType: 'kinetic', range: 3200, fireRate: 0.125, arc: 360, ammo: '', power: 4 },
+    rule: '(Tier 2) The cruiser-size turret: a 120 slug every 8 seconds (Piercing) out to 3,200, all round. No ammunition, no heat.' },
+  { id: 'dv_crystal', name: 'Crystal plate', cat: 'defence', sub: 'Armour', line: 'alien', w: 1, h: 1, sizes: true, maxSize: 5, shrink: false, role: 'armour', cost: 2, armourBase: 6, hpMul: 1.3, armourMassMul: 1.8, res: 'structure', alien: true, faction: 'delver', traits: ['Crystal'],
+    rule: '(Tier 2) Size piece. Cut crystal: armour 6 a square x the block\'s side (Layered rock 5) at 1.3 x hit points, and a laser on it builds only half its Focus (the facets scatter the beam). Heavier than Layered rock.' },
+  { id: 'dv_net', name: 'Machine net', cat: 'electronics', sub: 'Computers', line: 'alien', w: 3, h: 3, role: 'machine', cost: 30, power: 0, heat: 0, crew: 0, net: { reach: 600, scatter: 0.8 }, res: 'magnetic', alien: true, faction: 'delver',
+    rule: '(Tier 2) A computer that links the drones: every Delver drone within 600 of a working net scatters x0.8 (the grid formation\'s payoff). Nets do not stack.' },
+  { id: 'dv_mountain', name: 'Mountain driver', cat: 'weapons', sub: 'Slug drivers', line: 'alien', w: 24, h: 4, role: 'machine', dir: 'front', cost: 400, power: 0, heat: 0, crew: 8, family: 'Kinetic', traits: ['Piercing', 'Blast'], res: 'magnetic', alien: true, faction: 'delver',
+    weapon: { damage: 3000, damageType: 'kinetic', range: 5000, fireRate: 0.0167, arc: 6, ammo: '', power: 12 },
+    rule: '(Tier 3) The titan-size Rock driver: a spinal rail 24 squares long that throws a mountain every 60 seconds (3,000, Piercing and Blast) out to 5,000, straight ahead. The ark\'s one great shot.' },
+  { id: 'dv_gravlance', name: 'Grav lance', cat: 'weapons', sub: 'Slug drivers', line: 'alien', w: 10, h: 2, role: 'machine', dir: 'front', cost: 120, power: 0, heat: 0, crew: 2, family: 'Kinetic', traits: [], res: 'magnetic', alien: true, faction: 'delver', tetherReach: 1500,
+    weapon: { damage: 20, damageType: 'kinetic', range: 1500, fireRate: 0.5, arc: 20, ammo: '', power: 0 },
+    grav: { slow: 0.5, seconds: 3 },
+    rule: '(Tier 3) A gravity beam at the nose: every 2 seconds it drags at a ship within 1,500 (20 of damage, and the ship it holds flies at half speed for 3 seconds); a ship within its reach cannot jump away (our Tether turned round). Needs no power.' },
+  { id: 'dv_foundry', name: 'Drone foundry', cat: 'ports', sub: 'Hangars', line: 'alien', w: 16, h: 8, role: 'room', edge: true, lane: 'door', hangar: true, holds: 'small', minHull: 'capital', cost: 120, power: 0, powerClass: 'rest', crew: 4, foundry: { seconds: 90, alive: 6 }, res: 'magnetic', alien: true, faction: 'delver',
+    rule: '(Tier 3) On the outside, with a clear lane out of its mouth. Not a hangar that launches once: it BUILDS the drone it is set to (a Spike drone) out of rock in the middle of a battle, one every 90 seconds, up to 6 of its own alive at a time. Capital rocks and up.' },
+  { id: 'dv_spindle', name: 'Ark jump spindle', cat: 'drives', sub: 'Main drives', line: 'alien', w: 8, h: 8, role: 'machine', cost: 200, power: 0, heat: 0, crew: 6, jumpSpindle: { seconds: 120 }, res: 'magnetic', alien: true, faction: 'delver',
+    rule: '(Tier 3) The engine that jumps the ark away: 120 seconds after the ark is first hurt (at once when its helm is lost) it leaves the battle alive, dropping its shatter mines. Our Tether within 1,500 holds it, and so does knocking this part out.' },
+  { id: 'dv_arkhelm', name: 'Ark helm', cat: 'crew', sub: 'Bridges', line: 'alien', w: 6, h: 6, role: 'room', bridge: true, arkHelm: true, shipMind: true, coversCrew: 3000, cost: 120, power: 0, powerClass: 'bridge', crew: 20, houses: 600, lifeSupport: 600, res: 'general', alien: true, faction: 'delver',
+    rule: '(Tier 3) The crewed heart of an ark: hundreds of Delvers ride here (it houses and keeps alive 600), and the ark\'s machines work the rest of the rock, so it needs no other quarters. Lose it and the ark flees at once.' },
+  { id: 'dv_shatter', name: 'Shatter mines', cat: 'defence', sub: 'Mines', line: 'alien', w: 3, h: 2, role: 'external', edge: true, cost: 30, power: 0, heat: 0, crew: 0, shatterMines: { mines: 3, damage: 150, radius: 150, spacing: 60, every: 6, seconds: 60 }, res: 'magnetic', alien: true, faction: 'delver',
+    rule: '(Tier 3) On the outside: as the ark jumps away it drops 3 crystal mines of 150 (Blast) in a patch 150 across where it stood, live for 60 seconds, so the chasers pay.' },
   // ---- (v77, build D of notes/plans/aliens/delver-sylph-tier01.md) THE SYLPHS' PARTS. Chrome and gold, made in the internal mode like the Swarm's and the
   //      Delvers'. The Sylphs start at their top technology: every part is far better than ours for its size, so a Sylph ship fights like one of ours
   //      three or four sizes bigger. A Sylph ship is flown by one to three Sylphs, each on a throne (the pilots: section 5vc, the Ace trait); its weapons
@@ -15308,6 +15363,7 @@ function updateMovementAndTargeting(dt) {
     if (thrusters && stSpeed[st] > 0) {
       let vmax = stSpeed[st] * paceMul;
       if (mdShip[i] === 1) vmax *= mdSpeedMul[i];             // (v20, section 5v) drives knocked out
+      if (dvGravOn === 1) vmax *= dvSlowOf(i);                 // (v93, section 5vc) held by a Delver grav lance
       if (repairing && cplCtl[i] === CTL_TUG_TOW) vmax *= SETTINGS.towSpeedShare;   // (v66, section 5jc) a tug towing a crippled ship goes at half speed
       if (sq > 0 && sqSpeedCap[sq] > 0 && !retreating && !fallingBack && !repairing && !follower && vmax > sqSpeedCap[sq]) vmax = sqSpeedCap[sq];   // (v19, section 5u: survivalModel 1 only) march speed, or holding short
       if (sq > 0 && sqPaceUntil[sq] > simTime && sqPaceCap[sq] > 0 && !retreating && !fallingBack && !repairing && !follower && vmax > sqPaceCap[sq]) vmax = sqPaceCap[sq];   // (v50, section 5mp) its Division's shared pace on the march
@@ -17861,7 +17917,7 @@ function bbStoresOf(i) {
 }
 function bbTraitBits(list) { let b = 0; if (list) for (let k = 0; k < list.length; k++) b |= BB_TRAIT_BITS[list[k]] || 0; return b; }
 // (v30 B1) The flags of a plate or bulkhead square on the line of fire (the per-cell table lof.cellFlags).
-const BB_PF_WALL = 1, BB_PF_DEFLECTING = 2, BB_PF_SPACED = 4, BB_PF_ABLATIVE = 8, BB_PF_REACTIVE = 16, BB_PF_HARDENED = 32, BB_PF_BULKHEAD = 64, BB_PF_SHEDDING = 128, BB_PF_WEEPING = 256;   // (v92; the flags array is Uint16 since this ninth flag) WEEPING: weeping hide (a plasma hit does half, melts nothing)   // (v69) SHEDDING: heat-shedding chitin (a beam's heat goes into the plate)
+const BB_PF_WALL = 1, BB_PF_DEFLECTING = 2, BB_PF_SPACED = 4, BB_PF_ABLATIVE = 8, BB_PF_REACTIVE = 16, BB_PF_HARDENED = 32, BB_PF_BULKHEAD = 64, BB_PF_SHEDDING = 128, BB_PF_WEEPING = 256, BB_PF_CRYSTAL = 512;   // (v92; the flags array is Uint16 since this ninth flag) WEEPING: weeping hide (a plasma hit does half, melts nothing)   // (v69) SHEDDING: heat-shedding chitin (a beam's heat goes into the plate)
 // (v30 B1, spec 3.4) The size of a chain explosion, by what the part holds. A part that is none of these keeps its row's `volatile`.
 const BB_BLAST = {
   magazinePerSquare: 20,     // a gun magazine: 20 a square x how full it is
@@ -17879,7 +17935,8 @@ let stOptimal = new Float64Array(0);               // (v30 B1) [st] a Bureau v2 
 let stFoScatter = new Float64Array(0);             // (v30 B1) [st] that group's own scatter multiplier (turret scatter, fire control, sensors) for the falloff curve
 let bbHitShip = -1, bbHitCell = -1, bbHitPart = -1, bbHitTraits = 0, bbHitAblative = -1, bbHitDeflected = 0;   // (v30 B1) what the last bbArmourPass found: the ship, its square, the part there (-1 none), the traits left, the Ablative plate on the line, deflected
 let bbHitShed = 0;                                 // (v69) 1 when the last armour pass found a standing plate of heat-shedding chitin on the line
-let bbHitWeep = 0;                                 // (v92) 1 when it found a standing plate of weeping hide on the line (a plasma hit does half, melts nothing)
+let bbHitWeep = 0;
+let bbHitCrystal = 0;                              // (v93) 1 when the last armour pass found a standing Delver crystal plate on the line (a beam's Focus builds at half)                                 // (v92) 1 when it found a standing plate of weeping hide on the line (a plasma hit does half, melts nothing)
 let bbHitOuterPlate = -1;                          // (v30 S1) ... and the outermost standing plate on the line (the one the acid splashes over), -1 = none
 // (v30 S1, swarm-tier01.md section 3) THE SWARM'S TRAITS IN BATTLE. Every number is a SETTING (01): bbAcid*, bbRegrow*, bbBurst*.
 //   CORROSIVE (acid): a Corrosive hit is never deflected by steel (it splashes), the plates still take their armour off it, and it leaves an ACID PATCH on the plate it
@@ -17957,7 +18014,7 @@ function bbStatsBlank() {
            // touch, bursts on death, the damage they did and the ships they killed
            acidPatches: 0, acidEaten: 0, acidPlatesOut: 0, acidCleared: 0, acidSplashes: 0, acidHardened: 0, regrowHull: 0, regrowPlates: 0, regrowHeatStops: 0,
            bursts: 0, burstDeaths: 0, burstDamage: 0, burstKills: 0,
-           weepHits: 0, chorusRegrow: 0, chorusShots: 0, gunRakes: 0, gunClouds: 0,   // (v92) plasma hits halved by weeping hide; plate regrowth and shots helped by a hive chorus; a spine battery's rakes; acid geyser clouds
+           weepHits: 0, chorusRegrow: 0, chorusShots: 0, gunRakes: 0, gunClouds: 0, crystalHits: 0, netShots: 0, gravHolds: 0, foundryDrones: 0, shatterFields: 0,   // (v93)   // (v92) plasma hits halved by weeping hide; plate regrowth and shots helped by a hive chorus; a spine battery's rakes; acid geyser clouds
            wrecked: 0, partsLoaded: 0,   // (v46) parts wrecked (beyond damage control), ships that came into the battle with the damage the campaign remembered
            byType: {} };
 }
@@ -18147,6 +18204,7 @@ function bbMakeTypeInfo(rec) {
       rail: G.part === 'gun' && G.ammo === 'charge' ? 1 : 0,
       split: beam === 1 && G.opt && OPTICS_OPTIONS[G.opt.optics] && OPTICS_OPTIONS[G.opt.optics].split > 1 ? 1 : 0, splitMul: beam === 1 && G.opt && OPTICS_OPTIONS[G.opt.optics] ? OPTICS_OPTIONS[G.opt.optics].splitMul || 1 : 1,
       linger: burstRow && burstRow.linger && burstRow.linger.radius > 0 && burstRow.linger.seconds > 0 ? burstRow.linger : null,   // (v92) a grown weapon whose hit leaves a lingering cloud (the acid geyser; 05f-3 bbCloudAdd)
+      grav: burstRow && burstRow.grav && burstRow.grav.slow > 0 ? burstRow.grav : null,   // (v93) a Delver grav lance: a hit holds the target (05g dvGravHit)
       snd: bbSoundKey(G),
       burst: burst   // (v30 S1) 1 = a burst sac
     };
@@ -18327,8 +18385,9 @@ function bbMakeTypeInfo(rec) {
   let regrow = rec.alienStock === true ? 1 : 0;
   for (let k = 0; k < U.length; k++) { const tr = U[k].traits; if (U[k].working === 1 && tr && tr.indexOf('Regrowing') >= 0) { regrow = 1; if (U[k].role === 'armour') { regrowPlates.push(k); regrowMul.push(tr.indexOf('Weeping') >= 0 ? SETTINGS.weepRegrowMul : 1); } } }
   // (v92, Tier 3 plan s5b) the HIVE CHORUSES this type carries (the command aura: their parts, reach, regrowth multiplier and aim bonus; 05f-2b bbChorusOf)
-  const chorusList = [];
+  const chorusList = [], netList = [];   // (v93) netList: the Delver machine nets (05g dvNetOf)
   for (let k = 0; k < L.parts.length && k < U.length; k++) { const ch = L.parts[k].m.chorus; if (ch && U[k].working === 1 && ch.reach > 0) chorusList.push({ part: k, reach: ch.reach, regrow: ch.regrow > 0 ? ch.regrow : 1, aim: ch.aim > 0 ? ch.aim : 0 }); }
+  for (let k = 0; k < L.parts.length && k < U.length; k++) { const nt = L.parts[k].m.net; if (nt && U[k].working === 1 && nt.reach > 0) netList.push({ part: k, reach: nt.reach, scatter: nt.scatter > 0 ? nt.scatter : 1 }); }
   // (v69, Tier 2 plan s5c) the SPORE CENSERS this type carries (the spore-field aura: their parts, reach and spore damage a second; 05f-3 bbSporeFieldsStep)
   const sporeList = [];
   for (let k = 0; k < L.parts.length && k < U.length; k++) { const sf = L.parts[k].m.sporeField; if (sf && U[k].working === 1 && sf.reach > 0 && sf.rate > 0) sporeList.push({ part: k, reach: sf.reach, rate: sf.rate }); }
@@ -18350,7 +18409,7 @@ function bbMakeTypeInfo(rec) {
   let port = false;
   for (let k = 0; k < L.parts.length && k < U.length; k++) {
     const m = L.parts[k].m; if (U[k].working !== 1) continue;
-    if (m.repairArm && !(SETTINGS.droneNoRepair && S.drone)) arms.push(k);
+    if (m.repairArm && (!(SETTINGS.droneNoRepair && S.drone) || m.droneMend)) arms.push(k);   // (v93) a mending drone bay works on an uncrewed Delver rock too
     if (m.cargo > 0) holds.push(k);
     if (m.supplyPort) port = true;
     if (m.mineLayer) layers.push(k);
@@ -18367,6 +18426,7 @@ function bbMakeTypeInfo(rec) {
   for (let k = 0; k < L.parts.length && k < U.length; k++) if (L.parts[k].m.flagBridge && U[k].working === 1) flag = k;
   return { burst: burstG, regrow: regrow, regrowPlates: Int32Array.from(regrowPlates), regrowMul: Float32Array.from(regrowMul),   // (v30 S1; v92 regrowMul)
            chorusList: chorusList,   // (v92)
+           netList: netList,   // (v93)
            flag: flag,   // (v91)
            sporeList: sporeList,   // (v69)
            fastCaps: fastCaps,     // (v87)
@@ -18425,6 +18485,7 @@ function bbLineOfFireTables(L, S, tracks) {
     if (tr.indexOf('Hardened') >= 0) flags |= BB_PF_HARDENED;
     if (tr.indexOf('Heat-shedding') >= 0) flags |= BB_PF_SHEDDING;   // (v69) heat-shedding chitin
     if (tr.indexOf('Weeping') >= 0) flags |= BB_PF_WEEPING;   // (v92) weeping hide
+    if (tr.indexOf('Crystal') >= 0) flags |= BB_PF_CRYSTAL;   // (v93) Delver crystal plate
     const per = s.armour > 0 ? s.armour / Math.max(1, u.cells.length) * armMul : 0;
     for (let c = 0; c < u.cells.length; c++) {
       const k = u.cells[c]; if (k < 0) continue;
@@ -18586,8 +18647,8 @@ function bbFire(i, st, dt, withdrawing, deferred) {
     // (v75, section 5vc) a target inside an enemy Delver jamming bubble: Guided weapons hit less often, guns scatter more
     const jamX = dvJamShot(target, !!grp.missile), jamScatter = jamX.scatter, jamP = jamX.p;
     if (grp.missile) p = d <= grp.maxRange * 0.9 ? missileTerminalChance(st, dodgeAcc, shipJinkSpeed[target] > 0, grp.d) * jamP : 0;
-    else if (grp.proj === 1) p = hitChanceFalloff(grp.range, grp.scatterMul * fgJam[i] * jamScatter, grp.tracking, grp.dodgeWindow, grp.flightTime, grp.guidance, grp.flightRef, d, sig, omega, shipJinkSpeed[target], dodgeAcc, aimMul) * (jamP < 1 ? jamP : 1);   // (v30 B1) the falloff curve
-    else p = hitChanceWith(grp.spread * fgJam[i] * jamScatter, grp.tracking, grp.dodgeWindow, grp.flightTime, grp.guidance, grp.flightRef, d, sig, omega, shipJinkSpeed[target], dodgeAcc, aimMul) * (jamP < 1 ? jamP : 1);
+    else if (grp.proj === 1) p = hitChanceFalloff(grp.range, grp.scatterMul * fgJam[i] * jamScatter * dvNetOf(i), grp.tracking, grp.dodgeWindow, grp.flightTime, grp.guidance, grp.flightRef, d, sig, omega, shipJinkSpeed[target], dodgeAcc, aimMul) * (jamP < 1 ? jamP : 1);   // (v30 B1) the falloff curve
+    else p = hitChanceWith(grp.spread * fgJam[i] * jamScatter * dvNetOf(i), grp.tracking, grp.dodgeWindow, grp.flightTime, grp.guidance, grp.flightRef, d, sig, omega, shipJinkSpeed[target], dodgeAcc, aimMul) * (jamP < 1 ? jamP : 1);
     if (!(p === p)) { gunneryNaN++; p = SETTINGS.minHitChance; }
     if (chorusOn === 1) { const aim = bbChorusOf(i, 1); if (aim > 0) { p *= 1 + aim; if (p > SETTINGS.maxHitChance) p = SETTINGS.maxHitChance; bbStats.chorusShots++; } }   // (v92) a hive chorus within reach: its bodies aim better
     if (syDodge[target] > 0) p *= 1 - syDodge[target];   // (v77, section 5vc) a Sylph Ace at the controls slips the shot more often, the higher its rank
@@ -18691,6 +18752,7 @@ function bbFire(i, st, dt, withdrawing, deferred) {
         }
       }
       if (hitN > 0 && (grp.traits & BB_TRAIT_BITS.Raking)) { bbStats.gunRakes++; bbBeamRake(i, grp, target, dx * inv, dy * inv, shotDamage * hitN, deferred); }   // (v92) a spine battery's spines go on down the line
+      if (hitN > 0 && grp.grav) dvGravHit(target, grp.grav);   // (v93) a Delver grav lance holds what it hits
       if (anyHit === 0 && shipAlive[target] === 1) noteShotAt(i, target);
       if (marks) addMark(i, target, dx * inv, dy * inv, sig, scatter, anyHit);
       if (anyHit === 1 && flashes) addFlash(shipX[target], shipY[target], typeSize[shipType[target]] * 0.3, 0, target);
@@ -18994,7 +19056,7 @@ function bbStateOf(i, info) {
 function bbArmourPass(a, t, stt, facing, damage, dtype, traits, sa) {
   const info = bbTypeInfo(shipType[t]);
   const lof = info ? info.lof : null;
-  bbHitShip = t; bbHitCell = -1; bbHitPart = -1; bbHitTraits = traits; bbHitAblative = -1; bbHitDeflected = 0; bbHitOuterPlate = -1; bbHitShed = 0; bbHitWeep = 0;
+  bbHitShip = t; bbHitCell = -1; bbHitPart = -1; bbHitTraits = traits; bbHitAblative = -1; bbHitDeflected = 0; bbHitOuterPlate = -1; bbHitShed = 0; bbHitWeep = 0; bbHitCrystal = 0;
   if (!lof) {                                                            // (no layout: the old four-side armour)
     let th = damage - stArmor[stt * 4 + facing] * bbPlateEffect(dtype) * dbgArmour[shipSide[t]];   // (v78.5, section 7w) x the debug menu's armour
     const fl = damage * SETTINGS.bbMinArmorPass;
@@ -19022,6 +19084,7 @@ function bbArmourPass(a, t, stt, facing, damage, dtype, traits, sa) {
       if ((f & BB_PF_ABLATIVE) && bbHitAblative < 0) bbHitAblative = p;
       if (f & BB_PF_SHEDDING) bbHitShed = 1;                              // (v69) a standing plate of heat-shedding chitin on the line
       if (f & BB_PF_WEEPING) bbHitWeep = 1;                               // (v92) a standing plate of weeping hide on the line
+      if (f & BB_PF_CRYSTAL) bbHitCrystal = 1;                            // (v93) a standing Delver crystal plate on the line
       if ((f & BB_PF_REACTIVE) && reactive < 0 && ms.used[p] === 0) reactive = p;
     }
     // the next plate beyond this one toward the shooter (stop at the grid's edge; a run that leaves the frame has plateAt -1 already)
@@ -19112,6 +19175,8 @@ function bbModuleHit(t, stt, facing, damage, through, sa) {
     // off, and the beam's Focus builds at half (bbShedAt, read by bbBeamSecond). The damage itself goes on as usual (the plate's armour counts as chitin's).
     let shedding = false;
     if (!ablative && bbHitShed === 1 && SETTINGS.bbShedding === 1 && (bbHitTraits & (BB_TRAIT_BITS.Focus | BB_TRAIT_BITS.Heat))) { shedding = true; bbShedAt[t] = simTime; bbStats.shedHits++; }
+    // (v93, Tier 3 stage 4) a Delver CRYSTAL PLATE on the line scatters the beam: its Focus builds at half (bbShedAt again), but the heat lands as usual
+    if (!ablative && !shedding && bbHitCrystal === 1 && (bbHitTraits & BB_TRAIT_BITS.Focus)) { bbShedAt[t] = simTime; bbStats.crystalHits++; }
     // (v30 B2, spec 4.4) a hit with the HEAT trait (a beam) heats the ship it lands on
     if (!ablative && !shedding && SETTINGS.bbHeatModel === 1 && (bbHitTraits & BB_TRAIT_BITS.Heat) && through > 0) { shipHeat[t] += through * SETTINGS.bbHeatHitShare; bbStats.heatHits++; bbStats.heatOnTargets += through * SETTINGS.bbHeatHitShare; }
     // (v30 S1) ... and burns a Regrowing ship's tissue: no regrowth for bbRegrowHeatStop seconds (an Ablative plate taking the beam shields it)
@@ -19883,12 +19948,20 @@ function bbMinesDeploy() {
     }
   }
 }
+// (v93, Tier 3 stage 4) A field dropped where ship a stands now (the Delver ark's shatter mines as it jumps away): row = { mines, damage, radius, spacing, every, seconds }.
+function bbMinesDrop(a, row) {
+  if (!row || !(row.mines > 0)) return;
+  bbMines.push({ x: shipX[a], y: shipY[a], side: shipSide[a], r: row.radius > 0 ? row.radius : 100, left: row.mines, spacing: row.spacing > 0 ? row.spacing : 60, every: row.every > 0 ? row.every : 6, dmg: row.damage,
+                 a: a, sq: shipSquad[a], st: shipSide[a] * TYPE_COUNT + shipType[a], until: row.seconds > 0 ? simTime + row.seconds : 0 });
+  bbStats.minesLaid++; bbStats.shatterFields++;
+}
 function bbMinesStep(deferred) {
   if (!bbFieldsLaid) bbMinesDeploy();
   if (bbMines.length === 0) return;
   const dtype = DAMAGE_NAMES.indexOf('missile'), tr = BB_TRAIT_BITS.Blast, step = SETTINGS.simStep;
   for (let n = bbMines.length - 1; n >= 0; n--) {
     const m = bbMines[n];
+    if (m.until > 0 && simTime > m.until) { bbMines.splice(n, 1); continue; }   // (v93) a dropped field (shatter mines) goes dead after its seconds
     for (let t = 0; t < highWater && m.left > 0; t++) {
       if (shipAlive[t] === 0 || shipSide[t] === m.side) continue;
       const dx = shipX[t] - m.x, dy = shipY[t] - m.y, reach = m.r + typeSize[shipType[t]] * 0.5;
@@ -20316,38 +20389,85 @@ const BUREAU_BATTLE_API = {
 //     A Tether of ours near it stops the jump (dvTethered, v76). In a campaign it goes home as any ship that gets away (leaveBattle, section 5).
 //   * GRIDS (delverGrid): Delver drones fly in a square block (the box shape) and always in lock step (20b chooseFormationShape and lockAllowed ask
 //     dvGridSquadron), so the whole block turns and stops as one.
+//   * (v93, Tier 3 stage 4) THE TIER 2 AND 3 ROCKS: the Deep veil is a stronger bubble (dvJamAt); a MACHINE NET steadies the drones' guns near it (dvNetOf);
+//     a GRAV LANCE hit holds its target at half speed (dvGravHit, dvSlowOf); a DRONE FOUNDRY cuts new drones in the fight (dvFoundryStep); a rock with a
+//     JUMP SPINDLE jumps when its ark helm is knocked out or it has been hurt long enough, dropping its SHATTER MINES where it stood (dvJumpOut).
 //   Display: the close look draws the Delvers from UI/alien-art.js (section 6v). Numbers are first placeholders.
 // =====================================================================
 let dvBornAt = new Float64Array(0);                 // [ship] battle time it arrived (for the jump out)
 const dvJammers = [[], []];                         // per side, the slots of its ships that throw a jamming bubble (rebuilt every delverJamTick seconds)
 let dvJamNext = 0, dvJamTypes = -1;                 // when the lists are made again; how many types have a bubble (-1 = not counted yet)
-const dvTypeCache = new Map();
-const dvHeldOnce = new Set();                      // (v76) the ships a Tether has held this battle (told once each)                      // ship type record -> { bubble, jumpOut, grid }
-const dvStats = { jumpedOut: 0, jammedMissiles: 0, jammedShots: 0, tetherHeld: 0 };
+const dvTypeCache = new Map();                      // ship type record -> what it is to these rules (dvTypeOf)
+const dvHeldOnce = new Set();                       // (v76) the ships a Tether has held this battle (told once each)
+const dvStats = { jumpedOut: 0, jammedMissiles: 0, jammedShots: 0, tetherHeld: 0, gravHeld: 0, netShots: 0, foundryBuilt: 0, shatterDropped: 0, spindleWrecked: 0 };
+// (v93, Tier 3 stage 4: the Delvers' Tier 2 and 3 rocks) the extra state:
+let dvGravOn = 0;                                   // 1 while any ship is held by a grav lance (04 movement asks dvSlowOf only then)
+let dvHeldUntil = new Float64Array(0), dvHeldMul = new Float32Array(0);   // [ship] held by a grav lance until this battle time, at this share of its speed
+let dvHurtAt = new Float64Array(0);                 // [ship] when a rock with a jump spindle first fell under the hurt line (-1 = not hurt)
+let dvFoundryAt = new Float64Array(0);              // [ship] when its drone foundry last built a drone (its arrival at first)
+const dvBuilt = new Map();                          // ark slot -> [{ slot, born }] the drones its foundry built (counted while alive)
+const dvSpindleGone = new Set();                    // the rocks told once that their wrecked spindle cannot jump
+const dvNetList = [[], []], dvNetListAt = [-1, -1]; // per side, the working machine nets on the field this battle second: x, y, reach, scatter
+let dvNetAt = new Int32Array(0), dvNetMul = new Float32Array(0);   // [ship] a drone's net answer, kept for the second
 
-function dvEnsure() { if (dvBornAt.length !== MAX_SHIPS) dvBornAt = new Float64Array(MAX_SHIPS); }
+function dvEnsure() {
+  if (dvBornAt.length !== MAX_SHIPS) { dvBornAt = new Float64Array(MAX_SHIPS); dvHeldUntil = new Float64Array(MAX_SHIPS); dvHeldMul = new Float32Array(MAX_SHIPS).fill(1); dvHurtAt = new Float64Array(MAX_SHIPS).fill(-1); dvFoundryAt = new Float64Array(MAX_SHIPS); dvNetAt = new Int32Array(MAX_SHIPS).fill(-1); dvNetMul = new Float32Array(MAX_SHIPS).fill(1); }
+}
 // (spawnShip, section 3) a slot used again starts clean
-function dvResetShip(slot) { dvEnsure(); dvBornAt[slot] = simTime; dvHeldOnce.delete(slot); }
+function dvResetShip(slot) { dvEnsure(); dvBornAt[slot] = simTime; dvHeldUntil[slot] = 0; dvHeldMul[slot] = 1; dvHurtAt[slot] = -1; dvFoundryAt[slot] = simTime; dvNetAt[slot] = -1; dvHeldOnce.delete(slot); dvBuilt.delete(slot); dvSpindleGone.delete(slot); }
 // (a new battle) the lists and counts start again
-function dvResetBattle() { dvJammers[0].length = 0; dvJammers[1].length = 0; dvJamNext = 0; dvJamTypes = -1; dvTypeCache.clear(); dvHeldOnce.clear(); dvStats.jumpedOut = 0; dvStats.jammedMissiles = 0; dvStats.jammedShots = 0; dvStats.tetherHeld = 0; }
+function dvResetBattle() {
+  dvJammers[0].length = 0; dvJammers[1].length = 0; dvJamNext = 0; dvJamTypes = -1; dvTypeCache.clear(); dvHeldOnce.clear(); dvBuilt.clear(); dvSpindleGone.clear();
+  dvNetList[0].length = 0; dvNetList[1].length = 0; dvNetListAt[0] = -1; dvNetListAt[1] = -1; dvGravOn = 0;
+  for (const k in dvStats) dvStats[k] = 0;
+}
 
-// What a ship type is to these rules, worked out once per type record.
+// What a ship type is to these rules, worked out once per type record:
+//   bubble    the widest working jammer's bubble (0 = none), jam its strength (1 = a Veil jammer, a Deep veil 1.75)
+//   jumpOut   it leaves the battle alive (the Drone tender's `jumpOut`, or any rock with a jump spindle)
+//   grid      a Delver drone (flies in the square blocks; the machine nets steady its guns)
+//   spindle, helm   the battle unit index of its jump spindle and ark helm (-1 = none); spindleSeconds how long it must be hurt before it jumps
+//   foundries [{ part, type, seconds, alive }] its drone foundries: the unit, the drone type they build, one every `seconds`, up to `alive` in the fight
+//   shatter   [{ part, row }] its shatter mine bays (dropped as a field where it jumps away from)
 function dvTypeOf(t) {
   const rec = SHIP_TYPES[t];
-  if (!rec) return { bubble: 0, jumpOut: false, grid: false };
+  if (!rec) return { bubble: 0, jam: 1, jumpOut: false, grid: false, spindle: -1, helm: -1, spindleSeconds: 0, foundries: [], shatter: [] };
   let v = dvTypeCache.get(rec);
   if (v === undefined) {
     const S = rec.summary || {};
-    v = { bubble: S.jamBubble > 0 ? S.jamBubble : 0, jumpOut: rec.jumpOut === true, grid: rec.faction === 'delver' && !!S.drone && (S.sizeRank || 0) <= 0 };   // (the drones: small craft and smaller)
+    v = { bubble: S.jamBubble > 0 ? S.jamBubble : 0, jam: 1, jumpOut: rec.jumpOut === true, grid: rec.faction === 'delver' && !!S.drone && (S.sizeRank || 0) <= 0,   // (the drones: small craft and smaller)
+          spindle: -1, helm: -1, spindleSeconds: 0, foundries: [], shatter: [] };
+    const info = typeof bbTypeInfo === 'function' ? bbTypeInfo(t) : null;
+    if (info && info.a && info.a.layout && info.units) {
+      const L = info.a.layout, U = info.units, hangars = Array.isArray(S.hangars) ? S.hangars : [];
+      for (let k = 0; k < L.parts.length && k < U.length; k++) {
+        const m = L.parts[k].m; if (!m || U[k].working !== 1) continue;
+        if (m.jamBubble > 0 && (m.jam || 0.08) / 0.08 > v.jam) v.jam = (m.jam || 0.08) / 0.08;
+        if (m.jumpSpindle) { v.spindle = k; v.spindleSeconds = m.jumpSpindle.seconds > 0 ? m.jumpSpindle.seconds : 120; }
+        if (m.arkHelm) v.helm = k;
+        if (m.shatterMines) v.shatter.push({ part: k, row: m.shatterMines });
+        if (m.foundry && m.hangar) {
+          for (let q = 0; q < hangars.length; q++) {
+            if (hangars[q].part !== L.parts[k].k) continue;
+            const f = typeIndexById(hangars[q].id);
+            if (f >= 0) v.foundries.push({ part: k, type: f, seconds: m.foundry.seconds > 0 ? m.foundry.seconds : 90, alive: m.foundry.alive > 0 ? m.foundry.alive : 6 });
+          }
+        }
+      }
+      if (v.spindle >= 0) v.jumpOut = true;
+    }
     dvTypeCache.set(rec, v);
   }
   return v;
 }
 // Counter-jamming (build C, our research against the Delvers): the share of the jamming left (1 = none researched).
 function dvCounterJam() { return typeof dvCounterJamShare === 'function' ? dvCounterJamShare() : 1; }
+// Is battle unit k of ship i knocked out? (false when the ship has no unit state)
+function dvUnitOut(i, k) { const ms = mdState[i]; return !!(ms && ms.v3 && ms.out[k] === 1); }
 
-// THE JAMMING BUBBLES. Is ship t inside a bubble thrown by its own side (an enemy's for whoever shoots at it)? 0 = no, else the bubble's strength (1, or
-// less with Counter-jamming). The lists are made again every delverJamTick seconds of battle (they hold only the ships with a bubble).
+// THE JAMMING BUBBLES. Is ship t inside a bubble thrown by its own side (an enemy's for whoever shoots at it)? 0 = no, else the bubble's strength (1 for a
+// Veil jammer, 1.75 for a Deep veil, less with Counter-jamming). The lists are made again every delverJamTick seconds of battle (they hold only the ships
+// with a bubble). The strongest bubble over the target counts; they do not stack.
 function dvJamLists() {
   if (simTime < dvJamNext && dvJamTypes >= 0) return;
   dvJamNext = simTime + Math.max(0.1, SETTINGS.delverJamTick);
@@ -20362,13 +20482,14 @@ function dvJamAt(t) {
   const list = dvJammers[shipSide[t]];
   if (list.length === 0) return 0;
   const x = shipX[t], y = shipY[t];
+  let best = 0;
   for (let k = 0; k < list.length; k++) {
     const j = list[k];
     if (shipAlive[j] !== 1) continue;
-    const r = dvTypeOf(shipType[j]).bubble, dx = shipX[j] - x, dy = shipY[j] - y;
-    if (dx * dx + dy * dy <= r * r) return dvCounterJam();
+    const T = dvTypeOf(shipType[j]), r = T.bubble, dx = shipX[j] - x, dy = shipY[j] - y;
+    if (dx * dx + dy * dy <= r * r && T.jam > best) best = T.jam;
   }
-  return 0;
+  return best > 0 ? best * dvCounterJam() : 0;
 }
 // (05f bbFire) The multipliers for a shot at target t: { p: x the hit chance of a Guided weapon, scatter: x a gun's scatter }.
 const dvJamOut = { p: 1, scatter: 1 };
@@ -20376,10 +20497,52 @@ function dvJamShot(target, guided) {
   dvJamOut.p = 1; dvJamOut.scatter = 1;
   const k = dvJamAt(target);
   if (k <= 0) return dvJamOut;
-  if (guided) { dvJamOut.p = 1 - SETTINGS.delverJamGuidedMiss * k; dvStats.jammedMissiles++; }
+  if (guided) { dvJamOut.p = Math.max(0.1, 1 - SETTINGS.delverJamGuidedMiss * k); dvStats.jammedMissiles++; }   // (a Deep veil cannot take more than 90% of the hits)
   else { dvJamOut.scatter = 1 + SETTINGS.delverJamGunScatter * k; dvStats.jammedShots++; }
   return dvJamOut;
 }
+
+// (v93) THE MACHINE NETS: a Delver rock with a working machine net (02c dv_net: `net: { reach, scatter }`) steadies the guns of every Delver drone within
+// its reach: their shots scatter `scatter` (0.8) times as much (05f bbFire multiplies the scatter by dvNetOf(shooter)). The nets on the field are listed
+// once a battle second a side, a drone's answer kept for the second. The best net in reach counts; they do not stack. 1 = no net.
+function dvNetOf(i) {
+  const T = dvTypeOf(shipType[i]);
+  if (!T.grid) return 1;
+  dvEnsure();
+  const side = shipSide[i], sec = Math.floor(simTime);
+  if (dvNetListAt[side] !== sec) {
+    dvNetListAt[side] = sec;
+    const list = dvNetList[side]; list.length = 0;
+    for (let j = 0; j < highWater; j++) {
+      if (shipAlive[j] !== 1 || shipSide[j] !== side) continue;
+      const info = typeof bbTypeInfo === 'function' ? bbTypeInfo(shipType[j]) : null; if (!info || !info.netList || info.netList.length === 0) continue;
+      for (let q = 0; q < info.netList.length; q++) { const n = info.netList[q]; if (dvUnitOut(j, n.part)) continue; list.push(shipX[j], shipY[j], n.reach, n.scatter); }
+    }
+  }
+  if (dvNetAt[i] !== sec) {
+    dvNetAt[i] = sec;
+    let mul = 1;
+    const list = dvNetList[side];
+    for (let q = 0; q < list.length; q += 4) {
+      const dx = shipX[i] - list[q], dy = shipY[i] - list[q + 1], r = list[q + 2];
+      if (dx * dx + dy * dy <= r * r && list[q + 3] < mul) mul = list[q + 3];
+    }
+    dvNetMul[i] = mul;
+  }
+  if (dvNetMul[i] < 1) { dvStats.netShots++; if (typeof bbStats !== 'undefined') bbStats.netShots++; }
+  return dvNetMul[i];
+}
+
+// (v93) THE GRAV LANCE: a hit from a Delver grav lance (02c dv_gravlance: `grav: { slow, seconds }`) holds the target: it moves at (1 - slow) of its speed
+// for `seconds` (04 movement multiplies vmax by dvSlowOf). Another hit starts the hold again; they do not stack.
+function dvGravHit(target, grav) {
+  dvEnsure();
+  dvHeldUntil[target] = simTime + (grav.seconds > 0 ? grav.seconds : 3);
+  dvHeldMul[target] = Math.max(0, 1 - grav.slow);
+  dvGravOn = 1;
+  dvStats.gravHeld++; if (typeof bbStats !== 'undefined') bbStats.gravHolds++;
+}
+function dvSlowOf(i) { return i < dvHeldUntil.length && dvHeldUntil[i] > simTime ? dvHeldMul[i] : 1; }
 
 // THE TETHER (v76, our part from the Tether project, 02c `tether`): is ship i held by an enemy Tether, so it cannot jump out? It is held while a ship of
 // the other side with a working Tether (its type's summary.tetherReach, 1,500) is within that reach. Only asked for a ship that wants to jump.
@@ -20395,36 +20558,99 @@ function dvTethered(i) {
   return false;
 }
 
-// Each step (section 11): the crewed Delver ships jump out when their time is up or they are hurt.
+// Each step (section 11): the crewed Delver ships jump out when their time is up or they are hurt; the Tier 3 rocks build their drones and jump by their own rule.
 function dvStep() {
-  if (SETTINGS.delverJumpOut !== 1) return;
   dvEnsure();
+  if (dvGravOn === 1) {   // the grav holds run out
+    let any = 0;
+    for (let i = 0; i < highWater; i++) if (shipAlive[i] === 1 && dvHeldUntil[i] > simTime) { any = 1; break; }
+    dvGravOn = any;
+  }
   for (let i = 0; i < highWater; i++) {
-    if (shipAlive[i] !== 1 || !dvTypeOf(shipType[i]).jumpOut) continue;
+    if (shipAlive[i] !== 1) continue;
+    const T = dvTypeOf(shipType[i]);
+    if (T.foundries.length > 0 && SETTINGS.delverFoundry === 1) dvFoundryStep(i, T);
+    if (!T.jumpOut || SETTINGS.delverJumpOut !== 1) continue;
     const st = shipSide[i] * TYPE_COUNT + shipType[i];
-    const hurt = shipHp[i] < SETTINGS.delverJumpOutHull * stHull[st], due = simTime - dvBornAt[i] >= SETTINGS.delverJumpOutSeconds;
-    if (!hurt && !due) continue;
+    const hurt = shipHp[i] < SETTINGS.delverJumpOutHull * stHull[st];
+    let why = '';
+    if (T.spindle >= 0) {
+      // (v93) a rock with a jump spindle fights on: it jumps when its ark helm is knocked out, or once it has been hurt for spindleSeconds, and only
+      // while the spindle itself still works
+      if (hurt) { if (dvHurtAt[i] < 0) dvHurtAt[i] = simTime; } else dvHurtAt[i] = -1;
+      const helmOut = T.helm >= 0 && dvUnitOut(i, T.helm);
+      if (!helmOut && !(dvHurtAt[i] >= 0 && simTime - dvHurtAt[i] >= T.spindleSeconds)) continue;
+      if (dvUnitOut(i, T.spindle)) {
+        if (!dvSpindleGone.has(i)) { dvSpindleGone.add(i); dvStats.spindleWrecked++; logEvent(1 - shipSide[i], 'The ' + SHIP_TYPES[shipType[i]].name + ' tries to jump away at ' + fmtClock(simTime) + ', but its jump spindle is wrecked: it stays and fights.'); }
+        continue;
+      }
+      why = helmOut ? 'helm' : 'hurt';
+    } else {
+      const due = simTime - dvBornAt[i] >= SETTINGS.delverJumpOutSeconds;
+      if (!hurt && !due) continue;
+      why = hurt ? 'hurt' : 'done';
+    }
     if (dvTethered(i)) {
       if (!dvHeldOnce.has(i)) { dvHeldOnce.add(i); dvStats.tetherHeld++; logEvent(1 - shipSide[i], 'A ' + SHIP_TYPES[shipType[i]].name + ' tries to jump away at ' + fmtClock(simTime) + ', but our Tether holds it.'); }
       continue;
     }
-    dvJumpOut(i, hurt ? 'hurt' : 'done');
+    dvJumpOut(i, why);
   }
 }
 // A crewed Delver ship jumps away: a flash where it was, a line in the log, and it leaves the battle alive (its drones stay and fight).
+// (v93) A rock with shatter mine bays drops a field of them where it stood (bbMinesDrop, 05f-3) as it goes.
 function dvJumpOut(i, why) {
   dvStats.jumpedOut++;
-  const name = SHIP_TYPES[shipType[i]].name, side = shipSide[i];
+  const name = SHIP_TYPES[shipType[i]].name, side = shipSide[i], T = dvTypeOf(shipType[i]);
+  let fields = 0;
+  for (let q = 0; q < T.shatter.length; q++) { if (dvUnitOut(i, T.shatter[q].part)) continue; bbMinesDrop(i, T.shatter[q].row); fields++; }
+  dvStats.shatterDropped += fields;
   addFlash(shipX[i], shipY[i], typeSize[shipType[i]] * 1.5, 1, i);
-  logEvent(side, 'A ' + name + ' jumps away' + (why === 'hurt' ? ', hurt,' : '') + ' at ' + fmtClock(simTime) + '; its drones stay and fight.');
+  const how = why === 'hurt' ? ', hurt,' : why === 'helm' ? ', its helm knocked out,' : '';
+  logEvent(side, (T.spindle >= 0 ? 'The ' : 'A ') + name + ' jumps away' + how + ' at ' + fmtClock(simTime) + (fields > 0 ? ', leaving a field of shatter mines where it stood' : '') + '; its drones stay and fight.');
   leaveBattle(i);
+}
+
+// (v93) THE DRONE FOUNDRY: a rock with a working drone foundry (02c dv_foundry: `foundry: { seconds, alive }`, a hangar that holds the drone design it
+// builds) builds one of that drone every `seconds` while fewer than `alive` of the drones it built are still in the fight. The new drone appears beside
+// the rock as a squadron of its Division (like a carrier's fighters, 17b fgLaunch). The first one comes `seconds` after the rock arrives.
+function dvFoundryStep(i, T) {
+  const side = shipSide[i];
+  let built = dvBuilt.get(i);
+  if (built) { for (let n = built.length - 1; n >= 0; n--) { const b = built[n]; if (shipAlive[b.slot] !== 1 || dvBornAt[b.slot] !== b.born) built.splice(n, 1); } }
+  for (let q = 0; q < T.foundries.length; q++) {
+    const f = T.foundries[q];
+    if (dvUnitOut(i, f.part)) continue;
+    if (simTime - dvFoundryAt[i] < f.seconds) continue;
+    let alive = 0;
+    if (built) for (let n = 0; n < built.length; n++) if (shipType[built[n].slot] === f.type) alive++;
+    if (alive >= f.alive) { dvFoundryAt[i] = simTime; continue; }   // (full: the clock starts again, so the next one comes `seconds` after a loss)
+    const W = SETTINGS.worldWidth, H = SETTINGS.worldHeight, ahead = typeSize[shipType[i]] * 0.6 + typeSpacing[f.type];
+    const x = clampNumber(shipX[i] + (side === BLUE ? ahead : -ahead), 0, W), y = clampNumber(shipY[i] + (combatRand() - 0.5) * typeSize[shipType[i]], 0, H);
+    if (!spawnShip(side, f.type, x, y)) return;   // (no room: it tries again next step)
+    const slot = lastSpawnedSlot, st = side * TYPE_COUNT + f.type;
+    dvFoundryAt[i] = simTime;
+    if (!built) { built = []; dvBuilt.set(i, built); }
+    built.push({ slot: slot, born: dvBornAt[slot] });
+    statDeployed[st]++; statArrived[st]++;
+    dvStats.foundryBuilt++; if (typeof bbStats !== 'undefined') bbStats.foundryDrones++;
+    const csq = shipSquad[i], base = csq > 0 && sqOfficer[csq] ? sqOfficer[csq] : null;
+    const o = officerFromPreset(base || OFFICER_PRESETS[0], ++officerSerial);
+    o.name = base ? base.name : 'Foundry'; o.fighters = 1;
+    const sq = addSquadron(side, f.type, [slot], o), dv = csq > 0 ? divisionOf(csq) : null;
+    if (dv !== null && !dv.dissolved) divisionTake(dv, sq);
+    else quietReport(sq, 'reinforced', SHIP_TYPES[shipType[i]].name);
+    if (dvStats.foundryBuilt === 1) logEvent(side, 'The ' + SHIP_TYPES[shipType[i]].name + "'s foundry cuts a new " + SHIP_TYPES[f.type].name + ' at ' + fmtClock(simTime) + '.');
+    return;   // (one drone a step a rock)
+  }
 }
 
 // THE GRIDS: a Delver drone squadron flies as a square block, always in lock step (20b).
 function dvGridSquadron(sq) { return SETTINGS.delverGrid === 1 && sqType[sq] >= 0 && dvTypeOf(sqType[sq]).grid; }
 
 // For the tools: what these rules have done in this battle.
-function dvPicture() { return { jumpedOut: dvStats.jumpedOut, jammedMissiles: dvStats.jammedMissiles, jammedShots: dvStats.jammedShots, tetherHeld: dvStats.tetherHeld, jammers: [dvJammers[0].length, dvJammers[1].length] }; }
+function dvPicture() { return { jumpedOut: dvStats.jumpedOut, jammedMissiles: dvStats.jammedMissiles, jammedShots: dvStats.jammedShots, tetherHeld: dvStats.tetherHeld, jammers: [dvJammers[0].length, dvJammers[1].length],
+                                gravHeld: dvStats.gravHeld, netShots: dvStats.netShots, foundryBuilt: dvStats.foundryBuilt, shatterDropped: dvStats.shatterDropped, spindleWrecked: dvStats.spindleWrecked }; }   // (v93)
 
 // =====================================================================
 // THE SYLPHS' BATTLE RULES  (v77, build D of notes/plans/aliens/delver-sylph-tier01.md s3.2)
@@ -29236,13 +29462,15 @@ function swarmTier2On(week) {
 }
 // Each week (and when a trigger fires) the moment is written down once, with a log line. Returns true when it was written just now.
 function swarmTier2Note() {
-  if (SETTINGS.swarmTier2Model !== 1 || !campaign || !campaign.ai || !campaign.ai.alien || !alienIsSwarm()) return false;   // (v74: the Swarm's only)
+  const delver = !alienIsSwarm() && typeof alienFactionId === 'function' && alienFactionId() === 'delver';   // (v93) the Delvers' Hollow cruiser waits for the same trigger
+  if (SETTINGS.swarmTier2Model !== 1 || !campaign || !campaign.ai || !campaign.ai.alien || (!alienIsSwarm() && !delver)) return false;   // (v74: the Swarm's, v93 the Delvers' too)
   const A = campaign.ai.alien;
   if (A.tier2 && A.tier2.week >= 0) return false;
   const why = swarmTier2Why(campaign.week);
   if (!why) return false;
   A.tier2 = { week: Math.round(campaign.week * 1000) / 1000, why: why };
-  campaignLog('aliens', 'The Swarm answers our Tier 2 (' + why + '): its Brood, Hive warden and Mother bodies come online' + (swarmNestsOn() ? ', and its nests hatch them once they are old enough' : '') + '; its places can grow as big as ours.');
+  if (delver) campaignLog('aliens', 'The Delvers answer our Tier 2 (' + why + '): their Hollow cruiser rocks come online once their foundries can cut them.');
+  else campaignLog('aliens', 'The Swarm answers our Tier 2 (' + why + '): its Brood, Hive warden and Mother bodies come online' + (swarmNestsOn() ? ', and its nests hatch them once they are old enough' : '') + '; its places can grow as big as ours.');
   return true;
 }
 // (06f-2 calls this when a ship of ours leaves a yard) The first one that needs Helium-3 to build is our first fusion ship.
@@ -29280,7 +29508,7 @@ function swarmTier3Note() {
   const why = swarmTier3Why(campaign.week);
   if (!why) return false;
   A.tier3 = { week: Math.round(campaign.week * 1000) / 1000, why: why };
-  campaignLog('aliens', 'The enemy answers our Tier 3 (' + why + '): its ' + (alienIsSwarm() ? 'Leviathan and Deep mother bodies' : 'biggest bodies') + ' come online once its ' + (alienIsSwarm() && swarmNestsOn() ? 'nests are old enough (40 weeks for the Leviathan)' : 'yards can build them') + ', and its yards may lay titan berths.');   // (v92: the Swarm's bodies by name)
+  campaignLog('aliens', 'The enemy answers our Tier 3 (' + why + '): its ' + (alienIsSwarm() ? 'Leviathan and Deep mother bodies' : (typeof alienFactionId === 'function' && alienFactionId() === 'delver' ? 'Mining ark' : 'biggest bodies')) + ' come online once its ' + (alienIsSwarm() && swarmNestsOn() ? 'nests are old enough (40 weeks for the Leviathan)' : 'yards can build them') + ', and its yards may lay titan berths.');   // (v92: the Swarm's bodies by name)
   return true;
 }
 // (06f-2 calls this when a ship of ours leaves a yard) The first one that needs Antimatter to build is our first antimatter ship.
@@ -30929,6 +31157,7 @@ const CAMPAIGN_V3_STOCK = ['Wasp', 'Picket', 'Harrier', 'Halberd', 'Partisan', '
                            'Leviathan', 'Deep mother',   // (v92) the Swarm's Tier 3 bodies, after the Biter and Swarmling their pouches hold
                            'Trainer', 'Sentry', 'Seeker probe', 'Hive constructor',   // (v27 C3) the tutorial's ships: our Trainer and Sentry, the Swarm's probe and construction ship
                            'Spike drone', 'Seeker drone', 'Veil drone', 'Breaker', 'Driver rock', 'Drone tender',   // (v75) the Delvers (the drones first: the tender's cradles hold them)
+                           'Hollow cruiser', 'Mining ark',   // (v93) the Delvers' Tier 2 and 3 rocks
                            'Duelist', 'Courser', 'Lord\'s blade'];   // (v77) the Sylphs
 // (v27 C3) The two stock designs the TUTORIAL has the player make. While a tutorial campaign runs (campaign.earthOnly) they are not installed, so the player's own
 // "Trainer" and "Sentry" are the first of their names (not "Trainer v2"); nor are they when the player already has a design of that name. A campaign with the
@@ -47400,7 +47629,11 @@ function fgTypeBays(t) {
   if (list !== undefined) return list;
   list = [];
   const rec = SHIP_TYPES[t], hangars = rec && rec.summary && Array.isArray(rec.summary.hangars) ? rec.summary.hangars : [];
-  for (let k = 0; k < hangars.length; k++) { const f = typeIndexById(hangars[k].id); if (f >= 0 && SHIP_TYPES[f].design && SHIP_TYPES[f].design.v === 3) list.push({ part: hangars[k].part, type: f }); }   // (v68) any carried design: a fighter, a small craft or a corvette (Tier 2 hangars)
+  for (let k = 0; k < hangars.length; k++) {
+    const pm = rec.design && rec.design.parts && rec.design.parts[hangars[k].part] ? MODULE_BY_ID[rec.design.parts[hangars[k].part].p] : null;
+    if (pm && pm.foundry) continue;   // (v93) a Delver drone foundry builds its drones in the fight (05g dvFoundryStep): not a bay that launches once
+    const f = typeIndexById(hangars[k].id); if (f >= 0 && SHIP_TYPES[f].design && SHIP_TYPES[f].design.v === 3) list.push({ part: hangars[k].part, type: f });
+  }   // (v68) any carried design: a fighter, a small craft or a corvette (Tier 2 hangars)
   fgTypeBayCache.set(t, list);
   return list;
 }
@@ -79171,6 +79404,34 @@ const STOCK_DESIGNS_V3 = [
     tracks: { passage: [[5, 7, 36, 7], [5, 8, 36, 8], [40, 7, 45, 7], [40, 8, 45, 8]] },
     plates: { id: 'dv_layered', strips: [[34, 37, 1], [41, 42, 2], [43, 45, 4], [37, 45, 5], [46, 47, 6]] } },
 
+  // ======== (v93, Tier 3 stage 4: tier3-numbers-plan.md s5c and faction-modules-t0-t3.md s4b/4c) THE DELVERS' TIER 2 AND TIER 3 ROCKS. Both uncrewed
+  //          in the Delver way (a Deep mind, an Ark helm: machine minds that work the whole crew), on our Standard frames. Numbers are first placeholders. ========
+  // ---- Cruiser: the Hollow cruiser (Tier 2). A Deep mind, a Deep veil (the wider, stronger jamming bubble), a machine net that steadies the drones round
+  //      it, four heavy slug turrets, two shard throwers (point defence), two drone cradles with a Spike drone each, two mending drone bays, Crystal plate. ----
+  { name: 'Hollow cruiser', side: 'alien', faction: 'delver', role: 'Delver cruiser', icon: 'A25', iconScale: 1.3, note: 'an uncrewed hollowed rock: four heavy slug turrets, two shard throwers, a Deep veil (a wider, stronger jamming bubble), a machine net that steadies the drones round it, two drone cradles with a Spike drone each, two mending drone bays. Crystal plate',
+    hull: 'cruiser', frames: ['std_cruiser'], jumps: 1, needs: ['Spike drone'],
+    parts: [['dv_deepmind', 30, 8, 0], ['dv_deepveil', 46, 8, 0], ['dv_net', 26, 8, 0], ['dv_drive', 0, 10, 0], ['tank_vol', 3, 10, 0, 1, 2], ['tank_vol', 5, 10, 0, 1, 2]],
+    mirror: [['dv_drive', 0, 4, 0], ['dv_drive', 0, 6, 0], ['dv_drive', 0, 8, 0], ['tank_vol', 3, 4, 0, 1, 2], ['tank_vol', 5, 4, 0, 1, 2], ['tank_vol', 3, 6, 0, 1, 2], ['tank_vol', 5, 6, 0, 1, 2], ['tank_vol', 3, 8, 0, 1, 2], ['tank_vol', 5, 8, 0, 1, 2],
+             ['dv_slug_h', 10, 1, 0], ['dv_slug_h', 40, 1, 0], ['dv_shard', 16, 1, 0], ['dv_shard', 52, 1, 0], ['dv_cradle', 22, 1, 0, 1, 1, null, 'Spike drone'], ['dv_mendbay', 45, 1, 0], ['airlock', 58, 3, 0], ['supplyport', 54, 1, 0]],
+    mirrorTracks: { passage: [[59, 5, 59, 7], [7, 7, 59, 7]] },
+    plates: { id: 'dv_crystal', strips: [[8, 9, 1], [8, 9, 2], [15, 15, 1], [18, 21, 1], [36, 39, 1], [50, 51, 1], [10, 15, 4], [16, 21, 4], [36, 44, 4], [51, 57, 4], [36, 62, 3]] } },
+  // ---- Titan: the Mining ark (Tier 3). A Mountain driver down the spine, two grav lances at the nose, an Ark helm and an Ark jump spindle amidships, two
+  //      Deep veils, two machine nets, two drone foundries (each cuts a new Spike drone every 90 seconds while fewer than 6 of its drones fly), six heavy
+  //      slug turrets, six shard throwers, two mending drone bays, two shatter mine bays at the stern, Layered rock and Crystal plate at the nose. Hurt for
+  //      120 seconds, or its helm knocked out, it jumps away (05g dvStep), dropping its shatter mines where it stood. ----
+  { name: 'Mining ark', side: 'alien', faction: 'delver', role: 'Delver ark', icon: 'A26', iconScale: 1.6, note: 'a hollowed mountain: a Mountain driver down its spine, two grav lances that hold what they hit, six heavy slug turrets, six shard throwers, two Deep veils, two machine nets, two drone foundries that cut new Spike drones in the fight, two mending drone bays, an Ark helm and an Ark jump spindle. Hurt long enough it jumps away, leaving shatter mines where it stood',
+    hull: 'titan', frames: ['std_titan'], jumps: 1, needs: ['Spike drone'],
+    parts: [['dv_mountain', 106, 18, 0], ['dv_arkhelm', 60, 17, 0], ['dv_spindle', 40, 16, 0], ['dv_deepveil', 30, 18, 0], ['dv_deepveil', 90, 18, 0], ['dv_drive', 0, 19, 0],
+            ['tank_vol', 3, 18, 0, 1, 2], ['tank_vol', 5, 18, 0, 1, 2], ['tank_vol', 7, 18, 0, 1, 2], ['tank_vol', 9, 18, 0, 1, 2], ['tank_vol', 11, 18, 0, 1, 2], ['tank_vol', 13, 18, 0, 1, 2],
+            ['tank_vol', 3, 20, 0, 1, 2], ['tank_vol', 5, 20, 0, 1, 2], ['tank_vol', 7, 20, 0, 1, 2], ['tank_vol', 9, 20, 0, 1, 2], ['tank_vol', 11, 20, 0, 1, 2], ['tank_vol', 13, 20, 0, 1, 2]],
+    mirror: [['dv_gravlance', 118, 14, 0], ['dv_foundry', 40, 1, 0, 1, 1, null, 'Spike drone'], ['dv_slug_h', 6, 1, 0], ['dv_slug_h', 70, 1, 0], ['dv_slug_h', 90, 1, 0], ['dv_shard', 14, 1, 0], ['dv_shard', 80, 1, 0], ['dv_shard', 100, 1, 0],
+             ['dv_mendbay', 56, 1, 0], ['dv_shatter', 0, 7, 0], ['dv_net', 70, 8, 0], ['dv_drive', 0, 9, 0], ['dv_drive', 0, 11, 0], ['dv_drive', 0, 13, 0], ['dv_drive', 0, 15, 0], ['dv_drive', 0, 17, 0],
+             ['tank_vol', 3, 9, 0, 1, 3], ['tank_vol', 6, 9, 0, 1, 3], ['tank_vol', 9, 9, 0, 1, 3], ['tank_vol', 12, 9, 0, 1, 3], ['tank_vol', 3, 12, 0, 1, 3], ['tank_vol', 6, 12, 0, 1, 3], ['tank_vol', 9, 12, 0, 1, 3], ['tank_vol', 12, 12, 0, 1, 3],
+             ['tank_vol', 3, 15, 0, 1, 3], ['tank_vol', 6, 15, 0, 1, 3], ['tank_vol', 9, 15, 0, 1, 3], ['tank_vol', 12, 15, 0, 1, 3],
+             ['airlock', 4, 1, 0], ['supplyport', 106, 1, 0], ['dv_crystal', 108, 5, 0, 1, 3], ['dv_crystal', 111, 5, 0, 1, 3], ['dv_crystal', 114, 5, 0, 1, 3], ['dv_crystal', 117, 5, 0, 1, 3], ['dv_crystal', 120, 11, 0, 1, 3], ['dv_crystal', 123, 11, 0, 1, 3]],
+    mirrorTracks: { passage: [[5, 3, 5, 7], [5, 7, 100, 7], [59, 8, 59, 17]] },
+    plates: { id: 'dv_layered', strips: [[4, 5, 1], [11, 13, 1], [16, 39, 1], [16, 39, 2], [62, 69, 1], [75, 79, 1], [82, 89, 1], [95, 99, 1], [102, 107, 1], [4, 107, 3], [4, 107, 4], [4, 119, 5], [4, 119, 6]] } },
+
   // ======== (v77, build D of notes/plans/aliens/delver-sylph-tier01.md) THE SYLPHS: few, proud, at their top technology from the first day. Chrome and gold on
   //          our own Standard frames (the close look draws them from UI/alien-art.js in their house colours), made in the internal mode on the Sylph parts
   //          (02c-3). `faction: 'sylph'`. Each is flown by one to three Sylphs (a throne each: the Ace pilots and their play goals, section 5vc), fights like one
@@ -79505,7 +79766,7 @@ BUREAU2_SCREEN_API.testRange = { run: testRangeRun, state: testRange, plan: func
 //   adopted habits come along in its copy code and into every new campaign. A doctrine changed in the Bureau after the save updates the plan's copy.
 //   DOCTRINE TEMPLATES (LIBRARY.templates: [{ name, doctrine, savedAt }]) live here too, so they carry over as well. A plan from before v37 has no doctrine: Auto.
 // =====================================================================
-const GAME_VERSION = 'v92';                         // the game version written on every saved plan (raise it with each new build)
+const GAME_VERSION = 'v93';                         // the game version written on every saved plan (raise it with each new build)
 const LIBRARY_KEY = 'engineersWar.library';
 const LIBRARY_FORMAT = 1;
 const LIBRARY_CODE_SHIP = 'EW-SHIP-1:', LIBRARY_CODE_LIB = 'EW-LIB-1:';
