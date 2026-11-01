@@ -29,7 +29,7 @@
   document.documentElement.classList.add('ew-touch');
 })();
 </script>
-<title>Engineer's War v94.3 - main (v94.2) plus armour plates and bulkheads laid in a row by dragging</title>
+<title>Engineer's War v96 - advanced resources are a share of Alloys income; part costs set per square; Volatiles is fuel only; Antimatter comes only from the Sun</title>
 <!-- (v17) The shared look: theme-v0.4.css from the UI folder, built in word for word (tools/build.js). It only styles its own named parts
      (.mode-front, .panel, .btn ...), plus a few page-wide basics that the rules just below undo for the older screens. -->
 <style>
@@ -12175,23 +12175,29 @@ const MOUNT_ORDER = ['fixed', 'sponson', 'turret', 'barbette', 'spinal'];
 // (v68) markLine names the family's own mark line in the campaign's kit (Coilguns Mk II opens lineMarks.coil 2): a Mk II coilgun needs that AND the gun line's Mk II.
 const GUN_FAMILIES = {
   chem:      { name: 'Chemical', short: 'Chemical', damageMul: 1,   rangeMul: 0.8, powerPerSquare: 0.1, roundsMul: 1,   traits: [], res: 'structure', text: 'Powder and shell: the dependable starting gun. Range x0.8.' },
-  coilproto: { name: 'Coilgun (prototype)', short: 'Coil', damageMul: 1.5, rangeMul: 1, powerPerSquare: 0.5, roundsMul: 0.5, traits: ['Piercing'], res: 'magnetic', only: { role: ['cannon'], size: ['light'] }, maxMark: 1, rareEarths: 1,
+  coilproto: { name: 'Coilgun (prototype)', short: 'Coil', damageMul: 1.5, rangeMul: 1, powerPerSquare: 0.5, roundsMul: 0.5, traits: ['Piercing'], res: 'magnetic', only: { role: ['cannon'], size: ['light'] }, maxMark: 1, rareEarths: 4,
                text: 'The Luna prototype: a Light coilgun that hits armour hard (Piercing), half the rounds a shot, power 3. Uses Rare earths. Mk I only.' },
-  coil:      { name: 'Coilgun', short: 'Coil', damageMul: 1.5, rangeMul: 1, powerPerSquare: 0.5, roundsMul: 0.5, traits: ['Piercing'], res: 'magnetic', rareEarths: 2, markLine: 'coil', text: 'Magnetic slugs: +50% damage, Piercing, full range, half the rounds a shot; uses power and Rare earths. (Tier 2: Coilguns.)' },
+  coil:      { name: 'Coilgun', short: 'Coil', damageMul: 1.5, rangeMul: 1, powerPerSquare: 0.5, roundsMul: 0.5, traits: ['Piercing'], res: 'magnetic', rareEarths: 4, markLine: 'coil', text: 'Magnetic slugs: +50% damage, Piercing, full range, half the rounds a shot; uses power and Rare earths. (Tier 2: Coilguns.)' },
   // (v90, Tier 3 stage 1: notes/plans/ships/tier3-numbers-plan.md s3d) the two Tier 3 families. Chemical stays the template: a family multiplies its table.
   //   RAILGUN: x2 damage, range x1.3 a chemical gun's, Piercing and Over-penetrating (a shot through the armour carries on into one more part). It fires from
   //     the CAPACITORS (Alex 30 Oct): each shot takes chargePerSquare x the gun's squares of charge, so a railgun ship is built like a laser ship. Rounds:
   //     none (charge only). Cannon and Carronade with Railguns; the Culverin needs Sniper rail (roleTech). Fixed, Spinal and Turret mounts only.
   //   PLASMA: x2 damage, range x0.5 a chemical gun's, Melting (the plate it hits loses a quarter of its armour for a while) and Heat; no magazine at all.
-  //     1.5 power a square, and 1 Helium-3 a gun to build. Repeater and Cannon with Plasma; the Carronade needs Heavy plasma. No Spinal mount.
+  //     1.5 power a square, and (v96) 1 Helium-3 for every 6 squares of gun to build. Repeater and Cannon with Plasma; the Carronade needs Heavy plasma. No Spinal mount.
   //   alloysMul: the gun's Alloys x this; helium3: Helium-3 a gun; roleTech: a role that needs its own project for this family (the kit's 'famrole' list).
   rail:      { name: 'Railgun', short: 'Rail', damageMul: 2, rangeMul: 1.04, powerPerSquare: 0.1, roundsMul: 1, chargePerSquare: 1, traits: ['Piercing', 'Over-penetrating'], res: 'railgun', rareEarths: 3, alloysMul: 1.5, markLine: 'rail',
                only: { role: ['cannon', 'carronade', 'culverin'], mount: ['fixed', 'spinal', 'turret'] }, roleTech: { culverin: 'Sniper rail' }, sound: 'railgun',
                text: 'Slugs thrown by the capacitors: x2 damage, range x1.3 a chemical gun\'s, Piercing and Over-penetrating. Each shot takes charge from the capacitors (1 a square of gun), so it needs capacitors. Fixed, Spinal or Turret. (Tier 3: Railguns.)' },
-  plasma:    { name: 'Plasma', short: 'Plasma', damageMul: 2, rangeMul: 0.4, powerPerSquare: 1.5, roundsMul: 0, noAmmo: true, traits: ['Melting', 'Heat'], res: 'nuclear', helium3: 1, alloysMul: 1.2, markLine: 'plasma',
+  plasma:    { name: 'Plasma', short: 'Plasma', damageMul: 2, rangeMul: 0.4, powerPerSquare: 1.5, roundsMul: 0, noAmmo: true, traits: ['Melting', 'Heat'], res: 'nuclear', helium3: 6, alloysMul: 1.2, markLine: 'plasma',
                only: { role: ['repeater', 'cannon', 'carronade'], mount: ['fixed', 'sponson', 'turret', 'barbette'] }, roleTech: { carronade: 'Heavy plasma' }, sound: 'plasmacannon',
-               text: 'Bottled fusion plasma: x2 damage, range x0.5 a chemical gun\'s, Melting (the plate it hits loses a quarter of its armour for 20 s) and Heat. No magazine; 1.5 power a square and 1 Helium-3 a gun. (Tier 3: Plasma.)' }
+               text: 'Bottled fusion plasma: x2 damage, range x0.5 a chemical gun\'s, Melting (the plate it hits loses a quarter of its armour for 20 s) and Heat. No magazine; 1.5 power a square and 1 Helium-3 for every 6 squares of gun. (Tier 3: Plasma.)' }
 };
+// (v96, Alex 1 Nov: notes/plans/campaign/advanced-resource-balance.md s8 and s11) ADVANCED COSTS BY SQUARES. A family's rareEarths / helium3 / antimatter
+// number above is HOW MANY SQUARES of gun pay 1 of it (Coilgun 4, Railgun 3, Plasma 6, particle beam 12; lasers LASER_SQUARES_PER_RARE), so a big gun
+// costs as much a square as a small one. Rounded to a whole number, at least 1. Missile warheads and motors use the same rule by the launcher's squares.
+const LASER_SQUARES_PER_RARE = 6;
+const MISSILE_PICK_SQUARES = { fissiles: 4, helium3: 6, antimatter: 12 };
+function advBySquaresV3(squares, perOne) { return perOne > 0 ? Math.max(1, Math.round(squares / perOne)) : 0; }
 // Roles (s2.2, s2.3, s2.7, s2.8): damage a shot and the seconds between shots by size are the spec's table (GUN_TABLE), not worked out from the multipliers.
 // rangeMul: the role's range multiplier; roundsMul: the ammo role factor; damageMul and traits: the Carronade's trade (x0.8 damage + Piercing, decided 23 Oct).
 const GUN_ROLES = {
@@ -12249,9 +12255,9 @@ const MISSILE_RANGE_SHARE = 0.6;   // the placeholder range rule above
 // PART_RULES.missileOptionAlloyShare of the launcher's Alloys in its own resource (res); the shapes cost +25% Alloys.
 const WARHEAD_OPTIONS = {
   he:         { name: 'High explosive', damageMul: 1,    traits: [],          res: '',           text: 'The plain warhead.' },
-  nuclear:    { name: 'Nuclear',        damageMul: 1.5,  traits: ['Nuclear'], res: 'fissiles', proto: 'Fissiles', text: 'Damage x1.5. Each costs 20% of the launcher\'s Alloys in Fissiles.' },
-  fusion:     { name: 'Fusion',         damageMul: 2.25, traits: ['Nuclear'], res: 'helium3',    text: 'Damage x2.25. Each costs 20% of the launcher\'s Alloys in Helium-3. (Tier 3: Fusion warheads.)' },   // (v90) open to research
-  antimatter: { name: 'Antimatter',     damageMul: 3.4,  traits: ['Nuclear'], res: 'antimatter', text: 'Damage x3.4. Each costs 20% of the launcher\'s Alloys in Antimatter. (Tier 3: Antimatter warheads.)' }
+  nuclear:    { name: 'Nuclear',        damageMul: 1.5,  traits: ['Nuclear'], res: 'fissiles', proto: 'Fissiles', text: 'Damage x1.5. Costs 1 Fissiles for every 4 squares of launcher.' },
+  fusion:     { name: 'Fusion',         damageMul: 2.25, traits: ['Nuclear'], res: 'helium3',    text: 'Damage x2.25. Costs 1 Helium-3 for every 6 squares of launcher. (Tier 3: Fusion warheads.)' },   // (v90) open to research
+  antimatter: { name: 'Antimatter',     damageMul: 3.4,  traits: ['Nuclear'], res: 'antimatter', text: 'Damage x3.4. Costs 1 Antimatter for every 12 squares of launcher. (Tier 3: Antimatter warheads.)' }
 };
 const MOTOR_OPTIONS = {
   chem:       { name: 'Chemical',   speedMul: 1,   res: '',           text: 'The plain rocket motor.' },
@@ -12305,8 +12311,8 @@ const WAVELENGTH_OPTIONS = {
 // MEGA PARTICLE CANNON: Raking, it hits every ship along its line out to its range (bbBeamSecond).
 const EMITTER_KINDS = {
   laser:    { name: 'Laser',         beamMul: 1, powerMul: 1,   rangeMul: 1,   traits: ['Focus', 'Heat'], text: 'A laser: Focus and Heat; the lens and wavelength picks change it.' },
-  particle: { name: 'Particle beam', beamMul: 2, powerMul: 1.8, rangeMul: 0.7, traits: ['Irradiating'],  antimatter: 1, noOptics: true,
-              text: 'Charged particles: x2 damage a tick for x1.8 the power, range x0.7. Irradiating: half of each hit ignores the armour, and it kills crew. Goes through a Sylph Barrier. No lens or wavelength. 1 Antimatter. (Tier 3: Particle beams.)' }
+  particle: { name: 'Particle beam', beamMul: 2, powerMul: 1.8, rangeMul: 0.7, traits: ['Irradiating'],  antimatter: 12, noOptics: true,
+              text: 'Charged particles: x2 damage a tick for x1.8 the power, range x0.7. Irradiating: half of each hit ignores the armour, and it kills crew. Goes through a Sylph Barrier. No lens or wavelength. 1 Antimatter for every 12 squares of beam. (Tier 3: Particle beams.)' }
 };
 // (v90, s2b) the emitter's OPTICS: none, ADAPTIVE optics (tracking x1.3: the beam keeps on small fast ships) or a BEAM SPLITTER (one emitter, two targets, x0.6
 // on each: bbBeamSecond picks the second one)
@@ -12428,8 +12434,10 @@ function buildPartStatsV3(id, mk, opt) {
     s.alloys = partAlloysV3((s.baseSquares * PART_RULES.gunAlloysPerSquare + ringSquaresBase * PART_RULES.ringAlloysPerSquare) * (shell.special ? PART_RULES.shellAlloysMul : 1) * (fam.alloysMul || 1));   // (v90) a Tier 3 family's Alloys multiplier
     s.cost = s.alloys; s.power = -powerStepV3(s.baseSquares * fam.powerPerSquare); s.powerClass = 'weapons';
     s.crew = Math.ceil(sizeRow.crew * mount.crew); s.res = fam.res;
-    if (fam.rareEarths) s.rareEarths = fam.rareEarths; if (fam.proto) s.proto = fam.proto;
-    if (fam.helium3) s.helium3 = fam.helium3;   // (v90) a plasma gun's Helium-3
+    // (v96, Alex 1 Nov: advanced-resource-balance.md s8) a gun's advanced resource goes by its own squares (the Mk I gun, not the mount ring), so a big gun
+    // pays as much a square as a small one: ADV_PER_SQUARE_V3 below (Coilgun 1 Rare earth per 4 squares, Railgun 1 per 3, Plasma 1 Helium-3 per 6).
+    if (fam.rareEarths) s.rareEarths = advBySquaresV3(s.baseSquares, fam.rareEarths); if (fam.proto) s.proto = fam.proto;
+    if (fam.helium3) s.helium3 = advBySquaresV3(s.baseSquares, fam.helium3);
     s.traits = fam.traits.concat(role.traits, shell.traits);
     s.family = 'Kinetic'; s.dir = mount.spinal ? 'front' : (mount.over ? 'turret' : 'aim');
     const heatShot = damage * PART_RULES.heatPerDamage, fireRate = 1 / t.interval;
@@ -12450,8 +12458,10 @@ function buildPartStatsV3(id, mk, opt) {
     const warhead = ms.warhead * wh.damageMul * shape.damageMul * markMul, reload = t.reload / markMul;
     const baseAlloys = s.baseSquares * PART_RULES.launcherAlloysPerSquare;
     s.alloys = partAlloysV3(baseAlloys * (shape.special ? PART_RULES.missileShapeAlloysMul : 1)); s.cost = s.alloys;
-    if (wh.res) s[wh.res] = (s[wh.res] || 0) + roundTo(baseAlloys * PART_RULES.missileOptionAlloyShare, 1);   // (the advanced picks' own resources: s5.3)
-    if (motor.res) s[motor.res] = (s[motor.res] || 0) + roundTo(baseAlloys * PART_RULES.missileOptionAlloyShare, 1);
+    // (v96, Alex 1 Nov: advanced-resource-balance.md s11) an advanced warhead or motor costs its own resource by the launcher's squares, at that resource's
+    // rate (MISSILE_PICK_SQUARES: Fissiles 1 per 4 squares, Helium-3 1 per 6, Antimatter 1 per 12); it was 20% of the launcher's Alloys in any resource.
+    if (wh.res) s[wh.res] = (s[wh.res] || 0) + advBySquaresV3(s.baseSquares, MISSILE_PICK_SQUARES[wh.res] || 4);
+    if (motor.res) s[motor.res] = (s[motor.res] || 0) + advBySquaresV3(s.baseSquares, MISSILE_PICK_SQUARES[motor.res] || 4);
     s.power = -powerStepV3(s.baseSquares * type.powerPerSquare); s.powerClass = 'weapons'; s.crew = WEAPON_SIZES[o.size].launcherCrew; s.res = 'warhead';
     if (wh.proto) s.proto = wh.proto;
     s.traits = ['Guided', 'Interceptable'].concat(wh.traits, shape.traits); s.family = 'Warhead'; s.dir = 'turret';
@@ -12472,7 +12482,8 @@ function buildPartStatsV3(id, mk, opt) {
     const power = powerStepV3(t.power * wave.powerMul * ek.powerMul);
     s.alloys = partAlloysV3(s.baseSquares * PART_RULES.emitterAlloysPerSquare); s.cost = s.alloys;
     // (v59, fuels-engines-resources.md s10) a laser's optics use Rare earths: Light 1, Medium 2, bigger 3. (v90) A particle beam has no optics: 1 Antimatter instead
-    if (particle) s.antimatter = ek.antimatter; else s.rareEarths = o.size === 'light' ? 1 : (o.size === 'medium' ? 2 : 3);
+    // (v96, Alex 1 Nov) by the emitter's own squares too: a laser 1 Rare earth per 6 squares, a particle beam 1 Antimatter per 12 (at least 1)
+    if (particle) s.antimatter = advBySquaresV3(s.baseSquares, ek.antimatter); else s.rareEarths = advBySquaresV3(s.baseSquares, LASER_SQUARES_PER_RARE);
     s.power = -power; s.powerClass = 'weapons'; s.crew = Math.ceil(t.crew * mount.crew); s.res = 'magnetic';
     s.traits = ek.traits.slice(); s.family = 'Laser'; s.dir = mount.spinal ? 'front' : (mount.over ? 'turret' : 'aim');
     if (particle && o.size === 'titan') s.traits.push('Raking');   // (v90) the Mega particle cannon
@@ -12547,13 +12558,13 @@ const MODULES_V3 = [
   { id: 'quarters_xl', name: 'Barracks', cat: 'crew', sub: 'Crew', line: 'quarters', w: 8, h: 2, role: 'room', cost: 12.8, houses: 100, crew: 0, res: 'general', rule: 'An 8 x 2 barracks: sleeps 100. (Tier 1, with the destroyer.)' },
   { id: 'quarters_deck', name: 'Crew deck', cat: 'crew', sub: 'Crew', line: 'quarters', w: 18, h: 2, role: 'room', cost: 28.8, houses: 400, crew: 0, res: 'general', rule: 'An 18 x 2 crew deck: sleeps 400. (Tier 2: Crew decks.)' },
   // life support is square (s9.1): 2 x 2 keeps 30, 3 x 3 100, 4 x 4 250, the 6 x 6 plant 1,000
-  { id: 'lifesupport', name: 'Life support', cat: 'crew', sub: 'Life support', line: 'lifesupport', w: 2, h: 2, role: 'room', cost: 6, power: -2, powerClass: 'life', crew: 1, lifeSupport: 30, res: 'volatile', adv: { volatiles: 1 },
+  { id: 'lifesupport', name: 'Life support', cat: 'crew', sub: 'Life support', line: 'lifesupport', w: 2, h: 2, role: 'room', cost: 6, power: -2, powerClass: 'life', crew: 1, lifeSupport: 30, res: 'volatile',
     rule: 'Keeps 30 crew alive in the rooms joined to it by passageways.' },
-  { id: 'lifesupport_3', name: 'Life support bay', cat: 'crew', sub: 'Life support', line: 'lifesupport', w: 3, h: 3, role: 'room', cost: 14, power: -3, powerClass: 'life', crew: 2, lifeSupport: 100, res: 'volatile', adv: { volatiles: 2 },
+  { id: 'lifesupport_3', name: 'Life support bay', cat: 'crew', sub: 'Life support', line: 'lifesupport', w: 3, h: 3, role: 'room', cost: 14, power: -3, powerClass: 'life', crew: 2, lifeSupport: 100, res: 'volatile',
     rule: 'Keeps 100 crew alive. (Tier 1, with the frigate.)' },
-  { id: 'lifesupport_4', name: 'Life support hall', cat: 'crew', sub: 'Life support', line: 'lifesupport', w: 4, h: 4, role: 'room', cost: 28, power: -5, powerClass: 'life', crew: 3, lifeSupport: 250, res: 'volatile', adv: { volatiles: 3 },
+  { id: 'lifesupport_4', name: 'Life support hall', cat: 'crew', sub: 'Life support', line: 'lifesupport', w: 4, h: 4, role: 'room', cost: 28, power: -5, powerClass: 'life', crew: 3, lifeSupport: 250, res: 'volatile',
     rule: 'Keeps 250 crew alive. (Tier 1, with the destroyer.)' },
-  { id: 'lifesupport_plant', name: 'Life support plant', cat: 'crew', sub: 'Life support', line: 'lifesupport', w: 6, h: 6, role: 'room', cost: 80, power: -10, powerClass: 'life', crew: 6, lifeSupport: 1000, res: 'volatile', adv: { volatiles: 3 },
+  { id: 'lifesupport_plant', name: 'Life support plant', cat: 'crew', sub: 'Life support', line: 'lifesupport', w: 6, h: 6, role: 'room', cost: 80, power: -10, powerClass: 'life', crew: 6, lifeSupport: 1000, res: 'volatile',
     rule: 'Keeps 1,000 crew alive. (Tier 2: Crew decks.)' },
   // damage control (s9.3): every room repairs at 1x speed; 2 x 2 / 3 x 3 / 4 x 4 mend 1 / 2 / 3 parts at once; each room has 10 crew
   { id: 'dc', name: 'Damage control', cat: 'crew', sub: 'Damage control', line: 'dc', w: 2, h: 2, role: 'room', cost: 10, power: -1, powerClass: 'dc', crew: 10, dc: 1, res: 'general',
@@ -12684,19 +12695,19 @@ const MODULES_V3 = [
   // and its charge store is not empty, its lasers hit harder each second (05f bbBeamSecond: x 1 + SETTINGS.bbFastCapBoost). fastCap: true marks them.
   { id: 'capacitor_fast', name: 'Fast-discharge capacitor', cat: 'power', sub: 'Capacitors', line: 'capacitor', w: 2, h: 2, role: 'machine', conducts: true, cost: 7, power: -0.5, powerClass: 'weapons', capacitor: 20, volatile: 5, fastCap: true, res: 'magnetic', adv: { rareEarths: 1 },
     rule: 'Holds 20 power-seconds, like a plain capacitor, and dumps it fast: while it works and holds charge, the ship\'s lasers hit 25% harder. Uses 1 Rare earths. (Tier 2: Fast-discharge capacitors.)' },
-  { id: 'capacitor_fast_3', name: 'Fast-discharge bank', cat: 'power', sub: 'Capacitors', line: 'capacitor', w: 3, h: 3, role: 'machine', conducts: true, cost: 16, power: -1, powerClass: 'weapons', capacitor: 50, volatile: 10, fastCap: true, res: 'magnetic', adv: { rareEarths: 1 },
-    rule: 'Holds 50 power-seconds; the ship\'s lasers hit 25% harder while it works and holds charge. Uses 1 Rare earths. (Tier 2: Fast-discharge capacitors.)' },
-  { id: 'capacitor_fast_4', name: 'Fast-discharge hall', cat: 'power', sub: 'Capacitors', line: 'capacitor', w: 4, h: 4, role: 'machine', conducts: true, cost: 32, power: -1.5, powerClass: 'weapons', capacitor: 100, volatile: 17, fastCap: true, res: 'magnetic', adv: { rareEarths: 2 },
-    rule: 'Holds 100 power-seconds; the ship\'s lasers hit 25% harder while it works and holds charge. Uses 2 Rare earths. (Tier 2: Fast-discharge capacitors.)' },
+  { id: 'capacitor_fast_3', name: 'Fast-discharge bank', cat: 'power', sub: 'Capacitors', line: 'capacitor', w: 3, h: 3, role: 'machine', conducts: true, cost: 16, power: -1, powerClass: 'weapons', capacitor: 50, volatile: 10, fastCap: true, res: 'magnetic', adv: { rareEarths: 2 },
+    rule: 'Holds 50 power-seconds; the ship\'s lasers hit 25% harder while it works and holds charge. Uses 2 Rare earths. (Tier 2: Fast-discharge capacitors.)' },
+  { id: 'capacitor_fast_4', name: 'Fast-discharge hall', cat: 'power', sub: 'Capacitors', line: 'capacitor', w: 4, h: 4, role: 'machine', conducts: true, cost: 32, power: -1.5, powerClass: 'weapons', capacitor: 100, volatile: 17, fastCap: true, res: 'magnetic', adv: { rareEarths: 4 },
+    rule: 'Holds 100 power-seconds; the ship\'s lasers hit 25% harder while it works and holds charge. Uses 4 Rare earths. (Tier 2: Fast-discharge capacitors.)' },
   // (v90, Tier 3 stage 1: tier3-numbers-plan.md s3c) SUPERCONDUCTING CAPACITORS: 2.5x the charge of a plain one, they dump fast like the fast-discharge kind
   // (fastCap: lasers and railguns x1.25 while one works and holds charge) and refill half again as fast (superCap: the charge store's refill x bbSuperCapRefill).
   // Alloys and 2x the fast kind's Rare earths. They come in Tier 3 because railguns fire from capacitors.
   { id: 'capacitor_super', name: 'Superconducting capacitor', cat: 'power', sub: 'Capacitors', line: 'capacitor', w: 2, h: 2, role: 'machine', conducts: true, cost: 10, power: -0.5, powerClass: 'weapons', capacitor: 50, volatile: 8, fastCap: true, superCap: true, res: 'magnetic', adv: { rareEarths: 2 },
     rule: 'Holds 50 power-seconds (a plain one 20), dumps it fast (lasers and railguns hit 25% harder while it works and holds charge) and fills again half as fast again. Uses 2 Rare earths. (Tier 3: Superconducting capacitors.)' },
-  { id: 'capacitor_super_3', name: 'Superconducting bank', cat: 'power', sub: 'Capacitors', line: 'capacitor', w: 3, h: 3, role: 'machine', conducts: true, cost: 22, power: -1, powerClass: 'weapons', capacitor: 125, volatile: 16, fastCap: true, superCap: true, res: 'magnetic', adv: { rareEarths: 2 },
-    rule: 'Holds 125 power-seconds; lasers and railguns hit 25% harder while it works and holds charge; fills half as fast again. Uses 2 Rare earths. (Tier 3: Superconducting capacitors.)' },
-  { id: 'capacitor_super_4', name: 'Superconducting hall', cat: 'power', sub: 'Capacitors', line: 'capacitor', w: 4, h: 4, role: 'machine', conducts: true, cost: 44, power: -1.5, powerClass: 'weapons', capacitor: 250, volatile: 28, fastCap: true, superCap: true, res: 'magnetic', adv: { rareEarths: 4 },
-    rule: 'Holds 250 power-seconds; lasers and railguns hit 25% harder while it works and holds charge; fills half as fast again. Uses 4 Rare earths. (Tier 3: Superconducting capacitors.)' },
+  { id: 'capacitor_super_3', name: 'Superconducting bank', cat: 'power', sub: 'Capacitors', line: 'capacitor', w: 3, h: 3, role: 'machine', conducts: true, cost: 22, power: -1, powerClass: 'weapons', capacitor: 125, volatile: 16, fastCap: true, superCap: true, res: 'magnetic', adv: { rareEarths: 5 },
+    rule: 'Holds 125 power-seconds; lasers and railguns hit 25% harder while it works and holds charge; fills half as fast again. Uses 5 Rare earths. (Tier 3: Superconducting capacitors.)' },
+  { id: 'capacitor_super_4', name: 'Superconducting hall', cat: 'power', sub: 'Capacitors', line: 'capacitor', w: 4, h: 4, role: 'machine', conducts: true, cost: 44, power: -1.5, powerClass: 'weapons', capacitor: 250, volatile: 28, fastCap: true, superCap: true, res: 'magnetic', adv: { rareEarths: 8 },
+    rule: 'Holds 250 power-seconds; lasers and railguns hit 25% harder while it works and holds charge; fills half as fast again. Uses 8 Rare earths. (Tier 3: Superconducting capacitors.)' },
   { id: 'conduit', name: 'Power conduit', cat: 'power', sub: 'Conduits', line: 'fittings', w: 1, h: 1, role: 'track', track: 'conduit', cost: 0.2, res: 'general',
     rule: 'Free-form. Carries power and heat between the parts it joins.' },
   // ---- Heat (s4.4): the meter holds HEAT_RULES.meter plus a heat sink's 10 a square (size pieces up to 5 x 5); radiators are edge housings from 2 x 1 to 4 x 4 at about 3 cooling a square ----
@@ -12709,21 +12720,21 @@ const MODULES_V3 = [
   { id: 'radiator_l', name: 'Radiator hall', cat: 'heat', sub: 'Radiators', line: 'radiator', w: 4, h: 4, role: 'external', edge: true, conducts: true, heatNet: true, cost: 19.2, cooling: 48, res: 'volatile', traits: ['Cooling'],
     rule: 'On the outside, joined to the power network: a 4 x 4 housing, 48 cooling.' },
   // (v68, Tier 2 plan s3b, Alex's A24) DROPLET RADIATORS: a new style in the Radiator pick. A fan of glowing droplets flies between two booms and is caught
-  // again: twice the cooling a square, hit points x1.5 ("a bit of armour"), 1 Volatiles a part on top of the Alloys. They stick out into space like other
+  // again: twice the cooling a square, hit points x1.5 ("a bit of armour"); (v96) Alloys only, as every Volatiles part now is. They stick out into space like other
   // radiators and fold back under fire. No marks (radiators have none). droplet: true picks the art (23g, UI/ship-art.js D.droplet).
-  { id: 'radiator_drop_s', name: 'Droplet radiator', cat: 'heat', sub: 'Radiators', line: 'radiator', w: 2, h: 1, role: 'external', edge: true, conducts: true, heatNet: true, cost: 3.6, cooling: 12, hpMul: 1.5, res: 'volatile', adv: { volatiles: 1 }, droplet: true, traits: ['Cooling'],
-    rule: 'On the outside, joined to the power network: a 2 x 1 droplet radiator, 12 cooling (twice a plain radiator\'s). A sheet of hot droplets flies between two booms; tougher housing (x1.5 hit points). Uses 1 Volatiles. (Tier 2: Droplet radiators.)' },
-  { id: 'radiator_drop_m', name: 'Droplet radiator bay', cat: 'heat', sub: 'Radiators', line: 'radiator', w: 3, h: 2, role: 'external', edge: true, conducts: true, heatNet: true, cost: 10.8, cooling: 36, hpMul: 1.5, res: 'volatile', adv: { volatiles: 1 }, droplet: true, traits: ['Cooling'],
-    rule: 'On the outside, joined to the power network: a 3 x 2 droplet radiator bay, 36 cooling. Uses 1 Volatiles. (Tier 2: Droplet radiators.)' },
-  { id: 'radiator_drop_l', name: 'Droplet radiator hall', cat: 'heat', sub: 'Radiators', line: 'radiator', w: 4, h: 4, role: 'external', edge: true, conducts: true, heatNet: true, cost: 28.8, cooling: 96, hpMul: 1.5, res: 'volatile', adv: { volatiles: 1 }, droplet: true, traits: ['Cooling'],
-    rule: 'On the outside, joined to the power network: a 4 x 4 droplet radiator hall, 96 cooling. Uses 1 Volatiles. (Tier 2: Droplet radiators.)' },
-  { id: 'heatsink', name: 'Heat sink', cat: 'heat', sub: 'Heat sinks', line: 'heatsink', w: 1, h: 1, sizes: true, maxSize: 5, role: 'machine', conducts: true, heatNet: true, cost: 1, heatCap: 10, res: 'volatile', adv: { volatiles: 1 }, advPerBlock: true, traits: ['Cooling'],
+  { id: 'radiator_drop_s', name: 'Droplet radiator', cat: 'heat', sub: 'Radiators', line: 'radiator', w: 2, h: 1, role: 'external', edge: true, conducts: true, heatNet: true, cost: 3.6, cooling: 12, hpMul: 1.5, res: 'volatile', droplet: true, traits: ['Cooling'],
+    rule: 'On the outside, joined to the power network: a 2 x 1 droplet radiator, 12 cooling (twice a plain radiator\'s). A sheet of hot droplets flies between two booms; tougher housing (x1.5 hit points). (Tier 2: Droplet radiators.)' },
+  { id: 'radiator_drop_m', name: 'Droplet radiator bay', cat: 'heat', sub: 'Radiators', line: 'radiator', w: 3, h: 2, role: 'external', edge: true, conducts: true, heatNet: true, cost: 10.8, cooling: 36, hpMul: 1.5, res: 'volatile', droplet: true, traits: ['Cooling'],
+    rule: 'On the outside, joined to the power network: a 3 x 2 droplet radiator bay, 36 cooling. (Tier 2: Droplet radiators.)' },
+  { id: 'radiator_drop_l', name: 'Droplet radiator hall', cat: 'heat', sub: 'Radiators', line: 'radiator', w: 4, h: 4, role: 'external', edge: true, conducts: true, heatNet: true, cost: 28.8, cooling: 96, hpMul: 1.5, res: 'volatile', droplet: true, traits: ['Cooling'],
+    rule: 'On the outside, joined to the power network: a 4 x 4 droplet radiator hall, 96 cooling. (Tier 2: Droplet radiators.)' },
+  { id: 'heatsink', name: 'Heat sink', cat: 'heat', sub: 'Heat sinks', line: 'heatsink', w: 1, h: 1, sizes: true, maxSize: 5, role: 'machine', conducts: true, heatNet: true, cost: 1, heatCap: 10, res: 'volatile', traits: ['Cooling'],
     rule: 'Size piece, up to 5 x 5. Joined to the power network: each square adds 10 to the heat meter, so the guns can fight hot for a while.' },
   // (v87, s2b, Alex asked for bigger, better heat sinks) HEAT SINK II: sealed cells of melting salt hold 1.5x the heat a square. A style of the Heat sink pick.
-  { id: 'heatsink_2', name: 'Heat sink II', cat: 'heat', sub: 'Heat sinks', line: 'heatsink', w: 1, h: 1, sizes: true, maxSize: 5, role: 'machine', conducts: true, heatNet: true, cost: 1.5, heatCap: 15, res: 'volatile', adv: { volatiles: 1 }, advPerBlock: true, traits: ['Cooling'],
+  { id: 'heatsink_2', name: 'Heat sink II', cat: 'heat', sub: 'Heat sinks', line: 'heatsink', w: 1, h: 1, sizes: true, maxSize: 5, role: 'machine', conducts: true, heatNet: true, cost: 1.5, heatCap: 15, res: 'volatile', traits: ['Cooling'],
     rule: 'Size piece, up to 5 x 5. Joined to the power network: each square adds 15 to the heat meter (half again a plain heat sink\'s 10). (Tier 2: Heat sink II.)' },
   // (v91, Tier 3 plan s3g) the cryo sink: twice a plain heat sink a square
-  { id: 'heatsink_3', name: 'Cryo sink', cat: 'heat', sub: 'Heat sinks', line: 'heatsink', w: 1, h: 1, sizes: true, maxSize: 5, role: 'machine', conducts: true, heatNet: true, cost: 2.5, heatCap: 20, res: 'volatile', adv: { volatiles: 1 }, advPerBlock: true, traits: ['Cooling'],
+  { id: 'heatsink_3', name: 'Cryo sink', cat: 'heat', sub: 'Heat sinks', line: 'heatsink', w: 1, h: 1, sizes: true, maxSize: 5, role: 'machine', conducts: true, heatNet: true, cost: 2.5, heatCap: 20, res: 'volatile', traits: ['Cooling'],
     rule: 'Size piece, up to 5 x 5. Joined to the power network: each square adds 20 to the heat meter (twice a plain heat sink\'s 10). (Tier 3: Cryo sinks.)' },
   // ---- Drives and fuel (s4.2: 1,500 thrust a square for a chemical rocket; NTR x1.3, ion x0.4, fusion torch x1.7; the pairings: FUEL_PAIRINGS). Drives keep a mass (s1). ----
   // (v51) the Small rocket: a fighter's drive, 2 x 1; starting tech like the big one. (v56, Alex 28 Oct: it was plainly better than the big one, 1.5x the
@@ -12749,23 +12760,23 @@ const MODULES_V3 = [
   { id: 'ntr', name: 'Nuclear thermal rocket', cat: 'drives', sub: 'Rockets', line: 'drive', w: 4, h: 3, role: 'machine', dir: 'push', lane: 'exhaust', mass: 7, cost: 14, power: -3, powerClass: 'drives', driveMul: 1.3, boostFactor: 1.1, volatile: 4, heat: 4, crew: 1, pairs: 'fission', res: 'nuclear', adv: { fissiles: 3 },
     fuel: { type: 'volatiles', eff: 1.5 },
     rule: 'Heats Volatiles in a reactor\'s glow: x1.3 a chemical rocket\'s push a square, x1.5 fuel efficiency. Pairs with a fission reactor (Fissiles); needs power and its own Volatiles tank. Uses 3 Fissiles to build. (Late Tier 1.)' },
-  { id: 'ntr_l', name: 'Large nuclear thermal rocket', cat: 'drives', sub: 'Rockets', line: 'drive', w: 8, h: 3, role: 'machine', dir: 'push', lane: 'exhaust', mass: 13, cost: 26, power: -5, powerClass: 'drives', driveMul: 1.4, boostFactor: 1.1, volatile: 7, heat: 7, crew: 1, pairs: 'fission', res: 'nuclear', adv: { fissiles: 5 },   // (v90.1)
+  { id: 'ntr_l', name: 'Large nuclear thermal rocket', cat: 'drives', sub: 'Rockets', line: 'drive', w: 8, h: 3, role: 'machine', dir: 'push', lane: 'exhaust', mass: 13, cost: 26, power: -5, powerClass: 'drives', driveMul: 1.4, boostFactor: 1.1, volatile: 7, heat: 7, crew: 1, pairs: 'fission', res: 'nuclear', adv: { fissiles: 6 },   // (v90.1)
     fuel: { type: 'volatiles', eff: 1.5 },
-    rule: 'A long nuclear rocket, short on the stern and reaching far into the ship: 50,400 thrust in 24 squares (x1.4 a chemical rocket\'s push a square), x1.5 fuel efficiency. Pairs with a fission reactor; needs power and its own Volatiles tank. Uses 5 Fissiles to build.' },
-  { id: 'ntr_h', name: 'Heavy nuclear thermal rocket', cat: 'drives', sub: 'Rockets', line: 'drive', w: 12, h: 4, role: 'machine', dir: 'push', lane: 'exhaust', mass: 25, cost: 48, power: -9, powerClass: 'drives', driveMul: 1.5, boostFactor: 1.1, volatile: 12, heat: 13, crew: 2, pairs: 'fission', res: 'nuclear', adv: { fissiles: 9 },   // (v90.1)
+    rule: 'A long nuclear rocket, short on the stern and reaching far into the ship: 50,400 thrust in 24 squares (x1.4 a chemical rocket\'s push a square), x1.5 fuel efficiency. Pairs with a fission reactor; needs power and its own Volatiles tank. Uses 6 Fissiles to build.' },
+  { id: 'ntr_h', name: 'Heavy nuclear thermal rocket', cat: 'drives', sub: 'Rockets', line: 'drive', w: 12, h: 4, role: 'machine', dir: 'push', lane: 'exhaust', mass: 25, cost: 48, power: -9, powerClass: 'drives', driveMul: 1.5, boostFactor: 1.1, volatile: 12, heat: 13, crew: 2, pairs: 'fission', res: 'nuclear', adv: { fissiles: 12 },   // (v90.1)
     fuel: { type: 'volatiles', eff: 1.5 },
-    rule: 'The biggest nuclear rocket, 12 squares into the ship and 4 on the stern, for cruisers and up: 108,000 thrust in 48 squares (x1.5 a chemical rocket\'s push a square), x1.5 fuel efficiency. Pairs with a fission reactor; needs power and its own Volatiles tank. Uses 9 Fissiles to build.' },
+    rule: 'The biggest nuclear rocket, 12 squares into the ship and 4 on the stern, for cruisers and up: 108,000 thrust in 48 squares (x1.5 a chemical rocket\'s push a square), x1.5 fuel efficiency. Pairs with a fission reactor; needs power and its own Volatiles tank. Uses 12 Fissiles to build.' },
   // (v59, fuels-engines-resources.md s6) the ion drive: NO push in battle and no battle power; enough ion squares double the ship's fuel efficiency
-  // between battles (ION_RULES in section 2n's start). On the outside with a clear exhaust lane, joined to a Volatiles tank. Rare earths 2 / 4.
-  { id: 'iondrive', name: 'Ion drive', cat: 'drives', sub: 'Ion drives', line: 'ion', w: 3, h: 1, role: 'machine', dir: 'push', lane: 'exhaust', ion: true, mass: 2, cost: 8, heat: 0, pairs: '', res: 'magnetic', adv: { rareEarths: 2 },
+  // between battles (ION_RULES in section 2n's start). On the outside with a clear exhaust lane, joined to a Volatiles tank. (v96, Alex 1 Nov) Rare earths 1 a square, the baseline Rare earths part: 3 / 8 / 16.
+  { id: 'iondrive', name: 'Ion drive', cat: 'drives', sub: 'Ion drives', line: 'ion', w: 3, h: 1, role: 'machine', dir: 'push', lane: 'exhaust', ion: true, mass: 2, cost: 8, heat: 0, pairs: '', res: 'magnetic', adv: { rareEarths: 3 },
     fuel: { type: 'volatiles', eff: 1 },
-    rule: 'No push in battle. Between battles it makes the ship\'s fuel go further: enough ion squares for the hull (small craft 2, corvette 3, frigate 4, destroyer 6) double the fuel efficiency, half of them x1.5. On the stern edge with its exhaust lane clear, joined to a Volatiles tank. Uses 2 Rare earths.' },
-  { id: 'iondrive_l', name: 'Large ion drive', cat: 'drives', sub: 'Ion drives', line: 'ion', w: 4, h: 2, role: 'machine', dir: 'push', lane: 'exhaust', ion: true, mass: 5, cost: 18, heat: 0, pairs: '', res: 'magnetic', adv: { rareEarths: 4 },
+    rule: 'No push in battle. Between battles it makes the ship\'s fuel go further: enough ion squares for the hull (small craft 2, corvette 3, frigate 4, destroyer 6) double the fuel efficiency, half of them x1.5. On the stern edge with its exhaust lane clear, joined to a Volatiles tank. Uses 3 Rare earths (1 a square).' },
+  { id: 'iondrive_l', name: 'Large ion drive', cat: 'drives', sub: 'Ion drives', line: 'ion', w: 4, h: 2, role: 'machine', dir: 'push', lane: 'exhaust', ion: true, mass: 5, cost: 18, heat: 0, pairs: '', res: 'magnetic', adv: { rareEarths: 8 },
     fuel: { type: 'volatiles', eff: 1 },
-    rule: 'The Ion drive in 8 squares: no push in battle, and 8 ion squares toward the fuel efficiency rule. On the stern edge with its exhaust lane clear, joined to a Volatiles tank. Uses 4 Rare earths.' },
-  { id: 'iondrive_h', name: 'Heavy ion drive', cat: 'drives', sub: 'Ion drives', line: 'ion', w: 4, h: 4, role: 'machine', dir: 'push', lane: 'exhaust', ion: true, mass: 9, cost: 30, heat: 0, pairs: '', res: 'magnetic', adv: { rareEarths: 6 },   // (v90.1)
+    rule: 'The Ion drive in 8 squares: no push in battle, and 8 ion squares toward the fuel efficiency rule. On the stern edge with its exhaust lane clear, joined to a Volatiles tank. Uses 8 Rare earths (1 a square).' },
+  { id: 'iondrive_h', name: 'Heavy ion drive', cat: 'drives', sub: 'Ion drives', line: 'ion', w: 4, h: 4, role: 'machine', dir: 'push', lane: 'exhaust', ion: true, mass: 9, cost: 30, heat: 0, pairs: '', res: 'magnetic', adv: { rareEarths: 16 },   // (v90.1)
     fuel: { type: 'volatiles', eff: 1 },
-    rule: 'The Ion drive in a 4 x 4 block, 16 squares (enough for any hull, a titan included, in one part): no push in battle, 16 ion squares toward the fuel efficiency rule. On the stern edge with its exhaust lane clear, joined to a Volatiles tank. Uses 6 Rare earths.' },
+    rule: 'The Ion drive in a 4 x 4 block, 16 squares (enough for any hull, a titan included, in one part): no push in battle, 16 ion squares toward the fuel efficiency rule. On the stern edge with its exhaust lane clear, joined to a Volatiles tank. Uses 16 Rare earths (1 a square).' },
   { id: 'fusiontorch', name: 'Fusion torch', cat: 'drives', sub: 'Main drives', line: 'drive', w: 4, h: 3, role: 'machine', dir: 'push', lane: 'exhaust', mass: 8, cost: 24, power: -6, powerClass: 'drives', driveMul: 1.7, boostFactor: 0.8, heat: 5, crew: 1, pairs: 'fusion', res: 'nuclear',
     fuel: { type: 'helium3', eff: 2 },
     rule: 'The strongest drive: x1.7 a chemical rocket\'s push a square, and a transfer costs x0.8 the fuel. Burns Helium-3 (Alloys only: the Helium-3 tank pays the Helium-3): pair it with a fusion reactor, or carry two fuels. (Tier 2: Fusion torch.)' },
@@ -12787,8 +12798,8 @@ const MODULES_V3 = [
     rule: 'Size piece. Each square holds 0.2 FU of Volatiles at Mk I (a 2 x 2 tank 0.88 FU, a 3 x 3 tank 2.16 FU; after "Large tanks" a 4 x 4 tank 4.16 FU and a 5 x 5 tank 7 FU; more at higher marks). Rockets, nuclear rockets and ion drives must touch their tanks or be joined to them by fuel line. Alloys only. Blows up when destroyed.' },
   { id: 'tank_fissiles', name: 'Fissiles tank', cat: 'drives', sub: 'Fuel', line: 'tank', w: 1, h: 1, sizes: true, maxSize: 5, openSize: 3, sizeBonus: true, role: 'machine', cost: 1.2, tank: { type: 'fissiles', cap: 1 }, res: 'volatile', adv: { fissiles: 0.5 }, advPerSquare: true,
     rule: 'Size piece. Each square holds 0.2 FU of Fissiles at Mk I (a 3 x 3 tank 2.16 FU; 4 x 4 and 5 x 5 after "Large tanks"), for a fission reactor, which must touch it or be joined to it by fuel line. Pays the reactors\' Fissiles: 1 Fissiles for every 2 squares (a 3 x 3 tank 4.5).' },
-  { id: 'tank_he3', name: 'Helium-3 tank', cat: 'drives', sub: 'Fuel', line: 'tank', w: 1, h: 1, sizes: true, maxSize: 5, openSize: 3, sizeBonus: true, role: 'machine', cost: 1, tank: { type: 'helium3', cap: 1 }, volatile: 1, res: 'volatile', adv: { helium3: 0.1 }, advPerSquare: true,
-    rule: 'Size piece. Each square holds 0.2 FU of Helium-3 at Mk I (a 3 x 3 tank 2.16 FU; 4 x 4 and 5 x 5 after "Large tanks"), for a fusion reactor or torch, which must touch it or be joined to it by fuel line. Pays the fusion parts\' Helium-3: 1 Helium-3 for every 10 squares (a 3 x 3 tank 0.9).' },
+  { id: 'tank_he3', name: 'Helium-3 tank', cat: 'drives', sub: 'Fuel', line: 'tank', w: 1, h: 1, sizes: true, maxSize: 5, openSize: 3, sizeBonus: true, role: 'machine', cost: 1, tank: { type: 'helium3', cap: 1 }, volatile: 1, res: 'volatile', adv: { helium3: 0.5 }, advPerSquare: true,
+    rule: 'Size piece. Each square holds 0.2 FU of Helium-3 at Mk I (a 3 x 3 tank 2.16 FU; 4 x 4 and 5 x 5 after "Large tanks"), for a fusion reactor or torch, which must touch it or be joined to it by fuel line. Pays the fusion parts\' Helium-3: 1 Helium-3 for every 2 squares (a 3 x 3 tank 4.5), as the Fissiles tank does.' },
   // (v36, Alex 26 Oct) the fuel line: a free-form track like the power conduit, for every kind of fuel
   { id: 'fuelline', name: 'Fuel line', cat: 'drives', sub: 'Fuel line', line: 'fittings', w: 1, h: 1, role: 'track', track: 'fuelline', cost: 0.2, res: 'general', colour: FUEL_LINE_COLOUR,
     rule: 'Free-form. Carries fuel from the tanks to the drives and reactors that burn it, for any kind of fuel. Tanks carry it on through themselves. It may share a square with a passage, a conduit and the hoist.' },
@@ -12836,9 +12847,9 @@ const MODULES_V3 = [
   { id: 'intcell', name: 'Interceptor cell', cat: 'defence', sub: 'Point defence', line: 'pd', w: 4, h: 4, role: 'external', edge: true, cost: 40, power: -1, powerClass: 'pd', heat: 0.5, crew: 2, pdTier: 'interceptor', pd: true, traits: ['Intercepting'], res: 'warhead',
     pdRange: 1400, pdRate: 1, pdDamage: 0, pdKill: 0.6, pdCrossing: 1, pdStopShells: 0, pdAmmo: '', pdLoad: 16, pdHpHit: 99,   // (pdHpHit 99: a hit destroys any missile outright)
     rule: 'On the outside. A box of 16 interceptor missiles: about one a second out to 1,400 (the longest reach of any point defence), 60% to kill, guarding nearby ships too. When the 16 are gone it is empty until the ship docks. (Tier 2: Interceptors.)' },
-  { id: 'lasbattery', name: 'Repeating laser battery', cat: 'defence', sub: 'Point defence', line: 'pd', w: 3, h: 3, role: 'external', edge: true, cost: 30, power: -3, powerClass: 'pd', heat: 3, crew: 2, pdTier: 'battery', pd: true, traits: ['Intercepting'], res: 'magnetic', adv: { rareEarths: 1 },
+  { id: 'lasbattery', name: 'Repeating laser battery', cat: 'defence', sub: 'Point defence', line: 'pd', w: 3, h: 3, role: 'external', edge: true, cost: 30, power: -3, powerClass: 'pd', heat: 3, crew: 2, pdTier: 'battery', pd: true, traits: ['Intercepting'], res: 'magnetic', adv: { rareEarths: 2 },
     pdRange: 900, pdRate: 6, pdDamage: 2, pdKill: 0.25, pdCrossing: 1, pdStopShells: 0.04, pdAmmo: '', pdCharge: 2, needsCapacitor: true,
-    rule: 'On the outside. Four small lenses: 6 shots a second out to 900, 25% to kill a missile, covering nearby ships. Each shot takes 2 power-seconds from the capacitors: the ship needs a capacitor. Heat 3 while firing. Uses 1 Rare earths. (Tier 2: Repeating laser battery.)' },
+    rule: 'On the outside. Four small lenses: 6 shots a second out to 900, 25% to kill a missile, covering nearby ships. Each shot takes 2 power-seconds from the capacitors: the ship needs a capacitor. Heat 3 while firing. Uses 2 Rare earths. (Tier 2: Repeating laser battery.)' },
   // (v90, Tier 3 stage 1: tier3-numbers-plan.md s3e) THE PARTICLE SCREEN: a big point defence that is a field, not a gun. Every enemy missile inside its reach
   // loses screen.rate hit points a second (no dice, like the Swarm's spore cloud: 05f-3 bbSporeFieldsStep reads sporeField), and every enemy small craft inside
   // it takes screen.rate damage a second too (bbScreenStep). It covers the ships near it. Power 20 (on all the time).
@@ -12850,10 +12861,10 @@ const MODULES_V3 = [
     rule: 'On the outside. Every weapon scatters 7% less (up to three sets). On a mast it counts twice.' },
   // (v87, s2b) LONG-RANGE SENSORS: a big dish array. Counts as one of the three sensor sets, but each weapon scatters 20% less (the scatter only grows past a
   // weapon's stated range, so this is what lets the long guns land at long range).
-  { id: 'longsensor', name: 'Long-range sensors', cat: 'electronics', sub: 'Sensors', line: 'sensors', w: 4, h: 4, role: 'room', edge: true, cost: 30, power: -4, powerClass: 'sensors', heat: 2, crew: 3, sensor: 1, scatterMul: 0.8, res: 'magnetic', adv: { rareEarths: 2 },
-    rule: 'On the outside. Sees further: every weapon scatters 20% less at long range (one of the three sensor sets a ship can count). On a mast it counts twice. Uses 2 Rare earths. (Tier 2: Long-range sensors.)' },
-  { id: 'firecontrol', name: 'Fire control room', cat: 'electronics', sub: 'Fire control', line: 'firecontrol', w: 6, h: 6, role: 'room', cost: 60, power: -4, powerClass: 'sensors', crew: 20, spreadMul: 0.85, trackingMul: 1.15, res: 'magnetic', adv: { rareEarths: 3 },
-    rule: 'A room built for capital ships (20 crew): the weapons it reaches by passageway scatter 15% less and track 15% faster. A minor buff. (Tier 2: Fire control.)' },
+  { id: 'longsensor', name: 'Long-range sensors', cat: 'electronics', sub: 'Sensors', line: 'sensors', w: 4, h: 4, role: 'room', edge: true, cost: 30, power: -4, powerClass: 'sensors', heat: 2, crew: 3, sensor: 1, scatterMul: 0.8, res: 'magnetic', adv: { rareEarths: 4 },
+    rule: 'On the outside. Sees further: every weapon scatters 20% less at long range (one of the three sensor sets a ship can count). On a mast it counts twice. Uses 4 Rare earths. (Tier 2: Long-range sensors.)' },
+  { id: 'firecontrol', name: 'Fire control room', cat: 'electronics', sub: 'Fire control', line: 'firecontrol', w: 6, h: 6, role: 'room', cost: 60, power: -4, powerClass: 'sensors', crew: 20, spreadMul: 0.85, trackingMul: 1.15, res: 'magnetic', adv: { rareEarths: 9 },
+    rule: 'A room built for capital ships (20 crew): the weapons it reaches by passageway scatter 15% less and track 15% faster. A minor buff. Uses 9 Rare earths. (Tier 2: Fire control.)' },
   { id: 'ecm', name: 'ECM jammer', cat: 'electronics', sub: 'Electronic war', line: 'ecm', w: 2, h: 1, role: 'external', edge: true, cost: 6, power: -2, powerClass: 'pd', heat: 1, jam: 0.08, crew: 1, res: 'magnetic', adv: { rareEarths: 2 }, traits: ['Decoying'],
     rule: 'On the outside. Enemy guns scatter 8% more against this ship (two at most), and enemy drones near it lose their way. (Tier 2: ECM jammer.)' },
   // (v88, s2b) ACTIVE MEASURES. The sand caster throws a sand cloud when a beam hits the ship: beams into or out of the cloud do SETTINGS.sandBeamMul of
@@ -12875,15 +12886,15 @@ const MODULES_V3 = [
   // (the shield line takes marks); a mark never needs a new resource.
   { id: 'shield', name: 'Magnetic shield emitter', cat: 'electronics', sub: 'Shields', line: 'shield', w: 3, h: 3, role: 'machine', edge: true, cost: 30, power: -5, powerClass: 'shields', heat: 2, slugCap: 180, res: 'magnetic', adv: { rareEarths: 2 }, traits: ['Magnetic'],
     rule: 'On the outside. Makes the whole ship Magnetic while it works (no shield points to wear down): plasma bolts and particle beams do half damage and cannot melt plates or kill crew, and slugs under 180 damage do three quarters. Lasers, Swarm acid, missiles and heavier slugs are not stopped. Uses 2 Rare earths. (Tier 2: Magnetic shields.)' },
-  { id: 'shield_array', name: 'Magnetic shield array', cat: 'electronics', sub: 'Shields', line: 'shield', w: 6, h: 6, role: 'machine', edge: true, cost: 120, power: -24, powerClass: 'shields', heat: 6, crew: 2, slugCap: 550, res: 'magnetic', adv: { rareEarths: 6 }, traits: ['Magnetic'],
-    rule: 'On the outside. A capital ship\'s great magnetic field: the whole ship is Magnetic while it works, as with the emitter, but it bends slugs up to 550 damage (all but a Titan\'s) to three quarters. Lasers, Swarm acid and missiles are not stopped. Uses 6 Rare earths. (Tier 2: Magnetic shields.)' },
+  { id: 'shield_array', name: 'Magnetic shield array', cat: 'electronics', sub: 'Shields', line: 'shield', w: 6, h: 6, role: 'machine', edge: true, cost: 120, power: -24, powerClass: 'shields', heat: 6, crew: 2, slugCap: 550, res: 'magnetic', adv: { rareEarths: 9 }, traits: ['Magnetic'],
+    rule: 'On the outside. A capital ship\'s great magnetic field: the whole ship is Magnetic while it works, as with the emitter, but it bends slugs up to 550 damage (all but a Titan\'s) to three quarters. Lasers, Swarm acid and missiles are not stopped. Uses 9 Rare earths. (Tier 2: Magnetic shields.)' },
   // (v91, Tier 3 plan s3f) THE SUPERCONDUCTING SHIELDS, the second shield tier, the same shapes as the magnetic ones for x1.5 the Alloys and Antimatter.
   // (v91.1, Alex) No pool either: Magnetic as above, and DEFLECTING with the shield's own armour value (shieldDeflect): a projectile no bigger than it
   // (x SETTINGS.deflectRatio, as for plates) does nothing at all; acid is never deflected (05 resolveHit). The shield line's marks apply to both kinds.
   { id: 'shield_sc', name: 'Superconducting shield emitter', cat: 'electronics', sub: 'Shields', line: 'shield', w: 3, h: 3, role: 'machine', edge: true, cost: 45, power: -8, powerClass: 'shields', heat: 2, slugCap: 180, shieldDeflect: 15, res: 'magnetic', adv: { antimatter: 1 }, traits: ['Magnetic', 'Deflecting'],
     rule: 'On the outside. Makes the whole ship Magnetic and Deflecting while it works (no shield points): plasma and particle beams do half damage and cannot melt or kill crew, slugs under 180 damage do three quarters, and any slug of 15 damage or less (after that) bounces off. Lasers, Swarm acid and missiles are not stopped. Uses 1 Antimatter. (Tier 3: Superconducting shields.)' },
-  { id: 'shield_sc_array', name: 'Superconducting shield array', cat: 'electronics', sub: 'Shields', line: 'shield', w: 6, h: 6, role: 'machine', edge: true, cost: 180, power: -36, powerClass: 'shields', heat: 6, crew: 2, slugCap: 550, shieldDeflect: 40, res: 'magnetic', adv: { antimatter: 2 }, traits: ['Magnetic', 'Deflecting'],
-    rule: 'On the outside. The great field: Magnetic and Deflecting while it works. Plasma and particle beams do half damage, slugs under 550 damage do three quarters, and any slug of 40 damage or less (after that) bounces off. Lasers, Swarm acid and missiles are not stopped. Uses 2 Antimatter. (Tier 3: Superconducting shields.)' },
+  { id: 'shield_sc_array', name: 'Superconducting shield array', cat: 'electronics', sub: 'Shields', line: 'shield', w: 6, h: 6, role: 'machine', edge: true, cost: 180, power: -36, powerClass: 'shields', heat: 6, crew: 2, slugCap: 550, shieldDeflect: 40, res: 'magnetic', adv: { antimatter: 3 }, traits: ['Magnetic', 'Deflecting'],
+    rule: 'On the outside. The great field: Magnetic and Deflecting while it works. Plasma and particle beams do half damage, slugs under 550 damage do three quarters, and any slug of 40 damage or less (after that) bounces off. Lasers, Swarm acid and missiles are not stopped. Uses 3 Antimatter. (Tier 3: Superconducting shields.)' },
   // ---- Armour and bulkheads (s3.2, s3.3, s4.1): plates are size pieces up to 5 x 5; armour a square = the base x the block's side; mass +1 per 4 armour. Bulkheads +0.5 mass a square. ----
   { id: 'armour', name: 'Steel plate', cat: 'defence', sub: 'Armour', line: 'plate', w: 1, h: 1, sizes: true, maxSize: 5, shrink: false, role: 'armour', cost: 1, armourBase: 4, res: 'structure', traits: ['Deflecting'],
     rule: 'Size piece, up to 5 x 5. Armour a square = 4 x the block\'s side (a 3 x 3 block is 12 a square). Deflecting: a shell no bigger than the plate does nothing at all. Mass +1 per 4 armour.' },
@@ -12891,14 +12902,14 @@ const MODULES_V3 = [
     rule: 'Size piece. Steel with a gap behind it: stops Piercing. (Tier 1.)' },
   { id: 'plate_reactive', name: 'Reactive plate', cat: 'defence', sub: 'Armour', line: 'plate', w: 1, h: 1, sizes: true, maxSize: 5, shrink: false, role: 'armour', cost: 1.6, armourBase: 4, res: 'structure', traits: ['Reactive'],
     rule: 'Size piece. Bursts outward once against an incoming missile. (Tier 1.)' },
-  { id: 'plate_ablative', name: 'Ablative plate', cat: 'defence', sub: 'Armour', line: 'plate', w: 1, h: 1, sizes: true, maxSize: 5, shrink: false, role: 'armour', cost: 1.6, armourBase: 4, hpMul: 2, res: 'structure', adv: { volatiles: 1 }, advPerBlock: true, traits: ['Ablative'],
+  { id: 'plate_ablative', name: 'Ablative plate', cat: 'defence', sub: 'Armour', line: 'plate', w: 1, h: 1, sizes: true, maxSize: 5, shrink: false, role: 'armour', cost: 1.6, armourBase: 4, hpMul: 2, res: 'structure', traits: ['Ablative'],
     rule: 'Size piece. Against lasers and plasma: while it is in the line of fire there is no internal damage, no Focus and no heating; it takes the beam on its own hit points (about 2x steel\'s). (Tier 1, after lasers.)' },
-  { id: 'iridiumplate', name: 'Iridium plate', cat: 'defence', sub: 'Armour', line: 'plate', markLine: 'iridium', w: 1, h: 1, sizes: true, maxSize: 5, shrink: false, role: 'armour', cost: 2.8, armourBase: 8, iridium: 1, res: 'structure', traits: ['Deflecting'],
-    proto: 'Iridium', rule: 'Size piece. Twice steel\'s armour. Each square uses 1 Iridium. (Tier 2: Iridium plate; the Luna Iridium find gives it early.)' },
+  { id: 'iridiumplate', name: 'Iridium plate', cat: 'defence', sub: 'Armour', line: 'plate', markLine: 'iridium', w: 1, h: 1, sizes: true, maxSize: 5, shrink: false, role: 'armour', cost: 2.8, armourBase: 8, iridium: 0.1, res: 'structure', traits: ['Deflecting'],
+    proto: 'Iridium', rule: 'Size piece. Twice steel\'s armour. Uses 1 Iridium for every 10 squares (a 5 x 5 block 2.5). (Tier 2: Iridium plate; the Luna Iridium find gives it early.)' },
   // (v91, Tier 3 plan s3g) the nanolaminate: base 12 (steel 4, iridium 8), lighter than iridium (armourMassMul: its mass per armour is half the rule's,
-  // so +0.5 a square over steel where iridium is +1), Rare earths 1 a square, its own mark line for the kit (markLine 'nano': Nanolaminate Mk II)
-  { id: 'plate_nano', name: 'Nanolaminate plate', cat: 'defence', sub: 'Armour', line: 'plate', markLine: 'nano', w: 1, h: 1, sizes: true, maxSize: 5, shrink: false, role: 'armour', cost: 6, armourBase: 12, armourMassMul: 0.5, rareEarths: 1, res: 'structure', traits: ['Deflecting'],
-    rule: 'Size piece. Three times steel\'s armour at half iridium\'s extra weight: 1 Rare earth a square. Deflecting. (Tier 3: Nanolaminate plate.)' },
+  // so +0.5 a square over steel where iridium is +1), (v96) Rare earths 1 per 10 squares like Iridium plate, its own mark line for the kit (markLine 'nano': Nanolaminate Mk II)
+  { id: 'plate_nano', name: 'Nanolaminate plate', cat: 'defence', sub: 'Armour', line: 'plate', markLine: 'nano', w: 1, h: 1, sizes: true, maxSize: 5, shrink: false, role: 'armour', cost: 6, armourBase: 12, armourMassMul: 0.5, rareEarths: 0.1, res: 'structure', traits: ['Deflecting'],
+    rule: 'Size piece. Three times steel\'s armour at half iridium\'s extra weight: 1 Rare earth for every 10 squares. Deflecting. (Tier 3: Nanolaminate plate.)' },
   { id: 'bulkhead', name: 'Bulkhead', cat: 'defence', sub: 'Bulkheads', line: 'bulkhead', w: 1, h: 1, sizes: true, shrink: false, role: 'armour', mass: 0.5, cost: 0.8, blocksBlast: true, res: 'structure', traits: [],
     rule: 'Size piece, 0.5 mass a square. Stops a chain explosion spreading past it, and shields a room from the reactor beside it.' },
   { id: 'bulkhead_hardened', name: 'Hardened bulkhead', cat: 'defence', sub: 'Bulkheads', line: 'bulkhead', w: 1, h: 1, sizes: true, shrink: false, role: 'armour', mass: 0.5, cost: 1.6, blocksBlast: true, res: 'structure', traits: ['Hardened'],
@@ -13274,7 +13285,8 @@ function moduleStats(id, mk, sz, opt, keepMk) {
   const adv = MARK_RESOURCES[m.res][mk] || {}, per = m.sizes ? s.sz * s.sz : 1;
   s.advanced = {}; for (const r in adv) s.advanced[r] = adv[r] * per;
   // (v59, fuels-engines-resources.md s10) the part's OWN advanced resources (its row's `adv`), the same at every mark: a reactor's Fissiles, an ion drive's
-  // or a panel's Rare earths, life support's Volatiles. A size piece with advPerBlock pays 1 for each 9 squares or part of it, at most 3 (a 5 x 5 heat sink: 3).
+  // or a panel's Rare earths. (v96, Alex 1 Nov: notes/plans/campaign/advanced-resource-balance.md s15) Every advanced cost is set per square of the part,
+  // and nothing costs Volatiles any more (life support, heat sinks, ablative plates and droplet radiators are Alloys only). advPerBlock is no longer used.
   // (v87.5, Alex 31 Oct) advPerSquare: a fuel tank pays its fuel's resource by the square (the Fissiles and Helium-3 tanks: the reactors and torch pay Alloys only)
   if (m.adv) for (const r in m.adv) { const n = m.sizes && m.advPerSquare ? s.sz * s.sz : m.sizes && m.advPerBlock ? Math.min(3, Math.ceil(s.sz * s.sz / 9)) : 1; s.advanced[r] = roundTo((s.advanced[r] || 0) + m.adv[r] * n, 2); }
   s.alloys = partAlloysV3(s.alloys); s.cost = s.alloys;   // (v30.1) one number: a plain part's cost is its Alloys, a whole number (size pieces: after the squares)
@@ -23738,12 +23750,9 @@ function placeTint(p) {
 //                              resource what it yields, by its plain name (CAMPAIGN_RESOURCES: 'Alloys', 'Fissiles', 'Rare earths', 'Volatiles', 'Iridium',
 //                                       'Helium-3', 'Antimatter'; '' = nothing). Only Alloys are charged in v27; the others are shown (resources.md s2 and s3)
 //                              alloys   the Alloys a week it adds to OUR income while we hold it (income-curves.md section 1); 0 = none
-//                              rate     (v27 B2) how much of its `resource` it yields a week (shown on the AO screen and the top bar; only Alloys are charged
-//                                       in v27). For an Alloys location it is its Alloys a week; Mercury and Earth say 0 (their Alloys are Earth's base income).
-//                                       Claude's starting numbers, to be set with the research and parts update: a trickle at the crash site (5), 10 to 30 in
-//                                       the inner system, 40 to 50 from Jupiter outward. (v31 B2) The inner system checked against what the Tier 0/1 parts
-//                                       use (notes/v31/b2-nodes.md): Luna's deposit by resource (CRASH_SITE_RATES), Mars Fissiles 20, Phobos Volatiles 25,
-//                                       Ceres Volatiles 120, Vesta Rare earths 20, Psyche Iridium 10
+//                              rate     only for a place whose resource is Alloys: its Alloys a week (Mercury and Earth say 0: theirs are Earth's base
+//                                       income). (v96) An advanced resource's yield is no longer a number a week on the row: it is a share of our Alloys,
+//                                       in RESOURCE_SHARES below (by the place's id), so changing Alloys never needs these rows changed.
 //                              art      the picture (section 6c; a name the art does not know is drawn as a plain grey moon)
 //                              at       (v27 B2) where it sits on the AO's battlefield: [x, y, radius, body] (see campaignAoLayout). A row without it is placed
 //                                       on the next free corner, as stop B1 did (a bonus AO may leave it out)
@@ -23783,8 +23792,7 @@ function placeTint(p) {
 // resource is, income-curves.md s1 for the Alloys a week, campaign-arc.md s7 for the labs). The Alloys are what the location adds to OUR income a week while we
 // hold it (the aliens' economy is their own: income-curves s7). Earth's own industry, Mercury and the Earth yard are Earth's base income (alloysEarthStart, the
 // ramp, the growth), so they carry no Alloys of their own here. A lab is shown on the map only: research waits for a later build.
-// (v59, fuels-engines-resources.md s9) `more` = what else a place yields a week besides its main resource ({ fissiles: 3, rare: 8 ... }, ids as in 24f2
-// CM_RESOURCES): a place can now yield several resources. Earth's are small on purpose: it has plenty, but it has to be lifted out of the gravity well.
+// (v59) `more` listed a place's other yields; (v96) every advanced yield is now in RESOURCE_SHARES (a share of our Alloys), so the rows carry none.
 // `at` is where the location sits on its AO's battlefield, in the same style as the v21 Mars battlefield (Mars is exactly that picture):
 //   [x, y, radius, body] - x and y as shares of the battlefield (0 to 1; west, x = 0, faces the Sun and our side, east the aliens), the radius of the place
 //   (the circle a side must hold) and the size of the body drawn in it (its planet picture). The battlefield is 54,000 by 36,000 (81,000 by 54,000 since v29: `at` is a share of it, so only the zone sizes stay in units). The bottom right corner
@@ -23792,47 +23800,47 @@ function placeTint(p) {
 const CAMPAIGN_ATLAS = {
   aos: [
     { id: 'earth', name: 'Earth', pos: 0, art: 'earth', owner: 0, home: 0, locations: [
-      { id: 'earth',   name: 'Earth',   job: 'yard',     resource: 'Alloys',      alloys: 0, rate: 0,    more: { volatiles: 20, rare: 8, fissiles: 3 }, size: 'big', art: 'earth',   at: [0.43, 0.56, 4000, 3000], big: true, colony: true, colonised: true, tier: 3 },
-      { id: 'luna',    name: 'Luna',    job: 'node',     resource: '',            alloys: 100, rate: 5,  more: { fissiles: 5, he3: 2, volatiles: 5 }, size: 'mid', art: 'luna',    at: [0.67, 0.30, 2500, 850], crashSite: true, colony: true }   // (the crash site: its resource is drawn per campaign)
+      { id: 'earth',   name: 'Earth',   job: 'yard',     resource: 'Alloys',      alloys: 0, rate: 0,    size: 'big', art: 'earth',   at: [0.43, 0.56, 4000, 3000], big: true, colony: true, colonised: true, tier: 3 },
+      { id: 'luna',    name: 'Luna',    job: 'node',     resource: '',            alloys: 100,  size: 'mid', art: 'luna',    at: [0.67, 0.30, 2500, 850], crashSite: true, colony: true }   // (the crash site: its resource is drawn per campaign)
     ] },
     { id: 'mars', name: 'Mars', pos: 1, art: 'mars', owner: 0, home: -1, locations: [
-      { id: 'mars',    name: 'Mars',    job: 'yard',     resource: 'Fissiles',    alloys: 1000, rate: 20, more: { rare: 10 }, size: 'big', art: 'mars',    at: [0.45, 0.60, 4000, 3000], big: true, colony: true },
-      { id: 'phobos',  name: 'Phobos',  job: 'fortress', resource: 'Volatiles',   alloys: 0, rate: 25, size: 'mid', art: 'phobos', at: [0.20, 0.30, 2500, 700] },   // (v31 B2) Phobos's ice: a first trickle of Volatiles for Tanks II before the Belt
+      { id: 'mars',    name: 'Mars',    job: 'yard',     resource: 'Fissiles',    alloys: 1000, size: 'big', art: 'mars',    at: [0.45, 0.60, 4000, 3000], big: true, colony: true },
+      { id: 'phobos',  name: 'Phobos',  job: 'fortress', resource: 'Volatiles',   alloys: 0, size: 'mid', art: 'phobos', at: [0.20, 0.30, 2500, 700] },   // (v31 B2) Phobos's ice: a first trickle of Volatiles for Tanks II before the Belt
       { id: 'deimos',  name: 'Deimos',  job: 'outpost',  resource: '',            alloys: 0, size: 'small',    art: 'deimos',  at: [0.75, 0.32, 2500, 600] }
     ] },
     { id: 'belt', name: 'The Belt', pos: 2, art: 'ceres', owner: 1, home: -1, locations: [
-      { id: 'ceres',   name: 'Ceres',   job: 'yard',     resource: 'Volatiles',   alloys: 1500, rate: 120, size: 'big', art: 'ceres',   at: [0.45, 0.56, 4000, 2200], big: true, colony: true },
-      { id: 'vesta',   name: 'Vesta',   job: 'node',     resource: 'Rare earths', alloys: 500, rate: 30,  more: { fissiles: 12 }, size: 'mid', art: 'vesta',   at: [0.21, 0.28, 2500, 850], colony: true },
-      { id: 'pallas',  name: 'Pallas',  job: 'outpost',  resource: 'Fissiles',    alloys: 0, rate: 6, size: 'small', art: 'pallas',  at: [0.81, 0.22, 2500, 700] },
-      { id: 'psyche',  name: 'Psyche',  job: 'node',     resource: 'Iridium',     alloys: 500, rate: 10, size: 'mid',  art: 'psyche',  at: [0.62, 0.86, 2500, 650] }
+      { id: 'ceres',   name: 'Ceres',   job: 'yard',     resource: 'Volatiles',   alloys: 1500, size: 'big', art: 'ceres',   at: [0.45, 0.56, 4000, 2200], big: true, colony: true },
+      { id: 'vesta',   name: 'Vesta',   job: 'node',     resource: 'Rare earths', alloys: 500,  size: 'mid', art: 'vesta',   at: [0.21, 0.28, 2500, 850], colony: true },
+      { id: 'pallas',  name: 'Pallas',  job: 'outpost',  resource: 'Fissiles',    alloys: 0, size: 'small', art: 'pallas',  at: [0.81, 0.22, 2500, 700] },
+      { id: 'psyche',  name: 'Psyche',  job: 'node',     resource: 'Iridium',     alloys: 500, size: 'mid',  art: 'psyche',  at: [0.62, 0.86, 2500, 650] }
     ] },
     { id: 'jupiter', name: 'Jupiter', pos: 3, art: 'jupiter', owner: 1, home: -1, locations: [
-      { id: 'jupiter',  name: 'Jupiter',  job: 'node',    resource: 'Helium-3',    alloys: 1500, rate: 60, more: { antimatter: 3 }, size: 'big', art: 'jupiter',  at: [0.50, 0.55, 4500, 4200], big: true },   // (v91) the belt trap: 3 Antimatter once Antimatter production is researched (06f campaignAntimatterMul)
+      { id: 'jupiter',  name: 'Jupiter',  job: 'node',    resource: 'Helium-3',    alloys: 1500, size: 'big', art: 'jupiter',  at: [0.50, 0.55, 4500, 4200], big: true },
       { id: 'io',       name: 'Io',       job: 'node',    resource: 'Alloys',      alloys: 1500, rate: 1500, size: 'mid', art: 'io',       at: [0.27, 0.36, 2500, 700], colony: true },
-      { id: 'europa',   name: 'Europa',   job: 'lab',     resource: 'Volatiles',   alloys: 0, rate: 40, size: 'mid',    art: 'europa',   at: [0.70, 0.24, 2500, 650], colony: true },
+      { id: 'europa',   name: 'Europa',   job: 'lab',     resource: 'Volatiles',   alloys: 0, size: 'mid',    art: 'europa',   at: [0.70, 0.24, 2500, 650], colony: true },
       { id: 'ganymede', name: 'Ganymede', job: 'yard',    resource: '',            alloys: 1500, size: 'mid', art: 'ganymede', at: [0.20, 0.80, 2500, 950], colony: true },
       { id: 'callisto', name: 'Callisto', job: 'base',    resource: '',            alloys: 0, size: 'mid',    art: 'callisto', at: [0.88, 0.46, 2500, 900], colony: true }
     ] },
     { id: 'saturn', name: 'Saturn', pos: 4, art: 'saturn', owner: 1, home: -1, locations: [
-      { id: 'saturn',    name: 'Saturn',          job: 'node',   resource: 'Volatiles', alloys: 2000, rate: 50, more: { he3: 40, antimatter: 3 }, size: 'big', art: 'saturn',    at: [0.47, 0.56, 4500, 3000], big: true },   // (v91) belt trap 3   // (v27 Bt) named "Saturn", not "Saturn's rings" (which read oddly as "Retake Saturn's rings"); the rings are still drawn and still give the Volatiles
-      { id: 'titan',     name: 'Titan',           job: 'yard',    resource: 'Volatiles', alloys: 2000, rate: 40, size: 'mid', art: 'titan',     at: [0.17, 0.26, 2500, 1000], colony: true },
-      { id: 'enceladus', name: 'Enceladus',       job: 'node',    resource: 'Volatiles', alloys: 2000, rate: 50, size: 'mid', art: 'enceladus', at: [0.74, 0.20, 2500, 500], colony: true },
+      { id: 'saturn',    name: 'Saturn',          job: 'node',   resource: 'Volatiles', alloys: 2000, size: 'big', art: 'saturn',    at: [0.47, 0.56, 4500, 3000], big: true },   // (v27 Bt) named "Saturn", not "Saturn's rings" (which read oddly as "Retake Saturn's rings"); the rings are still drawn and still give the Volatiles
+      { id: 'titan',     name: 'Titan',           job: 'yard',    resource: 'Volatiles', alloys: 2000, size: 'mid', art: 'titan',     at: [0.17, 0.26, 2500, 1000], colony: true },
+      { id: 'enceladus', name: 'Enceladus',       job: 'node',    resource: 'Volatiles', alloys: 2000, size: 'mid', art: 'enceladus', at: [0.74, 0.20, 2500, 500], colony: true },
       { id: 'iapetus',   name: 'Iapetus',         job: 'outpost', resource: '',          alloys: 0, size: 'small',    art: 'iapetus',   at: [0.90, 0.50, 2500, 650] }
     ] },
     { id: 'uranus', name: 'Uranus', pos: 5, art: 'uranus', owner: 1, home: -1, locations: [
-      { id: 'uranus',  name: 'Uranus',  job: 'node',     resource: 'Helium-3',    alloys: 2000, rate: 80, more: { antimatter: 4 }, size: 'big', art: 'uranus',  at: [0.47, 0.56, 4000, 3000], big: true },   // (v91) belt trap 4: a deep source
-      { id: 'miranda', name: 'Miranda', job: 'node',     resource: 'Rare earths', alloys: 2000, rate: 40, size: 'mid', art: 'miranda', at: [0.68, 0.27, 2500, 550] },
+      { id: 'uranus',  name: 'Uranus',  job: 'node',     resource: 'Helium-3',    alloys: 2000, size: 'big', art: 'uranus',  at: [0.47, 0.56, 4000, 3000], big: true },
+      { id: 'miranda', name: 'Miranda', job: 'node',     resource: 'Rare earths', alloys: 2000, size: 'mid', art: 'miranda', at: [0.68, 0.27, 2500, 550] },
       { id: 'titania', name: 'Titania', job: 'yard',     resource: '',            alloys: 2000, size: 'mid', art: 'titania', at: [0.21, 0.78, 2500, 850], colony: true },
       { id: 'oberon',  name: 'Oberon',  job: 'outpost',  resource: '',            alloys: 0, size: 'mid',    art: 'oberon',  at: [0.88, 0.52, 2500, 800], colony: true }
     ] },
     { id: 'neptune', name: 'Neptune', pos: 6, art: 'neptune', owner: 1, home: -1, locations: [
-      { id: 'neptune', name: 'Neptune', job: 'node',     resource: 'Helium-3',    alloys: 2000, rate: 80, more: { antimatter: 4 }, size: 'big', art: 'neptune', at: [0.45, 0.56, 4000, 3000], big: true },   // (v91) belt trap 4
+      { id: 'neptune', name: 'Neptune', job: 'node',     resource: 'Helium-3',    alloys: 2000, size: 'big', art: 'neptune', at: [0.45, 0.56, 4000, 3000], big: true },
       { id: 'triton',  name: 'Triton',  job: 'fortress', resource: '',            alloys: 0, size: 'mid',    art: 'triton',  at: [0.69, 0.27, 2500, 950], colony: true },
       { id: 'proteus', name: 'Proteus', job: 'base',     resource: '',            alloys: 0, size: 'small',    art: 'proteus', at: [0.22, 0.30, 2500, 650] },
       { id: 'nereid',  name: 'Nereid',  job: 'yard',     resource: '',            alloys: 2000, size: 'small', art: 'nereid',  at: [0.89, 0.50, 2500, 550] }
     ] },
     { id: 'kuiper', name: 'Kuiper Belt', pos: 7, art: 'pluto', owner: 1, home: 1, locations: [
-      { id: 'pluto',    name: 'Pluto',    job: 'yard',     resource: 'Volatiles', alloys: 2000, rate: 50, size: 'big', art: 'pluto',    at: [0.48, 0.58, 4000, 2400], big: true, colony: true },
+      { id: 'pluto',    name: 'Pluto',    job: 'yard',     resource: 'Volatiles', alloys: 2000, size: 'big', art: 'pluto',    at: [0.48, 0.58, 4000, 2400], big: true, colony: true },
       { id: 'charon',   name: 'Charon',   job: 'fortress', resource: '',          alloys: 0, size: 'mid',    art: 'charon',   at: [0.66, 0.40, 2500, 1200], colony: true },
       { id: 'haumea',   name: 'Haumea',   job: 'base',     resource: '',          alloys: 0, size: 'mid',    art: 'haumea',   at: [0.19, 0.24, 2500, 900], colony: true },
       { id: 'makemake', name: 'Makemake', job: 'node',     resource: 'Alloys',    alloys: 2000, rate: 2000, size: 'mid', art: 'makemake', at: [0.23, 0.82, 2500, 900], colony: true },
@@ -23843,9 +23851,9 @@ const CAMPAIGN_ATLAS = {
     // and there are no stations; each place is a locked development site (`develop` names the research node that will open it). The Alloys and resource
     // numbers are what each site gives once it is developed; until then it gives nothing. (It is the last row so the other AOs keep their order.)
     { id: 'solinner', name: 'Sol Inner', pos: -1, art: 'sun', owner: 0, home: -1, sanctuary: true, locations: [
-      { id: 'sun',     name: 'The Sun', job: 'node', resource: 'Antimatter', alloys: 0,   rate: 2, size: 'mid',   art: 'sun',     at: [0.36, 0.52, 5000, 3600], big: true, startOwner: -1, develop: 'dev.solarCollectors' },
+      { id: 'sun',     name: 'The Sun', job: 'node', resource: 'Antimatter', alloys: 0, size: 'mid',   art: 'sun',     at: [0.36, 0.52, 5000, 3600], big: true, startOwner: -1, develop: 'dev.solarCollectors' },
       { id: 'mercury', name: 'Mercury', job: 'node', resource: 'Alloys',     alloys: 300, rate: 300, size: 'mid', art: 'mercury', at: [0.70, 0.26, 2500, 700],  startOwner: -1, develop: 'dev.mercuryMines', colony: true },
-      { id: 'venus',   name: 'Venus',   job: 'node', resource: 'Volatiles',  alloys: 200, rate: 20, size: 'mid',  art: 'venus',   at: [0.72, 0.80, 2800, 1500], startOwner: -1, develop: 'dev.venusWorks', colony: true }
+      { id: 'venus',   name: 'Venus',   job: 'node', resource: 'Volatiles',  alloys: 200, size: 'mid',  art: 'venus',   at: [0.72, 0.80, 2800, 1500], startOwner: -1, develop: 'dev.venusWorks', colony: true }
     ] }
   ],
   // The lanes: the inner ones a week, from the Belt outward two weeks each (fuel-and-boost-map.md).
@@ -23915,16 +23923,48 @@ function alienWords(text) {
 // ---- The resources (v27 B2; resources.md, decided 15 Oct) ----
 // The human resources by their plain names. Only Alloys are charged in v27; the others are shown on the map (and in the Bureau's cost line later).
 const CAMPAIGN_RESOURCES = ['Alloys', 'Fissiles', 'Rare earths', 'Volatiles', 'Iridium', 'Helium-3', 'Antimatter'];
+// (v96, Alex 1 Nov: notes/plans/campaign/advanced-resource-balance.md s15-16) THE ADVANCED RESOURCES ARE A SHARE OF OUR ALLOYS.
+// Every advanced resource a place gives is written here as HOW MANY FOR EVERY 100 ALLOYS OF OUR WEEK'S ALLOYS INCOME, never as a fixed number a week.
+// Change the Alloys amounts freely (alloysEarthStart, alloysEarthRampTo, the places' Alloys, the growth): these follow on their own, so the share of our
+// ships each resource can equip stays the same. Each week a place gives: its share x (our Alloys a week / 100) x the place's own state (held, under siege,
+// cut off, its tier and people, its focus) x the research spin-offs (Fission Mk II, Breeder reactors, Fusion Mk II, Gas giant scoops ...). The place's
+// own +0.5% a week growth is NOT added on top: our Alloys already grow, and the shares follow them.
+// The ids are the map's (24f2 CM_RESOURCES): rare = Rare earths, he3 = Helium-3. Volatiles is fuel only (Alex 1 Nov): no part costs it, so no place lists it.
+// What each share gives (cover = the share of our ships that can carry the parts), from section 15 of the note:
+//   Rare earths  Earth 4 = every early small craft's ion drive and solar panels, with a little spare; Mars, Vesta and Miranda add room for guns and electronics.
+//   Fissiles     Earth + Luna 1.2 = about a third of ships nuclear (a fission ship that transfers needs about 2 per 100 Alloys, 3.5 with nuclear rockets);
+//                + Mars and the spin-offs about 90%; + the Belt about 100%.
+//   Helium-3     Jupiter 0.65 = about a quarter of ships fusion (a fusion ship needs about 2.5); + spin-offs, Saturn, Uranus: nearly all.
+//   Iridium      Psyche 0.5 = about a third of ships fully in Iridium plate (about 1.5 per 100 Alloys of ship).
+//   Antimatter   the Sun only: 0.0625 for each collector stage built (CAMPAIGN_ANTIMATTER_STAGES, 06f), 4 stages = about every ship (0.25 needed).
+const RESOURCE_SHARES = {
+  earth:   { rare: 4, fissiles: 0.7 },
+  luna:    { fissiles: 0.5, he3: 0.02 },        // (and Luna's random find: CRASH_SITE_SHARES)
+  mars:    { fissiles: 0.4, rare: 0.4 },
+  vesta:   { rare: 0.8, fissiles: 0.15 },
+  pallas:  { fissiles: 0.05 },
+  psyche:  { iridium: 0.5 },
+  jupiter: { he3: 0.65 },
+  saturn:  { he3: 0.21 },
+  uranus:  { he3: 0.5 },
+  miranda: { rare: 0.4 },
+  neptune: { he3: 0.5 },
+  sun:     { antimatter: 0.0625 }               // (a collector stage's share: x the stages built)
+};
+// Our Alloys a week the shares are taken of when no campaign runs (the map seen from the main menu): the Earth yards' week after the tutorial's ramp.
+function resourceShareAlloysBase() {
+  if (typeof campaign !== 'undefined' && campaign && campaign.econ && Array.isArray(campaign.econ.alloys)) return Math.max(0, campaign.econ.alloys[0] || 0);
+  return SETTINGS.alloysEarthRampTo;
+}
 // THE LUNA CRASH SITE. The alien construction ship crashed on Luna, and what it left is a different resource in each campaign (Alex, 15 Oct): one of these
 // four, never Alloys (which are everywhere) nor Antimatter (the endgame's). The pick is made when the campaign starts and kept on it (campaign.crashSite:
 // { resource, revealed }). With the tutorial on it stays hidden ("Unknown") until the tutorial's Luna card reveals it (campaignRevealCrashSite); with the
 // tutorial off it is known from the start. The campaign's map row for Luna shows it (its `resource`), so every screen that lists resources shows it too.
 const CRASH_SITE_RESOURCES = ['Fissiles', 'Rare earths', 'Iridium', 'Helium-3'];
-// (v31 B2) How much the deposit yields a week, by what it turned out to be: each is set so that Luna's prototype part (CRASH_PROTOTYPES, 02c) can go on about
-// half of what Earth's yards build at the start (about 400 Alloys a week: two small craft of the four). A nuclear warhead costs about 7 Fissiles a launcher,
-// the light coilgun 1 Rare earth a gun, Iridium plate 1 Iridium a square, a fusion reactor 2 Helium-3 (frigates and corvettes only; v65: the prototype is now the 3 x 3 Small fusion reactor, 1 Helium-3). The sums:
-// notes/v31/b2-nodes.md. Luna's map row takes this rate when the campaign's deposit is applied (campaignApplyCrashSite); its own `rate` is the fallback.
-const CRASH_SITE_RATES = { 'Fissiles': 12, 'Rare earths': 5, 'Iridium': 8, 'Helium-3': 4 };
+// (v31 B2; v96 a share of our Alloys, like RESOURCE_SHARES) How much the deposit yields, for every 100 Alloys of our week's Alloys, by what it turned out to
+// be: enough for Luna's prototype part (CRASH_PROTOTYPES, 02c) on a good share of the early fleet: Fissiles 0.9 (a third of ships nuclear), Rare earths 0.7
+// (the light coilgun), Iridium 0.4 (about a quarter of the early fleet fully in Iridium plate), Helium-3 0.3 (a few fusion prototypes).
+const CRASH_SITE_SHARES = { 'Fissiles': 0.9, 'Rare earths': 0.7, 'Iridium': 0.4, 'Helium-3': 0.3 };
 const CRASH_SITE_UNKNOWN = 'Unknown (Luna deposit)';   // (v27.1: the player never sees the word "crash": the find is a Luna deposit)
 // The pick for a new campaign: the one asked for (the new-campaign screen's choice, when it is one of the four), else one drawn from the campaign's seed. It is
 // worked out from the seed by a small mixing sum, NOT drawn from the campaign's random stream, so every other number of the campaign stays as it was.
@@ -23945,8 +23985,7 @@ function campaignApplyCrashSite() {
   const row = campaign && campaign.crashSite ? campaignCrashSiteRow() : null;
   if (!row) return;
   row.resource = campaign.crashSite.revealed ? campaign.crashSite.resource : CRASH_SITE_UNKNOWN;
-  const rate = CRASH_SITE_RATES[campaign.crashSite.resource];
-  if (typeof rate === 'number' && rate >= 0) row.rate = rate;
+  if ('rate' in row) delete row.rate;   // (v96) the find's yield is CRASH_SITE_SHARES, read by 24f2 cmLocationShares (an old save's fixed rate is dropped)
 }
 // The tutorial's reveal (step 9, the Luna card): the crash site's resource becomes known. Returns the resource ('' with no campaign).
 function campaignRevealCrashSite() {
@@ -25364,6 +25403,17 @@ function campaignTakeSnapshot(nextId) {
     addShip(side, placeOfUnit(sq, side) || campaignPlaceOfShip(shipX[i], shipY[i], side), t, shipHp[i] / stHull[st], stShield[st] > 0 ? shipShield[i] / stShield[st] : 1, campaignJumpsOf(sq, t), campaignCmdNoOfSquad(sq), campaignPartsOfShip(i), campaignShipKitOf(sq, i));
   }
   // 2. The ships at the staging point (built, not yet launched) and the ships away in repair.
+  // (v95.3) A carrier away in repair keeps its empty hangars too: its bays wait in its carrier record (17b fgCarrierAway), matched to the ship by side and
+  // design the same way its return would match them. Before, its kit forgot them, and it came back to the next battle with every hangar full for nothing.
+  const awayUsed = new Set();
+  const awayKit = function (rec) {
+    const kit = campaignShipKitOf(rec.sq, -1);
+    const hk = typeof fgAwayKitOf === 'function' ? fgAwayKitOf(rec.side, rec.type, awayUsed) : null;
+    if (!hk) return kit;
+    const e = kit || {};
+    e.h = hk.h; if (hk.hr) e.hr = hk.hr; if (hk.hw) e.hw = hk.hw;
+    return e;
+  };
   for (let side = 0; side < 2; side++) {
     const s = staging[side].ships;
     const draftTo = cmdOn() && campaign.cmd ? campaign.cmd.draftTo[side] : 0;   // (v25) ships built in the battle are drafts for the Fleet new ships go to
@@ -25376,10 +25426,10 @@ function campaignTakeSnapshot(nextId) {
       for (let j = 0; j < all.length; j++) {
         const rec = all[j], st = side * TYPE_COUNT + rec.type;
         const hp = rec.startedAt >= 0 ? Math.min(stHull[st], rec.hp + (rec.rate || p.rate) * (simTime - rec.startedAt)) : rec.hp;
-        addShip(side, place, rec.type, hp / stHull[st], 1, campaignJumpsOf(rec.sq, rec.type), campaignCmdNoOfSquad(rec.sq), rec.startedAt < 0 ? rec.parts || null : null, campaignShipKitOf(rec.sq, -1));   // (v46) a ship still waiting keeps its broken parts; one in a dock is mended (v49: and refilled; it still knows its squadron)
+        addShip(side, place, rec.type, hp / stHull[st], 1, campaignJumpsOf(rec.sq, rec.type), campaignCmdNoOfSquad(rec.sq), rec.startedAt < 0 ? rec.parts || null : null, awayKit(rec));   // (v46) a ship still waiting keeps its broken parts; one in a dock is mended (v49: and refilled; it still knows its squadron)
       }
     }
-    for (let j = 0; j < offMapShips[side].length; j++) { const rec = offMapShips[side][j], st = side * TYPE_COUNT + rec.type; addShip(side, mainPlace(side), rec.type, rec.hp / stHull[st], 1, campaignJumpsOf(rec.sq, rec.type), campaignCmdNoOfSquad(rec.sq), null, campaignShipKitOf(rec.sq, -1)); }
+    for (let j = 0; j < offMapShips[side].length; j++) { const rec = offMapShips[side][j], st = side * TYPE_COUNT + rec.type; addShip(side, mainPlace(side), rec.type, rec.hp / stHull[st], 1, campaignJumpsOf(rec.sq, rec.type), campaignCmdNoOfSquad(rec.sq), null, awayKit(rec)); }
   }
   // 2b. (v93.1, AI tester Bug) A fleet told to enter that has not come onto the map yet (its entry waits in the order of battle: an alien wave arriving on the
   // whole week, when the weekly autosave runs, or a fleet waiting for a safe entry point). Before, it was left out, so a save or a park at that moment lost
@@ -27699,7 +27749,7 @@ function campaignResourceRates(side) {
     if (campaign.earthOnly && ao.home !== 0) continue;           // (the tutorial's Earth-only war: as for Alloys)
     const fisMul = campaignFissilesMul(ao.id, side), he3Mul = campaignHe3Mul(side);   // (v59) Fissiles with research (v61: their growth while held is the place's own, 06n); (v68) Helium-3 with research
     for (let j = 0; j < ao.locations.length; j++) {
-      const list = cmLocationResources(ao.locations[j]);         // (24f2: the row's main resource and (v59) the others in its `more`)
+      const list = cmLocationResources(ao.locations[j]);         // (24f2: (v96) the place's shares of our Alloys, worked out for this week)
       for (let q = 0; q < list.length; q++) {
         const m = list[q], share = campaignResourceShare(ao.id, ao.locations[j].id, side, m.res.id);
         if (!(share > 0)) continue;
@@ -27707,7 +27757,7 @@ function campaignResourceRates(side) {
       }
     }
   }
-  if (side === 0) { const dm = campaignDebugMul('ships') * campaignDebugMul('resources'); if (dm !== 1) for (const id in out) out[id] *= dm; }   // (v78.2) x the debug menu's Shipbuilding (7w) (v86.1: and x its Resources, not Alloys)
+  if (side === 0) { const dm = campaignDebugMul('resources'); if (dm !== 1) for (const id in out) out[id] *= dm; }   // (v86.1) x the debug menu's Resources (7w); (v96) its Shipbuilding is already in our Alloys, which the shares follow
   return out;
 }
 // (v59, fuels-engines-resources.md s8) The research spin-offs on our Fissiles (Fission Mk II +25%, Large reactor +25%, Breeder reactors +50%: 06m
@@ -27724,16 +27774,32 @@ function campaignHe3Mul(side) {
   if (side !== 0 || !campaign) return 1;
   return 1 + (typeof researchRate === 'function' ? researchRate('he3') : 0);
 }
-// (v91, Tier 3 plan s4a) ANTIMATTER IS COLLECTED, NOT MINED: a place's Antimatter (the Sun's collectors, the gas giants' belt traps: the atlas rows) reaches
-// us only once Antimatter production is researched (researchRate('antimatterOn') is 1 then); 0 before. Then x (1 + Antimatter Mk II's 25% + Belt traps' 50%),
-// and at the Sun x (1 + Solar collectors' 3) once that is done: 2 a week becomes 8. The aliens collect none (they have no antimatter economy: 0).
-// The place's own tier, people, weeks held (+0.5% a week) and markers come from campaignResourceShare as for every other resource.
+// (v91, Tier 3 plan s4a) ANTIMATTER IS COLLECTED, NOT MINED. (v96, Alex 1 Nov: advanced-resource-balance.md s12) ALL of it comes from the Sun, built up
+// in four collector stages, each a research project followed by weeks of building at the Sun (time only): Antimatter production, the Collector ring
+// (the 'belttraps' project), Magnetic bottles (Antimatter Mk II) and the full ring (Solar collectors). Each stage, once built, adds the Sun's share
+// (06d2 RESOURCE_SHARES.sun: 0.0625 for every 100 of our Alloys); a stage being built adds its part so far. No research, no Antimatter. The gas giants
+// collect none any more. The aliens collect none (they have no antimatter economy: 0).
+const CAMPAIGN_ANTIMATTER_STAGES = [
+  { project: 'amprod',     name: 'First collectors',  weeks: 1 },     // (the Sun's site is developed first: that is this stage's building time)
+  { project: 'belttraps',  name: 'Collector ring',    weeks: 10 },
+  { project: 'ammk2',      name: 'Magnetic bottles',  weeks: 10 },
+  { project: 'collectors', name: 'Full collector ring', weeks: 15 }
+];
+// How many collector stages are built now (0 to 4; a stage being built counts its share of its weeks so far).
+function campaignAntimatterStages() {
+  const r = typeof researchState === 'function' ? researchState() : null;
+  if (!r || !Array.isArray(r.done) || !campaign) return 0;
+  let n = 0;
+  for (const st of CAMPAIGN_ANTIMATTER_STAGES) {
+    if (r.done.indexOf(st.project) < 0) continue;
+    const at = r.doneWeek && typeof r.doneWeek[st.project] === 'number' ? r.doneWeek[st.project] : campaign.week;
+    n += Math.max(0, Math.min(1, (campaign.week - at) / Math.max(1, st.weeks)));
+  }
+  return n;
+}
 function campaignAntimatterMul(locId, side) {
-  if (side !== 0 || !campaign || typeof researchRate !== 'function') return 0;
-  if (!(researchRate('antimatterOn') > 0)) return 0;
-  let m = 1 + researchRate('antimatter');
-  if (locId === 'sun') m *= 1 + researchRate('antimatterSun');
-  return m;
+  if (side !== 0 || !campaign || locId !== 'sun') return 0;
+  return campaignAntimatterStages();
 }
 // The words for a resource id ("Fissiles).
 function campaignResourceName(id) { const r = cmResourceOf(id); return r ? r.name : id; }
@@ -29153,6 +29219,8 @@ function campaignAiRejoin(side) {
       if (n > 0 && behind[f.at] - n >= rearKeep) { behind[f.at] -= n; ready = true; }
     }
     if (!ready) { keep.push(f); continue; }
+    // (v95.3) ships whose hangars are empty do not join the pool (it would give them their lost craft back for nothing): they wait here until filled (06p)
+    { const held = campaignHangarsHoldBack(f); if (held === true) { keep.push(f); continue; } if (held) keep.push(held); }
     // (v27 B2) Local ships (0 jumps) never join the pool: the pool stands at the side's rear AO and moves up with it, and a Local ship must stay in the AO it
     // was built for. They stay where they are as a fleet of their own (with the fleet's officers); the rest rejoin.
     if (f.groups.some(function (g) { return g.count > 0 && g.jumpsMax < 1; })) {
@@ -29408,7 +29476,10 @@ function campaignComeback(view) {
   let behind = 0;
   if (ourGround && yard && yard.owner === 1) behind = 1;
   else {
-    const ratio = view.threat / Math.max(1, view.ours), top = Math.max(1.01, S.comebackScrewedRatio);
+    // (v95.3, Alex) the debug menu's Alien ships slider (24l) makes the aliens that many times stronger, but must not put Earth on a war footing (which
+    // raised OUR Alloys up to x4): their strength here is counted as it would be at x1, so the slider changes only the aliens.
+    const threat = view.threat / (typeof campaignDebugMul === 'function' ? campaignDebugMul('aliens') : 1);
+    const ratio = threat / Math.max(1, view.ours), top = Math.max(1.01, S.comebackScrewedRatio);
     behind = clampNumber((ratio - 1) / (top - 1), 0, 1);
   }
   let footing = 1 + Math.max(0, S.comebackScrewedMult - 1) * behind;
@@ -30595,15 +30666,16 @@ const COUNCIL_PLACE_RULES = {
     const cap = campaignDevCap(0);
     let best = null, bestV = 0;
     for (const h of councilHeldPlaces()) {
-      const res = h.loc.resource || '', rate = typeof h.loc.rate === 'number' ? h.loc.rate : 0;
-      const adv = COUNCIL_ADVANCED_RESOURCES.indexOf(res) >= 0 || h.loc.crashSite === true;
-      if (!adv || !(rate > 0)) continue;
+      // (v96) the place's biggest advanced yield a week now (its share of our Alloys, 24f2 cmLocationResources)
+      const top = cmLocationResources(h.loc).filter(function (m) { return COUNCIL_ADVANCED_RESOURCES.indexOf(m.res.name) >= 0; }).sort(function (a, b) { return b.perWeek - a.perWeek; })[0];
+      const rate = top ? top.perWeek : (h.loc.crashSite === true ? 1 : 0);
+      if (!(rate > 0)) continue;
       const v = rate * (h.r.tier < cap ? 1 : 0.5) * (h.loc.crashSite === true ? 2 : 1);   // (room to grow first; the crash site is her favourite)
-      if (v > bestV) { bestV = v; best = h; }
+      if (v > bestV) { bestV = v; best = h; best.top = top; }
     }
     if (!best) return { place: '', why: 'We hold nothing rare yet.' };
     const known = !(best.loc.crashSite === true && campaign.crashSite && !campaign.crashSite.revealed);
-    return { place: best.id, why: known ? best.name + ' gives ' + best.loc.rate + ' ' + best.loc.resource + ' a week. The labs want more.' : 'The crash site on ' + best.name + '. Whatever is in it, I want it.' };
+    return { place: best.id, why: known ? (best.top ? best.name + ' gives ' + Math.round(best.top.perWeek) + ' ' + best.top.res.name + ' a week. The labs want more.' : 'The deposit on ' + best.name + '. The labs want it worked.') : 'The crash site on ' + best.name + '. Whatever is in it, I want it.' };
   },
   // The Chair (the people): the colony of ours most below its people target, else a world of ours with room for settlers, else Earth. (v31 C1) Never a place in
   // the front AO or in a besieged one: no settlers into a war zone (her marker is where the emigrants go first, 06n).
@@ -32179,7 +32251,7 @@ const RESEARCH_RULES = {
   price: { new: 50, option: 25, mark: 25, hull: 60 },   // tech-tree s13b: new tech 50, options and marks 25, a hull 60 (a row's own `price` wins)
   price2: { new: 90, option: 45, mark: 45, hull: 100 },   // (v68, Tier 2 plan s2a) a Tier 2 project (its row says tier: 2): about 1.8 times a Tier 1 one
   price3: { new: 160, option: 80, mark: 80, hull: 180 },  // (v90, Tier 3 plan notes/plans/ships/tier3-numbers-plan.md s2a) a Tier 3 project: about 1.8 times a Tier 2 one
-  trickle: { he3: 3 },                                     // (v68, s4d) a rate a week at or under this counts as "only a trickle" for the red warning (Luna's 2 Helium-3 a week feeds no fusion fleet)
+  trickle: { he3: 0.1 },                                   // (v68, s4d; v96 a share) a rate at or under this many for every 100 of our week's Alloys counts as "only a trickle" for the red warning (Luna's Helium-3 feeds no fusion fleet)
   aheadPenalty: 4,           // a councillor's score loses this for each unfinished prerequisite step of a project picked ahead
   diceMax: 2,                // the little dice: 0 to this, added to every score
   situationWeeks: 8,         // a new alien ship type or a new resource counts for this many weeks
@@ -32364,10 +32436,10 @@ const RESEARCH_PROJECTS = [
   // ---- (v91) TIER 3, stage 2: our power, the Titan and the systems (tier3-numbers-plan.md s2b). Antimatter is collected, not mined: Antimatter production
   //      opens the Sun's first collectors and the gas giants' belt traps (06f campaignAntimatterMul); Solar collectors quadruples the Sun's; Antimatter Mk II
   //      and Belt traps are its spin-offs (+25%, +50%). The Titan opens the hull, both frames and titan berths at place tier 4 and 5 (06n). ----
-  { id: 'amprod',     name: 'Antimatter production',     tier: 3, branch: 'power', step: 6, kind: 'new',    needs: ['scoops', 'capital'], tags: ['Power', 'Civilian', 'New tech'], uses: ['Antimatter'], develop: 'dev.solarCollectors', spin: { antimatterOn: 1 }, text: 'Collecting antimatter: the first collectors in close orbit of the Sun (2 a week) and belt traps at the gas giants we hold (Jupiter and Saturn 3 each, Uranus and Neptune 4). No new ship part.' },
+  { id: 'amprod',     name: 'Antimatter production',     tier: 3, branch: 'power', step: 6, kind: 'new',    needs: ['scoops', 'capital'], tags: ['Power', 'Civilian', 'New tech'], uses: ['Antimatter'], develop: 'dev.solarCollectors', spin: { antimatterOn: 1, amStage: 1 }, text: 'Collecting antimatter: the first collectors in close orbit of the Sun, the only source of it. Enough for about a quarter of our ships. No new ship part.' },
   { id: 'amcells',    name: 'Antimatter cells',          tier: 3, branch: 'power', step: 7, kind: 'new',    needs: ['amprod'], tags: ['Power', 'New tech'], uses: ['Antimatter'], text: 'The antimatter cell, core and plant (2 x 2, 3 x 3, 4 x 4: 40, 110 and 220 power): no fuel tank, a lot of power for the squares, and a hard blast when broken.' },
-  { id: 'ammk2',      name: 'Antimatter Mk II',          tier: 3, branch: 'power', step: 7, kind: 'mark',   needs: ['amcells'], tags: ['Power', 'Civilian', 'Mark'], uses: ['Antimatter'], spin: { antimatter: 0.25 }, text: 'Smaller Mk II antimatter cells; better traps at home: +25% Antimatter.' },
-  { id: 'belttraps',  name: 'Belt traps',                tier: 3, branch: 'power', step: 7, kind: 'option', needs: ['amprod'], tags: ['Power', 'Civilian'], uses: ['Antimatter'], spin: { antimatter: 0.50 }, text: 'Bigger traps in the gas giants\' radiation belts: +50% Antimatter. (No new ship part.)' },
+  { id: 'ammk2',      name: 'Antimatter Mk II',          tier: 3, branch: 'power', step: 7, kind: 'mark',   needs: ['amcells'], tags: ['Power', 'Civilian', 'Mark'], uses: ['Antimatter'], spin: { amStage: 1 }, text: 'Smaller Mk II antimatter cells, and magnetic bottles at the Sun to hold more of what it makes: the third collector stage, built over 10 weeks.' },
+  { id: 'belttraps',  name: 'Collector ring',            tier: 3, branch: 'power', step: 7, kind: 'option', needs: ['amprod'], tags: ['Power', 'Civilian'], uses: ['Antimatter'], spin: { amStage: 1 }, text: 'A ring of collectors around the Sun, built over 10 weeks: the second collector stage. (No new ship part.)' },   // (v96: was Belt traps at the gas giants; the id is kept for old saves)
   { id: 'fusionmk3',  name: 'Fusion Mk III',             tier: 3, branch: 'power', step: 6, kind: 'mark',   needs: ['fusionmk2'], tags: ['Power', 'Mark'], uses: ['Helium-3'], text: 'Smaller Mk III fusion reactors.' },
   { id: 'amdrive',    name: 'Antimatter drive',          tier: 3, branch: 'power', step: 7, kind: 'option', needs: ['amcells'], tags: ['Drives', 'Fuel'], uses: ['Antimatter', 'Helium-3'], text: 'The antimatter drive (4 x 3) and the large one (6 x 4): x2.2 a chemical rocket\'s push and a transfer at half the fuel. Burns Helium-3; needs an antimatter cell on the ship.' },
   { id: 'tanks4',     name: 'Tanks IV',                  tier: 3, branch: 'power', step: 6, kind: 'mark',   needs: ['tanks3'], tags: ['Fuel', 'Mark'], text: 'Mk IV tanks: more fuel a square.' },
@@ -32390,7 +32462,7 @@ const RESEARCH_PROJECTS = [
   { id: 'neural',     name: 'Neural interfaces',         tier: 3, branch: 'home', step: 7, kind: 'option', needs: ['implants'], tags: ['Automation', 'Command'], crew: { command: 0.5, fcAccuracy: 0.05 }, text: 'Bridge, fire control and sensor crew wired in: those parts need half the crew, and guns touching a fire control room are 5% more accurate.' },
   { id: 'titan',      name: 'Titan',                     tier: 3, branch: 'hulls', step: 7, kind: 'hull',   needs: ['capital', 'amprod'], tags: ['Shipyards'], text: 'The titan hull (130 x 40) and its two whole frames, the Standard and the Citadel. Titan berths open at place tier 4 (one) and 5 (two).' },
   { id: 'labnet3',    name: 'Lab network 3',             tier: 3, branch: 'home', step: 6, kind: 'option', needs: ['labnet2', 'capital'], tags: ['Research', 'Civilian'], spin: { researchEarth: 0.20 }, text: 'The great labs at home: another +20% research at Earth.' },
-  { id: 'collectors', name: 'Solar collectors',          tier: 3, branch: 'home', step: 7, kind: 'option', needs: ['amprod'], tags: ['Civilian', 'Power'], uses: ['Antimatter'], spin: { antimatterSun: 3 }, text: 'The full collector ring in close orbit of the Sun: the Sun\'s antimatter x4 (8 a week before growth). (No new ship part.)' },
+  { id: 'collectors', name: 'Solar collectors',          tier: 3, branch: 'home', step: 7, kind: 'option', needs: ['amprod'], tags: ['Civilian', 'Power'], uses: ['Antimatter'], spin: { amStage: 1 }, text: 'The full collector ring in close orbit of the Sun, built over 15 weeks: the fourth and last collector stage, enough Antimatter for every ship. (No new ship part.)' },
 ];
 const RESEARCH_BY_ID = {};
 const RESEARCH_BY_NAME = {};
@@ -32583,8 +32655,8 @@ function researchOurResources() {
     const st = campaign.ao[ao.id]; if (!st || st.securedBy !== 0 || (campaign.earthOnly && ao.home !== 0)) continue;
     for (const loc of ao.locations) {
       const row = campaignPlaceRow(ao.id, loc.id); if (row && row.owner !== 0) continue;
-      if (loc.resource && out.indexOf(loc.resource) < 0) out.push(loc.resource);
-      if (loc.more) for (const k in loc.more) { const r = cmResourceOf(k); if (r && loc.more[k] > 0 && out.indexOf(r.name) < 0) out.push(r.name); }   // (v59) a place's other yields
+      if (loc.resource === 'Alloys' && out.indexOf('Alloys') < 0) out.push('Alloys');
+      for (const m of cmLocationResources(loc)) if (out.indexOf(m.res.name) < 0) out.push(m.res.name);   // (v96) what the place yields: its shares of our Alloys
     }
   }
   const cs = campaign.crashSite;
@@ -32767,6 +32839,7 @@ function researchOpensText(id) {
     if (s.antimatter) t += ' +' + Math.round(s.antimatter * 100) + '% Antimatter.';   // (v91)
     if (s.antimatterOn) t += ' Antimatter starts coming in from the places that collect it.';
     if (s.antimatterSun) t += ' The Sun\'s antimatter x' + (1 + s.antimatterSun) + '.';
+    if (s.amStage) t += ' Adds a collector stage at the Sun: more Antimatter.';   // (v96) the stages: 06f CAMPAIGN_ANTIMATTER_STAGES
     if (s.boost && !boostRetired()) t += ' +' + Math.round(s.boost * 100) + '% boost.';
     if (s.startDriveEff) t += ' Chemical drives burn less (fuel efficiency x' + s.startDriveEff + ').';
     if (s.researchEarth) t += ' +' + Math.round(s.researchEarth * 100) + '% research at Earth.';
@@ -32867,15 +32940,16 @@ function researchResourceWarnings(id) {
   for (const name of p.uses) {
     const r = cmResourceOf(name); if (!r || r.id === 'alloys') continue;
     const rate = rates[r.id] || 0, low = rate > 0;   // low: some comes in, but only a trickle (under RESEARCH_RULES.trickle)
-    if (rate > (trickle[r.id] || 0)) continue;
+    const base = resourceShareAlloysBase(), per100 = base > 0 ? rate * 100 / base : rate;   // (v96) the trickle is judged as a share of our Alloys
+    if (rate > 0 && per100 > (trickle[r.id] || 0)) continue;
     let text = 'We have no ' + name + ' coming in: the parts this opens could not be built.';
-    if (r.id === 'he3') text = low ? 'We get only ' + Math.round(rate * 10) / 10 + ' Helium-3 a week (Luna\'s trickle: about 2 small reactors a week). A fusion fleet needs Jupiter (60 a week) or another gas giant.'
-                               : 'We have no Helium-3 coming in: take Jupiter (60 a week), or research the Luna deposit if it is Helium-3 (its trickle covers about 2 small reactors a week).';
+    if (r.id === 'he3') text = low ? 'We get only ' + Math.round(rate * 10) / 10 + ' Helium-3 a week (Luna\'s trickle: a few small reactors). A fusion fleet needs Jupiter (enough for about a quarter of our ships) or another gas giant.'
+                               : 'We have no Helium-3 coming in: take Jupiter (enough for about a quarter of our ships fusion), or research the Luna deposit if it is Helium-3.';
     else if (r.id === 'iridium') text = 'We have no Iridium coming in: Psyche in the Belt makes it, or the Luna deposit if it is Iridium.';
     else if (r.id === 'rare') text = 'We have no Rare earths coming in: Vesta makes them, or the Luna deposit if it is Rare earths.';
     else if (r.id === 'fissiles') text = 'We have no Fissiles coming in: Mars and Vesta make them.';
     else if (r.id === 'volatiles') text = 'We have no Volatiles coming in: Phobos and Ceres make them.';
-    else if (r.id === 'antimatter') text = p.id === 'amprod' ? '' : (researchDone('amprod') ? 'No antimatter is coming in: hold Jupiter, Saturn or the Sun\'s collectors (Sol Inner).' : 'No antimatter is coming in: research Antimatter production, and hold Jupiter, Saturn or the Sun\'s collectors.');   // (v91)
+    else if (r.id === 'antimatter') text = p.id === 'amprod' ? '' : (researchDone('amprod') ? 'No antimatter is coming in: the Sun\'s collectors (Sol Inner) are still being built.' : 'No antimatter is coming in: research Antimatter production to build the first collectors at the Sun.');   // (v91)
     if (!text) continue;   // (Antimatter production itself brings the first antimatter: no warning on it)
     out.push({ res: name, text: text, low: low });
   }
@@ -33201,7 +33275,8 @@ function campaignDevAoMarkerMul(aoId, side) { return side === 0 ? 1 + Math.max(0
 function campaignDevResMul(aoId, locId, side, resId) {
   let m = campaignDevOutputMulFor(locId, resId);
   if (side !== 0) return m;
-  m *= campaignDevHeldGrowth(locId) * campaignDevAoMarkerMul(aoId, 0);
+  // (v96) the +0.5% a week while held is for Alloys only: an advanced resource is a share of our Alloys (06d2 RESOURCE_SHARES), which already grow
+  m *= (resId === 'alloys' || !resId ? campaignDevHeldGrowth(locId) : 1) * campaignDevAoMarkerMul(aoId, 0);
   if (resId !== 'alloys' && campaignDevFocus(locId) === 'mining') m *= DEV_RULES.focusMiningMul;
   return m;
 }
@@ -34164,6 +34239,36 @@ function campaignHangarsDawn(pot) {
   }
   if (filled[0] > 0) campaignLog('hangar', 'The fighter hangars of ' + plural(filled[0], 'ship') + ' were filled again (' + plural(filled[0], 'new fighter') + ').');
   for (const why in refused) campaignLog('hangar', plural(refused[why], 'empty fighter hangar') + ' waiting: ' + why + '.');
+}
+// (v95.3) Does ship k of a group have an empty hangar that can be filled (its craft's design still exists)? Such a ship must not melt into the pool
+// (06g campaignAiRejoin): the pool keeps plain counts, so the ship would come out of it later with every hangar full, a new craft for nothing.
+function campaignShipHangarsEmpty(g, k) {
+  const K = campaignKitList(g), e = K.length > k ? K[k] : null;
+  if (!e || !Array.isArray(e.h) || e.h.length === 0) return false;
+  for (let q = 0; q < e.h.length; q++) if (campaignHangarFighter(g.design || g.type, e.h[q])) return true;
+  return false;
+}
+// (v95.3) A fleet about to rejoin the pool: its ships with empty hangars stay behind at that AO as a fleet of their own (returned; null when none), where
+// the dawn refill fills the hangars, paying for the new craft as usual, or a ferry run fills them with waiting Local ships. Once full, they rejoin the pool.
+// When every ship of the fleet would stay, the fleet itself stays as it is (keepWhole: true is returned instead).
+function campaignHangarsHoldBack(f) {
+  if (!fighterHangarsOn() || !f || f.side !== 0) return null;
+  let held = 0, total = 0;
+  for (const g of f.groups) { total += g.count; for (let k = 0; k < g.count; k++) if (campaignShipHangarsEmpty(g, k)) held++; }
+  if (held === 0) return null;
+  if (held === total) return true;
+  const b = campaignMakeFleet(f.side, [], [], f.at, f.place);
+  for (const g of f.groups.slice()) {
+    const idx = [];
+    for (let k = 0; k < g.count; k++) if (campaignShipHangarsEmpty(g, k)) idx.push(k);
+    if (!idx.length) continue;
+    campaignShipsFirst(g, idx);
+    const moved = campaignTakeShips(g, idx.length);
+    campaignPutShips(campaignGroupFor(b, g.type, g.design, g.jumps, g.jumpsMax), idx.length, moved.hull, moved.shield, moved.parts, moved.kit);
+  }
+  campaignDropEmptyGroups(f);
+  campaignLog('hangar', plural(held, 'ship') + ' of fleet ' + f.id + ' with empty hangars ' + (held === 1 ? 'waits' : 'wait') + ' at ' + campaignAoName(f.at) + ' as fleet ' + b.id + ' until ' + (held === 1 ? 'its hangars are' : 'their hangars are') + ' filled, then ' + (held === 1 ? 'joins' : 'join') + ' the pool.');
+  return b;
 }
 // (06f campaignRepair) A docked ship's empty hangars count their weeks at the dock, like the ammunition.
 function campaignHangarsDockWeeks(e, dtWeeks) { if (e && Array.isArray(e.h) && e.h.length) e.hr = (e.hr || 0) + dtWeeks; }
@@ -48212,6 +48317,23 @@ function fgKitOf(slot) {
   return out;
 }
 
+// (v95.3, 06e campaignTakeSnapshot) The empty hangars of a carrier that is away in repair as the battle parks: the first carrier record of this side and
+// type that waits ('away') and is not in `used` yet (it is added). { h, hr, hw } as fgKitOf, or null when none waits or every hangar of it has its craft.
+function fgAwayKitOf(side, type, used) {
+  if (!fightersOn()) return null;
+  for (let ci = 0; ci < fgCarriers.length; ci++) {
+    const c = fgCarriers[ci];
+    if (c.state !== 'away' || c.side !== side || c.type !== type || used.has(ci)) continue;
+    used.add(ci);
+    const h = [];
+    for (let k = 0; k < c.bays.length; k++) { const b = fgBays[c.bays[k]]; if (b.state === BAY_LOST && b.part >= 0) h.push(b.part); }
+    if (h.length === 0) return null;
+    const out = { h: h };
+    if (c.kept) { if (c.kept.hr > 0) out.hr = c.kept.hr; if (c.kept.hw) out.hw = c.kept.hw; }
+    return out;
+  }
+  return null;
+}
 // ---- Launching ----
 // The stand-in officer of a carrier's fighters: the carrier's own squadron officer's numbers under a new serial (no roster record is spent, nothing is written back),
 // or a steady preset for a station's.
@@ -63024,7 +63146,7 @@ const CM_RESOURCES = [
 ];
 // A place's resource a week when its row does not say: a resource node makes this much, any other place with a resource this much (a placeholder
 // until the research update sets the real numbers; B2 can give any place its own `rate`).
-const CM_RESOURCE_RATE_GUESS = { node: 20, other: 5 };
+const CM_RESOURCE_RATE_GUESS = { node: 20, other: 5 };   // (v96: no longer read: every advanced yield is a share of our Alloys, 06d2 RESOURCE_SHARES)
 // The jobs in words (the map rows' `job`), and the short tag the strategic map prints beside a place.
 const CM_JOB_WORDS = { yard: 'Shipyard', base: 'Base', fortress: 'Fortress', node: 'Resource node', lab: 'Research lab', outpost: 'Outpost' };
 const CM_JOB_TAGS = { yard: 'YARD', fortress: 'FORT', node: 'NODE', lab: 'LAB', locked: 'LOCKED' };   // (v27.1, D4: 'locked' = a development site awaiting research)
@@ -63044,26 +63166,26 @@ function cmCrashResource() {
 }
 function cmResourceCharged(id) { return id === 'alloys' || campaignResourceGateOn(0) || (id !== '' && id === cmCrashResource()); }   // (v31 B1: all of them while the resources gate our builds)
 
-// What a location makes a week in its own resource (not Alloys): { res, perWeek } or null. The row's `rate` (or `resourceRate`) when it gives one, else the guess.
-function cmLocationResource(loc) {
-  const r = cmResourceOf(loc.resource);
-  if (!r || r.id === 'alloys') return null;                              // (a place whose resource is Alloys: its Alloys value says how much)
-  const given = typeof loc.rate === 'number' ? loc.rate : (typeof loc.resourceRate === 'number' ? loc.resourceRate : NaN);
-  const perWeek = isFinite(given) && given >= 0 ? given : (loc.job === 'node' ? CM_RESOURCE_RATE_GUESS.node : CM_RESOURCE_RATE_GUESS.other);
-  return { res: r, perWeek: perWeek };
-}
-// (v59, fuels-engines-resources.md s9) EVERYTHING a location makes a week besides Alloys: its main resource (above) and the others in its row's `more`
-// ({ fissiles: 3, rare: 8 }), as a list of { res, perWeek }, one entry per resource (the same resource twice is added together). Start rates, before growth.
-function cmLocationResources(loc) {
-  const out = [], main = cmLocationResource(loc);
-  if (main) out.push({ res: main.res, perWeek: main.perWeek });
-  if (loc.more && typeof loc.more === 'object') for (const k in loc.more) {
-    const r = cmResourceOf(k), n = loc.more[k];
-    if (!r || r.id === 'alloys' || !(n > 0)) continue;
-    const hit = out.find(function (x) { return x.res.id === r.id; });
-    if (hit) hit.perWeek += n; else out.push({ res: r, perWeek: n });
-  }
+// (v96, Alex 1 Nov) What a location makes, besides Alloys: its shares of our Alloys (06d2 RESOURCE_SHARES by its id, plus Luna's revealed find in
+// CRASH_SITE_SHARES), as { resId: per 100 Alloys }. The map row's own numbers are not read any more, so an old save's rows change nothing.
+function cmLocationShares(loc) {
+  const out = {}, base = loc && RESOURCE_SHARES[loc.id];
+  if (base) for (const k in base) if (base[k] > 0) out[k] = base[k];
+  const cs = loc && loc.crashSite === true && typeof campaign !== 'undefined' && campaign && campaign.crashSite;
+  if (cs && cs.revealed && CRASH_SITE_SHARES[cs.resource] > 0) { const r = cmResourceOf(cs.resource); if (r) out[r.id] = (out[r.id] || 0) + CRASH_SITE_SHARES[cs.resource]; }
   return out;
+}
+// EVERYTHING a location makes a week besides Alloys, as a list of { res, perWeek, share }: each share x our Alloys a week / 100 (resourceShareAlloysBase,
+// 06d2), before the place's own state (campaignResourceShare) and the research spin-offs. The Sun's Antimatter is a stage's share (06f counts the stages).
+function cmLocationResources(loc) {
+  const out = [], sh = cmLocationShares(loc), base = resourceShareAlloysBase() / 100;
+  for (const k in sh) { const r = cmResourceOf(k); if (!r || r.id === 'alloys') continue; out.push({ res: r, perWeek: sh[k] * base, share: sh[k] }); }
+  return out;
+}
+// The location's first resource (its biggest share), for the screens that show one: { res, perWeek, share } or null.
+function cmLocationResource(loc) {
+  const list = cmLocationResources(loc).sort(function (a, b) { return b.share - a.share; });
+  return list.length ? list[0] : null;
 }
 // Whether a location's output reaches a side now, and at what share: 1 when the side has its AO secured and holds the place, siegeResourceFactor under siege,
 // 0 otherwise (the rule the economy uses for Alloys: campaignNodesHeld); (v31 A1) x the place's tier output and how full of people it is (06n
@@ -63082,12 +63204,12 @@ function cmLocationAlloysNow(locId) {
 function cmResourceRates() {
   const out = {}, order = [];
   const add = function (r, v) { if (!out[r.id]) { out[r.id] = { id: r.id, name: r.name, perWeek: 0, charged: cmResourceCharged(r.id), used: 0, civ: 0 }; order.push(r.id); } out[r.id].perWeek += v; };
-  for (const r of CM_RESOURCES) add(r, 0);
+  for (const r of CM_RESOURCES) if (r.id !== 'volatiles') add(r, 0);   // (v96) Volatiles is fuel only: no part costs it, so the strip leaves it out
   if (!campaign) return order.map(function (id) { return out[id]; });
   out.alloys.perWeek = campaign.econ && campaign.econ.alloys ? campaign.econ.alloys[0] : 0;
   out.alloys.used = campaign.econ && campaign.econ.spent ? campaign.econ.spent[0] : 0; out.alloys.civ = campaign.econ && campaign.econ.civ ? campaign.econ.civ[0] : 0;
   const rates = campaignResourceRates(0), L = campaign.econ && campaign.econ.res;
-  for (const id in rates) add(cmResourceOf(id), rates[id]);
+  for (const id in rates) if (id !== 'volatiles') add(cmResourceOf(id), rates[id]);
   if (L && L.used) for (const id in out) if (id !== 'alloys') { out[id].used = L.used[id] || 0; out[id].civ = L.civ && typeof L.civ[id] === 'number' ? L.civ[id] : 0; }
   return order.map(function (id) { return out[id]; });
 }
@@ -63118,7 +63240,7 @@ function cmResourceSourcesWords(resId) {
     for (const loc of ao.locations) {
       let v = 0;
       if (resId === 'alloys') v = cmLocationAlloysNow(loc.id);
-      else for (const m of cmLocationResources(loc)) if (m.res.id === resId) v += m.perWeek * campaignResourceShare(ao.id, loc.id, 0, resId) * (resId === 'fissiles' ? campaignFissilesMul(ao.id, 0) : 1);
+      else for (const m of cmLocationResources(loc)) if (m.res.id === resId) v += m.perWeek * campaignResourceShare(ao.id, loc.id, 0, resId) * (resId === 'fissiles' ? campaignFissilesMul(ao.id, 0) : (resId === 'he3' ? campaignHe3Mul(0) : 1));
       if (!(v > 0.05)) continue;
       bits.push(loc.name + ' ' + (v >= 10 ? fmtWhole(Math.round(v)) : Math.round(v * 10) / 10) + (sieged ? ' (under siege: a half)' : '') + (cut ? ' (cut off from Earth: a quarter)' : ''));
       const n = Math.min(campaignDevAoMarkers(ao.id), DEV_RULES.markerResMax);
@@ -66403,7 +66525,9 @@ function campaignDebugSet(key, v) {
   if (!campaign.debug) campaign.debug = { ships: 1, aliens: 1, research: 1, resources: 1, ourTough: 1, ourArmour: 1, alienTough: 1, alienArmour: 1 };
   campaign.debug[key] = n;
   debugDefenceRefresh();                                           // (v78.5) toughness and armour count from the next hit
-  if ((key === 'ships' || key === 'aliens') && campaign.econ) campaignEconWeek(false);   // this week's Alloys a week are worked out again at once (the yards read them each day)
+  // this week's Alloys a week are worked out again at once (the yards read them each day). (v95.3) Only for the slider's own side: working out both
+  // made the Alien ships slider jump OUR Alloys too whenever they had changed since dawn.
+  if ((key === 'ships' || key === 'aliens') && campaign.econ) { const side = key === 'ships' ? 0 : 1; campaign.econ.alloys[side] = Math.round(campaignAlloysIncome(side) * 100) / 100; }
 }
 // The sheet's body (24f3 cmRenderSheet puts it in the menu sheet when cmState.sheet is 'debug').
 function cmDebugSheetHtml() {
@@ -81177,7 +81301,7 @@ BUREAU2_SCREEN_API.testRange = { run: testRangeRun, state: testRange, plan: func
 //   adopted habits come along in its copy code and into every new campaign. A doctrine changed in the Bureau after the save updates the plan's copy.
 //   DOCTRINE TEMPLATES (LIBRARY.templates: [{ name, doctrine, savedAt }]) live here too, so they carry over as well. A plan from before v37 has no doctrine: Auto.
 // =====================================================================
-const GAME_VERSION = 'v95.2';                         // the game version written on every saved plan (raise it with each new build)
+const GAME_VERSION = 'v96';                           // the game version written on every saved plan (raise it with each new build)
 const LIBRARY_KEY = 'engineersWar.library';
 const LIBRARY_FORMAT = 1;
 const LIBRARY_CODE_SHIP = 'EW-SHIP-1:', LIBRARY_CODE_LIB = 'EW-LIB-1:';
