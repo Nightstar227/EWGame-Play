@@ -29,7 +29,7 @@
   document.documentElement.classList.add('ew-touch');
 })();
 </script>
-<title>Engineer's War v98.5 - a battle that never ends keeps its fleet records true and its lists short (v98.4: Unlock everything lists every stock design)</title>
+<title>Engineer's War v98.7 - no research project warns about Volatiles any more (Volatiles is fuel only) (v98.5: a battle that never ends keeps its fleet records true)</title>
 <!-- (v17) The shared look: theme-v0.4.css from the UI folder, built in word for word (tools/build.js). It only styles its own named parts
      (.mode-front, .panel, .btn ...), plus a few page-wide basics that the rules just below undo for the older screens. -->
 <style>
@@ -7730,6 +7730,7 @@ const SETTINGS = {
   // ---- Limits that exist for speed or memory (they are settings, so you can raise or lower them) ----
   maxShipsTotal: 60000,      // the most ships, both sides together. The battle refuses to start with more. Memory use grows with this.
   gridCellsPerShip: 2,       // the search grids have about this many squares for every ship still alive (never more than maxGridCells), so a small or thinned-out battle does not pay for a huge grid
+  allyFineGrid: 1,           // (v98.6, section 4b2) 1 = keeping clear of allies uses a fine grid of the squares that have ships in them: the same pushes, much faster in a big crowded battle; 0 = the coarse grid alone, as before
   maxGridCells: 65536,       // the most squares in each spatial-search grid. More squares = finer search but a slower step when ships are spread out
   targetCandidates: 256,     // a ship with a "weakest / largest / prefer type" priority looks at up to this many of the enemies near it (nearest first)
                              //   and picks the best of them. Above this many enemies in range the choice is "best of the nearest ones". Raise it for a more exact choice.
@@ -9477,7 +9478,7 @@ const SETTING_MUST_BE_NON_NEGATIVE = ['campaignTidySeconds', 'campaignTidyKeep',
   'arrivalStandOff', 'arrivalEdgeMargin', 'arrivalEdgeHeight', 'repairOffMapMinSeconds', 'repairForwardSetback', 'repairReleaseSpreadFactor', 'repairReturnDelay',
   'learningSpeed', 'learningStep', 'learningSoftZone', 'learningMaxRoomShare', 'levelEffect', 'serviceEffectPerHour', 'adaptabilityMin', 'xpPerAction', 'xpScoreBonus', 'driftSize', 'learningMinWindow', 'learningMinActivity',
   'expectationWeight', 'successScore', 'notableScore', 'arrowThreshold', 'objectiveMinShare', 'fireBarLowStoreBelow', 'pdProtectedFactor', 'pdSlugPerMount', 'pdSlugCap', 'pdCrossingKill', 'spinalDeadband', 'safeRingMargin', 'stationHysteresis', 'holdHysteresis', 'stationLeeBelow', 'hotWeaveOutgunned', 'hotWeaveShare', 'stragglerFactorSurvival', 'probeWindow', 'probeRecover', 'probeShieldBack', 'probeLossLimit', 'probeOutgunned', 'commitOdds', 'commitDropFactor', 'aheadMax', 'screenAhead', 'marchQuantile', 'massAttackOdds', 'massAttackWaitedOdds', 'flankMinSquadrons', 'survivalPressSeconds', 'abandonAfter', 'abandonRatio', 'abandonRatioNow', 'abandonWaitReinf', 'abandonLossShare', 'dangerRadiusPad', 'surroundRadiusFactor', 'surroundShare', 'supportRadiusFactor', 'supportWant', 'lineSpacingMin', 'dangerAttackFactor', 'dangerWeakFactor', 'dangerWeakBelow'];
-const SETTING_WHOLE_NUMBERS = ['campaignTidyLive', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftMax', 'campaignSensors', 'showBoost', 'coreLoop', 'coreLoopFleetCommand', 'coreLoopFleetDivisions', 'coreLoopRecompose', 'coreLoopAlienCommand', 'coreLoopDivisionShips', 'coreLoopDivisionMinShips', 'coreLoopStreamMinShips', 'coreLoopLine', 'coreLoopLineLooks', 'coreLoopBerths', 'divisionMergeSmall', 'mergeFarOutOfContact', 'divisionMergeSlack', 'repairOffMap', 'supplyNoteWeeks', 'divisionPaceModel', 'swarmFormations', 'campaignBuildDays', 'campaignLiveEnterShips', 'cmdMaxAbreast', 'divisionFormations', 'doctrineModel', 'doctrineAlienClose', 'facingByGuns', 'facingVsTarget', 'facingTwoSided', 'freshSide', 'crossT', 'facingDodge', 'doctrineFindBattles', 'doctrineReviewMinLosses', 'doctrineReviewWeeks', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerMinLoss', 'ledgerAssaultWeeks', 'devCapStart', 'devCapAlien', 'devMaxBuilds', 'bbBeams', 'bbHeatModel', 'bbMissiles', 'bbPointDefence', 'bbBeamTicks', 'bbMissileRetries', 'bbPdFlakMax', 'bbLineOfFire', 'lineMinRanks', 'lineDeepRanks', 'lineDeepAbove', 'squadronMaxShips', 'tightOrbit', 'stationRebuild', 'radioMaxPerMinute', 'cmdReviewBattles', 'huntMaxShips', 'commandModel', 'cmdPassThrough', 'cmdSquadronBudget', 'cmdSquadronMax', 'cmdFleetMax', 'cmdRankBumpShips', 'cmdDivisionsMin', 'cmdDivisionsPerFleet', 'cmdDivisionsMax', 'orgScale', 'orgSquadronBudget', 'orgSquadronMax', 'orgDivisionTarget', 'orgDivisionMax', 'campaignLateAdmiral', 'campaignStartKit', 'placesFacilityApart', 'campaignFacilityApart', 'campaignStragglerShips', 'alienGarrisonCap', 'alienGatherMinShips', 'alienFirstPool', 'campaignFallenMax', 'placesHoldClear', 'campaignHoldClear', 'campaignPoolCap', 'campaignGarrisonCap', 'minLaunchShips', 'campaignYardShips', 'campaignModel', 'campaignAutosave', 'campaignLogMax', 'placesRetry', 'placesSweep', 'placesDecisive', 'siegeYardSlowdown', 'placesModel', 'placesAllowAbandon', 'placesTheatre', 'placesMaxOpposite', 'designModel', 'bureauBattle', 'moduleDamage', 'pressModel', 'partLossCall', 'crewRuleSquares', 'supplyReach', 'heatReach', 'exhaustLane', 'designMinSquares', 'designMaxSquares', 'survivalModel', 'allowAbandon', 'flankMinSquadrons', 'weaponModel', 'maxMissiles', 'pdSlugMaxMounts', 'missileInboundCall', 'formationModel', 'lockStep', 'columnMaxFile', 'wedgeMaxArm', 'reorgModel', 'disbandAt', 'fallenKeep', 'stagingModel', 'entrySegments', 'minNewSquadron', 'successionMode', 'woundedBattles', 'divisionTier', 'divisionTargetSize', 'divisionMinSize', 'divisionMaxSize', 'divisionMinSquadrons', 'rosterHistoryKeep', 'repertoireSize', 'aceKills', 'scarShakenBattles', 'maxShipsTotal', 'maxGridCells', 'targetCandidates', 'maxSalvosPerStep', 'maxShots', 'maxFlashes', 'formationMatchMaxShips', 'defaultSquadronSize',
+const SETTING_WHOLE_NUMBERS = ['allyFineGrid', 'campaignTidyLive', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftMax', 'campaignSensors', 'showBoost', 'coreLoop', 'coreLoopFleetCommand', 'coreLoopFleetDivisions', 'coreLoopRecompose', 'coreLoopAlienCommand', 'coreLoopDivisionShips', 'coreLoopDivisionMinShips', 'coreLoopStreamMinShips', 'coreLoopLine', 'coreLoopLineLooks', 'coreLoopBerths', 'divisionMergeSmall', 'mergeFarOutOfContact', 'divisionMergeSlack', 'repairOffMap', 'supplyNoteWeeks', 'divisionPaceModel', 'swarmFormations', 'campaignBuildDays', 'campaignLiveEnterShips', 'cmdMaxAbreast', 'divisionFormations', 'doctrineModel', 'doctrineAlienClose', 'facingByGuns', 'facingVsTarget', 'facingTwoSided', 'freshSide', 'crossT', 'facingDodge', 'doctrineFindBattles', 'doctrineReviewMinLosses', 'doctrineReviewWeeks', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerMinLoss', 'ledgerAssaultWeeks', 'devCapStart', 'devCapAlien', 'devMaxBuilds', 'bbBeams', 'bbHeatModel', 'bbMissiles', 'bbPointDefence', 'bbBeamTicks', 'bbMissileRetries', 'bbPdFlakMax', 'bbLineOfFire', 'lineMinRanks', 'lineDeepRanks', 'lineDeepAbove', 'squadronMaxShips', 'tightOrbit', 'stationRebuild', 'radioMaxPerMinute', 'cmdReviewBattles', 'huntMaxShips', 'commandModel', 'cmdPassThrough', 'cmdSquadronBudget', 'cmdSquadronMax', 'cmdFleetMax', 'cmdRankBumpShips', 'cmdDivisionsMin', 'cmdDivisionsPerFleet', 'cmdDivisionsMax', 'orgScale', 'orgSquadronBudget', 'orgSquadronMax', 'orgDivisionTarget', 'orgDivisionMax', 'campaignLateAdmiral', 'campaignStartKit', 'placesFacilityApart', 'campaignFacilityApart', 'campaignStragglerShips', 'alienGarrisonCap', 'alienGatherMinShips', 'alienFirstPool', 'campaignFallenMax', 'placesHoldClear', 'campaignHoldClear', 'campaignPoolCap', 'campaignGarrisonCap', 'minLaunchShips', 'campaignYardShips', 'campaignModel', 'campaignAutosave', 'campaignLogMax', 'placesRetry', 'placesSweep', 'placesDecisive', 'siegeYardSlowdown', 'placesModel', 'placesAllowAbandon', 'placesTheatre', 'placesMaxOpposite', 'designModel', 'bureauBattle', 'moduleDamage', 'pressModel', 'partLossCall', 'crewRuleSquares', 'supplyReach', 'heatReach', 'exhaustLane', 'designMinSquares', 'designMaxSquares', 'survivalModel', 'allowAbandon', 'flankMinSquadrons', 'weaponModel', 'maxMissiles', 'pdSlugMaxMounts', 'missileInboundCall', 'formationModel', 'lockStep', 'columnMaxFile', 'wedgeMaxArm', 'reorgModel', 'disbandAt', 'fallenKeep', 'stagingModel', 'entrySegments', 'minNewSquadron', 'successionMode', 'woundedBattles', 'divisionTier', 'divisionTargetSize', 'divisionMinSize', 'divisionMaxSize', 'divisionMinSquadrons', 'rosterHistoryKeep', 'repertoireSize', 'aceKills', 'scarShakenBattles', 'maxShipsTotal', 'maxGridCells', 'targetCandidates', 'maxSalvosPerStep', 'maxShots', 'maxFlashes', 'formationMatchMaxShips', 'defaultSquadronSize',
   'farGoalBlocksAcross', 'debugMaxLines', 'maxTriangleShips', 'sectorsAcross', 'eventLogMax', 'logPanelLines', 'logBatchDetail', 'lineOrderRetries',
   'reportSquadronRows', 'reportPacketRows', 'reinforceMaxSquadrons', 'flankMaxSquadrons', 'counterMaxSquadrons', 'withdrawSamples', 'versionLogMax', 'serviceLastMax', 'serviceHistoryMax', 'serviceEventsMax', 'dossierLastActions', 'reportOfficerRows',
   'movementModel', 'hitModel', 'tacticsModel', 'flightAssist', 'retreatFiring', 'simultaneousFire', 'officerModel', 'strengthMapSteps', 'oddsCellsPerRadius', 'oddsMaxCells', 'maxRouts', 'maxBreakOffs', 'overheatFallback', 'smartTargetCandidates'];
@@ -15499,6 +15500,7 @@ function buildGrid() {
   if (minX > maxX) {                              // nobody alive
     gOX = 0; gOY = 0; gW = 1; gH = 1; gCS = 1; gInv = 1; gLevels = 1; gLW[0] = 1; gLH[0] = 1; gSize[0] = 1;
     for (let s = 0; s < 2; s++) { tgStart[s][0] = 0; tgStart[s][1] = 0; for (let k = 0; k < spClassCount; k++) alCount[s * spClassCount + k] = 0; }
+    fgReady = false;                              // (v98.6, 4b2) no fine ally grids either
     return;
   }
   gOX = minX; gOY = minY;
@@ -15573,6 +15575,7 @@ function buildGrid() {
     const g = s * classes + typeSpClass[shipType[i]];
     alItems[g][--alStart[g][shipCellA[i]]] = i;
   }
+  buildFineAllyGrids(spanX, spanY);              // (v98.6, 4b2) the fine ally grids: the same allies found much faster in a big crowded battle
 
   // ---- The pyramid: level l + 1 squares hold the counts of the 2 x 2 squares of level l below them. ----
   gLW[0] = gW; gLH[0] = gH; gSize[0] = gCS;
@@ -16030,6 +16033,7 @@ function findFirstContact(i, nx, ny, radius) {
 let pushX = 0, pushY = 0;
 let passThroughNow = false, passOtherMul = 1;                         // (v25 stop 2, section 5mr) ships pass through each other: the push acts only inside a squadron, and nothing blocks
 function scanAllies(i, type) {
+  if (fgReady) return scanAlliesFine(i, type);   // (v98.6, 4b2) the same answer from the fine ally grids
   const side = shipSide[i];
   const mySq = shipSquad[i], onlyOwn = passThroughNow;
   const px = shipX[i], py = shipY[i];
@@ -16197,6 +16201,157 @@ function chooseFarGoal(i) {
   shipGoalY[i] = sideCenterY[enemy];
 }
 
+// ---- (v98.6) 4b2. THE FINE ALLY GRID: keeping clear of allies, fast in a big crowded battle ----
+// Alex wants thousands of ships. In a campaign battle at Earth with about 2,700 ships, a third of every step went into scanAllies (4b), and almost all of
+// it was wasted: the ally grids may have only about 2 squares a ship (gridCellsPerShip), and the campaign battlefield is huge (36,000 x 18,000 u), so a
+// square came out at 374 u when the ships it is for are 3.5, 50 and 220 u apart. Every look at the 3 x 3 squares around a ship went through about 166
+// allies to find the one or two actually touching it.
+// So, with SETTINGS.allyFineGrid 1, each ally grid also gets a FINE copy whose squares are the class's own spacing. Only the squares that have ships in
+// them are kept (a small hash table, rebuilt every step with the coarse grid), so the fine grid costs the same however big the battlefield is.
+// scanAllies then looks only at the fine squares within touching distance, and works through the allies it finds IN THE SAME ORDER as the coarse grid
+// would have (coarse square by coarse square, newest slot first, and only those the coarse 3 x 3 would have seen), so every push is added up in the same
+// order and the battle comes out exactly the same: only faster. Ships that have moved since the grid was built this step are allowed for by widening the
+// look by the farthest any ship has moved (gridMovedMax, noted where the movement loop moves ships) plus the class's spacing.
+// With 0 the coarse grid is used alone, as before v98.6.
+
+const fgKey = [], fgStart = [], fgItems = [], fgBits = [];   // per ally grid (side * spClassCount + class): the hash table's keys, list starts, ships, size
+let fgCS = [], fgInv = [], fgW = [], fgH = [];               // per class: fine square size (u), 1/size, squares across and down
+let fgSlot = new Int32Array(0);                              // per ship: its slot in its grid's hash table
+let fgReady = false;                                         // the fine grids were built this step (buildGrid) for the ships now in them
+let gridMovedMax = 0;                                        // the farthest any ship has moved since buildGrid this step (u)
+let gridMovedLast = 0;                                       // ... and in the step before (sizes the fine squares)
+const fgNear = new Int32Array(4096);                         // scratch: the allies found touching one ship
+
+// (4c, the movement loop) a ship is about to move to (nx, ny): the farthest move since the grids were built grows to match
+function gridNoteMove(i, nx, ny) { const dx = nx - shipX[i], dy = ny - shipY[i], d2 = dx * dx + dy * dy; if (d2 > gridMovedMax * gridMovedMax) gridMovedMax = Math.sqrt(d2); }
+function fineGridHash(key, bits) { return Math.imul(key, -1640531535) >>> (32 - bits); }
+// The slot of a fine square's key in grid g, or -1 when no ship is in it.
+function fineGridFind(g, key) {
+  const keys = fgKey[g], bits = fgBits[g], mask = (1 << bits) - 1;
+  let h = fineGridHash(key, bits);
+  for (;;) { const k = keys[h]; if (k === key) return h; if (k === -1) return -1; h = (h + 1) & mask; }
+}
+// (buildGrid, 4a) after the coarse ally grids: the fine ones, over the same box.
+function buildFineAllyGrids(spanX, spanY) {
+  fgReady = false; gridMovedLast = gridMovedMax; gridMovedMax = 0;
+  if (SETTINGS.allyFineGrid !== 1) return;
+  const classes = spClassCount;
+  if (fgSlot.length < highWater) fgSlot = new Int32Array(Math.max(highWater, MAX_SHIPS));
+  for (let k = 0; k < classes; k++) {
+    // a square as wide as the farthest scanAllies looks for this class (its touching distance, its spacing again, and last step's farthest move), so a
+    // look covers about 3 x 3 squares; the size only changes the speed, never the answer
+    let cs = 1.5 * (spClassMax[k] > 0 ? spClassMax[k] : 1) + gridMovedLast;
+    while ((Math.floor(spanX / cs) + 1) * (Math.floor(spanY / cs) + 1) > 1e9) cs *= 2;   // (keys must stay whole numbers under 2^31)
+    fgCS[k] = cs; fgInv[k] = 1 / cs; fgW[k] = Math.floor(spanX / cs) + 1; fgH[k] = Math.floor(spanY / cs) + 1;
+  }
+  for (let s = 0; s < 2; s++) for (let k = 0; k < classes; k++) {
+    const g = s * classes + k;
+    let bits = 4; while ((1 << bits) < 2 * alCount[g]) bits++;
+    const size = 1 << bits;
+    if (!fgKey[g] || fgKey[g].length < size) { fgKey[g] = new Int32Array(size); fgStart[g] = new Int32Array(size + 1); }
+    if (!fgItems[g] || fgItems[g].length < MAX_SHIPS) fgItems[g] = new Int32Array(MAX_SHIPS);
+    fgBits[g] = bits;
+    fgKey[g].fill(-1, 0, size); fgStart[g].fill(0, 0, size + 1);
+  }
+  // pass 1: each ship's fine square into its grid's table, counted
+  for (let i = 0; i < highWater; i++) {
+    if (shipAlive[i] === 0) continue;
+    const k = typeSpClass[shipType[i]], g = shipSide[i] * classes + k, inv = fgInv[k];
+    let fx = ((shipX[i] - gOX) * inv) | 0, fy = ((shipY[i] - gOY) * inv) | 0;
+    if (fx < 0) fx = 0; else if (fx >= fgW[k]) fx = fgW[k] - 1;
+    if (fy < 0) fy = 0; else if (fy >= fgH[k]) fy = fgH[k] - 1;
+    const key = fy * fgW[k] + fx, keys = fgKey[g], bits = fgBits[g], mask = (1 << bits) - 1;
+    let h = fineGridHash(key, bits);
+    while (keys[h] !== -1 && keys[h] !== key) h = (h + 1) & mask;
+    keys[h] = key; fgStart[g][h]++; fgSlot[i] = h;
+  }
+  // add up, then place each ship (afterwards fgStart[g][h] is where slot h's list starts and fgStart[g][h + 1] where it ends)
+  for (let g = 0; g < 2 * classes; g++) { const a = fgStart[g], size = 1 << fgBits[g]; let r = 0; for (let h = 0; h < size; h++) { r += a[h]; a[h] = r; } a[size] = r; }
+  for (let i = 0; i < highWater; i++) {
+    if (shipAlive[i] === 0) continue;
+    const g = shipSide[i] * classes + typeSpClass[shipType[i]];
+    fgItems[g][--fgStart[g][fgSlot[i]]] = i;
+  }
+  fgReady = true;
+}
+
+// scanAllies (4b) with the fine grids: the same answer, found faster. See the top of this section.
+function scanAlliesFine(i, type) {
+  const side = shipSide[i];
+  const mySq = shipSquad[i], onlyOwn = passThroughNow;
+  const px = shipX[i], py = shipY[i];
+  const c = shipCos[i], s = shipSin[i];
+  const mySpacing = typeSpacing[type];
+  const myClass = typeSpClass[type];
+
+  let blocked = false;
+  pushX = 0;
+  pushY = 0;
+  for (let b = myClass; b < spClassCount; b++) {
+    const g = side * spClassCount + b;
+    if (alCount[g] === 0) continue;
+    // the coarse 3 x 3 the old search looked in (allies outside it were never seen, so they are not seen here either)
+    const inv = alInv[b], gw = alW[b], gh = alH[b];
+    let cx = ((px - gOX) * inv) | 0, cy = ((py - gOY) * inv) | 0;
+    if (cx < 0) cx = 0; else if (cx >= gw) cx = gw - 1;
+    if (cy < 0) cy = 0; else if (cy >= gh) cy = gh - 1;
+    const gx0 = cx > 0 ? cx - 1 : 0, gx1 = cx < gw - 1 ? cx + 1 : gw - 1;
+    const gy0 = cy > 0 ? cy - 1 : 0, gy1 = cy < gh - 1 ? cy + 1 : gh - 1;
+    // the fine squares an ally touching this ship could have been in when the grid was built
+    const reach = 0.5 * (mySpacing + spClassMax[b]) + gridMovedMax + spClassMax[b], finv = fgInv[b], fw = fgW[b], fh = fgH[b];
+    let fx0 = ((px - reach - gOX) * finv) | 0, fx1 = ((px + reach - gOX) * finv) | 0, fy0 = ((py - reach - gOY) * finv) | 0, fy1 = ((py + reach - gOY) * finv) | 0;
+    if (px - reach - gOX < 0) fx0 = 0; if (py - reach - gOY < 0) fy0 = 0;
+    if (fx1 >= fw) fx1 = fw - 1; if (fy1 >= fh) fy1 = fh - 1;
+    const items = fgItems[g], start = fgStart[g];
+    let n = 0;
+    for (let fy = fy0; fy <= fy1; fy++) {
+      for (let fx = fx0; fx <= fx1; fx++) {
+        const h = fineGridFind(g, fy * fw + fx);
+        if (h < 0) continue;
+        const end = start[h + 1];
+        for (let k = start[h]; k < end; k++) {
+          const j = items[k];
+          if (j === i) continue;
+          const a = shipCellA[j], ay = (a / gw) | 0, ax = a - ay * gw;
+          if (ax < gx0 || ax > gx1 || ay < gy0 || ay > gy1) continue;
+          if (onlyOwn && shipSquad[j] !== mySq && passOtherMul === 0) continue;
+          const dx = px - shipX[j], dy = py - shipY[j];
+          const minD = 0.5 * (mySpacing + typeSpacing[shipType[j]]);
+          if (dx * dx + dy * dy >= minD * minD) continue;
+          if (n < fgNear.length) fgNear[n++] = j;
+        }
+      }
+    }
+    if (n === 0) continue;
+    // the coarse grid's order: coarse square by coarse square (row by row), and in a square the newest slot first
+    for (let p = 1; p < n; p++) {
+      const j = fgNear[p], aj = shipCellA[j];
+      let q = p - 1;
+      while (q >= 0 && (shipCellA[fgNear[q]] > aj || (shipCellA[fgNear[q]] === aj && fgNear[q] < j))) { fgNear[q + 1] = fgNear[q]; q--; }
+      fgNear[q + 1] = j;
+    }
+    const share = (b === myClass) ? 0.5 : 1.0;
+    for (let p = 0; p < n; p++) {                     // (from here exactly as scanAllies)
+      const j = fgNear[p];
+      const other = onlyOwn && shipSquad[j] !== mySq;
+      const dx = px - shipX[j], dy = py - shipY[j];
+      const d2 = dx * dx + dy * dy;
+      const minD = 0.5 * (mySpacing + typeSpacing[shipType[j]]);
+      if (d2 < 1e-9 * minD * minD) {
+        const a = rand() * 6.2832;
+        pushX += Math.cos(a) * minD * share;
+        pushY += Math.sin(a) * minD * share;
+        continue;
+      }
+      const d = Math.sqrt(d2);
+      const f = (minD - d) * share / d * (other ? passOtherMul : 1);
+      pushX += dx * f;
+      pushY += dy * f;
+      if (!other && (-dx * c - dy * s) > 0.5 * d) blocked = true;
+    }
+  }
+  return blocked && !onlyOwn;
+}
 // ---------------------------------------------------------------------
 // 4c. Moving
 // ---------------------------------------------------------------------
@@ -17055,9 +17210,9 @@ function updateMovementAndTargeting(dt) {
       if (rpi >= 0) {
         const rp = repairPoints[rpi];
         const rdx = rp.x - nx, rdy = rp.y - ny, reach = rp.arrive + typeSize[type];
-        if (rdx * rdx + rdy * rdy <= reach * reach) { shipX[i] = nx; shipY[i] = ny; enterRepairPoint(i, rp); continue; }
+        if (rdx * rdx + rdy * rdy <= reach * reach) { gridNoteMove(i, nx, ny); shipX[i] = nx; shipY[i] = ny; enterRepairPoint(i, rp); continue; }
       } else if ((side === BLUE && nx <= 0) || (side === RED && nx >= worldW)) {
-        shipX[i] = nx; shipY[i] = ny;
+        gridNoteMove(i, nx, ny); shipX[i] = nx; shipY[i] = ny;
         enterOffMap(i);
         continue;
       }
@@ -17077,6 +17232,7 @@ function updateMovementAndTargeting(dt) {
       shipVX[i] = (preX - shipX[i]) / dt;
       shipVY[i] = (preY - shipY[i]) / dt;
     }
+    gridNoteMove(i, nx, ny);                        // (v98.6, 4b2) how far ships have moved since the grids were built
     shipX[i] = nx;
     shipY[i] = ny;
     if (i === lockLeaderNow) lockLeaderMoved(i, sq);
@@ -17148,7 +17304,7 @@ function addMark(a, t, ux, uy, sig, scatter, hit) {
   }
   markSide[k] = shipSide[a];
   markHit[k] = hit ? 1 : 0;
-  markLife[k] = SETTINGS.markSeconds;
+  markLife[k] = SETTINGS.markSeconds; fxMarksOn = true;
 }
 
 // (v33) kind = the shot's damage type (its colour on the map), ship = the ship that fired it; both for the drawing only (left out: not known)
@@ -17157,7 +17313,7 @@ function addShot(x1, y1, x2, y2, side, kind, ship) {
   shotNext = (shotNext + 1) % MAX_SHOTS;
   shotX1[k] = x1; shotY1[k] = y1; shotX2[k] = x2; shotY2[k] = y2;
   shotSide[k] = side;
-  shotLife[k] = SETTINGS.shotSeconds;
+  shotLife[k] = SETTINGS.shotSeconds; fxShotsOn = true;
   shotKind[k] = kind !== undefined ? kind : -1; shotShip[k] = ship !== undefined ? ship : -1; shotFxd[k] = 0; shotLast = k;
 }
 
@@ -17170,7 +17326,7 @@ function addFlash(x, y, size, kind, ship) {
   const kd = kind > 0 ? kind : 0;
   flashKind[k] = kd; flashShip[k] = ship !== undefined ? ship : -1;
   flashMax[k] = SETTINGS.flashSeconds * FX_FLASH_LIFE[kd];
-  flashLife[k] = flashMax[k];
+  flashLife[k] = flashMax[k]; fxFlashesOn = true;
 }
 
 function clearEffects() {
@@ -17866,15 +18022,30 @@ function updateCombat(dt) {
   if (deferred) applyQueuedHits();                            // (stage 13) every ship has fired: now the hits land
 }
 
+// (v98.6) Each list is only walked while something in it is still showing (fxShotsOn and the others are set when one is added and cleared when the
+// last one runs out), so a quiet stretch of a long battle does not pay for 18,000 empty entries every step. The numbers come out exactly as before.
+let fxShotsOn = false, fxFlashesOn = false, fxMarksOn = false;
 function updateEffects(dt) {
-  for (let k = 0; k < MAX_SHOTS; k++) {
-    if (shotLife[k] > 0) shotLife[k] -= dt;
+  if (fxShotsOn) {
+    let any = false;
+    for (let k = 0; k < MAX_SHOTS; k++) {
+      if (shotLife[k] > 0) { shotLife[k] -= dt; if (shotLife[k] > 0) any = true; }
+    }
+    fxShotsOn = any;
   }
-  for (let k = 0; k < MAX_FLASHES; k++) {
-    if (flashLife[k] > 0) flashLife[k] -= dt;
+  if (fxFlashesOn) {
+    let any = false;
+    for (let k = 0; k < MAX_FLASHES; k++) {
+      if (flashLife[k] > 0) { flashLife[k] -= dt; if (flashLife[k] > 0) any = true; }
+    }
+    fxFlashesOn = any;
   }
-  for (let k = 0; k < MAX_SHOTS; k++) {
-    if (markLife[k] > 0) markLife[k] -= dt;
+  if (fxMarksOn) {
+    let any = false;
+    for (let k = 0; k < MAX_SHOTS; k++) {
+      if (markLife[k] > 0) { markLife[k] -= dt; if (markLife[k] > 0) any = true; }
+    }
+    fxMarksOn = any;
   }
 }
 
@@ -25393,10 +25564,30 @@ function campaignRevealCrashSite() {
 // The AO rows of the running campaign's map (or the atlas when no campaign runs). Never edit the rows: they are the map.
 function campaignAos() { return campaign && campaign.map && Array.isArray(campaign.map.aos) ? campaign.map.aos : CAMPAIGN_ATLAS.aos; }
 function campaignLanes() { return campaign && campaign.map && Array.isArray(campaign.map.lanes) ? campaign.map.lanes : CAMPAIGN_ATLAS.lanes; }
-function aoById(id) { const aos = campaignAos(); for (let k = 0; k < aos.length; k++) if (aos[k].id === id) return aos[k]; return null; }
+// (v98.6) An index of the map's ids, so the war's every-tick bookkeeping does not search the whole map for each place it looks at (in a long battle
+// these searches were a tenth of every step). It is rebuilt whenever the map's AO list changes, every answer it gives is checked against the map itself,
+// and anything it cannot answer is searched for as before, so the answers are always exactly the old ones.
+const atlasIndex = { aos: null, len: -1, ao: new Map(), loc: new Map() };
+function atlasIndexFor(aos) {
+  if (atlasIndex.aos === aos && atlasIndex.len === aos.length) return atlasIndex;
+  atlasIndex.aos = aos; atlasIndex.len = aos.length; atlasIndex.ao.clear(); atlasIndex.loc.clear();
+  for (let k = 0; k < aos.length; k++) {
+    if (!atlasIndex.ao.has(aos[k].id)) atlasIndex.ao.set(aos[k].id, k);
+    const L = aos[k].locations || [];
+    for (let j = 0; j < L.length; j++) if (!atlasIndex.loc.has(L[j].id)) atlasIndex.loc.set(L[j].id, [k, j]);
+  }
+  return atlasIndex;
+}
+function aoById(id) {
+  const aos = campaignAos(), k = atlasIndexFor(aos).ao.get(id);
+  if (k !== undefined && aos[k] && aos[k].id === id) return aos[k];
+  for (let k = 0; k < aos.length; k++) if (aos[k].id === id) return aos[k];
+  return null;
+}
 // A location row by its id, with the AO it is in: { loc, ao } or null.
 function campaignLocationById(id) {
-  const aos = campaignAos();
+  const aos = campaignAos(), e = atlasIndexFor(aos).loc.get(id);
+  if (e !== undefined) { const ao = aos[e[0]], loc = ao && ao.locations ? ao.locations[e[1]] : null; if (loc && loc.id === id) return { loc: loc, ao: ao }; atlasIndex.aos = null; }   // (a changed list: index it again next time)
   for (let k = 0; k < aos.length; k++) for (let j = 0; j < aos[k].locations.length; j++) if (aos[k].locations[j].id === id) return { loc: aos[k].locations[j], ao: aos[k] };
   return null;
 }
@@ -25439,7 +25630,7 @@ function campaignAoSanctuary(id) { const a = aoById(campaignAoOf(id)); return !!
 const CAMPAIGN_DEVELOPMENT = {
   'dev.solarCollectors': { name: 'Solar collectors',    place: 'sun',     does: 'collectors in close orbit of the Sun: 2 Antimatter a week, x4 with the full ring (Solar collectors research)' },   // (v91) opened by Antimatter production
   'dev.mercuryMines':    { name: 'Mercury mines',       place: 'mercury', does: 'deep mines on Mercury: 300 Alloys a week' },
-  'dev.venusWorks':      { name: 'Venus orbital works', place: 'venus',   does: 'orbital works above Venus: 200 Alloys and some Volatiles a week' }
+  'dev.venusWorks':      { name: 'Venus orbital works', place: 'venus',   does: 'orbital works above Venus: 200 Alloys a week' }
 };
 // A location row's development: { node, name, does, done } when it is a development site, else null. done = its node has been researched.
 function campaignDevelopmentOf(loc) {
@@ -32522,7 +32713,7 @@ function councilAssess(id, view) {
 // boostMaxMarkers: more markers than this in one AO count as this many.
 const COUNCIL_MARKER_RULES = { boostSeats: ['aide'], boostMaxMarkers: 2 };
 // The resources the Director of Research counts as advanced (the high-tech ones, plan 3h), and the crash site's while it is still unknown.
-const COUNCIL_ADVANCED_RESOURCES = ['Fissiles', 'Rare earths', 'Iridium', 'Helium-3', 'Volatiles', 'Antimatter'];
+const COUNCIL_ADVANCED_RESOURCES = ['Fissiles', 'Rare earths', 'Iridium', 'Helium-3', 'Antimatter'];   // (v98.7) not Volatiles: fuel only, no part costs it
 // The places we hold (settled ours, not a locked development site), each { id, name, ao (row), aoId, loc, r (06n's row) }, nearest the Sun first.
 function councilHeldPlaces() {
   const out = [];
@@ -34269,7 +34460,7 @@ const RESEARCH_PROJECTS = [
   // (v78.3, Alex 29 Oct) bigger tanks, early: right after the frigate, the first hull with room for a 4 x 4 or 5 x 5 tank
   { id: 'bigtanks',   name: 'Large tanks',               branch: 'power', step: 2, kind: 'option', needs: ['frigate'], tags: ['Fuel', 'Shipyards'], text: '4 x 4 and 5 x 5 fuel tanks of every kind: 30% and 40% more fuel a square than single squares (a 3 x 3 gets 20%).' },
   { id: 'tanks2',     name: 'Tanks II',                  branch: 'power', step: 1, kind: 'mark',   needs: [], tags: ['Fuel', 'Mark'], text: 'Mk II tanks: more fuel a square.' },
-  { id: 'propellant', name: 'Better propellants',        branch: 'power', step: 1, kind: 'option', needs: [], tags: ['Fuel', 'Drives', 'Civilian'], uses: ['Volatiles'], spin: { boost: 0.10, startDriveEff: 0.45 }, text: 'Chemical drives burn less (fuel efficiency x0.45), and the Large (3 x 6) and Heavy (4 x 12) chemical rockets, wide along the stern; better launchers: +10% boost.', textNoBoost: 'Chemical drives burn less (fuel efficiency x0.45), and the Large (3 x 6) and Heavy (4 x 12) chemical thrusters, wide along the stern.' },
+  { id: 'propellant', name: 'Better propellants',        branch: 'power', step: 1, kind: 'option', needs: [], tags: ['Fuel', 'Drives', 'Civilian'], spin: { boost: 0.10, startDriveEff: 0.45 }, text: 'Chemical drives burn less (fuel efficiency x0.45), and the Large (3 x 6) and Heavy (4 x 12) chemical rockets, wide along the stern; better launchers: +10% boost.', textNoBoost: 'Chemical drives burn less (fuel efficiency x0.45), and the Large (3 x 6) and Heavy (4 x 12) chemical thrusters, wide along the stern.' },
   { id: 'bigreactor', name: 'Large reactor',             branch: 'power', step: 2, kind: 'option', needs: ['fission', 'frigate'], tags: ['Power', 'Shipyards', 'Civilian'], uses: ['Fissiles'], spin: { fissiles: 0.25 }, text: 'The 5 x 5 fission reactor; better reactors at the mines: +25% Fissiles.' },
   { id: 'ntr',        name: 'Nuclear thermal rockets',   branch: 'power', step: 3, kind: 'option', needs: ['fission', 'frigate'], tags: ['Drives', 'Fuel'], uses: ['Fissiles'], text: 'The nuclear thermal rocket (4 x 3, and long ones 8 x 3 at x1.4 and 12 x 4 at x1.5): x1.3 a chemical rocket\'s push a square, x1.5 fuel efficiency. It needs a fission reactor.' },
   { id: 'breeder',    name: 'Breeder reactors',          branch: 'power', step: 3, kind: 'new', price: 100, needs: ['bigreactor', 'destroyer'], tags: ['Power', 'Civilian'], uses: ['Fissiles'], spin: { fissiles: 0.50 }, text: 'Reactors that breed their own fuel, at home: +50% Fissiles. (No new ship part.)' },
@@ -34302,8 +34493,8 @@ const RESEARCH_PROJECTS = [
   { id: 'scoops',     name: 'Gas giant scoops',          tier: 2, branch: 'power', step: 5, kind: 'new',    needs: ['fusion'], tags: ['Power', 'Civilian'], uses: ['Helium-3'], spin: { he3: 0.50 }, text: 'Scoops that skim the gas giants\' upper air: +50% Helium-3. (No new ship part.)' },
   { id: 'torch',      name: 'Fusion torch',              tier: 2, branch: 'power', step: 5, kind: 'option', needs: ['fusion'], tags: ['Drives', 'Fuel', 'Power'], uses: ['Helium-3'], text: 'The Fusion torch (4 x 3, and a Large 4 x 8, wide along the stern, at x1.85): x1.7 a chemical rocket\'s push a square and a transfer costs x0.8 the fuel. It needs a fusion reactor on board.' },
   { id: 'tanks3',     name: 'Tanks III',                 tier: 2, branch: 'power', step: 4, kind: 'mark',   needs: ['tanks2'], tags: ['Fuel', 'Mark'], text: 'Mk III tanks: more fuel a square.' },
-  { id: 'heatsink2',  name: 'Heat sink II',              tier: 2, branch: 'power', step: 4, kind: 'option', needs: ['irlaser'], tags: ['Power', 'Lasers'], uses: ['Volatiles'], text: 'Heat sinks with cells of melting salt: half again the heat a square.' },   // (v87)
-  { id: 'droplet',    name: 'Droplet radiators',         tier: 2, branch: 'power', step: 5, kind: 'new',    needs: ['fusion'], tags: ['Power', 'New tech'], uses: ['Volatiles'], text: 'Droplet radiators: a sheet of glowing droplets between two booms, twice the cooling a square and tougher than a panel. Uses Volatiles.' },
+  { id: 'heatsink2',  name: 'Heat sink II',              tier: 2, branch: 'power', step: 4, kind: 'option', needs: ['irlaser'], tags: ['Power', 'Lasers'], text: 'Heat sinks with cells of melting salt: half again the heat a square.' },   // (v87)
+  { id: 'droplet',    name: 'Droplet radiators',         tier: 2, branch: 'power', step: 5, kind: 'new',    needs: ['fusion'], tags: ['Power', 'New tech'], text: 'Droplet radiators: a sheet of glowing droplets between two booms, twice the cooling a square and tougher than a panel.' },
   // Guns
   { id: 'coilguns',   name: 'Coilguns',                  tier: 2, branch: 'guns', step: 4, kind: 'new',    needs: ['turret'], tags: ['Guns', 'New tech'], uses: ['Rare earths'], text: 'The Coilgun family, every role and size we have: +50% damage, Piercing, half the rounds; uses power and Rare earths. And coilgun point defence. Half price once the Luna coilgun prototype is researched.' },
   { id: 'coilmk2',    name: 'Coilguns Mk II',            tier: 2, branch: 'guns', step: 5, kind: 'mark',   needs: ['coilguns'], tags: ['Guns', 'Mark'], text: 'Smaller Mk II coilguns (they also need Chemical guns Mk II).' },
@@ -34346,7 +34537,7 @@ const RESEARCH_PROJECTS = [
   { id: 'recycling',  name: 'Recycling life support',    tier: 2, branch: 'home', step: 4, kind: 'option', needs: ['hotbunk'], tags: ['Automation', 'Crew safety'], crew: { life: 1.5 }, text: 'Closed-loop air and water: life support keeps half again as many alive (every design at once).' },
   { id: 'massprod',   name: 'Mass production',           tier: 2, branch: 'home', step: 4, kind: 'option', needs: ['destroyer'], tags: ['Shipyards', 'Civilian', 'Automation'], massProd: { alloys: 0.8, time: 0.7 }, text: 'Production lines for the small hulls: small craft, corvettes and carried craft cost x0.8 Alloys and take x0.7 the time to build.' },
   { id: 'labnet2',    name: 'Lab network 2',             tier: 2, branch: 'home', step: 5, kind: 'option', needs: ['labnet1', 'cruiser'], tags: ['Research', 'Civilian'], spin: { researchEarth: 0.20 }, text: 'More labs at home: another +20% research at Earth.' },
-  { id: 'venus',      name: 'Venus orbital works',       tier: 2, branch: 'home', step: 5, kind: 'option', needs: ['cruiser'], tags: ['Civilian', 'Shipyards'], develop: 'dev.venusWorks', text: 'Orbital works above Venus: the site becomes ours and working (200 Alloys and some Volatiles a week).' },
+  { id: 'venus',      name: 'Venus orbital works',       tier: 2, branch: 'home', step: 5, kind: 'option', needs: ['cruiser'], tags: ['Civilian', 'Shipyards'], develop: 'dev.venusWorks', text: 'Orbital works above Venus: the site becomes ours and working (200 Alloys a week).' },
   { id: 'deeparray',  name: 'Deep-space array',          tier: 2, branch: 'home', step: 4, kind: 'option', needs: ['sigint'], tags: ['Command', 'Research'], sight: { fleets: 3, bases: 2 }, text: 'Listening posts far out on our ground: we see alien bases two AOs out and their fleets three AOs out.' },   // (v85.5)
   { id: 'interfero',  name: 'Interferometry net',        tier: 2, branch: 'home', step: 5, kind: 'option', price: 90, needs: ['deeparray'], tags: ['Command', 'Research'], sight: { fleets: 99, bases: 99 }, text: 'Every dish we own works as one telescope: we see every alien base and fleet in the system.' },   // (v85.5; moves to Tier 3 when Tier 3 is built)
   // ---- (v90) TIER 3, stage 1: our weapons (notes/plans/ships/tier3-numbers-plan.md s2b; tier: 3, priced from price3: new 160, option and mark 80). Step 6
@@ -34382,7 +34573,7 @@ const RESEARCH_PROJECTS = [
   { id: 'fusionmk3',  name: 'Fusion Mk III',             tier: 3, branch: 'power', step: 6, kind: 'mark',   needs: ['fusionmk2'], tags: ['Power', 'Mark'], uses: ['Helium-3'], text: 'Smaller Mk III fusion reactors.' },
   { id: 'amdrive',    name: 'Antimatter drive',          tier: 3, branch: 'power', step: 7, kind: 'option', needs: ['amcells'], tags: ['Drives', 'Fuel'], uses: ['Antimatter', 'Helium-3'], text: 'The antimatter drive (4 x 3) and the large one (6 x 4): x2.2 a chemical rocket\'s push and a transfer at half the fuel. Burns Helium-3; needs an antimatter cell on the ship.' },
   { id: 'tanks4',     name: 'Tanks IV',                  tier: 3, branch: 'power', step: 6, kind: 'mark',   needs: ['tanks3'], tags: ['Fuel', 'Mark'], text: 'Mk IV tanks: more fuel a square.' },
-  { id: 'cryosinks',  name: 'Cryo sinks',                tier: 3, branch: 'power', step: 6, kind: 'option', needs: ['droplet'], tags: ['Power'], uses: ['Volatiles'], text: 'The cryo sink: twice a plain heat sink a square (20).' },
+  { id: 'cryosinks',  name: 'Cryo sinks',                tier: 3, branch: 'power', step: 6, kind: 'option', needs: ['droplet'], tags: ['Power'], text: 'The cryo sink: twice a plain heat sink a square (20).' },
   { id: 'titanguns',  name: 'Titan guns',                tier: 3, branch: 'guns', step: 7, kind: 'option', needs: ['capitalguns', 'titan'], tags: ['Guns', 'Missiles', 'Shipyards'], text: 'The Titan size of guns and launchers, and the Titan missile rack.' },
   { id: 'particle',   name: 'Particle beams',            tier: 3, branch: 'lasers', step: 7, kind: 'new',    needs: ['amcells', 'capemitter'], tags: ['Lasers', 'New tech'], uses: ['Antimatter'], text: 'The particle beam, a second kind on every emitter: x2 damage for x1.8 power at 70% of the range; no lens or wavelength picks. Irradiating: half the hit goes round the armour and kills crew. 1 Antimatter an emitter.' },
   { id: 'megacannon', name: 'Mega particle cannon',      tier: 3, branch: 'lasers', step: 7, kind: 'option', needs: ['particle', 'titan'], tags: ['Lasers', 'Shipyards'], uses: ['Antimatter'], text: 'The Titan emitter: on a spinal mount with a particle beam it is the Mega particle cannon, whose beam rakes on through the ships behind its target.' },
@@ -34882,7 +35073,7 @@ function researchResourceWarnings(id) {
   if (!p || !campaign || typeof campaignResourceRates !== 'function' || typeof cmResourceOf !== 'function') return out;
   const rates = campaignResourceRates(0), trickle = RESEARCH_RULES.trickle || {};
   for (const name of p.uses) {
-    const r = cmResourceOf(name); if (!r || r.id === 'alloys') continue;
+    const r = cmResourceOf(name); if (!r || r.id === 'alloys' || r.id === 'volatiles') continue;   // (v98.7) Volatiles is fuel only (Alex 1 Nov): no part costs it, so no warning
     const rate = rates[r.id] || 0, low = rate > 0;   // low: some comes in, but only a trickle (under RESEARCH_RULES.trickle)
     const base = resourceShareAlloysBase(), per100 = base > 0 ? rate * 100 / base : rate;   // (v96) the trickle is judged as a share of our Alloys
     if (rate > 0 && per100 > (trickle[r.id] || 0)) continue;
@@ -34892,7 +35083,6 @@ function researchResourceWarnings(id) {
     else if (r.id === 'iridium') text = 'We have no Iridium coming in: Psyche in the Belt makes it, or the Luna deposit if it is Iridium.';
     else if (r.id === 'rare') text = 'We have no Rare earths coming in: Vesta makes them, or the Luna deposit if it is Rare earths.';
     else if (r.id === 'fissiles') text = 'We have no Fissiles coming in: Mars and Vesta make them.';
-    else if (r.id === 'volatiles') text = 'We have no Volatiles coming in: Phobos and Ceres make them.';
     else if (r.id === 'antimatter') text = p.id === 'amprod' ? '' : (researchDone('amprod') ? 'No antimatter is coming in: the Sun\'s collectors (Sol Inner) are still being built.' : 'No antimatter is coming in: research Antimatter production to build the first collectors at the Sun.');   // (v91)
     if (!text) continue;   // (Antimatter production itself brings the first antimatter: no warning on it)
     out.push({ res: name, text: text, low: low });
