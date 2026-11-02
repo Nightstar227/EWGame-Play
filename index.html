@@ -29,7 +29,7 @@
   document.documentElement.classList.add('ew-touch');
 })();
 </script>
-<title>Engineer's War v98.7 - no research project warns about Volatiles any more (Volatiles is fuel only) (v98.5: a battle that never ends keeps its fleet records true)</title>
+<title>Engineer's War v98.8 - every research project names the resources its parts cost (v98.7: no Volatiles warnings)</title>
 <!-- (v17) The shared look: theme-v0.4.css from the UI folder, built in word for word (tools/build.js). It only styles its own named parts
      (.mode-front, .panel, .btn ...), plus a few page-wide basics that the rules just below undo for the older screens. -->
 <style>
@@ -34432,7 +34432,7 @@ const RESEARCH_PROJECTS = [
   { id: 'fragment',   name: 'Fragmentation shape',       branch: 'missiles', step: 1, kind: 'option', needs: [], tags: ['Missiles', 'Point defence'], text: 'A missile shape that spreads Flak.' },
   { id: 'missilemk2', name: 'Missiles Mk II',            branch: 'missiles', step: 1, kind: 'mark',   needs: [], tags: ['Missiles', 'Mark'], text: 'Mk II launchers: more damage a second.' },
   // Lasers
-  { id: 'irlaser',    name: 'Infrared lasers',           branch: 'lasers', step: 1, kind: 'new',    needs: [], tags: ['Lasers', 'New tech'], text: 'The laser emitter, Light and Medium: a whole new weapon. And heat sinks, to soak up a beam\'s heat.' },
+  { id: 'irlaser',    name: 'Infrared lasers',           branch: 'lasers', step: 1, kind: 'new',    needs: [], tags: ['Lasers', 'New tech'], uses: ['Rare earths'], text: 'The laser emitter, Light and Medium: a whole new weapon. And heat sinks, to soak up a beam\'s heat.' },
   { id: 'laserpd',    name: 'Laser PD',                  branch: 'lasers', step: 2, kind: 'option', needs: ['irlaser'], tags: ['Lasers', 'Point defence'], text: 'Point defence by laser.' },
   { id: 'bigcaps',    name: 'Large capacitors',          branch: 'lasers', step: 2, kind: 'option', needs: ['irlaser'], tags: ['Lasers', 'Power'], text: '3 x 3 and 4 x 4 capacitors to feed the beams.' },
   // Defence and systems
@@ -34444,14 +34444,14 @@ const RESEARCH_PROJECTS = [
   { id: 'hardened',   name: 'Hardened bulkheads',        branch: 'defence', step: 2, kind: 'option', needs: ['spaced'], tags: ['Armour', 'Crew safety'], text: 'Bulkheads that shelter crew and stop damage spreading.' },
   // (v76, build C of notes/plans/aliens/delver-sylph-tier01.md) our answers to the Delvers: offered ONLY in a Delver war (`faction`; researchForThisWar)
   { id: 'counterjam', name: 'Counter-jamming',           branch: 'defence', step: 1, kind: 'option', needs: [], faction: 'delver', tags: ['Missiles', 'Point defence', 'Command'], counterJam: 0.5, text: 'Delver wars: our sensors learn to see through the Veil. Their jamming bubbles do half as much to our missiles and guns.' },
-  { id: 'tether',     name: 'Tether',                    branch: 'defence', step: 1, kind: 'option', needs: [], faction: 'delver', tags: ['Command', 'Weapons'], text: 'Delver wars: the Tether, a field clamp. A Delver ship near it cannot jump away, so a Drone tender can be caught and killed.' },
+  { id: 'tether',     name: 'Tether',                    branch: 'defence', step: 1, kind: 'option', needs: [], faction: 'delver', tags: ['Command', 'Weapons'], uses: ['Rare earths'], text: 'Delver wars: the Tether, a field clamp. A Delver ship near it cannot jump away, so a Drone tender can be caught and killed.' },
   { id: 'medward',    name: 'Medical wards',             branch: 'defence', step: 2, kind: 'option', needs: ['dc'], tags: ['Crew safety'], text: 'The medical ward (3 x 3) and medical hall (4 x 4): officers aboard a lost ship are much less likely to be killed.' },   // (v87, s2b)
   { id: 'measures',   name: 'Active measures',           branch: 'defence', step: 2, kind: 'option', needs: ['reactive'], tags: ['Armour', 'Point defence'], text: 'The chaff screen: when a laser hits the ship it throws a chaff cloud that halves beams through it for a few seconds. Uses rounds from a gun magazine.' },   // (v88, s2b)
   { id: 'repairarms', name: 'Repair arms',               branch: 'defence', step: 2, kind: 'option', needs: ['dc'], tags: ['Crew safety', 'Shipyards'], text: 'Repair arms (4 x 2, 6 x 3, 8 x 4): a ship that mends broken parts on friendly ships near it in battle. The small one fits a corvette.' },   // (v89, s2b)
   { id: 'cargoholds', name: 'Cargo holds',               branch: 'defence', step: 1, kind: 'option', needs: [], tags: ['Shipyards'], text: 'Cargo holds (4 x 4, 6 x 6): a tender with a supply port hands out supplies in battle, filling the magazines of friendly ships near it.' },   // (v89, s2b)
   { id: 'combatbridge', name: 'Combat bridge',           branch: 'defence', step: 2, kind: 'option', needs: ['frigate'], tags: ['Command'], text: 'The 5 x 5 combat bridge.' },
   // Power and drives
-  { id: 'solar',      name: 'Solar panels',              branch: 'power', step: 1, kind: 'option', needs: [], tags: ['Power', 'Civilian'], spin: { alloysEarth: 0.10 }, text: 'Solar panels for ships; cheap power for industry: +10% Alloys at Earth.' },
+  { id: 'solar',      name: 'Solar panels',              branch: 'power', step: 1, kind: 'option', needs: [], tags: ['Power', 'Civilian'], uses: ['Rare earths'], spin: { alloysEarth: 0.10 }, text: 'Solar panels for ships; cheap power for industry: +10% Alloys at Earth.' },
   // (v59, fuels-engines-resources.md s5 and s6) batteries first, then fission: the reactors left the start kit
   { id: 'batteryhalls', name: 'Battery halls',           branch: 'power', step: 1, kind: 'option', needs: [], tags: ['Power'], text: 'The Large battery bank (3 x 3) and the Battery hall (4 x 4): battery power for corvettes and frigates.' },
   { id: 'fission',    name: 'Fission reactors',          branch: 'power', step: 1, kind: 'new',    needs: [], tags: ['Power', 'New tech'], uses: ['Fissiles'], text: 'The Small (3 x 3) and Standard (4 x 4) fission reactors and the Fissiles tank. The reactors cost Alloys only; the Fissiles tank uses Fissiles to build.' },
@@ -34590,12 +34590,12 @@ const RESEARCH_PROJECTS = [
   { id: 'titanhangars', name: 'Titan hangars',           tier: 3, branch: 'hulls', step: 7, kind: 'option', needs: ['corvhangar', 'titan'], tags: ['Shipyards'], text: 'The titan hangar: a frigate of our own design carried inside a titan.' },
   { id: 'implants',   name: 'Cybernetic implants',       tier: 3, branch: 'home', step: 6, kind: 'option', needs: ['robots'], tags: ['Automation', 'Crew safety'], crew: { all: 0.85, slowHalf: true }, text: 'Implants for every crew: every design needs 15% fewer crew, and a ship slows half as much when it loses crew.' },
   { id: 'neural',     name: 'Neural interfaces',         tier: 3, branch: 'home', step: 7, kind: 'option', needs: ['implants'], tags: ['Automation', 'Command'], crew: { command: 0.5, fcAccuracy: 0.05 }, text: 'Bridge, fire control and sensor crew wired in: those parts need half the crew, and guns touching a fire control room are 5% more accurate.' },
-  { id: 'titan',      name: 'Titan',                     tier: 3, branch: 'hulls', step: 7, kind: 'hull',   needs: ['capital', 'amprod'], tags: ['Shipyards'], text: 'The titan hull and its first two super frames: the Colossus (a siege driver down the spine) and the Slip (a supply depot that adds a transfer). Titan berths open at place tier 4 (one) and 5 (two).' },
+  { id: 'titan',      name: 'Titan',                     tier: 3, branch: 'hulls', step: 7, kind: 'hull',   needs: ['capital', 'amprod'], tags: ['Shipyards'], uses: ['Rare earths'], text: 'The titan hull and its first two super frames: the Colossus (a siege driver down the spine) and the Slip (a supply depot that adds a transfer). Titan berths open at place tier 4 (one) and 5 (two).' },
   // (v97) the other titan super frames, one project each (notes/plans/ships/titan-super-frames/titan-super-frames.md s5)
-  { id: 'titanhalo',  name: 'Halo titan',                tier: 3, branch: 'hulls', step: 7, kind: 'option', needs: ['titan', 'megacannon'], tags: ['Shipyards', 'Lasers'], text: 'The Halo titan frame: a thick ring with the grand lance firing through its hole, sweeping a 30-degree cone out to 6,000.' },
-  { id: 'titanrake',  name: 'Rake titan',                tier: 3, branch: 'hulls', step: 7, kind: 'option', needs: ['titan', 'lanceshape', 'amwarheads'], tags: ['Shipyards', 'Missiles'], text: 'The Rake titan frame: a half-moon with four siege launchers firing astern; each siege missile bursts 500 wide.' },
-  { id: 'titanwheel', name: 'Wheel titan',               tier: 3, branch: 'hulls', step: 7, kind: 'option', needs: ['titan', 'repairbay'], tags: ['Shipyards', 'Crew safety'], text: 'The Wheel titan frame: a moving repair station with a repair field and 24 repair drones.' },
-  { id: 'titanflattop', name: 'Flattop titan',           tier: 3, branch: 'hulls', step: 7, kind: 'option', needs: ['titan', 'titanhangars'], tags: ['Shipyards'], text: 'The Flattop titan frame: the super carrier, with 100 fighters and 12 corvettes.' },
+  { id: 'titanhalo',  name: 'Halo titan',                tier: 3, branch: 'hulls', step: 7, kind: 'option', needs: ['titan', 'megacannon'], tags: ['Shipyards', 'Lasers'], uses: ['Rare earths'], text: 'The Halo titan frame: a thick ring with the grand lance firing through its hole, sweeping a 30-degree cone out to 6,000.' },
+  { id: 'titanrake',  name: 'Rake titan',                tier: 3, branch: 'hulls', step: 7, kind: 'option', needs: ['titan', 'lanceshape', 'amwarheads'], tags: ['Shipyards', 'Missiles'], uses: ['Antimatter'], text: 'The Rake titan frame: a half-moon with four siege launchers firing astern; each siege missile bursts 500 wide.' },
+  { id: 'titanwheel', name: 'Wheel titan',               tier: 3, branch: 'hulls', step: 7, kind: 'option', needs: ['titan', 'repairbay'], tags: ['Shipyards', 'Crew safety'], uses: ['Rare earths'], text: 'The Wheel titan frame: a moving repair station with a repair field and 24 repair drones.' },
+  { id: 'titanflattop', name: 'Flattop titan',           tier: 3, branch: 'hulls', step: 7, kind: 'option', needs: ['titan', 'titanhangars'], tags: ['Shipyards'], uses: ['Rare earths'], text: 'The Flattop titan frame: the super carrier, with 100 fighters and 12 corvettes.' },
   { id: 'labnet3',    name: 'Lab network 3',             tier: 3, branch: 'home', step: 6, kind: 'option', needs: ['labnet2', 'capital'], tags: ['Research', 'Civilian'], spin: { researchEarth: 0.20 }, text: 'The great labs at home: another +20% research at Earth.' },
   { id: 'collectors', name: 'Solar collectors',          tier: 3, branch: 'home', step: 7, kind: 'option', needs: ['amprod'], tags: ['Civilian', 'Power'], uses: ['Antimatter'], spin: { amStage: 1 }, text: 'The full collector ring in close orbit of the Sun, built over 15 weeks: the fourth and last collector stage, enough Antimatter for every ship. (No new ship part.)' },
 ];
@@ -35081,8 +35081,8 @@ function researchResourceWarnings(id) {
     if (r.id === 'he3') text = low ? 'We get only ' + Math.round(rate * 10) / 10 + ' Helium-3 a week (Luna\'s trickle: a few small reactors). A fusion fleet needs Jupiter (enough for about a quarter of our ships) or another gas giant.'
                                : 'We have no Helium-3 coming in: take Jupiter (enough for about a quarter of our ships fusion), or research the Luna deposit if it is Helium-3.';
     else if (r.id === 'iridium') text = 'We have no Iridium coming in: Psyche in the Belt makes it, or the Luna deposit if it is Iridium.';
-    else if (r.id === 'rare') text = 'We have no Rare earths coming in: Vesta makes them, or the Luna deposit if it is Rare earths.';
-    else if (r.id === 'fissiles') text = 'We have no Fissiles coming in: Mars and Vesta make them.';
+    else if (r.id === 'rare') text = 'We have no Rare earths coming in: Earth, Mars, Vesta and Miranda make them, or the Luna deposit if it is Rare earths.';   // (v98.8) the places in RESOURCE_SHARES
+    else if (r.id === 'fissiles') text = 'We have no Fissiles coming in: Earth, Luna, Mars, Vesta and Pallas make them.';   // (v98.8) the places in RESOURCE_SHARES
     else if (r.id === 'antimatter') text = p.id === 'amprod' ? '' : (researchDone('amprod') ? 'No antimatter is coming in: the Sun\'s collectors (Sol Inner) are still being built.' : 'No antimatter is coming in: research Antimatter production to build the first collectors at the Sun.');   // (v91)
     if (!text) continue;   // (Antimatter production itself brings the first antimatter: no warning on it)
     out.push({ res: name, text: text, low: low });
