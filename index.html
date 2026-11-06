@@ -35139,7 +35139,7 @@ function campaignBoostUnit() { return ' FU'; }                 // boost is in fu
 
 // ---- The build lists ----
 // The human v2 designs that are active (ready for the yards), as records.
-function campaignV3ActiveRecs() { return SHIP_TYPES.filter(function (t) { return t && t.design && t.design.v === 3 && t.summary && !campaignV3IsAlien(t) && !t.immobile && t.yardsReady === true; }); }
+function campaignV3ActiveRecs() { return SHIP_TYPES.filter(function (t) { return t && t.design && t.design.v === 3 && t.summary && !campaignV3IsAlien(t) && !t.immobile && !t.removed && t.yardsReady === true; }); }
 // (v30.1) The strategic map's boost lines (Alex, 24 Oct) stay hidden until they matter. Ours show once an active design can make a transfer (a stand-in
 // until the assault tutorial is built); the aliens' show once the "Signals intercept" project is done. Once shown they stay shown (campaign.mapBoost).
 function campaignBoostShown(side) {
@@ -35490,7 +35490,7 @@ function campaignV3SaveDesigns(c) {
   c.v3.stockDoctrine = {};                                   // (v37) the doctrine set on a stock design of ours (the Trainer and the Sentry of a campaign without the tutorial)
   for (const t of SHIP_TYPES) if (t && t.campaignStock && t.doctrine && !campaignV3IsAlien(t)) c.v3.stockDoctrine[t.id] = docCopy(t.doctrine);
   c.v3.designs = SHIP_TYPES.filter(function (t) { return t && t.design && t.design.v === 3 && !t.campaignStock && !campaignV3IsAlien(t) && !t.immobile; })
-    .map(function (t) { return { id: t.id, name: t.name, family: designFamily(t), version: designVersion(t), icon: t.icon || '', ready: t.yardsReady === true, wasActive: t.outdated && t.outdatedWasActive ? true : undefined, design: copyDesignV3(t.design), doctrine: t.doctrine ? docCopy(t.doctrine) : null }; });   // (v37) and its doctrine (section 5kd)
+    .map(function (t) { return { id: t.id, name: t.name, family: designFamily(t), version: designVersion(t), icon: t.icon || '', ready: t.yardsReady === true, wasActive: t.outdated && t.outdatedWasActive ? true : undefined, removed: t.removed ? true : undefined, design: copyDesignV3(t.design), doctrine: t.doctrine ? docCopy(t.doctrine) : null }; });   // (v37) and its doctrine (section 5kd)
 }
 // (v98.1) What the last load had to change in the player's designs: { outdated: [{ id, name, why }], lost: [names] }. The Dispatches read it once, on
 // the "campaign loaded" line (24g), and add the warning; the ship counts are worked out there.
@@ -35519,6 +35519,7 @@ function campaignV3RestoreDesigns(c) {
     rec.family = row.family || row.name; rec.version = row.version || 1;
     if (row.icon) rec.icon = row.icon;
     rec.yardsReady = row.ready === true;
+    if (row.removed === true) { rec.removed = true; rec.yardsReady = false; }   // (v109.0) deleted by the player: kept only so its ships in service keep their type
     if (a.problems.length > 0) {
       rec.outdated = true;
       if (!OUTDATED_KEEP_BUILDING) { rec.outdatedWasActive = row.ready === true || row.wasActive === true; rec.yardsReady = false; }   // (it was building: a fixed new version takes over in the yards)
@@ -57453,6 +57454,17 @@ function latestVersionIndex(family) {
   return best;
 }
 // Has this design been replaced by a newer version?
+// (v109.0) The newest version of a family the player has not deleted (rec.removed), or -1 when every version is deleted. latestVersionIndex
+// still counts deleted versions, so a new save never reuses a deleted version's number.
+function latestLiveVersionIndex(family) {
+  const lower = family.toLowerCase();
+  let best = -1;
+  for (let t = 0; t < SHIP_TYPES.length; t++) {
+    const r = SHIP_TYPES[t];
+    if (r.design && !r.removed && designFamily(r).toLowerCase() === lower && (best < 0 || designVersion(r) > designVersion(SHIP_TYPES[best]))) best = t;
+  }
+  return best;
+}
 function isSuperseded(t) {
   const r = SHIP_TYPES[t];
   if (!r.design) return false;
@@ -73823,6 +73835,7 @@ function setupColumnInUse(t) {
 function setupColumnFiltered(t) {
   const rec = SHIP_TYPES[t]; if (!rec) return false;
   const size = setupSizeFilterEl ? setupSizeFilterEl.value : 'all', hull = rec.design ? ((rec.summary && rec.summary.sizeClass) || rec.design.hull) : '';
+  if (rec.removed) return !setupColumnInUse(t);                       // (v109.0) a design the player deleted
   if (size !== 'all' && hull !== size) return !setupColumnInUse(t);
   if (hideStockCheckEl && hideStockCheckEl.checked && (!rec.design || rec.stockV3)) return !setupColumnInUse(t);
   return false;
@@ -74912,6 +74925,7 @@ function importDataFromObject(data) {
           if (typeof rec.icon === 'string' && rec.icon !== '') out.icon = rec.icon;
           if (typeof rec.enemyIcon === 'string' && rec.enemyIcon !== '') out.enemyIcon = rec.enemyIcon;
           if (rec.yardsReady === true) out.yardsReady = true;
+          if (rec.removed === true) { out.removed = true; out.yardsReady = false; }   // (v109.0) a design the player deleted
         } else if (isObj(rec.design) && (newSettings || SETTINGS).designModel === 2) {
           // (Bureau v2) a fresh start: older saved designs (v20's Bureau and the 12 x 8 grid) are dropped under designModel 2.
           warn(label + ' is an older design (not Bureau v2) and was left out: with the Bureau v2 (Designer = Bureau v2) old designs are dropped.'); return;
@@ -84546,7 +84560,7 @@ function designIsFighter(rec) { const sm = rec && rec.summary ? rec.summary : re
 // Our own fighter designs (the player's and the human stock ones; never the enemy's), in the order they were made (the newest last).
 function fighterDesigns(cls) {
   const want = cls || 'tiny';
-  return SHIP_TYPES.filter(function (t) { return t && t.design && t.design.v === 3 && t.summary && t.summary.sizeClass === want && !t.immobile && !(typeof campaignV3IsAlien === 'function' && campaignV3IsAlien(t)); });
+  return SHIP_TYPES.filter(function (t) { return t && t.design && t.design.v === 3 && !t.removed && t.summary && t.summary.sizeClass === want && !t.immobile && !(typeof campaignV3IsAlien === 'function' && campaignV3IsAlien(t)); });
 }
 // What a hangar part record holds: null when nothing is picked; else { id, rec } with rec null when the id names no design in the page any more.
 // (v95.2) A standard hangar may hold several craft: its `hold` is then their ids one after another with commas between ("design-4,design-4,design-9").
@@ -85806,10 +85820,10 @@ function b2DrawBlockMini(cv, sa) {
 function b2SavedFamilies() {
   const fams = [], seen = {};
   for (let t = SHIP_TYPES.length - 1; t >= 0; t--) {
-    const r = SHIP_TYPES[t]; if (!r.design || r.design.v !== 3) continue;
+    const r = SHIP_TYPES[t]; if (!r.design || r.design.v !== 3 || r.removed) continue;   // (v109.0) a deleted design is not listed
     if (campaignV3Hidden(r) && !b2.unlockAll) continue;                 // (v28.1, Alex 22 Oct) the AI's own stock designs, ours and the Swarm's, are hidden from the player (Unlock all shows them, for testing)
     const fam = designFamily(r).toLowerCase(); if (seen[fam]) continue; seen[fam] = true;
-    fams.push(latestVersionIndex(designFamily(r)));
+    fams.push(latestLiveVersionIndex(designFamily(r)));
   }
   return fams;
 }
@@ -85855,7 +85869,7 @@ function b2RenderDesigns() {
 // One saved design's row: its name and numbers, its stamps, its versions and its buttons.
 function b2DesignRowHtml(rec) {
   const sm = rec.summary || {}, fam = designFamily(rec);
-  const versions = SHIP_TYPES.filter(function (r) { return r.design && r.design.v === 3 && designFamily(r).toLowerCase() === fam.toLowerCase(); });
+  const versions = b2LiveVersions(fam);
   const cls = HULL_BY_ID[sm.sizeClass || rec.design.hull];
   // (v105.5, UI review) one line per design: its name, size and stamps. The numbers, the versions and the buttons show only on the design open on the
   // sheet, so the list shows many designs at once instead of two.
@@ -85871,9 +85885,56 @@ function b2DesignRowHtml(rec) {
   h += '<div class="acts"><button class="btn" type="button" data-refit="' + esc(rec.id) + '" title="A new version with the same layout to fill in">Refit</button>' +
     '<button class="btn" type="button" data-lib="designCode" data-lid="' + esc(rec.id) + '" title="Pack this design into a copy code (one line of text to paste anywhere): v32">Copy code</button>' +
     dlFolderBtnHtml('designs', fam) +
-    '<button class="btn" type="button" data-activate="' + esc(rec.id) + '" title="The yards may build the designs marked ready (the campaign); every saved design can be used on the setup screen">' + (rec.yardsReady ? '✓ Ready for the yards' : 'Approve for the yards') + '</button></div>' +
+    '<button class="btn" type="button" data-activate="' + esc(rec.id) + '" title="The yards may build the designs marked ready (the campaign); every saved design can be used on the setup screen">' + (rec.yardsReady ? '✓ Ready for the yards' : 'Approve for the yards') + '</button>' +
+    (rec.stockV3 ? '<button class="btn" type="button" data-ddel="hide" data-did="' + esc(rec.id) + '" title="Stock designs cannot be deleted. Hidden, it leaves this list (Show: Hidden brings it back).">' + (dlIsHidden(fam) ? 'Unhide' : 'Hide') + '</button>'
+      : '<button class="btn" type="button" data-ddel="ask" data-did="' + esc(rec.id) + '" title="Delete this version or the whole design">Delete…</button>') + '</div>' +
+    (b2.delAsk && versions.some(function (v) { return v.id === b2.delAsk; }) ? b2DeleteAskHtml(b2.delAsk, versions) : '') +
     (rec.yardsReady ? '' : supPreviewHtml(rec.id)) + '</div>';   // (v67, section 7v) what the yards would do with it switched on
   return h;
+}
+// ---------------------------------------------------------------------
+// (v109.0, Alex 6 Nov: "the ability to delete designs entirely, as well as delete only specific versions")
+// DELETING A DESIGN: Delete… on the open design's row asks first: this version only, or every version, and (on by default) its plans in your design
+// library too. A deleted design leaves every list and the yards never build it again. Its ship type is only marked (rec.removed) and kept in the
+// save, because ships of it may still be flying: they keep fighting until lost. The library copies are really deleted (they hold no ships).
+// Stock designs cannot be deleted, only hidden (35h2 dlSetHidden): the next war would install them again anyway.
+// ---------------------------------------------------------------------
+function b2LiveVersions(fam) { const l = String(fam).toLowerCase(); return SHIP_TYPES.filter(function (r) { return r.design && r.design.v === 3 && !r.removed && designFamily(r).toLowerCase() === l; }); }
+function b2DeleteAskHtml(id, versions) {
+  const rec = SHIP_TYPES[typeIndexById(id)]; if (!rec) return '';
+  const lib = b2.delLib !== false, n = versions.length, ids = versions.map(function (v) { return v.id; });
+  const ships = typeof campaignV3ShipsOf === 'function' && typeof campaign !== 'undefined' && campaign ? campaignV3ShipsOf(ids) : 0;
+  let h = '<div class="dlfedit b2del"><span>Delete "' + esc(designFamily(rec)) + '"? ' + (ships ? 'Its ' + b2Plural(ships, 'ship') + ' already built keep flying until lost, but the yards will never build it again.' : 'The yards will never build it again.') + '</span>';
+  h += '<span class="dlfpick">' + (n > 1 ? '<button type="button" data-ddel="one" data-did="' + esc(id) + '">Only v' + designVersion(rec) + '</button>' : '') +
+    '<button type="button" data-ddel="all" data-did="' + esc(id) + '">' + (n > 1 ? 'All ' + n + ' versions' : 'Delete it') + '</button>' +
+    '<button type="button" data-ddel="lib" data-did="' + esc(id) + '" aria-pressed="' + lib + '" title="Also delete its plans from your design library, so no other campaign offers it">Also from my library: ' + (lib ? 'yes' : 'no') + '</button>' +
+    '<button type="button" data-ddel="cancel">Cancel</button></span></div>';
+  return h;
+}
+// Deletes one version (all = false) or every version of a design. Returns the words for the message bar.
+function b2DeleteDesign(id, all, alsoLib) {
+  const rec = SHIP_TYPES[typeIndexById(id)]; if (!rec || rec.stockV3) return '';
+  const fam = designFamily(rec), gone = all ? b2LiveVersions(fam) : [rec];
+  for (const r of gone) { r.removed = true; r.yardsReady = false; }
+  if (typeof campaign !== 'undefined' && campaign && campaign.v3 && Array.isArray(campaign.v3.active)) campaign.v3.active = campaign.v3.active.filter(function (x) { return !gone.some(function (r) { return r.id === x; }); });
+  let libGone = 0;
+  if (alsoLib && typeof libEntries === 'function') {
+    const l = fam.toLowerCase();
+    const doomed = libEntries().filter(function (e) { return (all && e.family.toLowerCase() === l) || gone.some(function (r) { return libSameDesign(e.design, r.design); }); });
+    for (const e of doomed) if (libDelete(e.id)) libGone++;
+  }
+  if (gone.some(function (r) { return r.id === b2.serviceId; })) { const k = latestLiveVersionIndex(fam); b2.serviceId = k >= 0 ? SHIP_TYPES[k].id : ''; }
+  if (typeof applyOldVersionVisibility === 'function') try { applyOldVersionVisibility(); } catch (e) { /* (the setup screen is not built yet) */ }
+  return 'Deleted ' + (all ? fam + (gone.length > 1 ? ' (all ' + gone.length + ' versions)' : '') : rec.name) + '.' + (libGone ? ' ' + b2Plural(libGone, 'plan') + ' also deleted from your design library.' : '') + ' Ships already built keep flying; the yards never build it again.';
+}
+function b2DeleteClick(t) {
+  const act = t.dataset.ddel, id = t.dataset.did || '';
+  if (act === 'ask') { b2.delAsk = b2.delAsk === id ? '' : (b2.serviceId && b2LiveVersions(designFamily(SHIP_TYPES[typeIndexById(id)])).some(function (v) { return v.id === b2.serviceId; }) ? b2.serviceId : id); }
+  else if (act === 'cancel') b2.delAsk = '';
+  else if (act === 'lib') b2.delLib = b2.delLib === false;
+  else if (act === 'one' || act === 'all') { b2.msg = b2DeleteDesign(id, act === 'all', b2.delLib !== false); b2.msgBad = false; b2.delAsk = ''; b2RenderMsg(); b2RenderHead(); }
+  else if (act === 'hide') { const r = SHIP_TYPES[typeIndexById(id)]; if (r) dlSetHidden(designFamily(r), !dlIsHidden(designFamily(r))); }
+  b2RenderDesigns();
 }
 // Loads a design into the sheet. base = what the version compare measures against ({ d, label }) or null.
 function b2Load(d, name, serviceId, base, notice) {
@@ -86745,7 +86806,8 @@ function b2NoFightNoDrive(rec) {
 }
 function b2Activate(id, sure) {   // (v93.2) sure: no second press asked (the test tools' call)
   const t = typeIndexById(id); if (t < 0) return;
-  const rec = SHIP_TYPES[latestVersionIndex(designFamily(SHIP_TYPES[t]))] || SHIP_TYPES[t];
+  const rec = SHIP_TYPES[latestLiveVersionIndex(designFamily(SHIP_TYPES[t]))] || SHIP_TYPES[t];   // (v109.0) never a deleted version
+  if (rec.removed) return;
   if (!rec.yardsReady && typeof tutorialApproveVeto === 'function') { const no = tutorialApproveVeto(rec); if (no) { b2.msg = no; b2.msgBad = true; b2RenderMsg(); return; } }   // (v27.1) the tutorial refuses an unarmed design (section 7t)
   if (!rec.yardsReady && typeof libActivateVeto === 'function' && !b2.unlockAll) { const no = libActivateVeto(rec); if (no) { b2.msg = no; b2.msgBad = true; b2RenderMsg(); return; } }   // (v32) a library plan waits for its research (section 10h)
   if (!rec.yardsReady && rec.outdated && typeof campaignV3OutdatedWhy === 'function') { const why = campaignV3OutdatedWhy(rec); if (why) { b2.msg = 'Not activated: "' + rec.name + '" is outdated. The Bureau\'s rules changed since it was made: ' + why + ' Open it, fix that and save a new version; the new version can go on the yards.'; b2.msgBad = true; b2RenderMsg(); return; } }   // (v98.1) an outdated design from an old save
@@ -87959,6 +88021,7 @@ function b2Wire() {
     if (t.id === 'b2NewBtn') { b2NewOpen(); return; }
     if (ds.lt) { b2.leftTab = ds.lt; b2RenderLeft(); return; }
     if (ds.lib) { b2LibAction(t); return; }             // (v32) the Library tab's buttons and Copy code (section 10h)
+    if (ds.ddel) { b2DeleteClick(t); return; }          // (v109.0) Delete / Hide on a design and its question (35e-2)
     if (ds.ihrm !== undefined && b2.sel >= 0) { b2HangarRemoveCraft(b2.sel, +ds.ihrm); return; }   // (v95.2) take a craft out of a standard hangar
     if (ds.page) { b2SetPage(ds.page); return; }
     if (ds.hull) {
@@ -89518,7 +89581,7 @@ BUREAU2_SCREEN_API.testRange = { run: testRangeRun, state: testRange, plan: func
 //   adopted habits come along in its copy code and into every new campaign. A doctrine changed in the Bureau after the save updates the plan's copy.
 //   DOCTRINE TEMPLATES (LIBRARY.templates: [{ name, doctrine, savedAt }]) live here too, so they carry over as well. A plan from before v37 has no doctrine: Auto.
 // =====================================================================
-const GAME_VERSION = 'v106.2';                           // the game version written on every saved plan (raise it with each new build)
+const GAME_VERSION = 'v109.0';                           // the game version written on every saved plan (raise it with each new build)
 const LIBRARY_KEY = 'engineersWar.library';
 const LIBRARY_FORMAT = 1;
 const LIBRARY_CODE_SHIP = 'EW-SHIP-1:', LIBRARY_CODE_LIB = 'EW-LIB-1:';
@@ -89720,6 +89783,14 @@ function libRenameFamily(family, name) {
   if (typeof dlFolderOf === 'function' && dlFolderOf(family) && !dlFolderOf(name)) dlSetFolder(name, dlFolderOf(family));   // (v104.5) the folder follows the new name
   libWrite();
   return '';
+}
+// (v109.0) Deletes one version of a plan (all = false) or every version of it. Returns { n, family, text }.
+function libDeletePlan(id, all) {
+  const e = libEntryById(id); if (!e) return { n: 0, family: '', text: '' };
+  const fam = e.family, l = fam.toLowerCase();
+  const ids = all ? libEntries().filter(function (x) { return x.family.toLowerCase() === l; }).map(function (x) { return x.id; }) : [id];
+  let n = 0; for (const x of ids) if (libDelete(x)) n++;
+  return { n: n, family: fam, text: 'Deleted ' + (all ? fam + (n > 1 ? ' (all ' + n + ' versions)' : '') : e.name) + ' from your design library.' };
 }
 function libDelete(id) { const l = libEntries(), k = l.findIndex(function (e) { return e.id === id; }); if (k < 0) return false; l.splice(k, 1); libCheckCache.delete(id); libWrite(); return true; }
 
@@ -89937,8 +90008,13 @@ function b2LibRowHtml(f, e, kit) {
   h += '<div class="acts">' + (ck.ok ? '<button class="btn" type="button" data-lib="bring" data-lid="' + esc(e.id) + '" title="A fresh copy of this plan becomes a design here (not active)">Bring into this ' + (b2InCampaign() ? 'campaign' : 'game') + '</button>' : '') +
     '<button class="btn" type="button" data-lib="open" data-lid="' + esc(e.id) + '" title="Open the plan on the sheet as an unsaved draft">Open as draft</button>' +
     '<button class="btn" type="button" data-lib="code" data-lid="' + esc(e.id) + '">Copy code</button>' +
-    '<button class="btn" type="button" data-lib="file" data-lid="' + esc(e.id) + '">Save as file</button>' + dlFolderBtnHtml('library', f.family) + '</div></div>';
-  return h;
+    '<button class="btn" type="button" data-lib="file" data-lid="' + esc(e.id) + '">Save as file</button>' + dlFolderBtnHtml('library', f.family) +
+    '<button class="btn" type="button" data-lib="del" data-lid="' + esc(e.id) + '" title="Delete this version or every version of the plan from your design library">Delete…</button></div>';
+  // (v109.0, Alex 6 Nov) the delete question: this version only, or every version. Designs already brought into a campaign keep their own copies.
+  if (b2lib.del === e.id) h += '<div class="dlfedit"><span>Delete "' + esc(f.family) + '" from your design library? (Campaigns keep their own copies: delete them in the Designs tab.)</span><span class="dlfpick">' +
+    (f.entries.length > 1 ? '<button type="button" data-lib="delone" data-lid="' + esc(e.id) + '">Only v' + e.version + '</button>' : '') +
+    '<button type="button" data-lib="delall" data-lid="' + esc(e.id) + '">' + (f.entries.length > 1 ? 'All ' + f.entries.length + ' versions' : 'Delete it') + '</button><button type="button" data-lib="delcancel">Cancel</button></span></div>';
+  return h + '</div>';
 }
 function b2InCampaign() { return typeof campaign !== 'undefined' && !!campaign && SETTINGS.campaignModel === 1 && !!(typeof cmState !== 'undefined' && cmState.inBureau); }
 function b2LibPendingHtml(p, kit) {
@@ -89971,6 +90047,9 @@ function b2LibAction(t) {
   const act = t.dataset.lib, id = t.dataset.lid || '';
   b2lib.msg = ''; b2lib.msgBad = false;
   if (act === 'ver') { const e = libEntryById(id); if (e) b2lib.sel[e.family.toLowerCase()] = id; b2RenderLibrary(); return; }
+  if (act === 'del') { b2lib.del = b2lib.del === id ? '' : id; b2RenderLibrary(); return; }   // (v109.0) the delete question
+  if (act === 'delcancel') { b2lib.del = ''; b2RenderLibrary(); return; }
+  if (act === 'delone' || act === 'delall') { const r = libDeletePlan(id, act === 'delall'); b2lib.del = ''; if (r.family) delete b2lib.sel[r.family.toLowerCase()]; b2lib.msg = r.text; b2RenderLibrary(); return; }
   if (act === 'codeSheet') { const nm = (b2.name || '').trim() || 'New design'; b2LibShowCode(nm, libDesignCode(nm, b2.d, '', b2DocWorking())); return; }
   if (act === 'fileSheet') { const nm = (b2.name || '').trim() || 'New design'; libDesignCode(nm, b2.d, '', b2DocWorking()).then(function (code) { libDownload(libFileName(nm, '.ewship'), code); }); return; }
   if (act === 'code') { const e = libEntryById(id); if (e) b2LibShowCode(e.name, libShipCode(e)); return; }
@@ -90090,14 +90169,16 @@ function mmLibRow(f, e, el, button, again) {
     button(acts, 'Cancel', false, function () { mmLib.renaming = ''; again(); });
     setTimeout(function () { inp.focus(); inp.select(); }, 0);
   } else if (mmLib.deleting === e.id) {
-    acts.appendChild(el('span', 'mm-msg', 'Delete ' + e.name + ' from the library? (Campaigns keep their own copies.)'));
-    button(acts, 'Delete', true, function () { libDelete(e.id); mmLib.deleting = ''; delete mmLib.sel[f.family.toLowerCase()]; again(); });
+    // (v109.0, Alex 6 Nov) one question: this version only, or every version of the plan
+    acts.appendChild(el('span', 'mm-msg', 'Delete ' + f.family + ' from the library? (Campaigns keep their own copies.)'));
+    if (f.entries.length > 1) button(acts, 'Only v' + e.version, true, function () { mmLib.msg = libDeletePlan(e.id, false).text; mmLib.msgBad = false; mmLib.deleting = ''; delete mmLib.sel[f.family.toLowerCase()]; again(); });
+    button(acts, f.entries.length > 1 ? 'All ' + f.entries.length + ' versions' : 'Delete', true, function () { mmLib.msg = libDeletePlan(e.id, true).text; mmLib.msgBad = false; mmLib.deleting = ''; delete mmLib.sel[f.family.toLowerCase()]; again(); });
     button(acts, 'Keep it', false, function () { mmLib.deleting = ''; again(); });
   } else {
     button(acts, 'Copy code', false, function () { libShipCode(e).then(function (code) { mmLib.code = code; mmLib.codeFor = e.name; return libCopyText(code); }).then(function (ok) { mmLib.msg = ok ? 'Copied the code for ' + e.name + ': paste it anywhere.' : 'The code is in the box above: Ctrl+C copies it.'; mmLib.msgBad = false; again(); }); });
     button(acts, 'Save as file', false, function () { libShipCode(e).then(function (code) { libDownload(libFileName(e.name, '.ewship'), code); }); });
     button(acts, 'Rename', false, function () { mmLib.renaming = f.family; mmLib.deleting = ''; again(); }, 'Renames every version of this plan');
-    button(acts, 'Delete', false, function () { mmLib.deleting = e.id; mmLib.renaming = ''; again(); }, 'Deletes this version from the library');
+    button(acts, 'Delete…', false, function () { mmLib.deleting = e.id; mmLib.renaming = ''; again(); }, 'Delete this version or every version of the plan');
     const fb = el('span'); fb.innerHTML = dlFolderBtnHtml('menu', f.family); acts.appendChild(fb.firstChild);   // (v104.5) put the plan in a folder of your own (section 10h2)
   }
   tx.appendChild(acts);
@@ -90109,7 +90190,7 @@ function mmLibRow(f, e, el, button, again) {
 if (typeof window !== 'undefined') {
   window.EW = window.EW || {};
   window.EW.library = { store: libStore, entries: libEntries, families: libFamilies, add: libAdd, addFromSave: libAddFromSave, check: libCheck, checkDesign: libCheckDesign, needs: libNeedsResearch,
-    bringIn: libBringIn, shipCode: libShipCode, libraryCode: libLibraryCode, unpack: libUnpack, importRows: libImportRows, importAdd: libImportAdd, rename: libRenameFamily, remove: libDelete,
+    bringIn: libBringIn, shipCode: libShipCode, libraryCode: libLibraryCode, unpack: libUnpack, importRows: libImportRows, importAdd: libImportAdd, rename: libRenameFamily, remove: libDelete, removePlan: libDeletePlan,
     activateVeto: libActivateVeto, plansReadyCheck: libPlansReadyCheck, repair: libRepair, onlyInBrowser: libOnlyInBrowser, openHere: libOpenHere,
     reset: function () { LIBRARY = { format: LIBRARY_FORMAT, entries: [], backupAt: 0 }; libCheckCache.clear(); libWrite(); } };
 }
@@ -90129,6 +90210,7 @@ if (typeof window !== 'undefined') {
 // ---------------------------------------------------------------------
 const DL_VIEW_KEY = 'engineersWar.designListView';
 const DL_FOLDER_KEY = 'engineersWar.designFolders';
+const DL_HIDDEN_KEY = 'engineersWar.hiddenDesigns';   // (v109.0) the stock designs the player hid (stock designs cannot be deleted)
 const DL_LISTS = ['designs', 'library', 'menu'];
 const DL_DEFAULT_VIEW = { q: '', show: 'all', size: 'all', group: 'size', sort: 'name', shut: {} };
 const DL_SORTS = [
@@ -90141,7 +90223,11 @@ const DL_WEAPONS = [
 ];
 const DL_NO_FOLDER = 'Not in a folder', DL_STOCK_FOLDER = 'Stock designs';
 const DL_RENDER = {};                        // list -> the function that draws that list again (set by each screen)
-const DL = { views: null, folders: null, edit: null, wired: false };
+const DL = { views: null, folders: null, hidden: null, edit: null, wired: false };
+// (v109.0) Hidden stock designs, by design name, kept in this browser. Show: Hidden lists them again (with Unhide on the open one).
+function dlHiddenSet() { if (!DL.hidden) { const s = dlStoreRead(DL_HIDDEN_KEY); DL.hidden = s && typeof s === 'object' && !Array.isArray(s) ? s : {}; } return DL.hidden; }
+function dlIsHidden(family) { return !!dlHiddenSet()[String(family || '').toLowerCase()]; }
+function dlSetHidden(family, on) { const k = String(family || '').toLowerCase(); if (!k) return; if (on) dlHiddenSet()[k] = true; else delete dlHiddenSet()[k]; dlStoreWrite(DL_HIDDEN_KEY, dlHiddenSet()); }
 
 // ---- What the player chose, kept in this browser ----
 function dlStoreRead(key) { try { const raw = window.localStorage ? window.localStorage.getItem(key) : null; return raw ? JSON.parse(raw) : null; } catch (e) { return null; } }
@@ -90194,6 +90280,8 @@ function dlHullName(id) { const h = HULL_BY_ID[id]; return h ? h.name : 'Other';
 function dlOrganise(list, items, opts) {
   const v = dlView(list), q = String(v.q || '').trim().toLowerCase(), noStock = !!(opts && opts.noStock);
   const shown = items.filter(function (it) {
+    const hid = it.kind !== 'yours' && dlIsHidden(it.family);   // (v109.0) a hidden stock design shows only under Show: Hidden
+    if (!noStock && (v.show === 'hidden') !== hid) return false;
     if (!noStock && v.show === 'yours' && it.kind !== 'yours') return false;
     if (!noStock && v.show === 'stock' && it.kind === 'yours') return false;
     if (v.size !== 'all' && it.hull !== v.size) return false;
@@ -90235,10 +90323,13 @@ function dlBarHtml(list, items, opts) {
     dlBtn(list, 'tools:1', 'Filters' + (busy ? ' <em>on</em>' : ''), !!v.tools, 'Show, size, group and sort') + '</div>';
   if (!v.tools) return h + '</div>';
   if (!noStock) {
-    const yours = items.filter(function (it) { return it.kind === 'yours'; }).length, stock = items.length - yours;
-    h += '<div class="dlrow"><span class="dllab">Show</span>' + dlBtn(list, 'show:all', 'All <em>' + items.length + '</em>', v.show === 'all') +
+    const hidden = items.filter(function (it) { return it.kind !== 'yours' && dlIsHidden(it.family); }).length;
+    const yours = items.filter(function (it) { return it.kind === 'yours'; }).length, stock = items.length - yours - hidden;
+    if (v.show === 'hidden' && !hidden) v.show = 'all';
+    h += '<div class="dlrow"><span class="dllab">Show</span>' + dlBtn(list, 'show:all', 'All <em>' + (items.length - (noStock ? 0 : items.filter(function (it) { return it.kind !== 'yours' && dlIsHidden(it.family); }).length)) + '</em>', v.show === 'all') +
       dlBtn(list, 'show:yours', 'Yours <em>' + yours + '</em>', v.show === 'yours', 'Only the designs you made (or brought in)') +
-      dlBtn(list, 'show:stock', 'Stock <em>' + stock + '</em>', v.show === 'stock', 'Only the game\'s own premade designs and examples') + '</div>';
+      dlBtn(list, 'show:stock', 'Stock <em>' + stock + '</em>', v.show === 'stock', 'Only the game\'s own premade designs and examples') +
+      (hidden ? dlBtn(list, 'show:hidden', 'Hidden <em>' + hidden + '</em>', v.show === 'hidden', 'The stock designs you hid: open one and press Unhide') : '') + '</div>';
   }
   const sizes = {}; for (const it of items) sizes[it.hull || 'other'] = (sizes[it.hull || 'other'] || 0) + 1;
   const ids = Object.keys(sizes).sort(function (a, b) { return dlHullRank(a) - dlHullRank(b); });
@@ -90344,8 +90435,8 @@ DL_RENDER.menu = function () { if (typeof mmRender === 'function') mmRender(); }
 // For the tests: EW.designList
 if (typeof window !== 'undefined') {
   window.EW = window.EW || {};
-  window.EW.designList = { view: dlView, organise: dlOrganise, act: dlAct, weaponOf: dlWeaponOf, folderOf: dlFolderOf, setFolder: dlSetFolder, folders: dlFolders,
-    reset: function () { DL.views = {}; DL.folders = {}; DL.edit = null; dlSaveViews(); dlStoreWrite(DL_FOLDER_KEY, {}); } };
+  window.EW.designList = { isHidden: dlIsHidden, setHidden: dlSetHidden, view: dlView, organise: dlOrganise, act: dlAct, weaponOf: dlWeaponOf, folderOf: dlFolderOf, setFolder: dlSetFolder, folders: dlFolders,
+    reset: function () { DL.views = {}; DL.folders = {}; DL.hidden = {}; DL.edit = null; dlSaveViews(); dlStoreWrite(DL_FOLDER_KEY, {}); dlStoreWrite(DL_HIDDEN_KEY, {}); } };
 }
 // =====================================================================
 // 10i. THE DOCTRINE TAB  (v37, the doctrine plan's part B; the Bureau v2 screen's "Doctrine" page, section 10e)
