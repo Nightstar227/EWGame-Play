@@ -1201,6 +1201,7 @@ hr.rule { border:0; border-top:var(--line-w) solid var(--line); margin:var(--sp-
   .ls2-hand { grid-area: map; align-self: end; justify-self: center; width: min(820px, calc(100% - 20px)); height: 86px; margin-bottom: 8px; z-index: 54; position: relative;
     display: flex; flex-direction: column; min-height: 0; box-shadow: 0 6px 24px rgba(0,0,0,.55); }
   #battleScreen .ls2-hand .panel-head { min-height: 20px; font-size: 12px; padding-left: 32px; } #battleScreen .ls2-hand .panel-head::before { width: 22px; }
+  #battleScreen:has(#lsResults) .ls2-hand { display: none; }   /* (v107.3) Alex, 6 Nov: the hand lay over the results' Try again button: it hides while the results show */
   .ls2-hand-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 170px 1fr; gap: 6px; padding: 5px 6px; }
   .ls2-hand-slots { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; min-height: 0; }
   .ls2-hand .ls2-adm { flex-direction: row; gap: 6px; } .ls2-hand .ls2-adm .bs-portrait { width: 34px; height: 34px; } .ls2-hand .ls2-adm .ls2-name { white-space: normal; text-align: left; }

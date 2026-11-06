@@ -1,6 +1,6 @@
 // The offline helper for the home-screen app: it keeps a copy of the game on the phone.
 // It always asks the site for the newest game first, and only uses the kept copy when there is no connection.
-const KEEP = 'ew-play-v107.2';
+const KEEP = 'ew-play-v107.3';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(KEEP).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== KEEP).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
