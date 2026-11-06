@@ -11,6 +11,10 @@
   var touch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
   window.EW_TOUCH = !!touch;               // true on phones and tablets: the touch controls (section 0b) and the stage are switched on
   window.EW_STAGE_SCALE = 1;               // how much the browser shrinks the stage (1 on a PC)
+  // (v107.0) A PHONE: a touch screen whose short side is at most 540 points (tablets are bigger). Screens that have their own phone layout so far
+  // (the main menu and a Last Stand run: section 0d) are drawn at the phone's own size, with big buttons; every other screen is still the shrunk stage.
+  window.EW_PHONE = !!touch && Math.min(screen.width, screen.height) <= 540;
+  window.EW_PHONE_READY = false;           // set by section 0d: the screen showing now has a phone layout
   if (!touch) return;
   var meta = document.getElementById('ewViewport'), last = '';
   function fit() {
@@ -20,15 +24,23 @@
     var stageW = Math.round(Math.max(1280, 800 * aspect));
     var scale = Math.min(1, devW / stageW);
     var content = 'width=' + stageW + ', initial-scale=' + scale.toFixed(4) + ', minimum-scale=' + scale.toFixed(4) + ', maximum-scale=' + scale.toFixed(4) + ', user-scalable=no';
+    var phoneUi = window.EW_PHONE && window.EW_PHONE_READY;
+    if (phoneUi) { content = 'width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover'; scale = 1; }
+    document.documentElement.classList.toggle('ew-phone-ui', phoneUi);
     window.EW_STAGE_SCALE = scale;
     if (content !== last) { last = content; meta.setAttribute('content', content); }
   }
+  window.ewFit = fit;                      // (v107.0) section 0d calls it when the screen changes between a phone layout and the stage
   fit();
   window.addEventListener('orientationchange', function () { setTimeout(fit, 250); });
   window.addEventListener('resize', fit);
   document.documentElement.classList.add('ew-touch');
+  if (window.EW_PHONE) document.documentElement.classList.add('ew-phone');
 })();
 </script>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#05070d">
+<meta name="mobile-web-app-capable" content="yes">
 <title>Engineer's War</title>
 <!-- (v17) The shared look: theme-v0.4.css from the UI folder, built in word for word (tools/build.js). It only styles its own named parts
      (.mode-front, .panel, .btn ...), plus a few page-wide basics that the rules just below undo for the older screens. -->
@@ -3137,6 +3149,127 @@ body.cm-sheet-open #tutLayer { display: none; }
   #officerScreen .opic-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
   #officerScreen .opic-foot { border-top: var(--line-w) solid var(--line); padding-top: 12px; }
   #officerScreen .opic-foot .dim { font-size: 12px; margin-left: auto; }
+</style>
+<style>
+/* (v107.0, section 0d) THE PHONE LAYOUT. Only used on a phone, and only on the screens that have a phone layout so far (the main menu and a Last Stand
+   run): the page then has the class ew-phone-ui and is drawn at the phone's own size. A phone held sideways is about 900 x 400 points, so every screen
+   here keeps one main view and slides the rest in over it. Finger targets are at least 40 points; words at least 11. PC and tablet never see these rules. */
+
+html.ew-phone-ui { --phone-tap: 40px; }
+html.ew-phone-ui body { -webkit-tap-highlight-color: transparent; }
+
+/* ---- the main menu: title and buttons on the left (two columns of buttons), the open panel on the right, as tall as the screen ---- */
+html.ew-phone-ui #mainMenu { align-items: stretch; justify-content: stretch; padding: 8px max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left)); }
+html.ew-phone-ui #mainMenu .mm-box,
+html.ew-phone-ui #mainMenu.mm-open .mm-box,
+html.ew-phone-ui #mainMenu.mm-open.mm-wide .mm-box { width: 100%; height: 100%; display: grid; grid-template-columns: minmax(0, 420px); grid-template-rows: auto auto auto;
+  justify-content: center; align-content: center; column-gap: 16px; row-gap: 8px; }
+html.ew-phone-ui #mainMenu.mm-open .mm-box { grid-template-columns: minmax(0, 330px) minmax(0, 1fr); grid-template-rows: 1fr auto auto auto 1fr; justify-content: stretch; align-content: stretch; align-items: center; }
+html.ew-phone-ui #mainMenu .mm-title, html.ew-phone-ui #mainMenu.mm-open .mm-title, html.ew-phone-ui #mainMenu.mm-wide .mm-title { font-size: 28px; grid-column: 1; }
+html.ew-phone-ui #mainMenu .mm-sub, html.ew-phone-ui #mainMenu.mm-open .mm-sub { font-size: 11px; margin-top: -4px; grid-column: 1; }
+html.ew-phone-ui #mainMenu.mm-open .mm-title { grid-row: 2; } html.ew-phone-ui #mainMenu.mm-open .mm-sub { grid-row: 3; }
+html.ew-phone-ui #mainMenu .mm-buttons, html.ew-phone-ui #mainMenu.mm-open .mm-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; grid-column: 1; }
+html.ew-phone-ui #mainMenu.mm-open .mm-buttons { grid-row: 4; }
+html.ew-phone-ui #mainMenu .mm-buttons .btn, html.ew-phone-ui #mainMenu.mm-open .mm-buttons .btn, html.ew-phone-ui #mainMenu.mm-wide .mm-buttons .btn {
+  font-size: 14px; padding: 6px 8px; min-height: 44px; letter-spacing: .06em; }
+html.ew-phone-ui #mainMenu #mmPanel, html.ew-phone-ui #mainMenu.mm-open #mmPanel, html.ew-phone-ui #mainMenu.mm-open.mm-wide #mmPanel {
+  grid-column: 2; grid-row: 1 / -1; align-self: stretch; max-height: 100%; height: 100%; min-height: 0; }
+html.ew-phone-ui #mmPanel .panel-body { font-size: 14px; }
+html.ew-phone-ui #mmPanel .btn { min-height: var(--phone-tap); font-size: 14px; }
+html.ew-phone-ui #mmPanel .seg button { min-height: var(--phone-tap); min-width: 44px; font-size: 14px; }
+html.ew-phone-ui #mmPanel input[type=checkbox] { width: 22px; height: 22px; }
+html.ew-phone-ui #mmPanel input[type=number] { min-height: 36px; font-size: 14px; }
+html.ew-phone-ui #mmPanel .ls-test summary { min-height: var(--phone-tap); display: flex; align-items: center; font-size: 13px; }
+#phoneFullBtn { display: none; }
+html.ew-phone-ui:not(:fullscreen) #phoneFullBtn { display: block; }
+
+/* ---- a Last Stand run: the map takes the whole screen under a slim top bar; Comms is off; the card tree slides in from the left ---- */
+html.ew-phone-ui #battleScreen.ls-on, html.ew-phone-ui #battleScreen.ls-on.ls2, html.ew-phone-ui #battleScreen.ls-on.ls2.fold-left {
+  grid-template-columns: 0 minmax(0, 1fr) 0; grid-template-rows: auto minmax(0, 1fr) 0; grid-template-areas: "top top top" "left map right" "left radio right"; gap: 4px; column-gap: 0;
+  padding: 4px max(4px, env(safe-area-inset-right)) 4px max(4px, env(safe-area-inset-left)); }
+html.ew-phone-ui #battleScreen.ls-on .bs-radio-panel,
+html.ew-phone-ui #battleScreen.ls-on .bs-op,
+html.ew-phone-ui #battleScreen.ls-on .bs-small,
+html.ew-phone-ui #battleScreen.ls-on .bs-clock .label,
+html.ew-phone-ui #battleScreen.ls-on #bsRedesignText,
+html.ew-phone-ui #battleScreen.ls-on .bs-tip,
+html.ew-phone-ui #battleScreen.ls-on .bs-unfold,
+html.ew-phone-ui #battleScreen.ls-on .bs-fold { display: none !important; }
+/* the top bar: Menu, the run's strip, the clock, the speeds, Call next wave, Pause & redesign (as its pencil only) */
+html.ew-phone-ui #battleScreen.ls-on .bs-top { gap: 6px; padding: 0 6px 0 0; min-height: 44px; border-top-width: 2px; }
+html.ew-phone-ui #battleScreen.ls-on .bs-mapbtn { min-height: 44px; margin: 0; padding: 0 12px; font-size: 14px; gap: 6px; }
+html.ew-phone-ui #battleScreen.ls-on .bs-mapbtn svg { width: 16px; height: 16px; }
+html.ew-phone-ui #battleScreen.ls-on .bs-clock { margin-left: 0; }
+html.ew-phone-ui #battleScreen.ls-on .bs-clock .data-lg { font-size: 18px; }
+html.ew-phone-ui #battleScreen.ls-on .bs-speed button { height: var(--phone-tap); min-width: 42px; padding: 0 6px; font-size: 14px; }
+html.ew-phone-ui #battleScreen.ls-on #bsRedesign { min-height: var(--phone-tap); min-width: 44px; padding: 0 10px; justify-content: center; }
+html.ew-phone-ui .bs-top .ls-hud { font-size: 11px; column-gap: 10px; row-gap: 2px; letter-spacing: .03em; grid-template-columns: repeat(2, minmax(0, auto)) auto; }
+html.ew-phone-ui .bs-top .ls-hud #lsKills { display: none; }
+html.ew-phone-ui .bs-top .ls-hud button { grid-column: 3; padding: 0 10px; min-height: var(--phone-tap); font-size: 12px; letter-spacing: .04em; }
+/* the map tools: a bigger Layers button and list */
+html.ew-phone-ui #battleScreen.ls-on .bs-tool-btn { min-height: 36px; font-size: 13px; }
+html.ew-phone-ui #battleScreen.ls-on .bs-layers-list .bs-layer { min-height: 34px; display: flex; align-items: center; gap: 8px; font-size: 13px; }
+html.ew-phone-ui #battleScreen.ls-on .bs-layers-list input { width: 20px; height: 20px; }
+html.ew-phone-ui #battleScreen.ls-on .bs-layers-list { max-height: calc(100vh - 120px); overflow-y: auto; }
+html.ew-phone-ui #battleScreen.ls-on .bs-scale { display: none; }
+
+/* the card tree: hidden until the Fleet button (or a held hand card) slides it in over the map's left side */
+.phone-tree-btn { display: none; }
+html.ew-phone-ui #battleScreen.ls2 .phone-tree-btn { display: block; position: absolute; left: 6px; top: 38%; transform: translateY(-50%); z-index: 9; min-height: 64px; min-width: 44px;
+  padding: 6px 8px; writing-mode: vertical-rl; rotate: 180deg; font: 700 13px var(--font-display); letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ink); background: var(--accent, #E8B23A); border: 0; box-shadow: 0 2px 10px rgba(0,0,0,.5); cursor: pointer; }
+html.ew-phone-ui #battleScreen.ls2 .bs-left { display: none !important; }
+html.ew-phone-ui #battleScreen.ls2.phone-tree .bs-left { display: flex !important; grid-area: map; justify-self: start; align-self: stretch; width: min(460px, 56vw); margin: 0; z-index: 56;
+  position: relative; top: auto; bottom: auto; left: auto; overflow-y: auto; padding: 4px; background: var(--bg); border-right: 2px solid var(--accent, #E8B23A); box-shadow: 6px 0 24px rgba(0,0,0,.6); }
+html.ew-phone-ui #battleScreen.ls2.phone-tree .phone-tree-btn { left: calc(min(460px, 56vw) + 6px); z-index: 57; }
+html.ew-phone-ui #battleScreen.ls2 .ls2-tree { flex: none; min-height: 100%; }
+html.ew-phone-ui #battleScreen.ls2 .ls2-tree > .ls2-fleet:not(.closed) { flex: 1 0 auto; min-height: 250px; }
+html.ew-phone-ui #battleScreen.ls2 .ls2-fleet { grid-template-rows: 40px repeat(3, minmax(66px, 1fr)); }
+html.ew-phone-ui #battleScreen.ls2 .ls2-fleet.closed { grid-template-rows: 40px; }
+html.ew-phone-ui #battleScreen.ls2 .ls2-div { grid-template-columns: 86px repeat(3, minmax(0, 1fr)); }
+html.ew-phone-ui #battleScreen.ls2 .ls2-div.closed { grid-template-columns: 86px 1fr; }
+html.ew-phone-ui #battleScreen.ls2 .ls2-card { font-size: 11px; }
+html.ew-phone-ui #battleScreen.ls2 .ls2-closed-note { font-size: 11px; }
+html.ew-phone-ui #battleScreen.ls2 .ls2-squad .ls2-type, html.ew-phone-ui #battleScreen.ls2 .ls2-handcard .ls2-type { font-size: 11px; }
+
+/* the hand: a strip of eight cards along the bottom of the map, the full width (the Admiral's card is left out: it is the station) */
+html.ew-phone-ui #battleScreen .ls2-hand { width: calc(100% - 8px); height: 66px; margin-bottom: 4px; }
+html.ew-phone-ui #battleScreen .ls2-hand .panel-head { display: none; }
+html.ew-phone-ui #battleScreen .ls2-hand-body { grid-template-columns: minmax(0, 1fr); padding: 4px; }
+html.ew-phone-ui #battleScreen .ls2-hand-body > .ls2-adm { display: none; }
+html.ew-phone-ui #battleScreen .ls2-discard { font-size: 16px; padding: 2px 6px; }
+html.ew-phone-ui #battleScreen:has(#lsCards) .ls2-hand, html.ew-phone-ui #battleScreen:has(#lsResults) .ls2-hand { display: none; }
+
+/* the picked squadron's card, top right over the map: narrower, so the map shows beside it */
+html.ew-phone-ui #battleScreen.ls-on .bs-right { position: relative; top: auto; bottom: auto; right: auto; padding: 0; background: none; width: min(312px, 42vw); max-height: calc(100% - 82px); margin: 4px 4px 0 0; }
+html.ew-phone-ui #battleScreen.ls-on .bs-right .panel-head { font-size: 14px; min-height: 30px; }
+
+/* the level-up cards and the results */
+html.ew-phone-ui .ls-cards { gap: 8px; padding: 8px; justify-content: center; overflow-y: auto; }
+html.ew-phone-ui .ls-cards-head { font-size: 16px; }
+html.ew-phone-ui .ls-cards-row { gap: 8px; flex-wrap: nowrap; width: 100%; }
+html.ew-phone-ui .ls-card { width: auto; flex: 1 1 0; max-width: 240px; min-height: 0; padding: 10px; gap: 5px; font-size: 13px; line-height: 1.3; }
+html.ew-phone-ui .ls-card-title { font-size: 16px; }
+html.ew-phone-ui .ls-card-key { display: none; }
+html.ew-phone-ui .ls-results { justify-content: flex-start; }
+html.ew-phone-ui .ls-res-box { max-height: none; height: 100%; padding: 10px; overflow-y: auto; font-size: 13px; }
+html.ew-phone-ui .ls-res-scroll { overflow: visible; flex: none; }
+html.ew-phone-ui .ls-res-acts .btn { min-height: var(--phone-tap); font-size: 14px; }
+
+/* the press-and-hold tip */
+.phone-tip { position: fixed; left: 50%; top: 8px; transform: translate(-50%, -140%); z-index: 100000; max-width: min(560px, calc(100vw - 24px)); padding: 10px 14px;
+  background: var(--panel, #1a2333); color: var(--text, #e8dcc0); border: 1px solid var(--accent, #E8B23A); box-shadow: 0 6px 24px rgba(0,0,0,.6);
+  font: 14px/1.4 var(--font-ui, sans-serif); transition: transform .18s; pointer-events: auto; }
+.phone-tip.on { transform: translate(-50%, 0); }
+
+/* (the Last Stand panel on the menu: Start the run first, the how-to under it, so the button shows without scrolling) */
+html.ew-phone-ui #mmPanelBody .mm-row:has(#lsGo) { order: -1; }
+html.ew-phone-ui #mmPanelBody #lsGo { min-height: 48px; font-size: 16px; padding: 0 22px; }
+/* (a bigger x to throw a hand card away) */
+html.ew-phone-ui #battleScreen .ls2-discard { min-width: 32px; min-height: 32px; font-size: 18px; top: -4px; right: -4px; }
+/* (the results' tables: readable figures) */
+html.ew-phone-ui .ls-res-table { font-size: 13px; } html.ew-phone-ui .ls-res-table th { font-size: 11px; }
+html.ew-phone-ui .ls-res-stat span, html.ew-phone-ui .ls-res-tag, html.ew-phone-ui .ls-res-test { font-size: 11px; }
 </style>
 </head>
 <body>
@@ -8321,6 +8454,129 @@ if (window.EW_TOUCH) {
     }
   });
 })();
+// ---------------------------------------------------------------------
+// SECTION 0d (v107.0): THE PHONE LAYOUT (first test: the main menu and Last Stand)
+// ---------------------------------------------------------------------
+// On a PC or a tablet nothing here runs. On a phone (window.EW_PHONE, set at the top of the page) the game used to shrink the whole PC screen to
+// about half size, which made the words too small to read and the buttons too small for a finger. Now a screen that has its own phone layout is
+// drawn at the phone's own size instead (page.html, the rules under "html.ew-phone-ui"); every other screen (the campaign, the Bureau, the report)
+// is still the shrunk PC screen for now, and the game switches between the two by itself as screens open and close.
+// Screens with a phone layout so far: the main menu, and a Last Stand run (its battle screen, the level-up cards and the results).
+// This section also gives a phone:
+//   - a Fleet button on the left of the map that slides the card tree (chain of command) in and out; the tree opens by itself while a hand card
+//     is held, so you can see where to drop it
+//   - press and hold on a button or a label to read its tip (on a PC the tip shows when the mouse rests on it)
+//   - full screen: asked for when a Last Stand run starts (a phone shows the game without its address bar), and a Full screen button on the menu
+//   - the battle clock stops when you switch to another app or lock the phone, so a run does not go on without you
+const PHONE = {
+  checkMs: 250,        // how often the game looks at which screen is showing (a quick look at a few screens' hidden marks)
+  tipHoldMs: 550,      // how long a finger must rest on a button or label before its tip shows
+  tipShowMs: 4000,     // how long the tip stays
+  tipSlop: 12          // how far (points) the finger may wander and still count as resting
+};
+let phoneTreeAuto = false;          // the card tree was opened by a held hand card (it closes again when the card is placed)
+
+// Does the screen showing now have a phone layout?
+function phoneScreenReady() {
+  const shown = function (id) { const e = document.getElementById(id); return !!e && !e.classList.contains('hidden'); };
+  for (const id of ['bureau2Screen', 'bureauScreen', 'campaignScreen', 'reportScreen', 'officerScreen', 'warEnd', 'soundPicker']) if (shown(id)) return false;
+  const pause = document.getElementById('pausePanel'); if (pause && !pause.classList.contains('hidden')) return false;
+  if (shown('mainMenu')) return true;
+  return shown('battleScreen') && typeof lastStand !== 'undefined' && lastStand !== null;
+}
+
+function phoneCheck() {
+  const ready = phoneScreenReady();
+  if (ready !== window.EW_PHONE_READY) { window.EW_PHONE_READY = ready; if (window.ewFit) window.ewFit(); }
+  if (!ready) return;
+  phoneTreeButton();
+  // a hand card is held (or a squadron is being moved): show the tree, so the glowing places are in view; close it again once the card is placed
+  const bs = document.getElementById('battleScreen');
+  if (!bs || bs.classList.contains('hidden')) return;
+  const held = !!document.querySelector('#battleScreen .ls2-card.held');
+  if (document.getElementById('lsCards') || document.getElementById('lsResults')) { bs.classList.remove('phone-tree'); phoneTreeAuto = false; return; }   // the cards and the results come first
+  if (held && !bs.classList.contains('phone-tree')) { bs.classList.add('phone-tree'); phoneTreeAuto = true; }
+  else if (!held && phoneTreeAuto) { bs.classList.remove('phone-tree'); phoneTreeAuto = false; }
+}
+
+// The Fleet button on the map's left edge (made once, the first time a run shows on a phone)
+function phoneTreeButton() {
+  if (document.getElementById('phoneTreeBtn')) return;
+  const map = document.getElementById('bsMap'); if (!map) return;
+  const b = document.createElement('button');
+  b.type = 'button'; b.id = 'phoneTreeBtn'; b.className = 'phone-tree-btn'; b.textContent = 'Fleet';
+  b.title = 'Your chain of command: Fleets, Divisions and squadrons (tap to show or hide)';
+  b.addEventListener('click', function () { const bs = document.getElementById('battleScreen'); bs.classList.toggle('phone-tree'); phoneTreeAuto = false; });
+  map.appendChild(b);
+}
+
+// Full screen, where the phone allows it (a home-screen app is full screen already)
+function phoneFullScreen() {
+  if (!window.EW_PHONE || document.fullscreenElement) return;
+  if (window.matchMedia && window.matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches) return;
+  const el = document.documentElement;
+  if (!el.requestFullscreen) return;
+  el.requestFullscreen({ navigationUI: 'hide' }).then(function () {
+    if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(function () {});
+  }).catch(function () {});
+}
+
+// Press and hold for a tip: the nearest thing under the finger with a tip (its title) shows it in a box at the top of the screen
+let phoneTipTimer = 0, phoneTipHide = 0, phoneTipAt = null;
+function phoneTipShow(text) {
+  let box = document.getElementById('phoneTip');
+  if (!box) { box = document.createElement('div'); box.id = 'phoneTip'; box.className = 'phone-tip'; document.body.appendChild(box); box.addEventListener('click', function () { box.classList.remove('on'); }); }
+  box.textContent = text; box.classList.add('on');
+  clearTimeout(phoneTipHide); phoneTipHide = setTimeout(function () { box.classList.remove('on'); }, PHONE.tipShowMs);
+}
+
+if (window.EW_PHONE) {
+  setInterval(phoneCheck, PHONE.checkMs);
+  document.addEventListener('pointerdown', function (e) {
+    if (e.pointerType !== 'touch' || !document.documentElement.classList.contains('ew-phone-ui')) return;
+    clearTimeout(phoneTipTimer);
+    const t = e.target && e.target.closest ? e.target.closest('[title]') : null;
+    if (!t || t.tagName === 'CANVAS' || !t.title) return;
+    phoneTipAt = [e.clientX, e.clientY];
+    const text = t.title;
+    phoneTipTimer = setTimeout(function () { phoneTipShow(text); }, PHONE.tipHoldMs);
+  }, true);
+  document.addEventListener('pointermove', function (e) {
+    if (phoneTipAt && Math.hypot(e.clientX - phoneTipAt[0], e.clientY - phoneTipAt[1]) > PHONE.tipSlop) { clearTimeout(phoneTipTimer); phoneTipAt = null; }
+  }, true);
+  const tipEnd = function () { clearTimeout(phoneTipTimer); phoneTipAt = null; };
+  document.addEventListener('pointerup', tipEnd, true);
+  document.addEventListener('pointercancel', tipEnd, true);
+  // a long press on a phone opens the browser's own press menu (copy, share...): not in the game's phone screens, except in text boxes
+  document.addEventListener('contextmenu', function (e) {
+    if (!document.documentElement.classList.contains('ew-phone-ui')) return;
+    const tag = e.target && e.target.tagName;
+    if (tag !== 'INPUT' && tag !== 'TEXTAREA') e.preventDefault();
+  });
+  // full screen when a run starts, or from the menu's Full screen button (a phone allows it only straight after a tap)
+  document.addEventListener('click', function (e) {
+    const b = e.target && e.target.closest ? e.target.closest('#lsGo, #lsAgain, #phoneFullBtn') : null;
+    if (b) phoneFullScreen();
+  }, true);
+  // switching to another app, or locking the phone: the battle clock stops (press a speed to go on)
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden || typeof lastStand === 'undefined' || lastStand === null || typeof clockStopped === 'undefined' || clockStopped) return;
+    const stop = document.getElementById('bsStop'); if (stop) stop.click();
+  });
+  // the Full screen button on the main menu (made once the page is built)
+  window.addEventListener('DOMContentLoaded', function () {
+    const box = document.querySelector('#mainMenu .mm-buttons'); if (!box || document.getElementById('phoneFullBtn')) return;
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn btn-ghost'; b.id = 'phoneFullBtn'; b.textContent = 'Full screen';
+    b.title = 'Show the game without the browser\'s address bar (or add it to your home screen: browser menu, Add to Home screen)';
+    box.appendChild(b);
+  });
+}
+
+// (v107.0) The home-screen app: on the play site (a web address, not a file on disk) a small helper (sw.js, next to the game there) keeps a copy
+// of the game on the phone, so it opens without a connection; it always tries the newest game first. Opening the game from a file does nothing here.
+if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && location.protocol === 'https:') {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+}
 // =====================================================================
 // 1. SETTINGS AND RULES  (every tuning number lives in this section)
 //    1a. Units and scale      1b. Settings      1c. Design rules      1d. Officer effects      1e. Checking the numbers
