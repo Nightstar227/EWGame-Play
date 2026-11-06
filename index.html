@@ -8475,6 +8475,7 @@ const PHONE = {
   tipSlop: 12          // how far (points) the finger may wander and still count as resting
 };
 let phoneTreeAuto = false;          // the card tree was opened by a held hand card (it closes again when the card is placed)
+let phoneHeldBefore = false;        // (v107.1) was a card held at the last look? The tree opens by itself only when a card is first taken up
 
 // Does the screen showing now have a phone layout?
 function phoneScreenReady() {
@@ -8495,8 +8496,11 @@ function phoneCheck() {
   if (!bs || bs.classList.contains('hidden')) return;
   const held = !!document.querySelector('#battleScreen .ls2-card.held');
   if (document.getElementById('lsCards') || document.getElementById('lsResults')) { bs.classList.remove('phone-tree'); phoneTreeAuto = false; return; }   // the cards and the results come first
-  if (held && !bs.classList.contains('phone-tree')) { bs.classList.add('phone-tree'); phoneTreeAuto = true; }
+  // (v107.1) Alex, 6 Nov: "a few instances of the fleet panel refusing to close". It used to reopen the tree at every look while a card was held,
+  // so closing it with a card still in hand did nothing. Now it opens once, when the card is taken up, and closing it puts the card down.
+  if (held && !phoneHeldBefore && !bs.classList.contains('phone-tree')) { bs.classList.add('phone-tree'); phoneTreeAuto = true; }
   else if (!held && phoneTreeAuto) { bs.classList.remove('phone-tree'); phoneTreeAuto = false; }
+  phoneHeldBefore = held;
 }
 
 // The Fleet button on the map's left edge (made once, the first time a run shows on a phone)
@@ -8506,8 +8510,16 @@ function phoneTreeButton() {
   const b = document.createElement('button');
   b.type = 'button'; b.id = 'phoneTreeBtn'; b.className = 'phone-tree-btn'; b.textContent = 'Fleet';
   b.title = 'Your chain of command: Fleets, Divisions and squadrons (tap to show or hide)';
-  b.addEventListener('click', function () { const bs = document.getElementById('battleScreen'); bs.classList.toggle('phone-tree'); phoneTreeAuto = false; });
+  b.addEventListener('click', function () { const bs = document.getElementById('battleScreen'); if (bs.classList.contains('phone-tree')) phoneTreeClose(); else bs.classList.add('phone-tree'); phoneTreeAuto = false; });
   map.appendChild(b);
+}
+
+// (v107.1) Close the tree, and put down any card that was held (a hand card goes back to the hand, a squadron stays where it was)
+function phoneTreeClose() {
+  const bs = document.getElementById('battleScreen'); if (bs) bs.classList.remove('phone-tree');
+  phoneTreeAuto = false;
+  if (typeof ls2Held !== 'undefined' && ls2Held !== null) { ls2Held = null; ls2Dragging = false; if (typeof ls2Refresh === 'function') ls2Refresh(); }
+  phoneHeldBefore = false;
 }
 
 // Full screen, where the phone allows it (a home-screen app is full screen already)
@@ -8547,6 +8559,19 @@ if (window.EW_PHONE) {
   const tipEnd = function () { clearTimeout(phoneTipTimer); phoneTipAt = null; };
   document.addEventListener('pointerup', tipEnd, true);
   document.addEventListener('pointercancel', tipEnd, true);
+  // (v107.1) a tap on the map beside the open tree closes it (as a drawer does on a phone)
+  document.addEventListener('pointerdown', function (e) {
+    if (!document.documentElement.classList.contains('ew-phone-ui')) return;
+    const bs = document.getElementById('battleScreen');
+    if (!bs || !bs.classList.contains('phone-tree') || !e.target || e.target.tagName !== 'CANVAS' || !e.target.closest('#bsMap')) return;
+    phoneTreeClose();
+  }, true);
+  // (v107.1) a long press on a card makes the phone start a mouse-style drag, which could leave a card stuck as "held" (and the tree open):
+  // on the phone layout cards are moved by tapping only (tap the card, then tap where it goes)
+  document.addEventListener('dragstart', function (e) {
+    if (!document.documentElement.classList.contains('ew-phone-ui')) return;
+    e.preventDefault(); e.stopPropagation();
+  }, true);
   // a long press on a phone opens the browser's own press menu (copy, share...): not in the game's phone screens, except in text boxes
   document.addEventListener('contextmenu', function (e) {
     if (!document.documentElement.classList.contains('ew-phone-ui')) return;
@@ -51990,6 +52015,7 @@ function fgTakePending() {
     } else {
       bays = fgTypeBays(t);
       if (bays.length === 0) continue;
+      if (typeof lsCarriedBays === 'function') bays = lsCarriedBays(slot, bays);   // (v108.0, section 8i) a Last Stand carrier holds the run's version of its craft
       name = typeName[t] + ' carrier';
       // back from repairs: the record that waited for a ship of this side and type takes it (the first one waiting)
       let back = -1;
@@ -77495,9 +77521,48 @@ function ls2ApplyFleet(hi) {
   if (!r) return false;
   const ver = L.versions.get(r.base);
   const t = JSON.stringify(r.d.parts) === JSON.stringify(SHIP_TYPES[ver].design.parts) ? ver : ls2DesignType(r.base, r.d, r.tags);
-  if (t < 0 || t === h.type) return false;
+  if (t < 0 || t === h.type) { ls2RefreshCarried(hi, at.f); return false; }
   lsSwapHull(hi, t);
+  ls2RefreshCarried(hi, at.f);
   return true;
+}
+// (v108.0, Alex 6 Nov: the Flattop's fighters were underpowered) A CARRIER SQUADRON'S CRAFT FOLLOW THE RUN.
+// A carrier's hangars are drawn holding the plain stock craft (a Flattop holds plain Darts and Pickets). In a run they now hold the run's version of
+// each craft instead: the run's research on it and its Fleet's research cards, the same refit every squadron of that Fleet gets.
+// h.carried maps each plain craft to the version the hangar's carriers launch. It is made here (between steps, when a card is played), never in the fight.
+function ls2CarriedType(p, f) {
+  const r0 = SHIP_TYPES[p];
+  if (!r0 || !r0.design || r0.design.v !== 3 || lsGateMissing(r0.design) !== '') return p;   // (a craft the run cannot build yet flies as drawn)
+  const g = ls2InFleet(f, function () { return ls2GateRefit(lsRunDesign(r0.design)); });
+  if (JSON.stringify(g.d.parts) === JSON.stringify(r0.design.parts)) return p;
+  if (!lastStand.versions.has(p)) lastStand.versions.set(p, p);
+  const t = ls2DesignType(p, g.d, g.tags);
+  return t >= 0 ? t : p;
+}
+function ls2RefreshCarried(hi, f) {
+  const h = lastStand.hangars[hi];
+  if (!h) return;
+  const bays = fgTypeBays(h.type);
+  if (bays.length === 0) { h.carried = null; return; }
+  const m = new Map();
+  for (const b of bays) if (!m.has(b.type)) m.set(b.type, ls2CarriedType(b.type, f));
+  h.carried = m;
+  // the hangar's carriers already in the battle: every bay not out on the field takes the new version (one out keeps its craft until it is lost)
+  for (const c of fgCarriers) {
+    if (c.station >= 0 || c.state !== 'live' || shipAlive[c.slot] !== 1 || lsCarrierHangar(c.slot) !== hi) continue;
+    for (const bi of c.bays) { const b = fgBays[bi]; if (b.state === BAY_OUT) continue; const nt = m.get(lsPlainCraft(b.type)); if (nt !== undefined) b.type = nt; }
+  }
+}
+// The plain craft a run version was made from.
+function lsPlainCraft(t) { const r = SHIP_TYPES[t]; return r && r.lsBase !== undefined ? r.lsBase : t; }
+// The station hangar a ship of ours came from, or -1.
+function lsCarrierHangar(slot) { const bi = shipBay[slot]; return bi >= 0 && fgBays[bi] && fgBays[bi].lsHangar !== undefined ? fgBays[bi].lsHangar : -1; }
+// (5jf fgTakePending) A carrier squadron's bays as the run fills them: each plain craft swapped for its hangar's version.
+function lsCarriedBays(slot, bays) {
+  if (!lsActive() || !lastStand.v2) return bays;
+  const hi = lsCarrierHangar(slot), h = hi >= 0 ? lastStand.hangars[hi] : null;
+  if (!h || !h.carried) return bays;
+  return bays.map(function (b) { const nt = h.carried.get(lsPlainCraft(b.type)); return nt !== undefined ? { part: b.part, type: nt } : b; });
 }
 // Every squadron of tree Fleet f, refitted to it. Returns the names of the designs that changed.
 function ls2ApplyFleetAll(f) {
@@ -77908,6 +77973,8 @@ function ls2Click(e) {
   if (card.dataset.hangar !== undefined) {
     const sq = ls2SquadOf(Number(card.dataset.hangar));
     if (sq <= 0) return;
+    // (v107.1) on a phone (no dragging there: section 0d) a second tap on the picked squadron takes it up, to move it like a hand card
+    if (document.documentElement.classList.contains('ew-phone-ui') && bsSelectedSq === sq) { ls2Held = { hangar: Number(card.dataset.hangar) }; ls2Refresh(); return; }
     const start = sqStart[sq];
     for (let j = 0; j < sqSize[sq]; j++) {
       const m = sqMembers[start + j];
