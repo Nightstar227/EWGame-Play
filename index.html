@@ -3270,6 +3270,92 @@ html.ew-phone-ui #battleScreen .ls2-discard { min-width: 32px; min-height: 32px;
 /* (the results' tables: readable figures) */
 html.ew-phone-ui .ls-res-table { font-size: 13px; } html.ew-phone-ui .ls-res-table th { font-size: 11px; }
 html.ew-phone-ui .ls-res-stat span, html.ew-phone-ui .ls-res-tag, html.ew-phone-ui .ls-res-test { font-size: 11px; }
+
+/* ---- (v107.2) THE CAMPAIGN on a phone: the war map, one AO, Dispatches and the Council Room ----
+   One slim top bar (short tab names, the clock, the speeds, Menu), the resources on one line under it that slides sideways, the map (or Dispatches,
+   or the Council Room) as big as the rest, and the side panel ("The war", the picked place, the next session) as a sheet that slides in from the right
+   with a button on the right edge. In Dispatches the side panel (the open dispatch) stays beside the list. */
+html.ew-phone-ui #campaignScreen { overflow: clip; }
+html.ew-phone-ui #campaignScreen .cm-screen { height: 100%; min-height: 0; gap: 4px; padding: 4px max(4px, env(safe-area-inset-right)) 4px max(4px, env(safe-area-inset-left));
+  grid-template-columns: minmax(0, 1fr) 0; grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "tabs tabs" "map side" "tick tick"; }
+/* the top bar */
+html.ew-phone-ui #campaignScreen .tabbar { flex-wrap: wrap; border-top-width: 2px; }
+html.ew-phone-ui #campaignScreen .brand { display: none; }
+html.ew-phone-ui #campaignScreen .tb { min-height: 42px; padding: 0 9px; gap: 5px; font-size: 0; letter-spacing: .04em; }
+html.ew-phone-ui #campaignScreen .tb svg { width: 18px; height: 18px; flex: none; }
+html.ew-phone-ui #campaignScreen .tb::after { font: 800 12px var(--font-display); letter-spacing: .05em; }
+html.ew-phone-ui #campaignScreen .tb[data-id="map"]::after { content: "Map"; }
+html.ew-phone-ui #campaignScreen .tb[data-id="dispatches"]::after { content: "News"; }
+html.ew-phone-ui #campaignScreen .tb[data-id="council"]::after { content: "Council"; }
+html.ew-phone-ui #campaignScreen .tb[data-id="research"]::after { content: "Research"; }
+html.ew-phone-ui #campaignScreen .tb[data-id="officers"]::after { content: "Officers"; }
+html.ew-phone-ui #campaignScreen .tb[data-id="bureau"]::after { content: "Bureau"; }
+html.ew-phone-ui #campaignScreen .tb .badge { font-size: 11px; min-width: 18px; height: 18px; order: 2; }
+html.ew-phone-ui #campaignScreen .clockbox { gap: 6px; padding: 0 0 0 6px; }
+html.ew-phone-ui #campaignScreen .date .label, html.ew-phone-ui #campaignScreen .speed-cap { display: none; }
+html.ew-phone-ui #campaignScreen .date b { font-size: 14px; white-space: nowrap; }
+html.ew-phone-ui #campaignScreen .speed button { height: 42px; min-width: 40px; padding: 0 6px; font-size: 13px; }
+html.ew-phone-ui #campaignScreen .menu-btn { min-height: 42px; padding: 0 10px; font-size: 13px; }
+html.ew-phone-ui #campaignScreen .rates { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; padding: 3px 8px; gap: 14px; font-size: 12px; scrollbar-width: none; min-height: 28px; }
+html.ew-phone-ui #campaignScreen .rates::-webkit-scrollbar { display: none; }
+html.ew-phone-ui #campaignScreen .rates > * { flex: none; }
+html.ew-phone-ui #campaignScreen .rates .rt-l, html.ew-phone-ui #campaignScreen .rates .rt-k { font-size: 11px; }
+html.ew-phone-ui #campaignScreen .sup-drop { max-height: 60vh; overflow-y: auto; }
+/* the map */
+html.ew-phone-ui #campaignScreen .map { box-shadow: none; }
+html.ew-phone-ui #campaignScreen .map .stage { aspect-ratio: auto; }
+html.ew-phone-ui #campaignScreen .toolbar { padding: 3px 8px; gap: 8px; }
+html.ew-phone-ui #campaignScreen .toolbar .btn, html.ew-phone-ui #campaignScreen .crumbs .btn { min-height: 36px; font-size: 13px; }
+html.ew-phone-ui #campaignScreen .toolbar .layer { font-size: 12px; min-height: 36px; }
+html.ew-phone-ui #campaignScreen .toolbar .layer input { width: 18px; height: 18px; }
+html.ew-phone-ui #campaignScreen .crumbs { font-size: 13px; }
+html.ew-phone-ui #campaignScreen .map-label { font-size: 15px; }
+html.ew-phone-ui #campaignScreen .map-label.dim { font-size: 14px; }
+html.ew-phone-ui #campaignScreen .ticker { min-height: 34px; padding: 2px 8px; font-size: 13px; }
+html.ew-phone-ui #campaignScreen .ticker .btn { min-height: 32px; font-size: 12px; }
+html.ew-phone-ui #campaignScreen .cm-aoarrow { min-width: 40px; min-height: 56px; }
+/* the side panel: a sheet over the right of the map, opened by the button on the right edge (or by picking a place) */
+html.ew-phone-ui #campaignScreen .side { display: none; grid-area: map; justify-self: end; align-self: stretch; width: min(400px, 50vw); z-index: 30; position: relative;
+  background: var(--bg); box-shadow: -6px 0 24px rgba(0,0,0,.6); border-left: 2px solid var(--accent, #E8B23A); }
+html.ew-phone-ui #campaignScreen.phone-side .side { display: flex; }
+html.ew-phone-ui #campaignScreen .side .panel { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+html.ew-phone-ui #campaignScreen .side .panel-body { overflow-y: auto; font-size: 13px; flex: 1; min-height: 0; }
+html.ew-phone-ui #campaignScreen .side .btn { min-height: 38px; font-size: 13px; }
+.phone-side-btn { display: none; }
+html.ew-phone-ui #campaignScreen .phone-side-btn { display: block; position: absolute; right: max(6px, env(safe-area-inset-right)); top: 52%; transform: translateY(-50%); z-index: 45;
+  min-height: 72px; min-width: 40px; padding: 8px 6px; writing-mode: vertical-rl; font: 700 12px var(--font-display); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ink); background: var(--accent, #E8B23A); border: 0; box-shadow: 0 2px 10px rgba(0,0,0,.5); cursor: pointer; white-space: nowrap; max-height: 46vh; overflow: hidden; }
+html.ew-phone-ui #campaignScreen.phone-side .phone-side-btn { right: calc(min(400px, 50vw) + 8px); }
+/* Dispatches: the filters on the left, the list, and the open dispatch beside them (no sheet) */
+html.ew-phone-ui #campaignScreen[data-phone-view="dispatches"] .cm-screen { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); column-gap: 4px; }
+html.ew-phone-ui #campaignScreen[data-phone-view="dispatches"] .side { display: flex; grid-area: side; width: auto; box-shadow: none; border-left: 0; }
+html.ew-phone-ui #campaignScreen[data-phone-view="dispatches"] .phone-side-btn { display: none; }
+html.ew-phone-ui #campaignScreen .feed { grid-template-columns: 128px minmax(0, 1fr); gap: 4px; }
+html.ew-phone-ui #campaignScreen .feed > * { min-height: 0; overflow-y: auto; }
+html.ew-phone-ui #campaignScreen .feed button, html.ew-phone-ui #campaignScreen .feed [data-cm] { min-height: 36px; font-size: 13px; }
+html.ew-phone-ui #campaignScreen .feed .panel-head { font-size: 14px; min-height: 30px; }
+/* the Council Room: the room scrolls; the cards keep a readable size */
+html.ew-phone-ui #campaignScreen .cr-room { grid-template-rows: auto auto minmax(240px, auto) auto; padding: 8px; }
+html.ew-phone-ui #campaignScreen .cr-seats { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+html.ew-phone-ui #campaignScreen .cr-office { overflow-y: auto; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(100%, auto); }
+html.ew-phone-ui #campaignScreen .council .keybar { display: none; }
+html.ew-phone-ui #campaignScreen:not([data-phone-view="dispatches"]) .ticker { display: none; }
+/* (the war map and an AO: pinch to zoom, one finger to look around, Fit goes back to the whole map) */
+html.ew-phone-ui #campaignScreen #cmStage { touch-action: none; overflow: hidden; }
+html.ew-phone-ui #campaignScreen #cmStage > #cmBg, html.ew-phone-ui #campaignScreen #cmStage > #cmFg {
+  transform: translate(var(--px, 0px), var(--py, 0px)) scale(var(--pz, 1)); transform-origin: 0 0; }
+.phone-map-fit { display: none; }
+html.ew-phone-ui #campaignScreen #cmStage.phone-zoomed .phone-map-fit { display: block; position: absolute; left: 10px; bottom: 10px; z-index: 8; min-width: 52px; min-height: 40px;
+  font: 700 13px var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--ink); background: var(--text); border: 0; box-shadow: 0 2px 10px rgba(0,0,0,.5); }
+html.ew-phone-ui #campaignScreen .council .btn, html.ew-phone-ui #campaignScreen .council button { min-height: 36px; }
+/* (an AO's plates: one scrolling column down the left of the map instead of boxes over each other; the AO overlay switch hides them) */
+html.ew-phone-ui #campaignScreen #cmOv:not(:empty) { position: absolute; left: 8px; top: 8px; bottom: 8px; width: min(250px, 34vw); z-index: 5; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 6px; pointer-events: auto; }
+html.ew-phone-ui #campaignScreen #cmOv .ov { position: static !important; transform: none; width: auto !important; max-width: none; flex: none; }
+html.ew-phone-ui #campaignScreen #cmStage:has(#cmOv:not(:empty)) .cm-aoarrow.l { left: calc(min(250px, 34vw) + 14px); }
+/* (the resources line: each resource is a button that opens the supply return, so each gets a finger-sized height) */
+html.ew-phone-ui #campaignScreen .rates { min-height: 38px; padding: 0 8px; }
+html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen .rates .rt-r { min-height: 36px; }
 </style>
 </head>
 <body>
@@ -8472,7 +8558,8 @@ const PHONE = {
   checkMs: 250,        // how often the game looks at which screen is showing (a quick look at a few screens' hidden marks)
   tipHoldMs: 550,      // how long a finger must rest on a button or label before its tip shows
   tipShowMs: 4000,     // how long the tip stays
-  tipSlop: 12          // how far (points) the finger may wander and still count as resting
+  tipSlop: 12,         // how far (points) the finger may wander and still count as resting
+  campaignViews: ['map', 'ao', 'dispatches', 'council']   // (v107.2) the campaign's views drawn at the phone's own size
 };
 let phoneTreeAuto = false;          // the card tree was opened by a held hand card (it closes again when the card is placed)
 let phoneHeldBefore = false;        // (v107.1) was a card held at the last look? The tree opens by itself only when a card is first taken up
@@ -8480,7 +8567,9 @@ let phoneHeldBefore = false;        // (v107.1) was a card held at the last look
 // Does the screen showing now have a phone layout?
 function phoneScreenReady() {
   const shown = function (id) { const e = document.getElementById(id); return !!e && !e.classList.contains('hidden'); };
-  for (const id of ['bureau2Screen', 'bureauScreen', 'campaignScreen', 'reportScreen', 'officerScreen', 'warEnd', 'soundPicker']) if (shown(id)) return false;
+  for (const id of ['bureau2Screen', 'bureauScreen', 'reportScreen', 'officerScreen', 'warEnd', 'soundPicker']) if (shown(id)) return false;
+  // (v107.2) the campaign: the war map (all AOs and one AO), Dispatches and the Council Room have a phone layout; Research and the Menu's sheets not yet
+  if (shown('campaignScreen')) return typeof cmState !== 'undefined' && PHONE.campaignViews.indexOf(cmState.view) >= 0 && !cmState.sheet;
   const pause = document.getElementById('pausePanel'); if (pause && !pause.classList.contains('hidden')) return false;
   if (shown('mainMenu')) return true;
   return shown('battleScreen') && typeof lastStand !== 'undefined' && lastStand !== null;
@@ -8490,6 +8579,7 @@ function phoneCheck() {
   const ready = phoneScreenReady();
   if (ready !== window.EW_PHONE_READY) { window.EW_PHONE_READY = ready; if (window.ewFit) window.ewFit(); }
   if (!ready) return;
+  phoneCampaign();
   phoneTreeButton();
   // a hand card is held (or a squadron is being moved): show the tree, so the glowing places are in view; close it again once the card is placed
   const bs = document.getElementById('battleScreen');
@@ -8501,6 +8591,68 @@ function phoneCheck() {
   if (held && !phoneHeldBefore && !bs.classList.contains('phone-tree')) { bs.classList.add('phone-tree'); phoneTreeAuto = true; }
   else if (!held && phoneTreeAuto) { bs.classList.remove('phone-tree'); phoneTreeAuto = false; }
   phoneHeldBefore = held;
+}
+
+// (v107.2) The campaign on a phone: which view shows (for the look), the side panel's button on the right edge (named after the panel: "The war",
+// the picked place, "Next session"), and the panel opening by itself when you pick a place on the map
+let phoneSelBefore = null;
+function phoneCampaign() {
+  const cs = document.getElementById('campaignScreen');
+  if (!cs || cs.classList.contains('hidden') || typeof cmState === 'undefined') return;
+  if (cs.dataset.phoneView !== cmState.view) { cs.dataset.phoneView = cmState.view; if (cmState.view === 'dispatches') cs.classList.remove('phone-side'); }
+  let b = document.getElementById('phoneSideBtn');
+  if (!b) {
+    const host = cs.querySelector('.cm-screen'); if (!host) return;
+    b = document.createElement('button'); b.type = 'button'; b.id = 'phoneSideBtn'; b.className = 'phone-side-btn';
+    b.title = 'The side panel: the war at a glance, the place you picked, the next Council session (tap to show or hide)';
+    b.addEventListener('click', function () { cs.classList.toggle('phone-side'); });
+    host.appendChild(b);
+  }
+  const head = document.getElementById('cmSideHead'), name = head ? head.textContent.trim() : '';
+  const label = name ? name.slice(0, 22) : 'Details';
+  if (b.textContent !== label) b.textContent = label;
+  phoneMapZoomSetup(cs);
+  const sel = cmState.sel || null;
+  if (sel && sel !== phoneSelBefore && cmState.view !== 'dispatches') cs.classList.add('phone-side');
+  phoneSelBefore = sel;
+}
+
+// (v107.2) Pinch to zoom the war map (and an AO), drag with one finger to look around; Fit (bottom left) goes back to the whole map.
+// The map's pictures are only moved and scaled on the screen (taps on places still work); a new view (another AO, a tab) starts at the whole map.
+const phoneMap = { z: 1, x: 0, y: 0, key: '', zMax: 4, step: 1.15, wired: false, sx: 0, sy: 0 };
+function phoneMapApply() {
+  const st = document.getElementById('cmStage'); if (!st) return;
+  const w = st.clientWidth, h = st.clientHeight;
+  phoneMap.z = Math.max(1, Math.min(phoneMap.zMax, phoneMap.z));
+  phoneMap.x = Math.min(0, Math.max(w - w * phoneMap.z, phoneMap.x));
+  phoneMap.y = Math.min(0, Math.max(h - h * phoneMap.z, phoneMap.y));
+  st.style.setProperty('--pz', phoneMap.z.toFixed(4));
+  st.style.setProperty('--px', phoneMap.x.toFixed(1) + 'px');
+  st.style.setProperty('--py', phoneMap.y.toFixed(1) + 'px');
+  st.classList.toggle('phone-zoomed', phoneMap.z > 1.001);
+}
+function phoneMapZoomSetup(cs) {
+  const st = document.getElementById('cmStage'); if (!st) return;
+  const key = cmState.view + ':' + (cmState.aoId || '');
+  if (key !== phoneMap.key) { phoneMap.key = key; phoneMap.z = 1; phoneMap.x = 0; phoneMap.y = 0; phoneMapApply(); }
+  if (phoneMap.wired) return;
+  phoneMap.wired = true;
+  const rel = function (e) { const r = st.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  touchControls(st, {
+    down: function (e) { phoneMap.sx = e.clientX; phoneMap.sy = e.clientY; },
+    move: function (e) { if (!(e.buttons & 1)) return; phoneMap.x += e.clientX - phoneMap.sx; phoneMap.y += e.clientY - phoneMap.sy; phoneMap.sx = e.clientX; phoneMap.sy = e.clientY; phoneMapApply(); },
+    up: function () {},
+    wheel: function (e) {
+      const m = rel(e), z0 = phoneMap.z, z1 = Math.max(1, Math.min(phoneMap.zMax, z0 * (e.deltaY < 0 ? phoneMap.step : 1 / phoneMap.step)));
+      phoneMap.x = m[0] - (m[0] - phoneMap.x) * (z1 / z0); phoneMap.y = m[1] - (m[1] - phoneMap.y) * (z1 / z0); phoneMap.z = z1; phoneMapApply();
+    },
+    pan: function (dx, dy) { phoneMap.x += dx; phoneMap.y += dy; phoneMapApply(); }
+  });
+  const fit = document.createElement('button'); fit.type = 'button'; fit.id = 'phoneMapFit'; fit.className = 'phone-map-fit'; fit.textContent = 'Fit';
+  fit.title = 'Back to the whole map';
+  fit.addEventListener('click', function (e) { e.stopPropagation(); phoneMap.z = 1; phoneMap.x = 0; phoneMap.y = 0; phoneMapApply(); });
+  st.appendChild(fit);
+  window.addEventListener('resize', phoneMapApply);
 }
 
 // The Fleet button on the map's left edge (made once, the first time a run shows on a phone)
