@@ -8295,6 +8295,10 @@ const SETTINGS = {
   openRange: 8000,           // u; the farthest a weapon whose range box is 0 ("open") can fire. In practice the odds decide long before this
   searchRangeCap: 6000,      // u; a gun never looks for targets farther away than this (it looks only as far as its hit chance stays above the lowest firing bar)
   openMinHitChance: 0.005,  // no shot is ever less likely to hit than this (minHitChance, 0.02, under weaponModel 0): low enough that the lowest firing bar marks a real reach
+  fireRateScale: 0.5,       // (v99.5, Alex's longer-battles plan) the fire rate dial: every weapon of a designed ship fires this x as often (0.5 = half; beams burn this x as many seconds). Point defence is not changed
+  hpScale: 2,               // (v99.5, Alex's longer-battles plan) the HP dial: the hull and every part of a ship has this x its hit points (they take this many times less damage). Shields are not changed
+  evasionStrength: 4,       // (v99.5, Alex's longer-battles plan) E, the evasion dial: every weaving ship's dodge counts this many times over (after the dodge cap, so the cap rises with it), and a missile's
+                             // sideways-thrust term too. 1 = as before. 4 makes ships dodge about 1.8x the shots they did (2 = 1.3x): only about a third of shots are at a ship that is weaving
   openDodgeCap: 12,          // a weaving target's dodge counts for up to this x its silhouette (dodgeCapFactor, 2, under weaponModel 0): a far, fast, weaving target is really hard to hit
   fireAtBars: { sure: 0.60, aimed: 0.30, free: 0.10, any: 0.02 },   // the doctrine box "Fire at": the hit chance a shot must have before the officer fires it ("auto" = the damage type's own bar, section 2a)
   fireBarBoldSwing: 0.8,     // an officer's own bar = the doctrine bar x (1 + this x (0.5 - boldness)): a bold officer fires at worse odds, a cautious one waits for better
@@ -9909,7 +9913,7 @@ const SETTING_MUST_BE_POSITIVE = ['coreLoopDivisionShips', 'cmdMaxAbreast', 'cmd
   'sensorRangeFactor', 'sectorsAcross', 'admiralThinkMin', 'admiralThinkMax', 'relayThinkSeconds', 'eventLogMax', 'logPanelLines', 'orderArriveFactor', 'orderBlockedSeconds',
   'idleSeconds', 'refuseCooldownSeconds', 'reportSquadronRows', 'reinforceMaxSquadrons', 'reinforceMaxTravelSeconds', 'flankMaxSquadrons', 'flankMaxTravelSeconds', 'reformAngle',
   'defaultAccelSeconds', 'slotGain', 'kiteSpeedMargin', 'edgeLookSeconds', 'hitChanceScale', 'sizeHarshness', 'defaultSpreadFactor', 'defaultProfileFront', 'defaultProfileSide', 'fixedMountTracking', 'defaultTurretTracking', 'trackingFloor',
-  'turretArcMin', 'turretSpreadMul', 'dodgeCapFactor', 'speedHalveAbove', 'speedFactor', 'openRange', 'searchRangeCap', 'openDodgeCap', 'openMinHitChance', 'fireBarBoldSwing', 'fireBarPin', 'fireBarHold', 'fireBarLowStore', 'fireBarWithdraw', 'fireBarMin', 'fireBarMax', 'holdRetrySeconds', 'holdRetargetSeconds', 'holdPressSeconds', 'standoffEdge', 'enemyReachKeep', 'maxMissiles', 'missileGridCell', 'missileInboundCall', 'missileStreakSeconds', 'pdSmallSize', 'pdSlugFullFlight', 'pdSlugMaxMounts', 'pdSpread', 'pdTracking', 'pdTracerSeconds', 'spinalArc', 'jinkPeriod', 'underFireSeconds', 'gunRetrySeconds', 'gunTargetAdoptSeconds', 'markSeconds',
+  'turretArcMin', 'turretSpreadMul', 'dodgeCapFactor', 'evasionStrength', 'fireRateScale', 'hpScale', 'speedHalveAbove', 'speedFactor', 'openRange', 'searchRangeCap', 'openDodgeCap', 'openMinHitChance', 'fireBarBoldSwing', 'fireBarPin', 'fireBarHold', 'fireBarLowStore', 'fireBarWithdraw', 'fireBarMin', 'fireBarMax', 'holdRetrySeconds', 'holdRetargetSeconds', 'holdPressSeconds', 'standoffEdge', 'enemyReachKeep', 'maxMissiles', 'missileGridCell', 'missileInboundCall', 'missileStreakSeconds', 'pdSmallSize', 'pdSlugFullFlight', 'pdSlugMaxMounts', 'pdSpread', 'pdTracking', 'pdTracerSeconds', 'spinalArc', 'jinkPeriod', 'underFireSeconds', 'gunRetrySeconds', 'gunTargetAdoptSeconds', 'markSeconds',
   'incomingHalfLife', 'overwhelmEnter', 'overwhelmExit', 'fallbackLeaveFactor', 'routRatio', 'fallbackSafeTtdFactor', 'smartTargetCandidates', 'overkillMargin',
   'batchSliceMillis', 'maxSiegeSeconds', 'assaultArriveFactor', 'siegeCheckSeconds', 'reportPacketRows', 'arrivalSpreadFactor', 'arrivalPacketGapFactor', 'repairArriveFactor', 'repairDockCheckSeconds', 'repairOffMapRate', 'repairForwardSize', 'versionLogMax', 'reportSampleSeconds',
   'learningCheckSeconds', 'xpPerLevel', 'expectationSlope', 'oddsSoftness', 'oddsChangeSlope', 'exchangeSoftness', 'groundRanges', 'objectiveFraction', 'driftIntervalSeconds',
@@ -18124,6 +18128,7 @@ function hitChanceFalloff(optimal, scatterMul, tracking, dodgeWindow, flightTime
   let sigmaD = slide * (1 - g);
   const cap = dodgeCapNow() * sig;
   if (sigmaD > cap) sigmaD = cap;
+  sigmaD *= SETTINGS.evasionStrength;                                      // (v99.5) the evasion dial E
   const sigma = Math.sqrt(sigmaS * sigmaS + sigmaD * sigmaD);
   const k = SETTINGS.sizeHarshness;
   let pAim;
@@ -18157,6 +18162,7 @@ function hitChanceWith(spread, tracking, dodgeWindow, flightTime, guidance, rang
   let sigmaD = slide * (1 - g);
   const cap = dodgeCapNow() * sig;                                         // (v18: openDodgeCap under weaponModel 1)
   if (sigmaD > cap) sigmaD = cap;
+  sigmaD *= SETTINGS.evasionStrength;                                      // (v99.5) the evasion dial E
   const sigma = Math.sqrt(sigmaS * sigmaS + sigmaD * sigmaD);
   const k = SETTINGS.sizeHarshness;
   let pAim;
@@ -18276,7 +18282,7 @@ function resolveHit(a, t, vx, vy, facing, sqA, stateA, saIn, dmgIn, dtIn, trIn, 
     }
     armorBlocked = damage - through;
     if (fxRec) fxHitNote(t, stV3[stt] === 1 && bbLof === 1 && bbHitShip === t ? bbHitPart : -1, stV3[stt] === 1 && bbLof === 1 && bbHitShip === t ? bbHitDeflected : 0, 0);   // (v33, display only)
-    const hp = shipHp[t], hit = through / tough;          // (v78.5) the hull takes the debug menu's toughness times less
+    const hp = shipHp[t], hit = through / (tough * SETTINGS.hpScale);          // (v78.5) the hull takes the debug menu's toughness times less
     if (hit >= hp) { hullLoss = hp; over = hit - hp; shipHp[t] = 0; }
     else { hullLoss = hit; shipHp[t] = hp - hit; }
   }
@@ -18823,7 +18829,7 @@ function falloffAt(st, d) {
 function missileTerminalChance(st, latAccel, weaving, dIn) {   // dIn (optional, section 5vb): the missile's own damage type
   const d = dIn !== undefined ? dIn : stDmgType[st];
   const w = weaving === true ? 1 : (weaving === false ? 0.5 : weaving);
-  const q = latAccel * w / Math.max(1e-9, dmgMslTurn[d] * dmgMslSpeed[d]);
+  const q = SETTINGS.evasionStrength * latAccel * w / Math.max(1e-9, dmgMslTurn[d] * dmgMslSpeed[d]);   // (v99.5) x the evasion dial E
   let p = 1 / (1 + q * q);
   if (p < 0.3) p = 0.3; else if (p > 0.95) p = 0.95;
   return p * SETTINGS.hitChanceScale;
@@ -19547,7 +19553,7 @@ function resolvePdHit(a, sa, t, vx, vy) {
     let through = damage - stArmor[stt * 4 + facing] * dmgArmorEffect[dtype] * dbgArmour[shipSide[t]];
     const floor = damage * SETTINGS.minArmorPassFraction;
     if (through < floor) through = floor;
-    through /= tough;
+    through /= tough * SETTINGS.hpScale;   // (v99.5) x the HP dial
     const hp = shipHp[t];
     hullLoss = through >= hp ? hp : through;
     shipHp[t] = hp - hullLoss;
@@ -19790,7 +19796,7 @@ function moduleHit(t, stt, facing, damage, through, sa) {
 // Damage to one part. Returns true if it was knocked out. A volatile part explodes when it goes (depth: how far a chain of explosions has run).
 function mdDamagePart(t, ms, id, dmg, stat, depth) {
   if (ms.out[id] !== 0) return false;
-  ms.hp[id] -= dmg / dbgTough[shipSide[t]];                         // (v78.5, section 7w) parts take the debug menu's toughness times less
+  ms.hp[id] -= dmg / hpTough(shipSide[t]);                         // (v78.5, section 7w) parts take the debug menu's toughness times less
   if (ms.hp[id] > 0) return false;
   ms.hp[id] = 0;
   ms.out[id] = 1;
@@ -19806,7 +19812,7 @@ function mdDamagePart(t, ms, id, dmg, stat, depth) {
   if (u.volatile > 0 && depth < 3) {
     stat.blasts++;
     if (sndLive) soundBlast(t, u);                 // (v28, section 6t) remembered for the sound of the ship's death: sound only
-    const hull = u.volatile * SETTINGS.blastToHull / dbgTough[shipSide[t]];   // (v78.5) the hull takes the debug menu's toughness times less
+    const hull = u.volatile * SETTINGS.blastToHull / hpTough(shipSide[t]);   // (v78.5) the hull takes the debug menu's toughness times less
     shipHp[t] = Math.max(0, shipHp[t] - hull);
     if (shipHp[t] > 0) {
       for (let k = 0; k < u.neighbours.length; k++) {
@@ -20766,7 +20772,7 @@ function bbFire(i, st, dt, withdrawing, deferred) {
     // (v97) a TITAN SUPER WEAPON (the siege driver's strip, the grand lance's sweep, the siege launchers): its own way of firing (05f-2c bbTitanFire)
     if (grp.titan) {
       const waits = bbTitanFire(i, st, g, grp, target, d, deferred, ms);
-      if (waits > 0) { firedAny = true; bbCool[b + g] = waits * (ms !== null ? grp.interval / ms.wShare * ms.slow : grp.interval) * heatSlow; }
+      if (waits > 0) { firedAny = true; bbCool[b + g] = waits * (ms !== null ? grp.interval / ms.wShare * ms.slow : grp.interval) * heatSlow / SETTINGS.fireRateScale; }
       else bbCool[b + g] = SETTINGS.holdRetrySeconds * reaction;
       continue;
     }
@@ -20817,7 +20823,7 @@ function bbFire(i, st, dt, withdrawing, deferred) {
       if (grp.proj === 1 && d > grp.range) bbStats.longShots++;
     }
     // How many salvos are due this step, and the time between them (short power, a lost bridge and lost crew slow a damaged ship: ms.slow and ms.wShare)
-    const interval = (ms !== null ? grp.interval / ms.wShare * ms.slow : grp.interval) * heatSlow;
+    const interval = (ms !== null ? grp.interval / ms.wShare * ms.slow : grp.interval) * heatSlow / SETTINGS.fireRateScale;   // (v99.5) / the fire rate dial
     let due = 1;
     if (interval > 0) due += Math.floor(-cd / interval); else due = maxSalvos;
     const capped = due > maxSalvos;
@@ -21427,7 +21433,7 @@ function bbCutTrack(t, ms, stat) {
 function bbDamagePart(t, ms, id, dmg, stat, depth) {
   if (ms.out[id] !== 0 || !(dmg > 0)) return false;
   const info = ms.bb, U = info.units, u = U[id];
-  ms.hp[id] -= dmg / dbgTough[shipSide[t]];                            // (v78.5, section 7w) parts take the debug menu's toughness times less
+  ms.hp[id] -= dmg / hpTough(shipSide[t]);                            // (v78.5, section 7w) parts take the debug menu's toughness times less
   if (u.reactor === 1 && SETTINGS.reactorWallShare > 0) {
     const rooms = info.wallRooms[id];
     if (rooms) for (let k = 0; k < rooms.length; k++) if (ms.out[rooms[k]] === 0) { stat.v3.walls++; bbStats.reactorWalls++; bbDamagePart(t, ms, rooms[k], dmg * SETTINGS.reactorWallShare, stat, depth + 1); }
@@ -21443,7 +21449,7 @@ function bbDamagePart(t, ms, id, dmg, stat, depth) {
     const kind = info.blastKind[id], cap = info.storeCap[kind];
     blast *= cap > 0 ? Math.max(0, Math.min(1, bbStore[t * BB_SK + kind] / cap)) : 1;
   }
-  bbWreckCheck(ms, id, dmg / dbgTough[shipSide[t]], blast > 0 && depth < BB_BLAST.chainDepth);   // (v46) a huge hit, a blast, or a second loss after a patch wrecks it
+  bbWreckCheck(ms, id, dmg / hpTough(shipSide[t]), blast > 0 && depth < BB_BLAST.chainDepth);   // (v46) a huge hit, a blast, or a second loss after a patch wrecks it
   if (u.store > 0) {                                                   // a magazine (or capacitor) lost takes its share of its own store with it
     // (v30 Bfix) only the store the part holds: a gun magazine its share of the rounds, a missile magazine its share of its size's missiles, a capacitor
     // its share of the charge (B2 took a share of the rounds AND the missiles for any magazine)
@@ -21458,7 +21464,7 @@ function bbDamagePart(t, ms, id, dmg, stat, depth) {
     if (sndLive) soundBlast(t, u);                 // (v28, section 6t) remembered for the sound of the ship's death: sound only
     if (depth > 0) { stat.v3.chains++; bbStats.chains++; }
     if (depth === 0) bbChainHp0 = shipHp[t];                                   // (v30 Bfix) the hull when this chain began, for the report
-    const blastHull = blast * SETTINGS.blastToHull / dbgTough[shipSide[t]];   // (v78.5) the hull takes the debug menu's toughness times less
+    const blastHull = blast * SETTINGS.blastToHull / hpTough(shipSide[t]);   // (v78.5) the hull takes the debug menu's toughness times less
     bbStats.blastHull += Math.min(shipHp[t], blastHull);
     const wasUp = shipHp[t] > 0;
     shipHp[t] = Math.max(0, shipHp[t] - blastHull);
@@ -21470,7 +21476,7 @@ function bbDamagePart(t, ms, id, dmg, stat, depth) {
       for (let k = 0; k < u.neighbours.length; k++) {
         const v = u.neighbours[k];
         if (ms.out[v] !== 0) continue;
-        if (U[v].blocks === 1) { ms.hp[v] -= blast * SETTINGS.blastToParts * 0.5 / dbgTough[shipSide[t]]; if (ms.hp[v] <= 0) { ms.hp[v] = 0; ms.out[v] = 1; bbWreckCheck(ms, v, blast * SETTINGS.blastToParts * 0.5, false); stat.out++; bbStats.partsOut++; stat.byFam[U[v].name] = (stat.byFam[U[v].name] || 0) + 1; if (U[v].role === 'armour') bbStats.platesOut++; } continue; }   // (a bulkhead: takes the blast, passes nothing on)
+        if (U[v].blocks === 1) { ms.hp[v] -= blast * SETTINGS.blastToParts * 0.5 / hpTough(shipSide[t]); if (ms.hp[v] <= 0) { ms.hp[v] = 0; ms.out[v] = 1; bbWreckCheck(ms, v, blast * SETTINGS.blastToParts * 0.5, false); stat.out++; bbStats.partsOut++; stat.byFam[U[v].name] = (stat.byFam[U[v].name] || 0) + 1; if (U[v].role === 'armour') bbStats.platesOut++; } continue; }   // (a bulkhead: takes the blast, passes nothing on)
         bbDamagePart(t, ms, v, blast * SETTINGS.blastToParts, stat, depth + 1);
       }
     }
@@ -22419,7 +22425,7 @@ function bbAcidTick(i, ms, dt) {
   for (let k = 0; k < ms.acid.length; k++) {
     const p = ms.acid[k], part = p.part;
     if (ms.out[part] === 1) continue;                                        // (the plate is gone: the patch goes with it)
-    const tough = dbgTough[shipSide[i]];                                       // (v78.5, section 7w) a tougher plate is eaten that many times slower
+    const tough = hpTough(shipSide[i]);                                        // (v78.5, section 7w) a tougher plate is eaten that many times slower (v99.5: and the HP dial)
     let eat = p.rate * dt; if (eat > p.left) eat = p.left; if (eat > ms.hp[part] * tough) eat = ms.hp[part] * tough;
     ms.hp[part] -= eat / tough; p.left -= eat; bbStats.acidEaten += eat;
     if (ms.hp[part] <= 1e-9) {
@@ -70818,6 +70824,33 @@ document.addEventListener('keydown', function (e) {
 const DEBUG_MUL_MAX = 10;
 // (v78.5) This step's toughness and armour per side (read in the combat code; 1 = the normal game). debugDefenceRefresh sets them at the start of each step.
 const dbgTough = new Float64Array([1, 1]), dbgArmour = new Float64Array([1, 1]);
+// (v99.5) The toughness of hull and parts (not shields): the debug menu's toughness x SETTINGS.hpScale, the HP dial. Hull and parts take this many times less damage,
+// which is the same as having this many times their hit points.
+function hpTough(side) { return dbgTough[side] * SETTINGS.hpScale; }
+// (v104.8, Alex 6 Nov) THE BATTLE DIALS in the debug menu: the three longer-battle settings of v99.5 (SETTINGS.evasionStrength, fireRateScale,
+// hpScale, section 1), each on its own slider. Unlike the sliders above they are not part of a war: they are kept in this browser and count
+// in EVERY battle (the war's, Last Stand, a test battle). Moving one counts from the next shot. "Back to the game's values" puts all three back.
+const BATTLE_DIALS = [
+  { key: 'evasionStrength', label: 'Evasion', min: 1, max: 8, step: 0.5, tip: 'How much a weaving ship\'s dodging counts, and how well ships slip a missile\'s turn. x1 is the old game. x4 (the game\'s value) makes ships dodge about 1.8 times the shots. Every battle, kept in this browser.' },
+  { key: 'fireRateScale', label: 'Fire rate', min: 0.1, max: 2, step: 0.05, tip: 'How often every weapon fires (beams burn this many times as long). x1 is the old game, x0.5 (the game\'s value) is half. Point defence is not changed. Every battle, kept in this browser.' },
+  { key: 'hpScale', label: 'Hit points', min: 1, max: 10, step: 0.5, tip: 'Hit points of every hull and part (they take this many times less damage). x1 is the old game, x2 (the game\'s value) is double. Shields are not changed. Stacks with the toughness sliders. Every battle, kept in this browser.' }
+];
+const BATTLE_DIAL_STORE = 'engineersWar.battleDials';
+const BATTLE_DIAL_GAME = {};                                      // the game's own values, before this browser's choices
+for (const d of BATTLE_DIALS) BATTLE_DIAL_GAME[d.key] = SETTINGS[d.key];
+function battleDialClamp(d, v) { v = +v; if (!(v > 0)) v = BATTLE_DIAL_GAME[d.key]; return Math.max(d.min, Math.min(d.max, +(Math.round(v / d.step) * d.step).toFixed(2))); }
+function battleDialsLoad() {
+  let saved = null; try { saved = JSON.parse(window.localStorage.getItem(BATTLE_DIAL_STORE) || 'null'); } catch (e) { saved = null; }
+  if (!saved || typeof saved !== 'object') return;
+  for (const d of BATTLE_DIALS) if (saved[d.key] !== undefined) SETTINGS[d.key] = battleDialClamp(d, saved[d.key]);
+}
+function battleDialsSave() {
+  const o = {}; for (const d of BATTLE_DIALS) if (SETTINGS[d.key] !== BATTLE_DIAL_GAME[d.key]) o[d.key] = SETTINGS[d.key];
+  try { if (Object.keys(o).length) window.localStorage.setItem(BATTLE_DIAL_STORE, JSON.stringify(o)); else window.localStorage.removeItem(BATTLE_DIAL_STORE); } catch (e) { /* storage blocked: lasts until the page closes */ }
+}
+function battleDialSet(key, v) { const d = BATTLE_DIALS.find(function (x) { return x.key === key; }); if (!d) return; SETTINGS[key] = battleDialClamp(d, v); battleDialsSave(); }
+function battleDialWords(v) { return 'x' + (Math.round(v * 100) / 100); }
+battleDialsLoad();
 function debugDefenceRefresh() {
   const on = campaign !== null && campaign !== undefined && (campaignBattleActive || campaignPeekState !== null);
   dbgTough[0] = on ? campaignDebugMul('ourTough') : 1; dbgTough[1] = on ? campaignDebugMul('alienTough') : 1;
@@ -70914,6 +70947,12 @@ function cmDebugSheetHtml() {
     slider('ourArmour', 'Our armour', 'Our armour stops this many times more of each hit (the plates on a designed ship, which also turn away bigger shells). Some damage always gets through. Only in the war\'s battle.') +
     slider('alienTough', 'Alien toughness', 'The aliens\' ships, stations and nests take this many times less damage to their shields, hull and every part. Only in the war\'s battle.') +
     slider('alienArmour', 'Alien armour', 'The aliens\' armour stops this many times more of each hit. Some damage always gets through. Only in the war\'s battle.') +
+    '<p><b>Battle dials</b>: for every battle, not just this war, and kept in this browser.</p>' +
+    BATTLE_DIALS.map(function (d) { const v = SETTINGS[d.key];
+      return '<div class="opt"><span class="label" title="' + esc(d.tip) + '">' + esc(d.label) + '</span><span class="dbg-slide">' +
+        '<input type="range" min="' + d.min + '" max="' + d.max + '" step="' + d.step + '" value="' + v + '" data-dial="' + d.key + '" aria-label="' + esc(d.label) + '">' +
+        '<b id="dialVal-' + d.key + '">' + battleDialWords(v) + '</b></span></div>'; }).join('') +
+    '<div class="row"><button type="button" class="btn btn-ghost" id="dialReset" title="Evasion x' + BATTLE_DIAL_GAME.evasionStrength + ', fire rate x' + BATTLE_DIAL_GAME.fireRateScale + ', hit points x' + BATTLE_DIAL_GAME.hpScale + '">Battle dials back to the game\'s values</button></div>' +   // (v104.8)
     '<div class="opt"><span class="label" title="The Design Bureau offers every part, mark, size and hull, whatever the research, and designs that use them can be saved. Only for testing: it changes what you can design, not what the aliens have.">Unlock everything</span>' +
       '<label class="check"><input type="checkbox" id="dbgUnlockAll"' + (campaignDebugUnlockAll() ? ' checked' : '') + '><span class="check-box"></span>In the Design Bureau, every part, whatever the research</label></div>' +   // (v97.9: moved here from the Bureau)
     '<div class="opt"><span class="label" title="Adds one design of every human ship class, from the Dart fighter to the six titans, and their upgraded versions on later research, to this war as your own draft designs named Test ... Open the Design Bureau to look at them or make them ready for the yards. A design that needs research this war has not done yet can be made ready only with Unlock everything on.">Stock test designs</span>' +
@@ -70937,6 +70976,20 @@ function cmDebugSheetWire(el) {
     const r = campaignAddStockTestDesigns(), say = el.querySelector('#dbgStockSay');
     if (say) say.textContent = r.added.length ? 'Added ' + r.added.length + ' test designs as drafts (' + r.added.join(', ') + '). Open the Design Bureau to make any of them ready for the yards.' + (campaignDebugUnlockAll() ? '' : ' Those built on research this war has not done yet need Unlock everything on.')
                                               : 'The stock test designs are all here already (' + r.had + ').';
+  });
+  el.querySelectorAll('input[data-dial]').forEach(function (inp) {   // (v104.8) the battle dials
+    inp.addEventListener('input', function () {
+      battleDialSet(inp.dataset.dial, inp.value);
+      const b = document.getElementById('dialVal-' + inp.dataset.dial); if (b) b.textContent = battleDialWords(SETTINGS[inp.dataset.dial]);
+    });
+  });
+  const dr = el.querySelector('#dialReset');
+  if (dr) dr.addEventListener('click', function () {
+    for (const d of BATTLE_DIALS) {
+      battleDialSet(d.key, BATTLE_DIAL_GAME[d.key]);
+      const inp = el.querySelector('input[data-dial="' + d.key + '"]'); if (inp) inp.value = SETTINGS[d.key];
+      const b = document.getElementById('dialVal-' + d.key); if (b) b.textContent = battleDialWords(SETTINGS[d.key]);
+    }
   });
   el.querySelectorAll('input[data-dbg]').forEach(function (inp) {
     inp.addEventListener('input', function () {
@@ -88787,7 +88840,7 @@ BUREAU2_SCREEN_API.testRange = { run: testRangeRun, state: testRange, plan: func
 //   adopted habits come along in its copy code and into every new campaign. A doctrine changed in the Bureau after the save updates the plan's copy.
 //   DOCTRINE TEMPLATES (LIBRARY.templates: [{ name, doctrine, savedAt }]) live here too, so they carry over as well. A plan from before v37 has no doctrine: Auto.
 // =====================================================================
-const GAME_VERSION = 'v104.6';                           // the game version written on every saved plan (raise it with each new build)
+const GAME_VERSION = 'v104.8';                           // the game version written on every saved plan (raise it with each new build)
 const LIBRARY_KEY = 'engineersWar.library';
 const LIBRARY_FORMAT = 1;
 const LIBRARY_CODE_SHIP = 'EW-SHIP-1:', LIBRARY_CODE_LIB = 'EW-LIB-1:';
