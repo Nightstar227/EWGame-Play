@@ -2072,6 +2072,32 @@ hr.rule { border:0; border-top:var(--line-w) solid var(--line); margin:var(--sp-
    showing it moves to just right of the plates */
 #campaignScreen .stage:has(#cmOv .aoplate, #cmOv .repplate) .cm-aoarrow.l { left: 300px; }
 @media (max-width: 1100px) { #campaignScreen .stage:has(#cmOv .aoplate, #cmOv .repplate) .cm-aoarrow.l { left: 244px; } }
+
+/* (v122.0, section 7m2) THE DEFENCE GAZETTE: a broadsheet in the Dispatches tab's list column. Paper, ink, a serif masthead; two columns of news. */
+#campaignScreen .feed .list.gz-list { display: block; padding: 0; }
+#campaignScreen .gz-page { --paper: #E9E2D0; --ink: #1E1B16; --ink-dim: #5B5447; --gz-rule: #8E8470;
+  background: var(--paper); color: var(--ink); padding: 18px 26px 22px; font: 400 13.5px/1.5 Georgia, "Times New Roman", "Noto Serif", serif; box-shadow: inset 0 0 60px rgba(60, 40, 10, .12), 0 2px 10px rgba(0, 0, 0, .4); }
+#campaignScreen .gz-page .gz-ears { display: flex; justify-content: space-between; gap: 12px; font: 500 10.5px var(--font-data); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-dim); border-bottom: 1px solid var(--gz-rule); padding-bottom: 4px; }
+#campaignScreen .gz-page .gz-mast { margin: 10px 0 6px; text-align: center; font: 900 44px/1 Georgia, "Times New Roman", serif; letter-spacing: .01em; color: var(--ink); }
+#campaignScreen .gz-page .gz-rule { display: flex; justify-content: space-between; gap: 12px; border-top: 3px double var(--ink); border-bottom: 1px solid var(--ink); padding: 3px 0; font: 600 11px var(--font-data); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-dim); }
+#campaignScreen .gz-page .gz-head { margin: 16px 0 6px; font: 800 30px/1.08 Georgia, "Times New Roman", serif; color: var(--ink); text-wrap: balance; }
+#campaignScreen .gz-page .gz-stand { margin: 0 0 12px; font-size: 15px; font-style: italic; color: var(--ink-dim); border-bottom: 1px solid var(--gz-rule); padding-bottom: 10px; }
+#campaignScreen .gz-page .gz-cols { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 0 22px; }
+#campaignScreen .gz-page .gz-side { border-left: 1px solid var(--gz-rule); padding-left: 18px; }
+#campaignScreen .gz-page p { margin: 0 0 9px; }
+#campaignScreen .gz-page .gz-first::first-letter { float: left; font: 900 46px/.82 Georgia, serif; padding: 5px 6px 0 0; color: var(--ink); }
+#campaignScreen .gz-page h3 { margin: 12px 0 5px; font: 800 12px var(--font-data); letter-spacing: .12em; text-transform: uppercase; color: var(--ink); border-bottom: 1px solid var(--ink); padding-bottom: 2px; }
+#campaignScreen .gz-page table { width: 100%; border-collapse: collapse; font: 500 12px var(--font-data); margin: 0 0 8px; }
+#campaignScreen .gz-page .gz-table th { text-align: left; font-weight: 600; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-dim); border-bottom: 1px solid var(--gz-rule); padding: 2px 4px; }
+#campaignScreen .gz-page .gz-table td, #campaignScreen .gz-page .gz-ledger td { padding: 2px 4px; border-bottom: 1px dotted var(--gz-rule); }
+#campaignScreen .gz-page .gz-table td:not(:first-child), #campaignScreen .gz-page .gz-ledger td:last-child { text-align: right; }
+#campaignScreen .gz-page .gz-wire { margin: 0; padding: 0; list-style: none; font-size: 12.5px; }
+#campaignScreen .gz-page .gz-wire li { margin: 0 0 5px; padding-left: 10px; border-left: 2px solid var(--gz-rule); }
+#campaignScreen .gz-page .gz-wire b { font: 600 10.5px var(--font-data); letter-spacing: .06em; color: var(--ink-dim); margin-right: 4px; }
+#campaignScreen .gz-page .gz-roll-lead { font-style: italic; }
+#campaignScreen .gz-page .gz-fallen { font-style: italic; color: var(--ink); }
+#campaignScreen .gz-page .gz-foot { margin-top: 14px; border-top: 3px double var(--ink); padding-top: 5px; text-align: center; font: 600 10.5px var(--font-data); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-dim); }
+@media (max-width: 1100px) { #campaignScreen .gz-page .gz-cols { grid-template-columns: minmax(0, 1fr); } #campaignScreen .gz-page .gz-side { border-left: 0; padding-left: 0; } }
 </style>
 <style>
   @import url("https://fonts.googleapis.com/css2?family=Special+Elite&display=swap");
@@ -2440,6 +2466,14 @@ hr.rule { border:0; border-top:var(--line-w) solid var(--line); margin:var(--sp-
 #bureau2Screen .sheetw .simple { border: 1.5px dashed var(--power); background: rgba(6, 18, 12, .92); }
 #bureau2Screen .sheetw .simple em { font-style: normal; font-weight: 700; color: var(--power); }
 #bureau2Screen .sheetw .simple b { display: block; font: 400 13px var(--type); letter-spacing: .08em; text-transform: uppercase; color: var(--power); }
+/* (v121.0) the rules note folds to its title line: the title is a button with a − (fold) or + (open) at its right */
+#bureau2Screen .sheetw .rhd { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 0; margin: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+#bureau2Screen .sheetw .rhd .rsign { flex: none; width: 18px; height: 18px; display: grid; place-items: center; border: 1px solid currentColor; font: 700 14px/1 var(--font-data); opacity: .8; }
+#bureau2Screen .sheetw .rhd:hover .rsign, #bureau2Screen .sheetw .rhd:focus-visible .rsign { opacity: 1; background: rgba(255, 255, 255, .08); }
+#bureau2Screen .sheetw .bwarn .rhd { color: var(--warn); }
+#bureau2Screen .sheetw .simple .rhd { color: var(--power); }
+#bureau2Screen .sheetw .shut { padding: 3px 7px; }
+#bureau2Screen .sheetw .shut .rbd { display: none; }
 #bureau2Screen .sheetw .tblk { position: absolute; right: 10px; bottom: 10px; z-index: 2; display: grid; grid-template-columns: repeat(3, auto); border: 1.5px solid #bcd3e4;
   color: #cfe0ec; background: rgba(8, 21, 33, .9); font: 400 11px var(--type); letter-spacing: .06em; pointer-events: none; }
 #bureau2Screen .sheetw .tblk div { padding: 2px 7px; border-right: 1px solid #5c7a90; border-bottom: 1px solid #5c7a90; }
@@ -2733,6 +2767,14 @@ hr.rule { border:0; border-top:var(--line-w) solid var(--line); margin:var(--sp-
 /* (v118.1) a captain's note in the Battle scars box: typed, pink, a pin line down the left */
 #bureau2Screen .b2note { font: 12px/1.35 var(--type); color: #ffc4c9; border-left: 3px solid #ff8a94; padding: 3px 8px; background: rgba(22,16,14,.5); }
 #bureau2Screen .b2note small { display: block; color: #d59aa0; font: inherit; margin-top: 2px; }
+/* (v118.3, section 10e-9) the Lineage strip: one row a version, the one on the sheet picked out; the Yards box's rows */
+#bureau2Screen .b2line .b2v { cursor: pointer; padding: 1px 3px; margin: 0 -3px; }
+#bureau2Screen .b2line .b2v:hover { background: color-mix(in srgb, var(--text) 8%, transparent); }
+#bureau2Screen .b2line .b2v.open { color: var(--text); background: color-mix(in srgb, var(--accent) 14%, transparent); cursor: default; }
+#bureau2Screen .b2line .b2v.gone { opacity: .55; }
+#bureau2Screen .b2line .b2v small, #bureau2Screen .b2y small { color: var(--dim); font-weight: 500; }
+#bureau2Screen .b2y.sub { padding-left: 10px; font-size: 10.5px; opacity: .85; }
+#bureau2Screen .b2y.sub span:last-child { white-space: nowrap; }
 </style>
 <style>
 /* =====================================================================
@@ -16380,15 +16422,16 @@ const GUN_FAMILIES = {
                text: 'The Luna prototype: a Light coilgun that hits armour hard (Piercing), half the rounds a shot, power 3. Uses Rare earths. Mk I only.' },
   coil:      { name: 'Coilgun', short: 'Coil', damageMul: 1.5, rangeMul: 1, powerPerSquare: 0.5, roundsMul: 0.5, traits: ['Piercing'], res: 'magnetic', rareEarths: 4, markLine: 'coil', text: 'Magnetic slugs: +50% damage, Piercing, full range, half the rounds a shot; uses power and Rare earths. (Tier 2: Coilguns.)' },
   // (v90, Tier 3 stage 1: notes/plans/ships/tier3-numbers-plan.md s3d) the two Tier 3 families. Chemical stays the template: a family multiplies its table.
-  //   RAILGUN: x2 damage, range x1.3 a chemical gun's, Piercing and Over-penetrating (a shot through the armour carries on into one more part). It fires from
-  //     the CAPACITORS (Alex 30 Oct): each shot takes chargePerSquare x the gun's squares of charge, so a railgun ship is built like a laser ship. Rounds:
-  //     none (charge only). Cannon and Carronade with Railguns; the Culverin needs Sniper rail (roleTech). Fixed, Spinal and Turret mounts only.
+  //   RAILGUN: x2 damage, range x1.3 a chemical gun's, Piercing and Over-penetrating (a shot through the armour carries on into one more part). It needs
+  //     BOTH (v120, Alex 7 Nov: "rail gun ammo is not shown from magazines"): slugs from the gun magazines (like any gun, joined by hoist; half a chemical
+  //     gun's rounds for its damage, as the coilgun) AND charge from the capacitors to throw them (chargePerSquare x the gun's squares a shot). Until v120 it
+  //     fired from the capacitors alone (Alex 30 Oct). Cannon and Carronade with Railguns; the Culverin needs Sniper rail (roleTech). Fixed, Spinal and Turret mounts only.
   //   PLASMA: x2 damage, range x0.5 a chemical gun's, Melting (the plate it hits loses a quarter of its armour for a while) and Heat; no magazine at all.
   //     1.5 power a square, and (v96) 1 Helium-3 for every 6 squares of gun to build. Repeater and Cannon with Plasma; the Carronade needs Heavy plasma. No Spinal mount.
   //   alloysMul: the gun's Alloys x this; helium3: Helium-3 a gun; roleTech: a role that needs its own project for this family (the kit's 'famrole' list).
-  rail:      { name: 'Railgun', short: 'Rail', damageMul: 2, rangeMul: 1.04, powerPerSquare: 0.1, roundsMul: 1, chargePerSquare: 1, traits: ['Piercing', 'Over-penetrating'], res: 'railgun', rareEarths: 3, alloysMul: 1.5, markLine: 'rail',
+  rail:      { name: 'Railgun', short: 'Rail', damageMul: 2, rangeMul: 1.04, powerPerSquare: 0.1, roundsMul: 0.5, chargePerSquare: 1, traits: ['Piercing', 'Over-penetrating'], res: 'railgun', rareEarths: 3, alloysMul: 1.5, markLine: 'rail',
                only: { role: ['cannon', 'carronade', 'culverin'], mount: ['fixed', 'spinal', 'turret'] }, roleTech: { culverin: 'Sniper rail' }, sound: 'railgun',
-               text: 'Slugs thrown by the capacitors: x2 damage, range x1.3 a chemical gun\'s, Piercing and Over-penetrating. Each shot takes charge from the capacitors (1 a square of gun), so it needs capacitors. Fixed, Spinal or Turret. (Tier 3: Railguns.)' },
+               text: 'Slugs thrown by the capacitors: x2 damage, range x1.3 a chemical gun\'s, Piercing and Over-penetrating. Each shot takes a slug from the gun magazines (half the rounds of a chemical gun for its damage) and charge from the capacitors (1 a square of gun), so it needs both. Fixed, Spinal or Turret. (Tier 3: Railguns.)' },
   plasma:    { name: 'Plasma', short: 'Plasma', damageMul: 2, rangeMul: 0.4, powerPerSquare: 1.5, roundsMul: 0, noAmmo: true, traits: ['Melting', 'Heat'], res: 'nuclear', helium3: 6, alloysMul: 1.2, markLine: 'plasma',
                only: { role: ['repeater', 'cannon', 'carronade'], mount: ['fixed', 'sponson', 'turret', 'barbette'] }, roleTech: { carronade: 'Heavy plasma' }, sound: 'plasmacannon',
                text: 'Bottled fusion plasma: x2 damage, range x0.5 a chemical gun\'s, Melting (the plate it hits loses a quarter of its armour for 20 s) and Heat. No magazine; 1.5 power a square and 1 Helium-3 for every 6 squares of gun. (Tier 3: Plasma.)' }
@@ -16643,12 +16686,14 @@ function buildPartStatsV3(id, mk, opt) {
     s.family = 'Kinetic'; s.dir = mount.spinal ? 'front' : (mount.over ? 'turret' : 'aim');
     const heatShot = damage * PART_RULES.heatPerDamage, fireRate = 1 / t.interval;
     s.heatShot = heatShot; s.heat = roundTo(heatShot * fireRate, 3);   // (heat a shot; and heat a second while firing, which the stand-in battle and the heat pass read)
-    // (v90) the ammunition: rounds from the magazines; a railgun's CHARGE from the capacitors (chargePerSquare x the gun's squares a shot); plasma none at all
-    const ammo = fam.chargePerSquare > 0 ? 'charge' : (fam.noAmmo ? '' : 'rounds');
-    const perShot = ammo === 'charge' ? s.baseSquares * fam.chargePerSquare : (ammo === 'rounds' ? damage * PART_RULES.roundsPerDamage * sizeRow.roundsMul * role.roundsMul * fam.roundsMul * (shell.special ? PART_RULES.shellAmmoMul : 1) : 0);
+    // (v90) the ammunition: rounds from the magazines; plasma none at all. (v120) A railgun takes rounds (its slugs) like any gun AND, on top, charge from the
+    // capacitors: chargePerShot, chargePerSquare x the gun's squares a shot (0 for every other gun)
+    const ammo = fam.noAmmo ? '' : 'rounds';
+    const perShot = ammo === 'rounds' ? damage * PART_RULES.roundsPerDamage * sizeRow.roundsMul * role.roundsMul * fam.roundsMul * (shell.special ? PART_RULES.shellAmmoMul : 1) : 0;
+    const chargeShot = fam.chargePerSquare > 0 ? s.baseSquares * fam.chargePerSquare : 0;
     s.weapon = { damage: roundTo(damage, 3), damageType: 'kinetic', range: Math.round(sizeRow.range * fam.rangeMul * role.rangeMul * (mount.rangeMul || 1)),
                  interval: t.interval, fireRate: roundTo(fireRate, 4), arc: mount.arc, ammo: ammo, power: Math.max(0.5, damage / 10), heatShot: roundTo(heatShot, 3),
-                 roundsPerShot: roundTo(perShot, 3),
+                 roundsPerShot: roundTo(perShot, 3), chargePerShot: chargeShot,
                  traverse: sizeRow.traverse, scatterMul: (mount.over && !mount.spinal ? sizeRow.turretScatter : 1) * (mount.scatterMul || 1), mountKind: o.mount, shell: o.shell, size: o.size, role: o.role, family: o.family };
     if (fam.sound) s.weapon.sound = fam.sound;   // (v90) the family's own firing sound (text/sounds.js)
     if (o.family === 'plasma') s.family = 'Plasma';
@@ -23034,9 +23079,10 @@ function bbMakeTypeInfo(rec) {
       msl: missile && SETTINGS.bbMissiles === 1 && G.missile ? G.missile : null,   // (v30 B2) the missile this launcher flies (spec 5.2)
       pulses: beam === 1 && G.opt && BEAM_OPTIONS[G.opt.beam] ? BEAM_OPTIONS[G.opt.beam].pulses : 0,   // (v87) a pulsed beam's hard pulses a second (0 = steady ticks)
       intercept: missile && G.missile && SHAPE_OPTIONS[G.missile.shape] && SHAPE_OPTIONS[G.missile.shape].interceptor ? 1 : 0,   // (v88) an interceptor launcher: point defence, never fires at ships
-      // (v90, Tier 3) rail: a railgun (fires from the capacitors; fast-discharge capacitors make it hit harder); split / splitMul: a beam splitter's second
+      // (v90, Tier 3) rail: a railgun (fast-discharge capacitors make it hit harder); (v120) it draws its slugs from the gun rounds like any gun AND
+      // chargePerShot of charge a shot from the capacitors (store 3). split / splitMul: a beam splitter's second
       // target and the share each takes; snd: the weapon's own sound pick (text/sounds.js) in place of its part's
-      rail: G.part === 'gun' && G.ammo === 'charge' ? 1 : 0,
+      rail: G.part === 'gun' && G.chargePerShot > 0 ? 1 : 0, chargePerShot: G.part === 'gun' && G.chargePerShot > 0 ? G.chargePerShot : 0,
       split: beam === 1 && G.opt && OPTICS_OPTIONS[G.opt.optics] && OPTICS_OPTIONS[G.opt.optics].split > 1 ? 1 : 0, splitMul: beam === 1 && G.opt && OPTICS_OPTIONS[G.opt.optics] ? OPTICS_OPTIONS[G.opt.optics].splitMul || 1 : 1,
       linger: burstRow && burstRow.linger && burstRow.linger.radius > 0 && burstRow.linger.seconds > 0 ? burstRow.linger : null,   // (v92) a grown weapon whose hit leaves a lingering cloud (the acid geyser; 05f-3 bbCloudAdd)
       grav: burstRow && burstRow.grav && burstRow.grav.slow > 0 ? burstRow.grav : null,   // (v93) a Delver grav lance: a hit holds the target (05g dvGravHit)
@@ -23081,7 +23127,7 @@ function bbMakeTypeInfo(rec) {
   }
   let beamSpare = 0; for (const c in spareOf) if (spareOf[c] > 0) beamSpare += spareOf[c];
   if (beamGroups > 0) { storeCap[3] = S.stores.charge; storeRefill[3] = beamSpare; }
-  // (v90, Tier 3) RAILGUNS fire from the capacitors too: their store is the capacitors' charge, filled from the spare power like the beams'. A working
+  // (v90, Tier 3) RAILGUNS draw on the capacitors too (v120: as well as their rounds): the charge store is the capacitors', filled from the spare power like the beams'. A working
   // SUPERCONDUCTING capacitor fills it bbSuperCapRefill times as fast.
   if (groups.some(function (g) { return g.rail === 1; })) { storeCap[3] = S.stores.charge || 0; storeRefill[3] = beamSpare; }
   if (L && L.parts && L.parts.some(function (u, k) { return u.m.superCap === true && k < U.length && U[k].working === 1; })) storeRefill[3] *= SETTINGS.bbSuperCapRefill;
@@ -23529,6 +23575,7 @@ function bbFire(i, st, dt, withdrawing, deferred) {
     if ((grp.traits & BB_TRAIT_BITS.Flak) && typeSize[shipType[target]] <= SETTINGS.pdSmallSize) { p *= 1 + SETTINGS.bbFlakSmallBonus; if (p > SETTINGS.maxHitChance) p = SETTINGS.maxHitChance; }
     const scatter = hcSigmaS, dodge = hcSigmaD, trackErr = hcTrackErr;
     const kindIdx = grp.store, storeAt = i * BB_SK + kindIdx, rps = grp.roundsPerShot;   // (v30 B1) rps: rounds a weapon draws from the magazines each salvo
+    const cps = grp.rail === 1 ? grp.chargePerShot : 0, chargeAt = i * BB_SK + 3;          // (v120) a railgun also spends cps charge a shot from the capacitors
     if (wm1) {
       // (v18, section 5t) the decision to fire: the odds must clear the officer's bar, and there must be ammunition.
       // (v30 B1, projectile-falloff.md) a group with no ammunition limit (the Swarm's grown weapons) takes any shot it can (the lowest bar; a fire order to hold still
@@ -23537,7 +23584,8 @@ function bbFire(i, st, dt, withdrawing, deferred) {
       let bar = fireBar(i, st, withdrawing);
       if (kindIdx === 0) { if (bar <= 1) bar = SETTINGS.fireBarMin; }
       else if (grp.proj === 1 && d > grp.range && bar < SETTINGS.falloffBandBar) bar = SETTINGS.falloffBandBar;
-      if (kindIdx > 0 && bbStore[storeAt] < rps) { reason = 1; if (grp.rail === 1) bbStats.railDry++; }   // (v90) a railgun waiting for charge
+      if (kindIdx > 0 && bbStore[storeAt] < rps) reason = 1;
+      else if (cps > 0 && bbStore[chargeAt] < cps) { reason = 1; bbStats.railDry++; }   // (v90) a railgun waiting for charge (v120: it has slugs, but the capacitors are flat)
       else if (p < bar) reason = (withdrawing && p * SETTINGS.fireBarWithdraw >= bar) ? 2 : 0;
       if (reason >= 0) {
         statHeld[st * 3 + reason]++; bbStatFor(shipSide[i], shipType[i]).v3.held++;
@@ -23547,6 +23595,7 @@ function bbFire(i, st, dt, withdrawing, deferred) {
       }
       if (g === 0) { shipHoldTarget[i] = -1; shipHoldSince[i] = -1; }
       if (kindIdx > 0 && bbStore[storeAt] < shots * rps) shots = Math.floor(bbStore[storeAt] / rps);   // the last rounds: fewer weapons fire
+      if (cps > 0 && bbStore[chargeAt] < shots * cps) shots = Math.floor(bbStore[chargeAt] / cps);       // (v120) the last of the charge: fewer railguns fire
       if (shots <= 0) { bbCool[b + g] = SETTINGS.holdRetrySeconds * reaction; continue; }
       if (grp.proj === 1 && d > grp.range) bbStats.longShots++;
     }
@@ -23578,6 +23627,7 @@ function bbFire(i, st, dt, withdrawing, deferred) {
     }
     while (fired < due) {
       if (wm1 && kindIdx > 0) { if (bbStore[storeAt] < shots * rps || shots <= 0) break; bbStore[storeAt] -= shots * rps; }   // (v30 B1) each salvo spends its rounds a shot per weapon
+      if (wm1 && cps > 0) { if (bbStore[chargeAt] < shots * cps) { bbStore[storeAt] += shots * rps; break; } bbStore[chargeAt] -= shots * cps; }   // (v120) and a railgun's salvo its charge
       if (grp.missile) {
         // (v30 B2, spec 5) a VOLLEY: every ready launcher of the group fires one missile at once, bbVolleySpread degrees apart (there is no salvo part),
         // each one spending a missile of its magazine; the launcher then reloads for its own interval. grp.msl carries the missile's own flight numbers.
@@ -29674,6 +29724,7 @@ function campaignTickPart(from, to, dtWeeks) {
     for (const id in campaign.boost) { campaign.boost[id][0].usedThisWeek = 0; campaign.boost[id][1].usedThisWeek = 0; }
     campaignDawn();                                           // (stop 3) the week's Alloys, production, launch orders and refuelling
     researchWeek();                                           // (v30 C1) the week's research points into the projects (06m; nothing until research starts)
+    if (typeof gazetteWeek === 'function') gazetteWeek();     // (v122.0, section 7m2) press day once a war month: the Defence Gazette
     if (SETTINGS.campaignAutosave === 1) campaignAutosave();
   } else if (campaignV3() && campaignDayIndex(to) > campaign.econ.lastDay) campaignYardsDay(false);   // (v39) a new building day inside the week: the yards build (06f)
   if (campaign.battle.state === 'parked') campaignWakeCheck();   // (stop 2) a fleet at the front's edge enters a place its side holds, or wakes the battle; the front moves
@@ -38107,7 +38158,7 @@ const RESEARCH_PROJECTS = [
   //      holds the projects that need only Tier 2 work, step 7 the ones that need a Tier 3 project first. The antimatter projects (Antimatter cells, Particle
   //      beams, Particle screen, Antimatter warheads), the Titan (Titan guns, Mega particle cannon) and the rest of the plan's list come in stage 2. ----
   { id: 'supercaps',  name: 'Superconducting capacitors', tier: 3, branch: 'power', step: 6, kind: 'option', needs: ['fastcaps'], tags: ['Power', 'Lasers', 'Guns'], uses: ['Rare earths'], text: 'Superconducting capacitors. Far more charge, dumped fast, refilled faster.', spec: '2.5x the charge · lasers and railguns hit 25% harder' },
-  { id: 'railguns',   name: 'Railguns',                  tier: 3, branch: 'guns', step: 7, kind: 'new',    needs: ['coilguns', 'spinal', 'supercaps'], tags: ['Guns', 'New tech'], uses: ['Rare earths'], text: 'Railguns, Cannon and Carronade. Each shot is fired off the capacitors and goes clean through.', spec: 'x2 damage · range x1.3 · Piercing · Over-penetrating' },
+  { id: 'railguns',   name: 'Railguns',                  tier: 3, branch: 'guns', step: 7, kind: 'new',    needs: ['coilguns', 'spinal', 'supercaps'], tags: ['Guns', 'New tech'], uses: ['Rare earths'], text: 'Railguns, Cannon and Carronade. Each slug comes from the gun magazines and is thrown by the capacitors, and goes clean through.', spec: 'x2 damage · range x1.3 · Piercing · Over-penetrating' },
   { id: 'sniperrail', name: 'Sniper rail',               tier: 3, branch: 'guns', step: 7, kind: 'option', needs: ['railguns'], tags: ['Guns'], text: 'The railgun Culverin. The longest-reaching gun we can build.' },
   { id: 'railmk2',    name: 'Railguns Mk II',            tier: 3, branch: 'guns', step: 7, kind: 'mark',   needs: ['railguns'], tags: ['Guns', 'Mark'], text: 'Smaller Mk II railguns.', spec: 'Also needs Chemical guns Mk II' },
   { id: 'plasma',     name: 'Plasma',                    tier: 3, branch: 'guns', step: 6, kind: 'new',    needs: ['fusion', 'carronade'], tags: ['Guns', 'New tech'], uses: ['Helium-3'], text: 'Plasma guns, Repeater and Cannon. Short-ranged, but they melt the plate they hit. No magazine.', spec: 'x2 damage · half a chemical gun\'s range · Melting · Heat · 1 Helium-3 a gun' },
@@ -38778,7 +38829,7 @@ const RESEARCH_MERGES = [
   { id: 'm_collector', name: 'Collector ring',                branch: 'power',    step: 7, needs: ['amprod', 'amcells'], members: ['belttraps', 'ammk2', 'collectors'], text: 'The collector ring round the Sun, smaller Mk II antimatter cells, and the full ring: enough Antimatter for every ship.' },
   { id: 'm_missilemk4', name: 'Missiles Mk IV',               branch: 'missiles', step: 7, needs: ['missilemk3', 'm_fighters'], members: ['missilemk4', 'torprail'], text: 'Mk IV launchers, and a compact torpedo rail so a fighter can carry a torpedo.' },
   { id: 'm_fusshield', name: 'Fusion and shields marks',      branch: 'power',    step: 6, needs: ['m_advfusion'], members: ['fusionmk3', 'shieldmk2'], text: 'Smaller Mk III fusion reactors, and smaller Mk II shield emitters once we have shields.' },
-  { id: 'm_railguns',  name: 'Railguns',                      branch: 'guns',     step: 7, needs: ['coilguns', 'm_bigguns', 'm_supercond'], members: ['railguns', 'sniperrail'], text: 'Railguns fired off the capacitors, and the railgun Culverin: the longest-reaching gun we can build.' },
+  { id: 'm_railguns',  name: 'Railguns',                      branch: 'guns',     step: 7, needs: ['coilguns', 'm_bigguns', 'm_supercond'], members: ['railguns', 'sniperrail'], text: 'Railguns (slugs from the magazines, thrown by the capacitors), and the railgun Culverin: the longest-reaching gun we can build.' },
   { id: 'm_plasma',    name: 'Plasma',                        branch: 'guns',     step: 7, needs: ['fusion', 'm_gunroles'], members: ['plasma', 'heavyplasma'], text: 'Plasma guns that melt the plate they hit, and the huge plasma Carronade.' },
   { id: 'm_advbeams',  name: 'Advanced beams',                branch: 'lasers',   step: 7, needs: ['m_beams', 'm_laserpd'], members: ['uv', 'xray', 'splitter'], text: 'Ultraviolet and X-ray lasers, and a beam splitter: one emitter, two targets.' },
   { id: 'm_optics',    name: 'Large optics',                  branch: 'lasers',   step: 7, needs: ['m_beams', 'm_cruiser'], members: ['largelens', 'hugemirror', 'adaptive'], text: 'A large lens, a huge mirror for cruisers and up, and adaptive optics that keep the beam on fast ships.' },
@@ -61701,10 +61752,11 @@ const UI_SETTINGS = {
   effects: 'full',           // screen effects: 'full', 'subtle' or 'off' (the radio static, typewriter, stamps, radar sweep...: section 7j)
   layerLine: 1, layerRange: 1, layerTags: 1, layerDanger: 0, layerMinimap: 1,   // the map layers: the Admiral's battle line, the selected squadron's gun range, the squadron tags (section 7i)
   layerDivNames: 0, layerFleetNames: 1,                                        // (v25, section 7p) the Division names and, with the chain of command on, the Fleet banner tags
-  layerMoves: 1, layerRetreat: 0,                                              // (v25, section 7p, chain of command only) each Fleet's move as a big arrow; the lines of retreat and rally points
+  layerMoves: 0, layerRetreat: 0,                                              // (v25, section 7p, chain of command only) each Fleet's move as a big arrow; the lines of retreat and rally points. (v125.0, Alex 7 Nov) Fleet moves off by default, in the campaign and Last Stand alike
   cmLayerOverlay: 1, cmLayerDivNames: 1,                                       // (v27 B3, section 7l) the campaign AO view's two switches: the AO overlay (plates, what each place makes) and the Division names
   tipDismissed: 0,           // 1 = the first-time tip on the map was closed for good
   foldLeft: 0, foldRight: 0, // 1 = that side column is folded away (keys [ and ])
+  movesOffV125: 0,           // (v125.0) 1 = this browser has had Fleet moves switched off once (the new default), whatever was saved before
   layoutV105: 0,             // (v105.0, UI review) 1 = this browser has had the v105 battle layout's new defaults put in once (Comms one line, the right drawer not folded)
   commsSmall: 1,             // (v101.0; v105.0 one line by default) 1 = the Comms panel under the map is shrunk to one line (the newest call), so the map is taller (key \)
   backdrops: 1,              // (v24, section 6c) 1 = a places map draws Mars, Phobos and Deimos as big dim planets behind the places; 0 = the v21 plain discs
@@ -61721,7 +61773,7 @@ const UI_SETTINGS = {
 // The choices offered for the side colours (the mockup's swatches). Shapes tell the sides apart too, so any pair works for colour-blind players.
 const OUR_COLOR_CHOICES = [['Blue', '#4D9DFF'], ['Cyan', '#35D6E0'], ['Green', '#4FD67E'], ['Bone', '#DCD0A6'], ['White', '#E8EEF4']];
 const ENEMY_COLOR_CHOICES = [['Red', '#FF5A3C'], ['Orange', '#FF9A2E'], ['Magenta', '#FF4FC3'], ['Violet', '#A87CFF'], ['Acid', '#B8F03A']];
-const UI_SAVED_KEYS = ['closeDetail', 'closeLook', 'shotDetail', 'engineGlow', 'icons', 'palette', 'ourColor', 'enemyColor', 'delverColor', 'sylphColor', 'echoColor', 'effects', 'layerLine', 'layerRange', 'layerTags', 'layerDanger', 'layerMinimap', 'layerDivNames', 'layerFleetNames', 'layerMoves', 'layerRetreat', 'tipDismissed', 'foldLeft', 'foldRight', 'commsSmall', 'layoutV105', 'backdrops', 'dispatchPause', 'cmLayerOverlay', 'cmLayerDivNames'];
+const UI_SAVED_KEYS = ['closeDetail', 'closeLook', 'shotDetail', 'engineGlow', 'icons', 'palette', 'ourColor', 'enemyColor', 'delverColor', 'sylphColor', 'echoColor', 'effects', 'layerLine', 'layerRange', 'layerTags', 'layerDanger', 'layerMinimap', 'layerDivNames', 'layerFleetNames', 'layerMoves', 'layerRetreat', 'tipDismissed', 'foldLeft', 'foldRight', 'commsSmall', 'layoutV105', 'movesOffV125', 'backdrops', 'dispatchPause', 'cmLayerOverlay', 'cmLayerDivNames'];
 const UI_STORE_PREFIX = 'engineersWar.ui.';
 
 // Reads the saved display settings (a browser that blocks storage simply keeps the defaults).
@@ -61740,6 +61792,10 @@ const UI_STORE_PREFIX = 'engineersWar.ui.';
   if (UI_SETTINGS.layoutV105 !== 1) {              // (v105.0) once per browser: the new layout's defaults, whatever was saved before (the player can change them again)
     UI_SETTINGS.commsSmall = 1; UI_SETTINGS.foldRight = 0; UI_SETTINGS.layoutV105 = 1;
     try { for (const k of ['commsSmall', 'foldRight', 'layoutV105']) localStorage.setItem(UI_STORE_PREFIX + k, JSON.stringify(UI_SETTINGS[k])); } catch (e) { /* storage blocked */ }
+  }
+  if (UI_SETTINGS.movesOffV125 !== 1) {            // (v125.0) once per browser: Fleet moves start off (the new default), even if it was saved on before; the player can switch it back on
+    UI_SETTINGS.layerMoves = 0; UI_SETTINGS.movesOffV125 = 1;
+    try { for (const k of ['layerMoves', 'movesOffV125']) localStorage.setItem(UI_STORE_PREFIX + k, JSON.stringify(UI_SETTINGS[k])); } catch (e) { /* storage blocked */ }
   }
 })();
 function saveUiSetting(key, value) {
@@ -69476,7 +69532,7 @@ function cmClick(e) {
   else if (what === 'focus') { if (campaign) campaignDevPickFocus(id, t.dataset.focus || ''); }   // (v61) the player picks a big world's focus on its place card (06n)
   else if (what === 'war') cmState.sel = null;
   else if (what === 'dsp') { cmState.openDispatch = id; const d = dispatchFeed.find(function (x) { return x.id === id; }); if (d) d.read = true; }
-  else if (what === 'dspgo') { const d = dispatchFeed.find(function (x) { return x.id === id; }); if (d) { d.read = true; if (d.go === 'battle' && campaignBattleLive()) { cmOpenBattle(); return; } if (/^research/.test(d.go)) { researchTabOpen(d.go.slice(9)); cmRender(true); return; } if (/^doctrine:/.test(d.go)) { b2OpenDoctrine(d.go.slice(9)); return; } if (d.go === 'supply') { cmState.view = 'map'; cmState.aoId = ''; cmState.sel = null; cmState.supplyOpen = true; cmRender(true); return; } cmState.view = d.go === 'ao' || /^ao:/.test(d.go) ? 'ao' : (d.go === 'council' ? 'council' : 'map'); cmState.aoId = /^ao:/.test(d.go) ? d.go.slice(3) : ''; cmState.sel = null; } }   // (v27 B3: 'ao:<id>' opens that AO; v30 C3: 'research:<project>' opens the Research tab on it)
+  else if (what === 'dspgo') { const d = dispatchFeed.find(function (x) { return x.id === id; }); if (d) { d.read = true; if (/^gazette:/.test(d.go)) { cmState.view = 'dispatches'; cmState.feedFilter = d.go; cmRender(true); return; } if (d.go === 'battle' && campaignBattleLive()) { cmOpenBattle(); return; } if (/^research/.test(d.go)) { researchTabOpen(d.go.slice(9)); cmRender(true); return; } if (/^doctrine:/.test(d.go)) { b2OpenDoctrine(d.go.slice(9)); return; } if (d.go === 'supply') { cmState.view = 'map'; cmState.aoId = ''; cmState.sel = null; cmState.supplyOpen = true; cmRender(true); return; } cmState.view = d.go === 'ao' || /^ao:/.test(d.go) ? 'ao' : (d.go === 'council' ? 'council' : 'map'); cmState.aoId = /^ao:/.test(d.go) ? d.go.slice(3) : ''; cmState.sel = null; } }   // (v27 B3: 'ao:<id>' opens that AO; v30 C3: 'research:<project>' opens the Research tab on it)
   else if (what === 'filter') cmState.feedFilter = id;
   else if (what === 'readall') { for (const d of dispatchFeed) d.read = true; }
   else if (what === 'sheet') { cmSheetAction(id, t); return; }
@@ -70458,15 +70514,17 @@ function cmRenderFeed() {
     [['all', 'All', dispatchFeed.length], ['unread', 'Unread', un.unread], ['crit', 'Critical', dispatchFeed.filter(function (d) { return d.crit; }).length]].concat(Object.keys(DISPATCH_KINDS).filter(function (k) { return counts[k]; }).map(function (k) { return [k, DISPATCH_KINDS[k][0], counts[k]]; }))
       .map(function (x) { return '<button type="button" data-cm="filter" data-id="' + x[0] + '" aria-pressed="' + (f === x[0]) + '"><span>' + x[1] + '</span><span>' + x[2] + '</span></button>'; }).join('') +
     '<button type="button" data-cm="readall"><span>Mark all read</span><span></span></button></div></section>' +
+    gazetteKindsHtml(f) +   // (v122.0, section 7m2) the Gazette's issues
     '<p class="note-ai">Signals as they come in. Traffic before a reload is not kept.</p></div>' +
-    '<div class="list">' + (list.length ? list.map(function (d) {
+    (gazetteOpenNo(f) ? '<div class="list gz-list">' + gazettePageHtml(gazetteOpenNo(f)) + '</div>' : '<div class="list">' + (list.length ? list.map(function (d) {
       // (v105.5, UI review) one line per dispatch: its stamp, its title, its time; the words are on the open one (the right panel) and in the tooltip
       return '<div class="dsp dsp-1' + (d.read ? '' : ' unread') + (d.id === cmState.openDispatch ? ' on' : '') + '" data-cm="dsp" data-id="' + d.id + '" title="' + esc(d.from + ': ' + d.text) + '" style="--tc:' + (d.crit ? 'var(--heat)' : (DISPATCH_KINDS[d.kind] || DISPATCH_KINDS.gov)[1]) + '">' +
         dispatchTagHtml(d.kind, d.crit) + '<span class="ti">' + esc(d.title) + '</span><span class="when">' + warDayText(d.week) + '</span></div>';
-    }).join('') : '<p class="note-ai">Nothing here yet.</p>') + '</div>';
+    }).join('') : '<p class="note-ai">Nothing here yet.</p>') + '</div>');
   setHtml(document.getElementById('cmFeed'), h);
 }
 function cmRenderDispatchCard() {
+  if (gazetteOpenNo(cmState.feedFilter)) { cmSideSet('The Gazette', 'No. ' + gazetteOpenNo(cmState.feedFilter), gazetteSideHtml(gazetteOpenNo(cmState.feedFilter))); return; }   // (v122.0, section 7m2)
   const d = dispatchFeed.find(function (x) { return x.id === cmState.openDispatch; }) || dispatchFeed[dispatchFeed.length - 1];
   if (!d) { cmSideSet('Open dispatch', '', '<p class="note-ai" style="margin:0">No dispatches yet.</p>'); return; }
   d.read = true;
@@ -70474,7 +70532,7 @@ function cmRenderDispatchCard() {
   const h = '<div class="ao-sub">' + dispatchTagHtml(d.kind, d.crit) + '<span class="note-ai" style="margin:0">' + warDayText(d.week) + '</span></div>' +
     '<div class="ao-title" style="margin-top:10px;font-size:22px">' + esc(d.title) + '</div><div class="note-ai">' + esc(d.from) + '</div>' +
     '<div class="typed" style="--tc:' + col + ';margin-top:12px">' + esc(d.text) + '</div>' +
-    '<div class="acts-col">' + (d.go ? '<button type="button" class="btn btn-primary" data-cm="dspgo" data-id="' + d.id + '">' + (d.go === 'battle' ? 'Watch the battle' : (d.go === 'ao' || /^ao:/.test(d.go) ? 'Open ' + esc(cmTheAo(campaignAoName(/^ao:/.test(d.go) ? d.go.slice(3) : campaignFrontId()))) + ' AO' : (d.go === 'council' ? 'Open the Council Room' : (/^research/.test(d.go) ? 'Open the Research tab' : (/^doctrine:/.test(d.go) ? 'Open its doctrine' : (d.go === 'supply' ? 'Open the supply return' : 'Show on the map')))))) + '</button>' : '') + '</div>';   // (v93.3, AI testers) the developers' note under every dispatch ("the line bank stub") is gone
+    '<div class="acts-col">' + (d.go ? '<button type="button" class="btn btn-primary" data-cm="dspgo" data-id="' + d.id + '">' + (/^gazette:/.test(d.go) ? 'Read the Gazette' : d.go === 'battle' ? 'Watch the battle' : (d.go === 'ao' || /^ao:/.test(d.go) ? 'Open ' + esc(cmTheAo(campaignAoName(/^ao:/.test(d.go) ? d.go.slice(3) : campaignFrontId()))) + ' AO' : (d.go === 'council' ? 'Open the Council Room' : (/^research/.test(d.go) ? 'Open the Research tab' : (/^doctrine:/.test(d.go) ? 'Open its doctrine' : (d.go === 'supply' ? 'Open the supply return' : 'Show on the map')))))) + '</button>' : '') + '</div>';   // (v93.3, AI testers) the developers' note under every dispatch ("the line bank stub") is gone
   cmSideSet('Open dispatch', d.id, h);
 }
 function cmRenderTicker() {
@@ -71122,6 +71180,7 @@ const DISPATCH_TAG_ICON = {
 // Every line here is written for the player: the {gaps} are names and round numbers, never a log sentence. A row with `quiet: true` is still a
 // situation the watcher knows (old saves and the tools name it), but it no longer makes a Dispatch: routine news the map and the panels already show.
 const DISPATCH_LINES = {
+  'gazette.out':               { kind: 'gov',   crit: false, from: 'Earth Defence Service', title: 'The Gazette is out: No. {no}', text: '"{headline}" says this month\'s Defence Gazette. Read it in the Dispatches tab.' },   // (v122.0, section 7m2)
   'brief.gov.campaignStart':   { kind: 'gov',   crit: false, from: '{ao} Command',        title: 'Week 0',                  text: 'The war begins. We hold {held}. The aliens hold everything from {alienFrom} outward, and the front is {ao}.' },
   'brief.gov.campaignLoaded':  { kind: 'gov',   crit: false, from: 'Signals Office',      title: 'Signals log resumes',     text: 'Signals log resumes, {day}. Earlier traffic is not on file.' },
   'brief.res.designsOutdated': { kind: 'research', crit: true, from: 'Design Bureau',     title: '{n} designs fail inspection', text: 'The Bureau\'s standards have changed, and {n} of our designs no longer pass: {list}. Their {ships} ships in service fight on. {yards} Open each one in the Design Bureau and file a corrected version.' },
@@ -71675,6 +71734,192 @@ function cheerPopup(title, text, from) {
   el.classList.add('on');
   clearTimeout(cheerPopup.timer);
   cheerPopup.timer = setTimeout(function () { el.classList.remove('on'); }, 20000);
+}
+// =====================================================================
+// 7m2. (v122.0, Alex: "do the gazette, monthly not weekly, put it in the dispatch tab") THE DEFENCE GAZETTE
+//
+//   Once a war month (GAZETTE_WEEKS war weeks) the Earth Defence Service prints a newspaper about the war the player's ships are fighting. Every issue is
+//   written from the war's own records, read twice: a snapshot at the start of the month and one at its end (gazetteSnapshot), and the difference is the
+//   month's news. Nothing is invented and nothing here changes the war: the paper reads the campaign's tallies (ships built and lost, waves beaten, Alloys),
+//   the battle scars record per design (section 5vd), the chain of command's stretch results per design (7r), the officers' service records, the campaign
+//   log, the research done and the designs saved in the Bureau that month.
+//   An issue is a plain record kept in the save (campaign.gazette.issues) with the words already written, so an old issue reads the same for ever. The
+//   newest issue makes a Dispatch ("The Gazette is out"), and the paper is read in the Dispatches tab: the Show panel lists the issues, the page is laid
+//   out as a broadsheet (masthead, the lead story, the design scoreboard, what the Bureau drew, honours, the home front, the month's ledger and the Roll
+//   of the fallen), and the right panel keeps the ledger beside it.
+// =====================================================================
+const GAZETTE_WEEKS = 4;                           // a war month: one issue every this many war weeks
+const GAZETTE_KEEP = 36;                           // the save keeps the newest this many issues
+const GAZETTE_WIRE_MAX = 7;                        // log lines quoted in "From the wire"
+const GAZETTE_WIRE_KINDS = ['front', 'ao', 'place', 'aliens', 'council', 'research', 'officer', 'design', 'over', 'sighted', 'station', 'nest', 'sylph'];
+
+function gazetteStore() {
+  if (typeof campaign === 'undefined' || !campaign) return null;
+  if (!campaign.gazette || typeof campaign.gazette !== 'object' || Array.isArray(campaign.gazette)) campaign.gazette = { issues: [], snap: null, nextNo: 1 };
+  const g = campaign.gazette;
+  if (!Array.isArray(g.issues)) g.issues = [];
+  if (typeof g.nextNo !== 'number') g.nextNo = g.issues.length + 1;
+  return g;
+}
+function gazetteIssues() { const g = gazetteStore(); return g ? g.issues : []; }
+function gazetteIssue(no) { const g = gazetteStore(); if (!g) return null; for (let k = 0; k < g.issues.length; k++) if (g.issues[k].no === no) return g.issues[k]; return null; }
+function gazetteTypeName(id) { const t = typeof typeIndexById === 'function' ? typeIndexById(id) : -1; return t >= 0 ? SHIP_TYPES[t].name : id; }
+function gazetteNum(v) { return typeof v === 'number' && isFinite(v) ? v : 0; }
+function gazetteCount(n, word, words) { n = Math.round(n); return n.toLocaleString('en-GB') + ' ' + (n === 1 ? word : (words || word + 's')); }
+
+// ---- The two readings an issue is written from ----
+// The war's counters as they stand now: everything the month's news is the difference of.
+function gazetteSnapshot() {
+  const c = campaign, s = c.stats || {}, snap = { week: Math.floor(c.week), lost: [gazetteNum(s.lost && s.lost[0]), gazetteNum(s.lost && s.lost[1])],
+    produced: gazetteNum(s.produced && s.produced[0]), launched: gazetteNum(s.launched && s.launched[0]), alloysIn: gazetteNum(s.alloysIn && s.alloysIn[0]), alloysSpent: gazetteNum(s.alloysSpent && s.alloysSpent[0]),
+    wavesBeaten: gazetteNum(s.wavesBeaten), assaults: gazetteNum(s.assaults), advances: gazetteNum(s.advances), withdrawals: gazetteNum(s.withdrawals),
+    front: campaignFrontId(), aos: {}, producedTypes: {}, scars: {}, officers: {}, research: c.research && Array.isArray(c.research.done) ? c.research.done.length : 0 };
+  const aos = campaignAos();
+  for (let k = 0; k < aos.length; k++) { const a = c.ao[aos[k].id]; snap.aos[aos[k].id] = a ? a.securedBy : -1; }
+  const made = s.producedTypes && s.producedTypes[0] ? s.producedTypes[0] : {};
+  for (const id in made) if (made[id] > 0) snap.producedTypes[id] = made[id];
+  if (c.scars) for (const id in c.scars) { const r = c.scars[id]; if (r) snap.scars[id] = [gazetteNum(r.ships), gazetteNum(r.lost), gazetteNum(r.battles)]; }
+  if (typeof OFFICER_ROSTER !== 'undefined') for (let k = 0; k < OFFICER_ROSTER.length; k++) {
+    const o = OFFICER_ROSTER[k]; if (!o || o.side !== 0) continue;
+    snap.officers[o.id] = [gazetteNum(o.service && o.service.kills), gazetteNum(o.service && o.service.lost), gazetteNum(o.service && o.service.battles), o.medals ? o.medals.length : 0, o.status || 'active'];
+  }
+  return snap;
+}
+function gazetteDelta(a, b, key) { return Math.max(0, gazetteNum(b[key]) - gazetteNum(a[key])); }
+
+// ---- Every dawn: is it press day? ----
+function gazetteWeek() {
+  const g = gazetteStore(); if (!g || !campaign || campaign.over) return;
+  if (!g.snap) { g.snap = gazetteSnapshot(); return; }
+  const now = gazetteSnapshot();
+  if (now.week - g.snap.week < GAZETTE_WEEKS) return;
+  const issue = gazetteWrite(g.snap, now);
+  g.issues.push(issue);
+  while (g.issues.length > GAZETTE_KEEP) g.issues.shift();
+  g.snap = now;
+  if (typeof dispatchAdd === 'function') dispatchAdd('gazette.out', { no: issue.no, headline: issue.headline, front: campaignAoName(now.front) }, 'gazette:' + issue.no);
+}
+
+// ---- Writing an issue ----
+// Everything the paper says about the month, as plain fields: { no, week, from, to, headline, standfirst, lead: [paragraphs], wire: [{ week, text }],
+//   designs: [{ name, built, fought, lost, kills, rating }], drawn: [names], honours: [{ name, text }], fallen: [names], home: [paragraphs],
+//   ledger: [[label, value]], roll: [{ name, lost }], rollTotal }.
+function gazetteWrite(prev, now) {
+  const c = campaign, g = gazetteStore();
+  const from = prev.week, to = now.week, front = campaignAoName(now.front), enemyName = typeof ALIEN_FACTIONS !== 'undefined' && ALIEN_FACTIONS[alienFactionId()] ? ALIEN_FACTIONS[alienFactionId()].name : 'the aliens';
+  const enemy = /^the /i.test(enemyName) ? enemyName.slice(4) : enemyName;   // ("The Swarm" is written "the Swarm" inside a sentence)
+  const killed = Math.max(0, now.lost[1] - prev.lost[1]), ours = Math.max(0, now.lost[0] - prev.lost[0]);
+  const built = gazetteDelta(prev, now, 'produced'), waves = gazetteDelta(prev, now, 'wavesBeaten'), assaults = gazetteDelta(prev, now, 'assaults');
+  const alloysIn = gazetteDelta(prev, now, 'alloysIn'), spent = gazetteDelta(prev, now, 'alloysSpent'), projects = gazetteDelta(prev, now, 'research');
+  // the map: what changed hands
+  const won = [], lostAos = [];
+  for (const id in now.aos) { const was = prev.aos[id], is = now.aos[id]; if (was === is) continue; if (is === 0) won.push(campaignAoName(id)); else if (was === 0) lostAos.push(campaignAoName(id)); }
+  const frontMoved = prev.front !== now.front;
+  // the designs: the month's stretches (kills and losses per design), what was built, what fought
+  const des = {};
+  const row = function (id) { if (!des[id]) des[id] = { id: id, name: gazetteTypeName(id), built: 0, fought: 0, lost: 0, kills: 0, rating: '', score: 0, n: 0 }; return des[id]; };
+  for (const id in now.producedTypes) { const d = now.producedTypes[id] - gazetteNum(prev.producedTypes[id]); if (d > 0) row(id).built = d; }
+  for (const id in now.scars) { const a = prev.scars[id] || [0, 0, 0], b = now.scars[id]; if (b[0] - a[0] > 0 || b[1] - a[1] > 0) { const r = row(id); r.fought = Math.max(0, b[0] - a[0]); r.lost = Math.max(0, b[1] - a[1]); } }
+  if (c.cmd && Array.isArray(c.cmd.stretches)) for (const st of c.cmd.stretches) { if (!(st.week > from && st.week <= to)) continue; for (const r of st.designs || []) { const d = row(r.id); d.kills += gazetteNum(r.kills); d.score += gazetteNum(r.score); d.n++; d.rating = r.rating || d.rating; } }
+  const designs = Object.keys(des).map(function (k) { return des[k]; }).filter(function (d) { return d.built > 0 || d.fought > 0 || d.kills > 0; });
+  designs.sort(function (a, b) { return (b.kills - a.kills) || (b.fought - a.fought) || (b.built - a.built) || (a.name < b.name ? -1 : 1); });
+  const best = designs.find(function (d) { return d.kills > 0 && d.fought > 0; }) || null;
+  const worst = designs.slice().filter(function (d) { return d.fought >= 5 && d.lost > 0; }).sort(function (a, b) { return (b.lost / b.fought) - (a.lost / a.fought); })[0] || null;
+  // what the Bureau drew this month
+  const drawn = [];
+  for (let t = 0; t < SHIP_TYPES.length; t++) { const r = SHIP_TYPES[t]; if (r && r.design && typeof r.savedWeek === 'number' && r.savedWeek > from && r.savedWeek <= to && !r.stockV3 && !r.campaignStock) drawn.push(r.name); }
+  // the officers: who did the most, who was decorated, who fell
+  const honours = [], fallen = [];
+  if (typeof OFFICER_ROSTER !== 'undefined') {
+    const rows = [];
+    for (let k = 0; k < OFFICER_ROSTER.length; k++) {
+      const o = OFFICER_ROSTER[k]; if (!o || o.side !== 0) continue;
+      const a = prev.officers[o.id] || [0, 0, 0, 0, 'active'], b = now.officers[o.id] || a;
+      const kills = Math.max(0, b[0] - a[0]), battles = Math.max(0, b[2] - a[2]), medals = Math.max(0, b[3] - a[3]);
+      if (a[4] !== 'fallen' && b[4] === 'fallen') fallen.push(gazetteOfficerName(o));
+      if (kills > 0 || medals > 0) rows.push({ o: o, kills: kills, battles: battles, medals: medals, lost: Math.max(0, b[1] - a[1]) });
+    }
+    rows.sort(function (x, y) { return (y.kills - x.kills) || (y.medals - x.medals); });
+    for (let k = 0; k < rows.length && k < 3; k++) {
+      const r = rows[k], medal = r.medals > 0 && r.o.medals && r.o.medals.length ? medalById(r.o.medals[r.o.medals.length - 1].id) : null;
+      honours.push({ name: gazetteOfficerName(r.o), text: gazetteCount(r.kills, 'kill') + ' in ' + gazetteCount(r.battles, 'fight') + (r.lost > 0 ? ', ' + r.lost + ' of ours lost under ' + (r.o.name ? 'the ' + r.o.name.split(' ').slice(-1)[0] + ' flag' : 'that flag') : '') + (medal ? '. ' + (medal.name || 'A medal') + ' pinned on.' : '.') });
+    }
+  }
+  // the wire: the month's log lines worth printing
+  const wire = [];
+  if (Array.isArray(c.log)) for (let k = c.log.length - 1; k >= 0 && wire.length < GAZETTE_WIRE_MAX; k--) { const L = c.log[k]; if (L.week > from && L.week <= to && GAZETTE_WIRE_KINDS.indexOf(L.kind) >= 0 && L.text && L.text.length < 220) wire.unshift({ week: Math.floor(L.week), text: L.text }); }
+  // the research done this month
+  const done = [];
+  if (c.research && c.research.doneWeek) for (const id in c.research.doneWeek) { const w = c.research.doneWeek[id]; if (w > from && w <= to) done.push(typeof RESEARCH_BY_ID !== 'undefined' && RESEARCH_BY_ID[id] ? RESEARCH_BY_ID[id].name : id); }
+  // ---- the words ----
+  let headline, standfirst;
+  if (c.over && c.over.winner === 0) { headline = 'THE WAR IS WON'; standfirst = 'The ' + enemy + ' are beaten. ' + (c.over.why ? c.over.why.charAt(0).toUpperCase() + c.over.why.slice(1) : '') + '.'; }
+  else if (won.length) { headline = won.join(' AND ').toUpperCase() + (won.length > 1 ? ' ARE OURS' : ' IS OURS'); standfirst = 'The ' + enemy + ' are pushed back and the front is ' + front + '. ' + gazetteCount(ours, 'ship') + ' of ours paid for it.'; }
+  else if (lostAos.length) { headline = lostAos.join(' AND ').toUpperCase() + (lostAos.length > 1 ? ' FALL' : ' FALLS'); standfirst = 'The ' + enemy + ' take ' + lostAos.join(' and ') + ' and the front is now ' + front + '. The Fleet fights on.'; }
+  else if (best && best.kills > best.lost * 2) { headline = best.name.toUpperCase() + ' HOLDS THE LINE AT ' + front.toUpperCase(); standfirst = 'The ' + best.name + ' trades ' + gazetteCount(best.kills, 'kill') + ' for ' + gazetteCount(best.lost, 'loss', 'losses') + ' this month. ' + gazetteCount(waves, 'wave') + ' beaten.'; }
+  else if (ours > killed && ours > 0) { headline = 'A HARD MONTH AT ' + front.toUpperCase(); standfirst = gazetteCount(ours, 'ship') + ' lost for ' + gazetteCount(killed, 'enemy hull') + '. The yards posted ' + gazetteCount(built, 'new hull') + '. The Bureau is open all night.'; }
+  else if (killed > 0) { headline = front.toUpperCase() + ' HOLDS'; standfirst = gazetteCount(killed, 'enemy hull') + ' destroyed for ' + gazetteCount(ours, 'loss', 'losses') + '. ' + gazetteCount(waves, 'wave') + ' beaten.'; }
+  else { headline = 'A QUIET MONTH ON THE ' + front.toUpperCase() + ' FRONT'; standfirst = 'No enemy hull was destroyed and none of ours lost. The yards posted ' + gazetteCount(built, 'hull') + '.'; }
+  const lead = [];
+  lead.push('Between week ' + from + ' and week ' + to + ' the Fleet fought the ' + enemy + ' at ' + front + (frontMoved ? ', the front having moved from ' + campaignAoName(prev.front) : '') + '. ' +
+    (ours + killed > 0 ? 'The month\'s count has ' + gazetteCount(killed, 'enemy hull') + ' destroyed and ' + gazetteCount(ours, 'ship') + ' of ours lost' + (killed > 0 && ours > 0 ? ', ' + (killed >= ours ? Math.round(killed / ours * 10) / 10 + ' of theirs for every one of ours' : 'one of theirs for every ' + Math.round(ours / killed * 10) / 10 + ' of ours') : '') + '.' : 'No ship was lost on either side.') +
+    (waves > 0 ? ' ' + gazetteCount(waves, 'alien wave') + ' broke on the line.' : '') + (assaults > 0 ? ' Fleet Command launched ' + gazetteCount(assaults, 'assault') + '.' : ''));
+  if (best) lead.push('The ' + best.name + ' is the ship of the month: ' + gazetteCount(best.kills, 'kill') + ' for ' + gazetteCount(best.lost, 'loss', 'losses') + ' across ' + gazetteCount(best.fought, 'ship') + ' that fought' + (best.rating === 'well' ? ', and the chain of command says it did well.' : (best.rating === 'badly' ? ', though the chain of command says it was miscast.' : '.')));
+  if (worst && worst !== best) lead.push('The ' + worst.name + ' had the worst of it: ' + worst.lost + ' of the ' + worst.fought + ' that fought did not come back. ' + (drawn.length ? 'The Bureau has a new sheet on the table.' : 'The Bureau has not yet answered.'));
+  if (built > 0) lead.push('The yards posted ' + gazetteCount(built, 'new hull') + ' this month on ' + Math.round(alloysIn).toLocaleString('en-GB') + ' Alloys of income.' + (designs.filter(function (d) { return d.built > 0; }).length ? ' Most built: ' + designs.filter(function (d) { return d.built > 0; }).sort(function (a, b) { return b.built - a.built; }).slice(0, 3).map(function (d) { return d.name + ' (' + d.built + ')'; }).join(', ') + '.' : ''));
+  const home = [];
+  home.push((alloysIn > 0 ? 'Earth and the colonies gave ' + Math.round(alloysIn / Math.max(1, to - from)).toLocaleString('en-GB') + ' Alloys a week' + (spent > 0 ? ', ' + Math.round(spent).toLocaleString('en-GB') + ' of it spent on ships' : '') + '.' : 'Earth\'s Alloys are not yet flowing.') +
+    (done.length ? ' The laboratories finished ' + done.join(', ') + '.' : (projects > 0 ? ' The laboratories finished ' + gazetteCount(projects, 'project') + '.' : '')));
+  const held = Object.keys(now.aos).filter(function (id) { return now.aos[id] === 0; }).map(campaignAoName);
+  home.push('We hold ' + (held.length ? held.join(', ') : 'nothing but Earth') + '.' + (fallen.length ? ' The Roll carries ' + (fallen.length === 1 ? 'one name' : fallen.length + ' names') + ' from the Fleet\'s officers this month.' : ''));
+  const ledger = [['Hulls posted by the yards', built], ['Ships lost', ours], ['Enemy hulls destroyed', killed], ['Waves beaten', waves], ['Assaults launched', assaults], ['Alloys received', Math.round(alloysIn)], ['Projects finished', done.length || projects]];
+  const roll = designs.filter(function (d) { return d.lost > 0; }).sort(function (a, b) { return b.lost - a.lost; }).map(function (d) { return { name: d.name, lost: d.lost }; });
+  return { no: g.nextNo++, week: to, from: from, to: to, headline: headline, standfirst: standfirst, lead: lead, wire: wire,
+           designs: designs.slice(0, 6).map(function (d) { return { name: d.name, built: d.built, fought: d.fought, lost: d.lost, kills: d.kills, rating: d.rating }; }),
+           drawn: drawn, honours: honours, fallen: fallen, home: home, ledger: ledger, roll: roll, rollTotal: ours, front: front, enemy: enemy };
+}
+function gazetteOfficerName(o) { return typeof officerShortName === 'function' ? officerShortName(o, '') : (o.name || '?'); }
+
+// ---- The paper on the Dispatches tab ----
+// The Show panel's list of issues (newest first), '' when the war has printed none.
+function gazetteKindsHtml(filter) {
+  const issues = gazetteIssues(); if (!issues.length) return '';
+  let h = '<section class="panel"><div class="panel-head">The Gazette</div><div class="panel-body tight" style="display:flex;flex-direction:column;gap:6px">';
+  for (let k = issues.length - 1; k >= 0 && k >= issues.length - 8; k--) { const i = issues[k]; h += '<button type="button" data-cm="filter" data-id="gazette:' + i.no + '" aria-pressed="' + (filter === 'gazette:' + i.no) + '"><span>No. ' + i.no + '</span><span>week ' + i.week + '</span></button>'; }
+  return h + '</div></section>';
+}
+function gazetteOpenNo(filter) { const m = /^gazette:(\d+)$/.exec(filter || ''); return m ? +m[1] : 0; }
+// The broadsheet.
+function gazettePageHtml(no) {
+  const i = gazetteIssue(no); if (!i) return '<p class="note-ai">No such issue.</p>';
+  const e = esc;
+  let h = '<div class="gz-page" data-gazette="' + i.no + '">' +
+    '<div class="gz-ears"><span>Earth Defence Service · No. ' + i.no + ' · week ' + i.week + '</span><span>Printed for the fleet and the folks at home · price: one hull a month</span></div>' +
+    '<h1 class="gz-mast">The Defence Gazette</h1>' +
+    '<div class="gz-rule"><span>' + e(i.front) + ' front</span><span>Against the ' + e(i.enemy) + '</span><span>Weeks ' + i.from + ' to ' + i.to + '</span></div>' +
+    '<h2 class="gz-head">' + e(i.headline) + '</h2><p class="gz-stand">' + e(i.standfirst) + '</p>' +
+    '<div class="gz-cols"><div class="gz-main">' + i.lead.map(function (p, k) { return '<p' + (k === 0 ? ' class="gz-first"' : '') + '>' + e(p) + '</p>'; }).join('');
+  if (i.designs.length) {
+    h += '<h3>The ships this month</h3><table class="gz-table"><tr><th>Design</th><th>Built</th><th>Fought</th><th>Lost</th><th>Kills</th><th>Word</th></tr>' +
+      i.designs.map(function (d) { return '<tr><td>' + e(d.name) + '</td><td>' + d.built + '</td><td>' + d.fought + '</td><td>' + d.lost + '</td><td>' + d.kills + '</td><td>' + e(d.rating === 'well' ? 'did well' : (d.rating === 'badly' ? 'did badly' : (d.rating === 'fair' ? 'fair' : ''))) + '</td></tr>'; }).join('') + '</table>';
+  }
+  h += '<h3>What the Bureau drew</h3><p>' + (i.drawn.length ? 'New on the yards\' tables this month: ' + e(i.drawn.join(', ')) + '. Every loss on the wire is a line on the next sheet.' : 'No new sheet left the Drafting Office this month. The Bureau is open all night.') + '</p>';
+  if (i.wire.length) h += '<h3>From the wire</h3><ul class="gz-wire">' + i.wire.map(function (w) { return '<li><b>wk ' + w.week + '</b> ' + e(w.text) + '</li>'; }).join('') + '</ul>';
+  h += '</div><div class="gz-side">';
+  h += '<h3>Honours</h3>' + (i.honours.length ? i.honours.map(function (o) { return '<p><b>' + e(o.name) + '</b>, ' + e(o.text) + '</p>'; }).join('') : '<p>No officer is named this month.</p>');
+  h += '<h3>Home front</h3>' + i.home.map(function (p) { return '<p>' + e(p) + '</p>'; }).join('');
+  h += '<h3>The month\'s ledger</h3><table class="gz-ledger">' + i.ledger.map(function (r) { return '<tr><td>' + e(r[0]) + '</td><td>' + (typeof r[1] === 'number' ? r[1].toLocaleString('en-GB') : e(String(r[1]))) + '</td></tr>'; }).join('') + '</table>';
+  h += '<h3>The Roll</h3>' + (i.rollTotal > 0 ? '<p class="gz-roll-lead">' + e(gazetteCount(i.rollTotal, 'hull')) + ' lost this month. The Gazette prints every design once.</p>' + (i.roll.length ? '<table class="gz-ledger">' + i.roll.map(function (r) { return '<tr><td>' + e(r.name) + '</td><td>' + r.lost + '</td></tr>'; }).join('') + '</table>' : '') : '<p>No ship of ours was lost this month.</p>') +
+    (i.fallen.length ? '<p class="gz-fallen">Officers: ' + e(i.fallen.join(', ')) + '. &#8224;</p>' : '');
+  h += '</div></div><div class="gz-foot">Design is destiny. The Drafting Office is open all night.</div></div>';
+  return h;
+}
+// The right panel beside an open issue: its ledger, and the issues on file.
+function gazetteSideHtml(no) {
+  const i = gazetteIssue(no); if (!i) return '';
+  return '<div class="ao-sub"><span class="note-ai" style="margin:0">Weeks ' + i.from + ' to ' + i.to + '</span></div><div class="ao-title" style="margin-top:10px;font-size:20px">' + esc(i.headline) + '</div>' +
+    '<dl class="kv">' + i.ledger.map(function (r) { return '<dt>' + esc(r[0]) + '</dt><dd>' + (typeof r[1] === 'number' ? r[1].toLocaleString('en-GB') : esc(String(r[1]))) + '</dd>'; }).join('') + '</dl>' +
+    '<p class="note-ai">The Gazette prints every ' + GAZETTE_WEEKS + ' war weeks from the war\'s own records. ' + gazetteIssues().length + ' on file.</p>';
 }
 // =====================================================================
 // 7n. THE COUNCIL ROOM  (v24, Mars plan stop 8: the War Council's tab on the campaign screen; src/council-room.css for its look)
@@ -77973,7 +78218,10 @@ const LAST_STAND = {
                                    { name: 'Halberd II', from: 20, share: 0.25 }, { name: 'Bastion', from: 24, share: 0.2 }],
               bosses: [{ name: 'Halberd', from: 5 }, { name: 'Partisan', from: 10 }, { name: 'Bastion', from: 15 }, { name: 'Bastion II', from: 20 }, { name: 'Wheel', from: 25 }] }
   },
-  mixedOrder: ['swarm', 'delver', 'echo'],            // (v100.5: every run is mixed, Alex 5 Nov) the enemy changes every mixedWaves waves, in this order
+  // (v124.0, Alex 7 Nov: "make last stand mode be against a single enemy race at a time") ONE ENEMY A RUN: the menu's Enemy choice is Random (the default:
+  // one of these picked at the start of each run) or one race by name. The Sylph are not on the list: they still drop in as visitors (below) whatever the enemy.
+  enemyChoices: ['swarm', 'delver', 'echo'],
+  mixedOrder: ['swarm', 'delver', 'echo'],            // (v100.5: every run was mixed; since v124.0 only the check tools start a mixed run, lsStart() with no enemy) the enemy changes every mixedWaves waves, in this order
   mixedWaves: 3, mixedPairFrom: 20,                     // from this wave a Mixed run sends two factions at once (they share the wave's strength)
   bossEvery: 5,
   // (v100.5) SYLPH VISITORS (Alex, 5 Nov: "bonus enemies, loot goblins, worth huge xp, but only on the field a short time before leaving. they can come in
@@ -78016,7 +78264,10 @@ function lsType(name) {
 function lsStart(enemy, opts) {
   opts = lsCleanOpts(opts);
   if (lastStand !== null) lsLeave();
-  // (v100.5) every run is mixed (Alex, 5 Nov: "I want mix and match waves"); one faction alone is only for the check tools: lsStart('delver')
+  // (v124.0) the menu starts a run against one race: lsStart('random') picks one of LAST_STAND.enemyChoices (with the run's seed when one is fixed, so the
+  // same seed brings the same enemy), lsStart('delver') names one. lsStart() with no enemy is still the old mixed run (v100.5), for the older check tools.
+  const pick = enemy === 'random' ? 'random' : enemy;
+  if (enemy === 'random') enemy = lsRandomEnemy(opts.seed);
   enemy = enemy && enemy !== 'sylph' && LAST_STAND.factions[enemy] ? enemy : 'mixed';
   const typesBefore = SHIP_TYPES.length;                 // (v100.2) every type the run adds is taken out again when you leave it (lsLeave)
   const starter = lsType(LAST_STAND.starterDesign);
@@ -78068,7 +78319,7 @@ function lsStart(enemy, opts) {
                 // (v100.3) the pool designs that are yours (from the design library)
                 mine: new Set(mine),
                 // (v100.4) the enemy ('mixed'; one faction only for the check tools), each faction's wave and boss designs, the bosses flying now, the win
-                enemy: enemy, factionRows: factionRows, bossRows: bossRows, bosses: [], won: false, endless: false, finishNow: false, wonAt: 0, cardsHead: '',
+                enemy: enemy, pick: pick === 'random' ? 'random' : enemy, factionRows: factionRows, bossRows: bossRows, bosses: [], won: false, endless: false, finishNow: false, wonAt: 0, cardsHead: '',
                 // (v100.5) the Sylph visitors: their designs (from, type), the one due ({ at, type } or null), those on the field ({ slot, name, leaveAt })
                 visitorRows: visitorRows, visitorTypes: new Set(visitorRows.map(function (r) { return r.type; })), visitorDue: null, visitors: [], visitorsCome: 0,
                 // (v100.8) the test options this run was started with, and whether the results screen has been shown
@@ -78214,6 +78465,12 @@ function lsWaveRoom() {
   let red = 0; for (let i = 0; i < highWater; i++) if (shipAlive[i] === 1 && shipSide[i] === RED) red++;
   const G = LAST_STAND.governor;
   return Math.min(LAST_STAND.maxWaveShips, Math.max(G.minWaveShips, G.redCap - red));
+}
+// (v124.0) A race for a Random run: one of LAST_STAND.enemyChoices, the same one for the same fixed seed (0 = no seed: a new pick each time).
+function lsRandomEnemy(seed) {
+  const list = LAST_STAND.enemyChoices;
+  const r = seed > 0 ? ((seed * 2654435761) >>> 0) % 1000 / 1000 : Math.random();
+  return list[Math.min(list.length - 1, Math.floor(r * list.length))];
 }
 // The factions wave n comes from: the run's enemy, or for a Mixed run the one whose turn it is (and the next one too from wave mixedPairFrom).
 function lsWaveFactions(n) {
@@ -79231,6 +79488,7 @@ function lastStandFrame(now) {
 //   how many were destroyed). That table is what makes the mode a test bench. "Copy results" puts it on the clipboard as plain text.
 // =====================================================================
 const LS_HOW_TO = [
+  'Each run is against one enemy race, picked at random unless you choose one below.',
   'Your Station holds the left edge. A wave comes in from the right every ' + LAST_STAND.waveSeconds + ' seconds; Call next wave brings it sooner.',
   'You do not steer the battle. Every enemy ship destroyed gives XP, and each level pauses on three cards: pick one (or press 1, 2 or 3).',
   'Squadrons, officers, upgrades, weapons and Fleet research go to your hand. Drag them onto the chain of command down the left of the map. The battle does not stop while you do.',
@@ -79241,6 +79499,9 @@ const LS_HOW_TO = [
   'From wave ' + LAST_STAND.visitors.from + ', a Sylph ship may drop in. It is very tough and soon leaves, but it is worth ' + LAST_STAND.visitors.xpMul + ' times the XP.'
 ];
 let lsTestOpts = { wave: 1, level: 1, allTech: false, seed: 0 };
+// (v124.0) the menu's Enemy choice: 'random' (the default) or one of LAST_STAND.enemyChoices, kept in this browser
+let lsEnemyPick = 'random';
+try { const k = localStorage.getItem('ewLastStandEnemy'); if (k && LAST_STAND.enemyChoices.indexOf(k) >= 0) lsEnemyPick = k; } catch (e) { /* (no storage: Random) */ }
 try { const k = localStorage.getItem('ewLastStandTest'); if (k) lsTestOpts = lsCleanOpts(JSON.parse(k)); } catch (e) { /* (no storage: the defaults) */ }
 // The test options, made safe (whole numbers in range, a tick on or off).
 function lsCleanOpts(o) {
@@ -79272,11 +79533,24 @@ function lsRenderMenu(body) {
   body.appendChild(ul);
   // (v102.5) version 2 (the card tree, a station for each Fleet) replaces version 1 on the menu (Alex). Version 1 is still there for the check tools: lsStart without v2.
   const go = el('button', 'btn btn-primary', 'Start the run'); go.type = 'button'; go.id = 'lsGo';
-  go.addEventListener('click', function () { hideMainMenu(); lsStart(undefined, Object.assign({}, lsTestOpts, { v2: true, officers: olLsOn === 1 })); });
+  go.addEventListener('click', function () { hideMainMenu(); lsStart(lsEnemyPick, Object.assign({}, lsTestOpts, { v2: true, officers: olLsOn === 1 })); });
   const row = el('div', 'mm-row'); row.appendChild(go);
   const on = lsOptsText(lsTestOpts);
   if (on) row.appendChild(el('span', 'mm-msg', 'Test options on: ' + on + '.'));
   body.appendChild(row);
+  // (v124.0) THE ENEMY: Random (a new race each run) or one race; the Sylph drop in as visitors whatever is picked
+  const ENEMY_HINT = { random: 'A different enemy race each run: Swarm, Delver or Echo.', swarm: 'The Swarm: masses of cheap living ships, growing bigger as the waves go on.',
+                       delver: 'The Delvers: drone swarms, then rock-hulled cruisers and mining arks.', echo: 'The Echo: for now they fly copies of our own stock designs (their own ships are not drawn yet).' };
+  const enr = el('div', 'mm-row'); enr.appendChild(el('span', 'label', 'Enemy'));
+  const eseg = el('span', 'seg'); eseg.id = 'lsEnemy';
+  ['random'].concat(LAST_STAND.enemyChoices).forEach(function (k) {
+    const b = el('button', lsEnemyPick === k ? 'on' : '', k === 'random' ? 'Random' : LAST_STAND.factions[k].name); b.type = 'button'; b.id = 'lsEnemy_' + k;
+    b.addEventListener('click', function () { lsEnemyPick = k; try { localStorage.setItem('ewLastStandEnemy', k); } catch (e) { /* (no storage) */ } mmRender(); });
+    eseg.appendChild(b);
+  });
+  enr.appendChild(eseg);
+  enr.appendChild(el('span', 'mm-msg', ENEMY_HINT[lsEnemyPick] + ' Sylph ships may still drop in from wave ' + LAST_STAND.visitors.from + '.'));
+  body.appendChild(enr);
   // (v106.1, section 10j) the officer library: its on-duty officers lead your squadrons, Divisions and Fleets in the run
   const nDuty = olEntries().filter(function (e) { return e.duty; }).length;
   const ofr = el('div', 'mm-row'); ofr.appendChild(el('span', 'label', 'Officer library'));
@@ -79336,6 +79610,7 @@ function lsResultsData() {
     over: L.over, won: L.won, text: L.overText || (L.won ? 'Won at wave ' + LAST_STAND.winWave + '.' : ''), wave: L.wave, level: L.level, seconds: simTime,
     destroyed: lsKills(), visitorsDown: lsVisitorsKilled(), visitorsCome: L.visitorsCome, cards: L.picks.length, packages: L.owned.size, squadrons: L.hangars.length,
     test: lsOptsText(L.test), seed: L.seed,
+    enemy: L.enemy === 'mixed' ? 'Mixed' : LAST_STAND.factions[L.enemy].name + (L.pick === 'random' ? ' (random)' : ''),   // (v124.0) the race this run was against
     ours: Array.from(ours.values()).sort(byDealt), theirs: Array.from(theirs.values()).sort(function (a, b) { return b.sent - a.sent; })
   };
 }
@@ -79345,7 +79620,7 @@ function lsResultsText(d) {
   const pad = function (v, n) { v = String(v); return v.length >= n ? v.slice(0, n) : v + ' '.repeat(n - v.length); };
   const lpad = function (v, n) { v = String(v); return v.length >= n ? v : ' '.repeat(n - v.length) + v; };
   const lines = ['LAST STAND RESULTS', d.text, 'Wave ' + d.wave + ' · Level ' + d.level + ' · Time ' + lsClock(d.seconds) + ' · Enemy ships destroyed ' + d.destroyed +
-                 ' · Sylph visitors downed ' + d.visitorsDown + ' of ' + d.visitorsCome + ' · Seed ' + d.seed];
+                 ' · Sylph visitors downed ' + d.visitorsDown + ' of ' + d.visitorsCome + ' · Seed ' + d.seed, 'Enemy: ' + d.enemy];
   if (d.test) lines.push('Test options: ' + d.test);
   lines.push('', pad('YOUR DESIGNS', 26) + lpad('Now', 6) + lpad('Sorties', 9) + lpad('Kills', 8) + lpad('Lost', 7) + lpad('Dmg done', 11) + lpad('Dmg taken', 11));
   for (const r of d.ours) lines.push(pad(r.name + (r.mine ? ' (yours)' : ''), 26) + lpad(r.now, 6) + lpad(r.sent, 9) + lpad(r.kills, 8) + lpad(r.lost, 7) + lpad(fmtNum(r.dealt), 11) + lpad(fmtNum(r.taken), 11));
@@ -79370,7 +79645,7 @@ function lsResultsShow() {
   const n = function (v) { return fmtNum(v); };
   const stat = function (label, value) { return '<div class="ls-res-stat"><span>' + esc(label) + '</span><b>' + esc(value) + '</b></div>'; };
   let h = '<div class="ls-res-box"><div class="ls-cards-head">' + (d.won ? 'Victory' : 'The run is over') + '</div><p class="ls-res-text">' + esc(d.text) + '</p>' +
-    '<div class="ls-res-stats">' + stat('Wave', d.wave) + stat('Level', d.level) + stat('Time', lsClock(d.seconds)) + stat('Destroyed', n(d.destroyed)) +
+    '<div class="ls-res-stats">' + stat('Enemy', d.enemy) + stat('Wave', d.wave) + stat('Level', d.level) + stat('Time', lsClock(d.seconds)) + stat('Destroyed', n(d.destroyed)) +
     stat('Sylph downed', d.visitorsDown + ' of ' + d.visitorsCome) + stat('Squadrons', d.squadrons) + stat('Research', d.packages) + '</div>' +
     (d.test ? '<p class="ls-res-test">Test options: ' + esc(d.test) + '.' + (L0.test.seed > 0 ? '' : ' Seed ' + d.seed + '.') + '</p>' : '<p class="ls-res-test">Seed ' + d.seed + ' (put it in the test options to play this run again).</p>') +
     '<div class="ls-res-scroll"><table class="ls-res-table"><thead><tr><th>Your designs</th><th title="Ships of the design flying at the end">Now</th><th title="Times a ship of the design launched or came in">Sorties</th>' +
@@ -79383,7 +79658,7 @@ function lsResultsShow() {
     '<button type="button" class="btn" id="lsCopy">Copy results</button><button type="button" class="btn btn-ghost" id="lsLook">Look at the field</button></div></div>';
   el.innerHTML = h;
   const opts = lastStand.test;
-  document.getElementById('lsAgain').addEventListener('click', function () { lsStart(undefined, opts); });
+  document.getElementById('lsAgain').addEventListener('click', function () { lsStart(lastStand.pick || undefined, opts); });   // (v124.0) the same Enemy choice: a Random run picks again
   document.getElementById('lsMenu').addEventListener('click', function () { showMainMenu(); });
   document.getElementById('lsLook').addEventListener('click', lsResultsHide);
   document.getElementById('lsCopy').addEventListener('click', function () {
@@ -79949,8 +80224,9 @@ function ls2WeaponTry(d0, w, fam, drop) {
     const order = Array.from(free).sort(function (a, b) { return near(a) - near(b); });
     let budget = Math.max(feedSquares, feeds.minimum || 0), used = 0;
     for (const f of feeds) {
+      const cap = f.share > 0 ? used + Math.max(1, Math.floor(budget * f.share)) : budget;   // (v120) a feed with a share takes only that much of the room
       for (const k of order) {
-        if (used >= budget) break;
+        if (used >= budget || used >= cap) break;
         if (!free.has(k)) continue;
         const v = k.split(','), rec = { p: f.p, mk: 1, x: +v[0], y: +v[1], r: f.r || 0 };
         if (f.sz) rec.sz = f.sz;
@@ -80000,7 +80276,8 @@ function ls2WeaponOpts(w, fam, sp, small) {
 function ls2FeedParts(w, fam, placed) {
   const out = [];
   if (w.job === 'gun') {
-    if (fam === 'rail') { for (const c of ls2Cap()) out.push({ p: c }); out.minimum = 4 * placed.length; }
+    // (v120) a railgun needs both: a gun magazine for its slugs (up to a third of the feed squares) and capacitors for its charge
+    if (fam === 'rail') { out.push({ p: 'magazine', sz: 1, share: 1 / 3 }); for (const c of ls2Cap()) out.push({ p: c }); out.minimum = 5 * placed.length; }
     else if (fam !== 'plasma') { out.push({ p: 'magazine', sz: 1 }); out.minimum = placed.length; }
   } else if (w.job === 'missile') {
     // racks for the biggest missile fired (a rack feeds that size or smaller); a Torpedo rack or rail needs none
@@ -85907,11 +86184,12 @@ function passEdgeV3(L, a) {
     for (let k = 0; k < needCap.length; k++) notWorkingV3(needCap[k], 'needs a capacitor on the ship');
     addProblem(a, 'PD_NEEDS_CAPACITOR', 'warning', 'A repeating laser battery shoots from the capacitors, and this ship has none: add a capacitor or it does nothing.', partsAt(L, needCap), partsSquares(L, needCap), partIdxs(needCap));
   }
-  // (v90, Tier 3) a railgun fires from the capacitors: with none on the ship it does nothing
-  const rails = L.parts.filter(function (u) { return u.s.weapon && u.s.weapon.ammo === 'charge' && u.m.build === 'gun'; });
+  // (v90, Tier 3) a railgun throws its slugs with charge from the capacitors: with none on the ship it does nothing. (v120) Its slugs come from the gun
+  // magazines like any gun's, so the usual magazine and hoist checks cover that half.
+  const rails = L.parts.filter(function (u) { return u.s.weapon && u.s.weapon.chargePerShot > 0 && u.m.build === 'gun'; });
   if (rails.length > 0 && !L.parts.some(function (u) { return u.s.capacitor > 0; })) {
     for (let k = 0; k < rails.length; k++) notWorkingV3(rails[k], 'needs a capacitor on the ship');
-    addProblem(a, 'RAIL_NEEDS_CAPACITOR', 'warning', 'A railgun fires from the capacitors, and this ship has none: add a capacitor or it does nothing.', partsAt(L, rails), partsSquares(L, rails), partIdxs(rails));
+    addProblem(a, 'RAIL_NEEDS_CAPACITOR', 'warning', 'A railgun needs charge from the capacitors to fire its slugs, and this ship has none: add a capacitor or it does nothing.', partsAt(L, rails), partsSquares(L, rails), partIdxs(rails));
   }
   // (v90) the Huge mirror is for cruisers and up (its lens row's minHull)
   const bigLens = L.parts.filter(function (u) { const o = u.rec && u.rec.opt, ln = o && o.lens ? LENS_OPTIONS[o.lens] : null; return u.m.build === 'emitter' && ln && ln.minHull && HULL_BY_ID[ln.minHull] && L.hull.cls && L.hull.cls.rank < HULL_BY_ID[ln.minHull].rank; });
@@ -86601,7 +86879,7 @@ function passNumbersV3(L, a) {
     if (!g) {
       g = { id: groups.length, name: s.name + ' ' + s.markName, part: s.module.id, mk: s.mk, opt: s.opt ? Object.assign({}, s.opt) : null, optKey: s.optKey || '', mountKind: mountKind, mount: mountKind === 'fixed' ? 'fixed' : (mountKind === 'spinal' ? 'spinal' : 'turret'),
             arc: arc, facing: facing, facingDeg: [0, 180, 270, 90][facing], weapons: 0, working: 0, damage: roundTo(w.damage, 3), damageType: w.damageType, range: Math.round(w.range * rangeMul), fireRate: 0, interval: w.interval || 0, dps: 0,
-            ammo: w.ammo, roundsPerShot: w.roundsPerShot || 0, missileSize: w.missileSize || '', missile: w.missile || null, heatShot: w.heatShot || 0, traverse: w.traverse || 0, traits: s.traits.slice(), family: s.family || '',
+            ammo: w.ammo, roundsPerShot: w.roundsPerShot || 0, chargePerShot: w.chargePerShot || 0, missileSize: w.missileSize || '', missile: w.missile || null, heatShot: w.heatShot || 0, traverse: w.traverse || 0, traits: s.traits.slice(), family: s.family || '',
             power: 0, heat: 0, recoil: 0, spreadMul: 0, trackingMul: 0, parts: [] };
       groupOf[key] = g; groups.push(g);
     }
@@ -86920,6 +87198,7 @@ function registerDesignV3(name, d, a, icon) {
   if (family === '') { rec = makeDesignRecordV3(makeDesignId(), name, d, a); rec.family = name; rec.version = 1; }
   else { const version = designVersion(SHIP_TYPES[latestVersionIndex(family)]) + 1; rec = makeDesignRecordV3(makeDesignId(), family + ' v' + version, d, a); rec.family = family; rec.version = version; }
   if (icon) rec.icon = icon; else if (family !== '' && SHIP_TYPES[latestVersionIndex(family)].icon) rec.icon = SHIP_TYPES[latestVersionIndex(family)].icon;
+  if (typeof campaign !== 'undefined' && campaign && typeof campaign.week === 'number') rec.savedWeek = Math.floor(campaign.week);   // (v118.3) the war week it was saved in, for the Bureau's Lineage box (10e-9)
   if (family !== '') docInherit(rec, latestVersionIndex(family));
   else if (typeof b2DocDraftForSave === 'function') { const dd = b2DocDraftForSave(); if (dd) rec.doctrine = dd; }   // (v37) a new design saved in the Bureau with orders drafted for it (section 10i)          // (v37, section 5kd) a new version starts with its parent's doctrine
   if (designJoinsLiveBattle()) return addDesignVersionDuringBattle(rec, family === '' ? -1 : latestVersionIndex(family));
@@ -87372,6 +87651,7 @@ const b2 = {
   ov: 'all', sel: -1, page: 'bp', leftTab: 'parts', view: { cx: 20, cy: 8, z: 20 }, hover: null, mouse: null, drag: null, space: false,
   undo: [], redo: [], msg: '', msgBad: false, notice: '', probSel: -1, netSel: -1, ping: null, routeStart: null, boxDone: null, routeKind: 'conduit',
   boxes: null, drawPending: false, tipTimer: 0, toastTimer: 0, saBlock: null,
+  rulesShut: false,              // (v121.0) the hull rules note on the sheet folded down to its title (b2RulesToggle, 35e-2)
   shut: { b2BoxLayout: true },   // (v57) the side boxes folded shut (Layout and balance starts shut; v118.0: Battle scars starts open, it is short)
   localAsk: '', localOkFor: '',   // (v27 A2) the "is Local intended?" prompt: the name being asked about, and the name already answered yes for
   events: [], zonesSeen: null, zoneHints: false, zoneTimer: 0,   // (v27 C2) tutorial events waiting to be sent, the zones filled last time, the pulsing zone hint
@@ -87866,6 +88146,8 @@ function b2Build() {
       '<section class="box2" id="b2BoxLayout"><h4><button type="button" class="fold" data-fold="b2BoxLayout" aria-expanded="true" title="Fold this box shut or open it">Layout and balance</button><small>squares, mass, balance</small></h4><div class="bd" id="b2Layout"></div></section>' +
       '<section class="box2" id="b2BoxTwin"><h4><button type="button" class="fold" data-fold="b2BoxTwin" aria-expanded="true" title="Fold this box shut or open it">Proving twin</button><small>fights while you draw</small></h4><div class="bd" id="b2Twin"></div></section>' +   // (v118.2, section 10e-8)
       '<section class="box2" id="b2BoxScars"><h4><button type="button" class="fold" data-fold="b2BoxScars" aria-expanded="true" title="Fold this box shut or open it">Battle scars</button><small>where they get hit</small></h4><div class="bd" id="b2Scars"></div></section>' +   // (v118.0, section 10e-6)
+      '<section class="box2" id="b2BoxLineage"><h4><button type="button" class="fold" data-fold="b2BoxLineage" aria-expanded="true" title="Fold this box shut or open it">Lineage</button><small>the line so far</small></h4><div class="bd" id="b2Lineage"></div></section>' +   // (v118.3, section 10e-9)
+      '<section class="box2" id="b2BoxYards"><h4><button type="button" class="fold" data-fold="b2BoxYards" aria-expanded="true" title="Fold this box shut or open it">Yards</button><small>ships a week</small></h4><div class="bd" id="b2Yards"></div></section>' +
       '<section class="box2" id="b2BoxProbs"><h4><button type="button" class="fold" data-fold="b2BoxProbs" aria-expanded="true" title="Fold this box shut or open it">Problems</button><small id="b2Pcount"></small></h4><div class="bd" id="b2Probs"></div></section>' +
     '</aside>' +
     '<footer class="foot"><span class="msg" id="b2Msg"></span><div class="sp"><button class="btn" type="button" id="b2Back">Back to setup</button></div></footer>' +
@@ -87873,6 +88155,7 @@ function b2Build() {
   b2.built = true;
   b2Wire();
   twinLoadPref();                                   // (v118.2, section 10e-8) whether the proving twin was left on
+  b2RulesLoadPref();                                // (v121.0) whether the hull rules note was left folded
   try { const raw = window.localStorage ? window.localStorage.getItem(B2_PREFS_KEY) : null; if (raw) { const p = JSON.parse(raw); if (Array.isArray(p.subs) && SUBASSEMBLIES_V3.length === 0) SUBASSEMBLIES_V3 = p.subs.filter(function (s) { return s && Array.isArray(s.parts) && s.tracks; }); } } catch (e) { /* (private window: nothing kept) */ }
 }
 function b2SavePrefs() { try { if (window.localStorage) window.localStorage.setItem(B2_PREFS_KEY, JSON.stringify({ subs: SUBASSEMBLIES_V3 })); } catch (e) { /* (private window) */ } }
@@ -88335,6 +88618,7 @@ function b2BuildNums(s) {
   } else {
     out.push(['Damage a shot', b2Round(w.damage, 1)], ['Fires every', b2Round(w.interval, 2) + ' s (' + dps + ' damage a second)'], ['Range', Math.round(w.range).toLocaleString('en-GB')], ['Arc', b2ArcWords(w)],
       ['Squares', sq], ['Power', b2Round(-s.power, 1)], ['Heat a shot', b2Round(w.heatShot, 2)], ['Rounds a shot', b2Round(w.roundsPerShot, 2)], ['Crew', s.crew], ['Cost', al]);
+    if (w.chargePerShot > 0) out.splice(out.length - 2, 0, ['Charge a shot', b2Round(w.chargePerShot, 1) + ' from the capacitors']);   // (v120) a railgun needs both
   }
   return out;
 }
@@ -88695,15 +88979,28 @@ function b2RenderBanner() {
   // (v62, Alex 29 Oct) the note is turned round: a Tiny or Small craft has none (the simple rules are the starting point), and from the corvette up it
   // says what this size needs beyond a small craft, with what is new at this size marked. A heavy frame that lifts the class says so first.
   const rules = b2SizeRules(hl);
-  if (hl.cls && hull && hl.cls.id !== hull.id) bn = '<div class="bwarn"><b>Class lifted</b>A heavy ' + esc(hl.cls.name.toLowerCase()) + ' frame makes this ' + esc(hull.name.toLowerCase()) + ' hull a ' + esc(hl.cls.name.toLowerCase()) + ': it is laid on the ' + esc(hl.cls.name.toLowerCase()) + '\'s grid and needs a ' + esc(hl.cls.name.toLowerCase()) + ' ' + b2Term('berth', 'berth') + '.</div>';
-  else if (rules) bn = '<div class="simple"><b>' + b2Term('sizerules', esc(rules.name) + ' rules') + '</b>' + rules.lines.map(function (l) { return (l.isNew ? '<em>New:</em> ' : '') + esc(l.text); }).join('<br>') + '</div>';
-  b2El('b2Banner').innerHTML = bn;
+  if (hl.cls && hull && hl.cls.id !== hull.id) bn = '<div class="bwarn">' + b2RulesHead('Class lifted') + '<div class="rbd">A heavy ' + esc(hl.cls.name.toLowerCase()) + ' frame makes this ' + esc(hull.name.toLowerCase()) + ' hull a ' + esc(hl.cls.name.toLowerCase()) + ': it is laid on the ' + esc(hl.cls.name.toLowerCase()) + '\'s grid and needs a ' + esc(hl.cls.name.toLowerCase()) + ' ' + b2Term('berth', 'berth') + '.</div></div>';
+  else if (rules) bn = '<div class="simple">' + b2RulesHead(b2Term('sizerules', esc(rules.name) + ' rules')) + '<div class="rbd">' + rules.lines.map(function (l) { return (l.isNew ? '<em>New:</em> ' : '') + esc(l.text); }).join('<br>') + '</div></div>';
+  const el = b2El('b2Banner'); el.innerHTML = bn;
+  if (el.firstElementChild) el.firstElementChild.classList.toggle('shut', !!b2.rulesShut);
 }
+// (v121.0, Alex 7 Nov: "this needs to be collapsible") the note's title line is a button: a click folds the note down to just its title (with a + to open it
+// again) or opens it. One choice for every hull class, kept between visits (b2RulesLoadPref, read when the screen is built).
+function b2RulesHead(title) {
+  const shut = !!b2.rulesShut;
+  return '<button type="button" class="rhd" data-rulesfold="1" aria-expanded="' + !shut + '" title="' + (shut ? 'Open the rules note' : 'Fold the rules note away') + '"><b>' + title + '</b><span class="rsign" aria-hidden="true">' + (shut ? '+' : '−') + '</span></button>';
+}
+function b2RulesToggle() {
+  b2.rulesShut = !b2.rulesShut;
+  try { if (window.localStorage) window.localStorage.setItem(B2_PREFS_KEY + '-rules', b2.rulesShut ? 'shut' : 'open'); } catch (e) { /* (private window) */ }
+  b2RenderBanner(); b2Draw();   // (redrawn: the battle-scar slips keep clear of the note, and it is now a different size)
+}
+function b2RulesLoadPref() { try { b2.rulesShut = !!(window.localStorage && window.localStorage.getItem(B2_PREFS_KEY + '-rules') === 'shut'); } catch (e) { b2.rulesShut = false; } }
 
 // ---------------------------------------------------------------------
 // THE RIGHT SIDE: ship numbers, fuel and jumps, the power chart, the problems list
 // ---------------------------------------------------------------------
-function b2RenderSide() { b2RenderNums(); b2RenderPower(); b2RenderHeat(); b2RenderAmmo(); b2RenderCrew(); b2RenderFuel(); b2RenderLayout(); b2RenderTwin(); b2RenderScars(); b2RenderProbs(); b2ApplyFolds(); }   // (v118.0) + Battle scars (10e-6); (v118.2) + the proving twin (10e-8)
+function b2RenderSide() { b2RenderNums(); b2RenderPower(); b2RenderHeat(); b2RenderAmmo(); b2RenderCrew(); b2RenderFuel(); b2RenderLayout(); b2RenderTwin(); b2RenderScars(); b2RenderLineage(); b2RenderYards(); b2RenderProbs(); b2ApplyFolds(); }   // (v118.0) + Battle scars (10e-6); (v118.2) + the proving twin (10e-8); (v118.3) + lineage and yards (10e-9)
 function b2Pct(mul) { const v = Math.round((mul - 1) * 100); return (v > 0 ? '+' : (v < 0 ? '−' : '')) + Math.abs(v) + '%'; }
 // (v57, notes/plans/designer/stats-panels.md, Alex 28 Oct) SHIP NUMBERS is now a short summary: what the ship is (its berth size and tonnage, big, at the
 // top), how it fights (hit points, speed, defence, heat, weapons), then what it costs. The design-puzzle numbers each have their own box below it:
@@ -88905,6 +89202,7 @@ function b2RenderAmmo() {
     } else {
       stores.rounds.use += live * (w.roundsPerShot || 1) / iv; stores.rounds.users += live; stores.rounds.gunUsers += live;
       need = b2Round((w.roundsPerShot || 1) / iv * 60, 0) + ' rounds a minute';
+      if (w.chargePerShot > 0) need += ' from the magazines, and ' + b2Round(w.chargePerShot / iv * 60, 0) + ' charge a minute from the capacitors';   // (v120) a railgun needs both
     }
     h += '<div><span>' + (g.n > 1 ? g.n + ' × ' : '') + esc(g.name) + ' <small>' + esc(need) + (g.dry ? ' · ' + g.dry + ' not working' : '') + '</small></span><span></span></div>';
   }
@@ -89019,7 +89317,7 @@ function b2RenderLayout() {
 }
 // (v57) folding the side boxes: a click on a box's title folds it shut or opens it (Layout and balance starts shut)
 function b2ApplyFolds() {
-  const ids = ['b2BoxNums', 'b2BoxPower', 'b2BoxHeat', 'b2BoxAmmo', 'b2BoxCrew', 'b2BoxFuel', 'b2BoxLayout', 'b2BoxTwin', 'b2BoxScars', 'b2BoxProbs'];
+  const ids = ['b2BoxNums', 'b2BoxPower', 'b2BoxHeat', 'b2BoxAmmo', 'b2BoxCrew', 'b2BoxFuel', 'b2BoxLayout', 'b2BoxTwin', 'b2BoxScars', 'b2BoxLineage', 'b2BoxYards', 'b2BoxProbs'];
   for (let k = 0; k < ids.length; k++) { const el = b2El(ids[k]); if (!el) continue; const shut = !!b2.shut[ids[k]]; el.classList.toggle('shut', shut); const b = el.querySelector('[data-fold]'); if (b) b.setAttribute('aria-expanded', String(!shut)); }
 }
 function b2RenderFuel() {
@@ -90589,7 +90887,7 @@ function b2Wire() {
   root.addEventListener('focusin', function (e) { const el = e.target.closest && e.target.closest('[data-k],[data-t],[data-mt],[data-mtk],[data-pv],[data-ipa],[data-bonus]'); if (el) { const r = el.getBoundingClientRect(); b2ShowTip(b2TipFor(el), r.left, r.bottom); } });
   root.addEventListener('focusout', b2HideTip);
   root.addEventListener('click', function (e) {
-    const t = e.target.closest ? e.target.closest('button, [data-mod], [data-new], [data-example], [data-design], [data-prob]') : null;
+    const t = e.target.closest ? e.target.closest('button, [data-mod], [data-new], [data-example], [data-design], [data-prob], [data-lineage]') : null;
     if (!t || !root.contains(t)) return;
     const ds = t.dataset;
     if (b2.nd && b2NewClick(t)) return;                  // (v55) the new design screen's own buttons (section 10e-5)
@@ -90611,7 +90909,9 @@ function b2Wire() {
     }
     if (ds.tool) { b2SetTool(ds.tool); b2RenderInsp(); return; }
     if (ds.ov) { b2SetOv(ds.ov); b2RenderSide(); return; }
+    if (ds.rulesfold) { b2RulesToggle(); return; }    // (v121.0) the hull rules note on the sheet folds to its title
     if (ds.fold) { b2.shut[ds.fold] = !b2.shut[ds.fold]; b2ApplyFolds(); return; }   // (v57) a side box's title folds it
+    if (ds.lineage) { if (ds.lineage !== b2.serviceId) b2OpenRecord(ds.lineage, false); return; }   // (v118.3, section 10e-9) a version in the Lineage box opens it
     if (ds.rk) { b2.routeKind = ds.rk; b2RenderTools(); b2RenderInsp(); return; }
     if (ds.zoom) { if (ds.zoom === 'fit') { b2Fit(); b2Draw(); } else b2Zoom(ds.zoom === 'in' ? 1.25 : 0.8); return; }
     if (ds.jumps) { const j = +ds.jumps; b2.localAsk = ''; b2Change(function () { b2.d.jumps = j; }); return; }
@@ -91322,6 +91622,144 @@ function b2RenderTwin() {
   el.innerHTML = h;
 }
 BUREAU2_SCREEN_API.twin = { state: twin, toggle: twinToggle, run: twinRun, stop: twinStop };
+// =====================================================================
+// 10e (continued). (v118.3, the Drafting Office) THE LINEAGE STRIP AND THE YARDS BOX
+//
+//   Two more side boxes on the right of the Bureau.
+//   LINEAGE. Every version of the design's family in one strip, oldest first: the week it was saved (in a campaign), how many the yards have built,
+//   how many are flying now, how many fought and were lost (the battle scars record, section 5vd) and how the chain of command rated it (7r). The
+//   version on the sheet is marked; clicking another opens it. A design that is not saved yet has no line: the box says the line starts at the save.
+//   YARDS. What building this design would mean, yard by yard, with today's numbers: which of our yards have a berth that fits it, about how many a
+//   week each would turn out at today's Alloys, how long one berth takes over one ship, and when the first would reach the front (the build plus the
+//   transfer weeks along the lanes). Outside a campaign it says what Earth's starting berths could do.
+//   Both boxes read numbers the campaign already keeps; nothing here changes the game.
+// =====================================================================
+// The family the sheet belongs to: the saved design's family, else the family the name on the sheet is already used by, else ''.
+function b2LineageFamily() {
+  const rec = b2ServiceRec();
+  if (rec) return rec.family || rec.name;
+  return b2Family();
+}
+// The versions of the family, oldest first: { id, name, version, savedWeek, built, flying, fought, lost, rating, score, open, removed }.
+function b2LineageRows() {
+  const fam = b2LineageFamily();
+  if (fam === '') return [];
+  const lower = fam.toLowerCase(), rows = [];
+  const made = typeof campaign !== 'undefined' && campaign && campaign.stats && campaign.stats.producedTypes ? (campaign.stats.producedTypes[0] || {}) : {};
+  const rated = typeof campaign !== 'undefined' && campaign && campaign.cmd && campaign.cmd.designs ? campaign.cmd.designs : {};
+  for (let t = 0; t < SHIP_TYPES.length; t++) {
+    const r = SHIP_TYPES[t];
+    if (!r || !r.design || r.design.v !== 3 || (r.family || r.name).toLowerCase() !== lower) continue;
+    const sc = typeof scarsFor === 'function' ? scarsFor(r.id) : null, D = rated[r.id] || null;
+    rows.push({ id: r.id, name: r.name, version: r.version || 1, savedWeek: typeof r.savedWeek === 'number' ? r.savedWeek : null,
+                built: made[r.id] > 0 ? made[r.id] : 0, flying: typeof campaignV3ShipsOf === 'function' && typeof campaign !== 'undefined' && campaign ? campaignV3ShipsOf([r.id]) : 0,
+                fought: sc ? sc.ships : 0, lost: sc ? sc.lost : 0,
+                rating: D && D.stretches > 0 && D.last ? D.last.rating : '', score: D && D.stretches > 0 ? Math.round(D.scoreSum / D.stretches) : null,
+                active: r.yardsReady === true, open: r.id === b2.serviceId, removed: r.removed === true });
+  }
+  rows.sort(function (a, b) { return a.version - b.version; });
+  return rows;
+}
+function b2RatingWords(rating) { return rating === 'well' ? 'did well' : (rating === 'badly' ? 'did badly' : (rating === 'fair' ? 'fair' : '')); }
+function b2RenderLineage() {
+  const el = b2El('b2Lineage'); if (!el) return;
+  const rows = b2LineageRows();
+  let h = '';
+  if (!rows.length) { el.innerHTML = '<div class="okline" data-lineage="none">Not saved yet. The line starts when you save: each version then shows what the yards built, what is flying, and how it fared.</div>'; return; }
+  const inWar = typeof campaign !== 'undefined' && campaign && SETTINGS.campaignModel === 1;
+  h += '<div class="rlist b2line" aria-label="Versions of this design">';
+  for (let k = 0; k < rows.length; k++) {
+    const r = rows[k], bits = [];
+    if (inWar) bits.push(r.built + ' built' + (r.flying > 0 ? ', ' + r.flying + ' flying' : ''));
+    if (r.fought > 0) bits.push(r.fought + ' fought, ' + r.lost + ' lost');
+    else if (!inWar) bits.push('not fought yet');
+    const words = b2RatingWords(r.rating);
+    if (words) bits.push(words);
+    h += '<div class="b2v' + (r.open ? ' open' : '') + (r.removed ? ' gone' : '') + '" data-lineage="' + esc(r.id) + '" data-version="' + r.version + '" title="' + (r.open ? 'On the sheet now' : 'Open ' + esc(r.name)) + '">' +
+      '<span><b>v' + r.version + '</b>' + (r.open ? ' ◂' : '') + (r.active ? ' <small>active</small>' : '') + (r.removed ? ' <small>deleted</small>' : '') + (r.savedWeek !== null ? ' <small>wk ' + Math.floor(r.savedWeek) + '</small>' : '') + '</span>' +
+      '<span>' + esc(bits.join(' · ')) + '</span></div>';
+  }
+  h += '</div>';
+  const open = rows.find(function (r) { return r.open; });
+  if (!open && b2.serviceId === '') h += '<div class="small">The sheet is a new draft of this line: saving makes v' + (rows[rows.length - 1].version + 1) + '.</div>';
+  el.innerHTML = h;
+}
+
+// ---- The yards ----
+// The weeks of transfer from a yard's AO to the front along the lanes (the fewest weeks), or -1 when no lane path joins them.
+function b2WeeksToFront(fromAo, frontAo) {
+  if (!fromAo || !frontAo) return -1;
+  if (fromAo === frontAo) return 0;
+  const best = {}; best[fromAo] = 0;
+  const todo = [fromAo];
+  while (todo.length) {
+    let k = 0; for (let j = 1; j < todo.length; j++) if (best[todo[j]] < best[todo[k]]) k = j;
+    const here = todo.splice(k, 1)[0], next = campaignAdjacent(here);
+    for (let j = 0; j < next.length; j++) {
+      const w = best[here] + laneWeeks(laneBetween(here, next[j]));
+      if (best[next[j]] === undefined || w < best[next[j]]) { best[next[j]] = w; if (todo.indexOf(next[j]) < 0) todo.push(next[j]); }
+    }
+  }
+  return best[frontAo] === undefined ? -1 : best[frontAo];
+}
+// What each of our yards would do with this design: [{ yard, name, berths, laying, perWeek (ships a week at today's Alloys), berthWeeks (weeks one berth takes a ship), toFront (transfer weeks, -1 unknown) }].
+function b2YardRows(cost, cls) {
+  const out = [];
+  if (typeof campaignV3 !== 'function' || !campaignV3() || !cost) return out;
+  const front = campaignFrontId(), income = campaignAlloysIncome(0), per = SETTINGS.berthAlloysPerWeek || {};
+  const yards = campaignYardsOf(0);
+  for (let k = 0; k < yards.length; k++) {
+    const y = yards[k], fit = campaignV3BerthsFor(y, cls);
+    const share = campaignYardShare(y, 0), pot = Math.min(campaignYardCapacity(y), income * share);   // the Alloys a week this yard gets to spend
+    const rate = per[cls] > 0 ? per[cls] : 0, berthWeeks = rate > 0 ? cost / rate : 0;
+    const perWeek = fit.have > 0 ? Math.min(pot / cost, berthWeeks > 0 ? fit.have / berthWeeks : pot / cost) : 0;
+    out.push({ yard: y, name: campaignYardName(y), berths: fit.have, laying: fit.laying, perWeek: perWeek, berthWeeks: berthWeeks, toFront: b2WeeksToFront(campaignAoOf(y), front) });
+  }
+  out.sort(function (a, b) { return b.perWeek - a.perWeek || (a.berths !== b.berths ? b.berths - a.berths : (a.name < b.name ? -1 : 1)); });
+  return out;
+}
+function b2WksShort(w) { const r = w < 10 ? Math.round(w * 10) / 10 : Math.round(w); return r + ' wk'; }
+function b2WeeksWords(w) { if (w < 1) return 'under a week'; const r = w < 10 ? Math.round(w * 10) / 10 : Math.round(w); return r === 1 ? 'a week' : r + ' weeks'; }
+function b2RenderYards() {
+  const el = b2El('b2Yards'); if (!el) return;
+  const a = b2.a, sm = a && a.summary;
+  if (!sm || !a.statBlock) { el.innerHTML = '<div class="okline">No ship on the sheet yet.</div>'; return; }
+  const cls = sm.sizeClass || b2.d.hull, res = sm.resources || {}, cost = Math.max(1, Math.round(res.alloys || 0));
+  const fit = campaignV3BerthFit(sm);
+  let h = '';
+  if (fit.fighter) { el.innerHTML = '<div class="okline" data-yards="fighter">' + esc(fit.text) + '</div>'; return; }
+  const per = (SETTINGS.berthAlloysPerWeek || {})[cls], berthWeeks = per > 0 ? cost / per : 0;
+  if (!fit.inCampaign) {
+    h += '<div class="small" data-yards="start">' + esc(fit.text) + '</div>';
+    if (fit.have > 0 && berthWeeks > 0) {
+      const start = SETTINGS.alloysEarthStart > 0 ? SETTINGS.alloysEarthStart : 0, perWeek = start > 0 ? Math.min(start / cost, fit.have / berthWeeks) : 0;
+      h += '<div class="rlist"><div><span>One berth takes</span><span>' + esc(b2WeeksWords(berthWeeks)) + ' a ship</span></div>' +
+        (perWeek > 0 ? '<div><span>At Earth\'s first ' + start + ' Alloys a week</span><span>' + esc(b2PerWeekWords(perWeek)) + '</span></div>' : '') + '</div>';
+    }
+    el.innerHTML = h; return;
+  }
+  const rows = b2YardRows(cost, cls);
+  const can = rows.filter(function (r) { return r.berths > 0; });
+  if (!can.length) h += '<div class="small" data-yards="none">' + esc(fit.text) + '</div>';
+  else {
+    h += '<div class="small" data-yards="rows">' + cost + ' Alloys a ship; one berth takes ' + esc(b2WeeksWords(berthWeeks)) + ' over each.</div><div class="rlist" aria-label="Our yards">';
+    for (let k = 0; k < rows.length; k++) {
+      const r = rows[k];
+      if (r.berths === 0) { if (r.laying > 0) h += '<div class="b2y"><span>' + esc(r.name) + '</span><span>laying ' + b2Plural(r.laying, 'berth') + '</span></div>'; continue; }
+      const first = r.toFront >= 0 ? berthWeeks + r.toFront : -1;
+      h += '<div class="b2y" data-yard="' + esc(r.yard) + '"><span>' + esc(r.name) + ' <small>' + b2Plural(r.berths, 'berth') + ' fit</small></span><span>' + esc(b2PerWeekWords(r.perWeek)) + '</span></div>' +
+        '<div class="b2y sub"><span>first at the front</span><span>' + (first < 0 ? 'no lane to the front' : (r.toFront === 0 ? 'built at the front' : 'about ' + b2WksShort(first) + ', ' + b2WksShort(r.toFront) + ' in transit')) + '</span></div>';
+    }
+    h += '</div>';
+  }
+  el.innerHTML = h;
+}
+function b2PerWeekWords(n) {
+  if (n >= 0.95) return (Math.round(n * 10) / 10) + ' a week';
+  if (n <= 0) return 'none';
+  const w = 1 / n;
+  return 'one every ' + b2WeeksWords(w);
+}
 // =====================================================================
 // 10f. THE BUREAU v2 STOCK DESIGNS  (SETTINGS.designModel 2; stop 2: content)
 //      The new stock ships, one or more per hull class, made as real v2 designs from the catalogue (section 2n) and checked by the rule passes
