@@ -61917,7 +61917,8 @@ function shipIconFor(t, side) {
   if (!rec) return side === BLUE ? 'H08' : 'A10';
   const ti = titanIconOf(rec);
   if (ti) return ti;                                // (v110.2) a titan on a super frame: its own icon, traced from its close art
-  if (side === BLUE) return ICON_IDS_ALLIED.indexOf(rec.icon) >= 0 ? rec.icon : defaultShipIcon(rec.size, BLUE);
+  // (v126.0) an Echo ship is a copy of one of our designs: it shows that design's own icon (drawn in its Echo look: drawIconEcho)
+  if (side === BLUE || enemyFactionOfType(t) === 'echo') return ICON_IDS_ALLIED.indexOf(rec.icon) >= 0 ? rec.icon : defaultShipIcon(rec.size, BLUE);
   return ICON_IDS_ENEMY.indexOf(rec.enemyIcon) >= 0 ? rec.enemyIcon : defaultShipIcon(rec.size, RED);
 }
 
@@ -61940,10 +61941,12 @@ function iconPathsFor(id) {
 }
 // Draws icon `id`, filling a px-wide square whose top-left corner is at (0, 0) of the given context (nose up). plain = the silhouette (no seams or stripes).
 // The context must be one where 'destination-out' cuts real holes (a sprite canvas), except when plain is true.
-function drawIconVector(g, id, color, px, plain) {
+// (v126.0) echo = an Echo look ('E1'..'E5', section 6v2): one of our icons drawn in that look (drawIconEcho), mirror-image.
+function drawIconVector(g, id, color, px, plain, echo) {
   const p = iconPathsFor(id);
   if (!p) return;
   const k = px / p.unit;
+  if (echo && p.allied && typeof drawIconEcho === 'function') { drawIconEcho(g, p, id, color, k, plain, echo); return; }
   g.save();
   g.scale(k, k);
   g.fillStyle = color; g.strokeStyle = color;
@@ -61973,16 +61976,16 @@ function drawIconVector(g, id, color, px, plain) {
 // ---- The sprite cache: each (icon, colour, size bucket, plain or full) drawn once into a small canvas ----
 const SPRITE_BUCKETS = [8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256, 384, 512];
 const shipSprites = new Map();
-function shipSprite(id, color, px, plain) {
+function shipSprite(id, color, px, plain, echo) {   // (v126.0) echo: an Echo look, or nothing
   let b = SPRITE_BUCKETS[SPRITE_BUCKETS.length - 1];
   for (let k = 0; k < SPRITE_BUCKETS.length; k++) if (SPRITE_BUCKETS[k] >= px) { b = SPRITE_BUCKETS[k]; break; }
-  const key = id + '|' + color + '|' + b + (plain ? '|s' : '|f');
+  const key = id + '|' + color + '|' + b + (plain ? '|s' : '|f') + (echo ? '|' + echo : '');
   let s = shipSprites.get(key);
   if (s) return s;
   if (shipSprites.size > 600) shipSprites.clear();          // (a safety net: in practice a battle uses a few dozen)
   s = document.createElement('canvas');
   s.width = b; s.height = b;
-  drawIconVector(s.getContext('2d'), id, color, b, plain);
+  drawIconVector(s.getContext('2d'), id, color, b, plain, echo);
   shipSprites.set(key, s);
   return s;
 }
@@ -62078,7 +62081,7 @@ function drawShipIcons(left, top, right, bottom, minSize) {
       const px = len * z / iconFillOf(shipIconFor(t, side));
       iconPx[st] = px;
       iconLod[st] = px < UI_SETTINGS.iconSilhouettePixels ? ICON_TRIANGLE : (px < UI_SETTINGS.iconFullPixels ? ICON_SILHOUETTE : ICON_FULL);
-      iconSprite[st] = iconLod[st] === ICON_TRIANGLE || px > 512 ? null : shipSprite(shipIconFor(t, side), shipColorFor(side, t), px, iconLod[st] === ICON_SILHOUETTE);
+      iconSprite[st] = iconLod[st] === ICON_TRIANGLE || px > 512 ? null : shipSprite(shipIconFor(t, side), shipColorFor(side, t), px, iconLod[st] === ICON_SILHOUETTE, echoLookOfShip(side, t));
     }
   }
   // 1. The small ones: triangles, one shape per side (as drawShips; v25, section 7p: one per paint group with Fleet shades or a selection)
@@ -64735,7 +64738,8 @@ function closeArtBuild(e, done) {
   e.state = 'busy';
   // pixels a square: the longest side at most pictureLongest, between squareMin and squareMax
   const s = Math.max(CLOSE_LOOK.squareMin, Math.min(CLOSE_LOOK.squareMax, Math.floor(CLOSE_LOOK.pictureLongest / (info.W + 16))));
-  let svg = '', gunSvgs = {};
+  let svg = '', gunSvgs = {}, plainSvg = '';
+  const echo = e.house.indexOf('echo-') === 0 ? e.house.slice(5) : '';   // (v126.0) an Echo look (section 6v2), or ''
   try {
     A.setLook(e.look);
     const h = A.hullSVG(f, s, { frontLater: true });
@@ -64755,8 +64759,15 @@ function closeArtBuild(e, done) {
     }
     if (h.grime) o += h.grime.replace(/opacity="([\d.]+)"/g, function (m, v) { return 'opacity="' + (v * .6).toFixed(2) + '"'; });
     const sh = h.sh || { minX: 0, maxX: info.W * s, minY: 0, maxY: info.H * s };
-    const bx0 = Math.min(-h.nz - 6, sh.minX), by0 = Math.min(-s * 3.4, sh.minY - 4);
-    const bw = Math.max(sh.maxX + 6, info.W * s + 6) - bx0, bh = Math.max(info.H * s + s * 3.4, sh.maxY + 4) - by0;
+    let bx0 = Math.min(-h.nz - 6, sh.minX), by0 = Math.min(-s * 3.4, sh.minY - 4);
+    let bw = Math.max(sh.maxX + 6, info.W * s + 6) - bx0, bh = Math.max(info.H * s + s * 3.4, sh.maxY + 4) - by0;
+    if (echo) {
+      // (v126.0) the Echo look laid over the finished drawing; the plain drawing is made too, only to measure the ship's painted length (so the look
+      // never changes the drawn size: the Afterimage's copies and the Scrap Twist's spikes are not the ship)
+      plainSvg = A.wrapSVG(o, bx0, by0, bw, bh);
+      const r = echoCloseSVG(o, echo, { x: bx0, y: by0, w: bw, h: bh }, sh, e.key);
+      o = r.inner; bx0 = r.box.x; by0 = r.box.y; bw = r.box.w; bh = r.box.h;
+    }
     svg = A.wrapSVG(o, bx0, by0, bw, bh);
     e.s = s; e.x0 = bx0; e.y0 = by0; e.w = Math.ceil(bw); e.h = Math.ceil(bh);
     // the turning guns, one small picture each kind (the gun drawn alone, bow right)
@@ -64764,11 +64775,19 @@ function closeArtBuild(e, done) {
       const g = info.turrets[k].gun, key = info.turrets[k].key;
       if (gunSvgs[key]) continue;
       const gw = g.w * s, gh = g.h * s;
-      gunSvgs[key] = { svg: A.wrapSVG(A.D[g.d](g, s), -2, -2, gw + 4, gh + 4), w: gw + 4, h: gh + 4, piv: [g.w * s * .32 + 2, g.h * s * .5 + 2] };
+      const gun = A.D[g.d](g, s);
+      gunSvgs[key] = { svg: A.wrapSVG(echo ? echoGunSVG(gun, echo) : gun, -2, -2, gw + 4, gh + 4), w: gw + 4, h: gh + 4, piv: [g.w * s * .32 + 2, g.h * s * .5 + 2] };
     }
   } catch (err) { e.state = 'none'; done(); return; }
   e.guns = {};
   const jobs = [{ svg: svg, put: function (c) { e.canvas = c; } }];
+  let plainInk = 0;
+  if (plainSvg) jobs.push({ svg: plainSvg, put: function (c) {
+    const sm = document.createElement('canvas');
+    sm.width = Math.max(1, Math.round(c.width / 4)); sm.height = Math.max(1, Math.round(c.height / 4));
+    const g2 = sm.getContext('2d'); g2.imageSmoothingEnabled = true; g2.imageSmoothingQuality = 'high'; g2.drawImage(c, 0, 0, sm.width, sm.height);
+    plainInk = closeInkLength({ small: sm, w: c.width });
+  } });
   for (const key in gunSvgs) { const gs = gunSvgs[key]; jobs.push({ svg: gs.svg, put: function (c) { e.guns[key] = { canvas: c, w: gs.w, h: gs.h, piv: gs.piv }; } }); }
   let left = jobs.length, failed = false;
   const finish = function () {
@@ -64784,7 +64803,7 @@ function closeArtBuild(e, done) {
     e.pivX = info.centre[0] * s - e.x0; e.pivY = info.centre[1] * s - e.y0;
     // world units a picture pixel: the painted ship as long as its drawn length (section 6b), the icon's length too, so the zoom between the two looks
     // does not jump (v110.0: the painted part, not the whole picture with its margins)
-    e.worldPerPx = shipDrawLenOf(e.t) / closeInkLength(e);
+    e.worldPerPx = shipDrawLenOf(e.t) / (plainInk > 0 ? plainInk : closeInkLength(e));
     e.state = 'ready';
     done();
   };
@@ -64818,6 +64837,15 @@ function closeAlienBuild(e, done) {
       s = pic.s; e.s = s;
       const box = window.TITAN_ART.box ? window.TITAN_ART.box(info.name) : null;
       e.inkLen = box && box.w > 0 ? box.w * s : pic.canvas.width;   // (v110.0) not the build grid's length any more: the six titans' art was 3 to 7 times it
+      const echo = e.house.indexOf('echo-') === 0 ? e.house.slice(5) : '';
+      if (echo) {
+        // (v126.0) an Echo titan: its painted art put through the Echo look (section 6v2) as a picture inside an SVG; its painted length stays the art's
+        const W = pic.canvas.width, H = pic.canvas.height;
+        const r = echoCloseSVG('<image href="' + pic.canvas.toDataURL('image/png') + '" x="0" y="0" width="' + W + '" height="' + H + '"/>', echo,
+          { x: 0, y: 0, w: W, h: H }, { minX: W * 0.1, maxX: W * 0.9, minY: H * 0.3, maxY: H * 0.7 }, e.key);
+        closeSvgToCanvas(SHIP_ART.wrapSVG(r.inner, r.box.x, r.box.y, r.box.w, r.box.h), function (c) { finish(c, pic.pivX - r.box.x, pic.pivY - r.box.y); });
+        return;
+      }
       finish(pic.canvas, pic.pivX, pic.pivY);
       return;
     }
@@ -64969,7 +64997,11 @@ function closeArtWarm() {
     if (all || n > 0) list.push({ t: t, n: n });
   }
   list.sort(function (a, b) { return b.n - a.n; });
-  for (let k = 0; k < list.length; k++) closeArtEntry(list[k].t, look);
+  for (let k = 0; k < list.length; k++) {
+    const t = list[k].t, ek = echoLookOfShip(RED, t);              // (v126.0) the Echo's ships in their look (ours, of the same design, plain)
+    if (!ek || all || (stCount[t] || 0) > 0) closeArtEntry(t, look);
+    if (ek && (stCount[TYPE_COUNT + t] || 0) > 0) closeArtEntry(t, look, 'echo-' + ek);
+  }
 }
 
 // ---------------------------------------------------------------------
@@ -64986,8 +65018,7 @@ function closeFrameStart() {
 // Is this ship drawn in close detail this frame? (its picture ready, the setting on, under the cap)
 function closeWants(i, px) {
   if (!UI_SETTINGS.closeDetail || px < CLOSE_LOOK.minPixels || closeCount >= CLOSE_LOOK.maxShips) return null;
-  const rec = SHIP_TYPES[shipType[i]], pilot = rec && rec.faction === 'sylph' && typeof syPilotOf === 'function' ? syPilotOf(i) : null;   // (v78.1) a Sylph in its house's colours
-  const e = closeArtEntry(shipType[i], closeLookKey(), pilot && pilot.house ? pilot.house : '');
+  const e = closeArtEntry(shipType[i], closeLookKey(), closeHouseOf(i));   // (v78.1) a Sylph in its house's colours; (v126.0) an Echo ship in the run's Echo look
   if (!e || e.state !== 'ready') return null;
   return e;
 }
@@ -65278,7 +65309,7 @@ function closeGridToWorld(i, e, gx, gy) {
 }
 // Where part k of ship i fires from, in world units (its muzzle: the middle of the part's front edge; a turning gun's barrel end), or null.
 function closeMuzzle(i, k) {
-  const e = closeArtEntry(shipType[i], closeLookKey());
+  const e = closeArtEntry(shipType[i], closeLookKey(), closeHouseOf(i));
   if (!e || e.state !== 'ready' || k < 0 || k >= e.info.parts.length) return null;
   const p = e.info.parts[k];
   if (p.turret !== undefined) {
@@ -65291,14 +65322,14 @@ function closeMuzzle(i, k) {
 }
 // The middle of part k of ship i in world units (a blast, a hit), or the ship's middle.
 function closePartCentre(i, k) {
-  const e = closeArtEntry(shipType[i], closeLookKey());
+  const e = closeArtEntry(shipType[i], closeLookKey(), closeHouseOf(i));
   if (!e || e.state !== 'ready' || k < 0 || k >= e.info.parts.length) return [shipX[i], shipY[i]];
   const p = e.info.parts[k];
   return closeGridToWorld(i, e, p.cx, p.cy);
 }
 // How big ship i is in world units across (for effects sized to the ship).
 function closeShipWorld(i) {
-  const e = closeArtEntry(shipType[i], closeLookKey());
+  const e = closeArtEntry(shipType[i], closeLookKey(), closeHouseOf(i));
   return e && e.state === 'ready' ? { e: e, sq: e.s * e.worldPerPx } : null;
 }
 
@@ -65346,6 +65377,217 @@ function closeDrawStation(i, sx, sy, px, side) {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.drawImage(e.c, sx - d / 2, sy - d / 2, d, d);
   return true;
+}
+// ---------------------------------------------------------------------
+// 6v2. (v126.0, Alex 7 Nov: "I want all the varieties of echo art we already worked up. When playing against them, it chooses a random version of the echo art")
+// THE ECHO'S LOOKS. The Echo fly copies of our own designs, so they have no drawings of their own: each look is a change laid over OUR ship's drawing
+// (the art sheet UI/mockup-echo-art.html, sources EWGame/UI/art-src/echo/). Because it works on any drawing, every hull size from the smallest to a titan
+// frame has all five looks with no extra art. The five looks from the sheet:
+//   E1 Dark Mirror  - colour drained away, only lit edges in a cold violet-white
+//   E2 Scrap Twist  - bent and wrung out, stitched-on plates, bent spikes and loose cable over a rust-black hull
+//   E3 Negative     - a photographic negative: dark plates turn pale bone, lights turn dark
+//   E4 Afterimage   - the ship trails two faint copies of itself, a teal one and a red one
+//   E5 Black Root   - a black lattice grown over the hull, lit from inside by a dull ember red
+// Their markings are turned into unreadable script. Each fight against the Echo picks ONE look at random for the whole run (a Last Stand run:
+// lastStand.echoLook, picked in lsStart; the same fixed seed gives the same look). The campaign has no Echo yet; when it does, it should pick one the same way.
+// The look also shows on the icons (drawIconEcho), mirrored. The v110 rule holds: a look never changes how long a ship is drawn (the close art's length
+// is measured on the plain drawing, closeArtBuild), so close art, icon and triangle stay one size.
+// ---------------------------------------------------------------------
+const ECHO_LOOKS = [
+  { id: 'E1', name: 'Dark Mirror' },
+  { id: 'E2', name: 'Scrap Twist' },
+  { id: 'E3', name: 'Negative' },
+  { id: 'E4', name: 'Afterimage' },
+  { id: 'E5', name: 'Black Root' }
+];
+function echoLookById(id) { for (const L of ECHO_LOOKS) if (L.id === id) return L; return null; }
+// A look for a new fight: at random, or (seed > 0) always the same one for the same seed.
+function echoPickLook(seed) {
+  const r = seed > 0 ? ((seed * 40503 + 977) >>> 0) % 1000 / 1000 : Math.random();
+  return ECHO_LOOKS[Math.min(ECHO_LOOKS.length - 1, Math.floor(r * ECHO_LOOKS.length))].id;
+}
+// The look the Echo wear in the fight on now ('E1' when nothing has picked one).
+function echoLookInPlay() {
+  return typeof lastStand !== 'undefined' && lastStand && echoLookById(lastStand.echoLook) ? lastStand.echoLook : 'E1';
+}
+// The Echo look a ship of type t on `side` wears, or '' when it is not an Echo ship.
+function echoLookOfShip(side, t) {
+  return side === RED && enemyFactionOfType(t) === 'echo' ? echoLookInPlay() : '';
+}
+// Which version of its close picture ship i uses: a Sylph's pilot's house, 'echo-E3' for an Echo ship, or '' (the plain one).
+function closeHouseOf(i) {
+  const t = shipType[i], rec = SHIP_TYPES[t];
+  if (rec && rec.faction === 'sylph') { const p = typeof syPilotOf === 'function' ? syPilotOf(i) : null; return p && p.house ? p.house : ''; }
+  const ek = echoLookOfShip(shipSide[i], t);
+  return ek ? 'echo-' + ek : '';
+}
+
+// A small repeatable random number maker (the same picture always gets the same plates and roots).
+function echoRng(text) {
+  let h = 7;
+  for (let k = 0; k < text.length; k++) h = (h * 31 + text.charCodeAt(k)) % 2147483647;
+  let s = h % 2147483646 + 1;
+  return function () { s = (s * 16807) % 2147483647; return s / 2147483647; };
+}
+const ECHO_GLYPHS = 'ΞЖΨЯИƎƧΛΓ⊥ЧЮΦЊЏ';
+// Every bit of writing in a drawing (SVG text) turned into the Echo's script, letter for letter.
+function echoLetters(svg, rnd) {
+  return svg.replace(/(<text[^>]*>)([^<]*)(<\/text>)/g, function (m, a, words, b) {
+    let out = '';
+    for (let k = 0; k < words.length; k++) out += words[k] === ' ' ? ' ' : ECHO_GLYPHS[Math.floor(rnd() * ECHO_GLYPHS.length)];
+    return a + out + b;
+  });
+}
+function echoNum(v) { return (Math.round(v * 100) / 100).toString(); }
+
+// The looks' SVG filters (as the art sheet's), sized for a picture u times the sheet's corvette. `colourOnly` leaves out the bending (for the turning guns).
+function echoFilterDefs(look, u, colourOnly) {
+  const lift = '<feComponentTransfer><feFuncR type="linear" slope="2.1"/><feFuncG type="linear" slope="2.1"/><feFuncB type="linear" slope="2.1"/></feComponentTransfer>';
+  const box = ' x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB"';
+  if (look === 'E1') return '<filter id="ecLook"' + box + '><feColorMatrix type="saturate" values="0"/>' + lift +
+    '<feComponentTransfer><feFuncR type="table" tableValues="0 .03 .22 .62 .9"/><feFuncG type="table" tableValues="0 .03 .18 .55 .86"/><feFuncB type="table" tableValues=".01 .07 .36 .9 1"/></feComponentTransfer></filter>';
+  if (look === 'E2') return '<filter id="ecLook"' + box + '>' +
+    (colourOnly ? '<feColorMatrix type="saturate" values=".15"/>' :
+      '<feTurbulence type="fractalNoise" baseFrequency="' + echoNum(0.012 / u) + ' ' + echoNum(0.03 / u) + '" numOctaves="2" seed="7" result="n"/>' +
+      '<feDisplacementMap in="SourceGraphic" in2="n" scale="' + echoNum(26 * u) + '" xChannelSelector="R" yChannelSelector="G" result="w"/><feColorMatrix in="w" type="saturate" values=".15"/>') +
+    lift + '<feComponentTransfer><feFuncR type="table" tableValues=".02 .16 .46 .8"/><feFuncG type="table" tableValues=".02 .09 .22 .42"/><feFuncB type="table" tableValues=".02 .05 .1 .2"/></feComponentTransfer></filter>';
+  if (look === 'E3') return '<filter id="ecLook"' + box + '><feColorMatrix type="matrix" values="-1 0 0 0 1  0 -1 0 0 1  0 0 -1 0 1  0 0 0 1 0"/><feColorMatrix type="saturate" values=".2"/>' +
+    '<feComponentTransfer><feFuncR type="table" tableValues="0 .5 .95"/><feFuncG type="table" tableValues="0 .47 .9"/><feFuncB type="table" tableValues="0 .42 .82"/></feComponentTransfer></filter>';
+  if (look === 'E4') return '<filter id="ecLook"' + box + '><feColorMatrix type="saturate" values=".1"/>' + lift +
+    '<feComponentTransfer><feFuncR type="table" tableValues="0 .06 .3 .7"/><feFuncG type="table" tableValues="0 .1 .4 .85"/><feFuncB type="table" tableValues="0 .1 .38 .8"/></feComponentTransfer></filter>' +
+    (colourOnly ? '' : '<filter id="ecGhostA" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 .2  0 0 0 0 .85  0 0 0 0 .8  .5 .5 .5 .45 0"/></filter>' +
+      '<filter id="ecGhostB" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 .85  0 0 0 0 .2  0 0 0 0 .35  .5 .5 .5 .45 0"/></filter>');
+  return '<filter id="ecLook"' + box + '>' +                                   // E5
+    (colourOnly ? '<feColorMatrix type="saturate" values="0"/>' :
+      '<feTurbulence type="turbulence" baseFrequency="' + echoNum(0.02 / u) + '" numOctaves="2" seed="3" result="n"/>' +
+      '<feDisplacementMap in="SourceGraphic" in2="n" scale="' + echoNum(10 * u) + '" xChannelSelector="R" yChannelSelector="B" result="w"/><feColorMatrix in="w" type="saturate" values="0"/>') +
+    lift + '<feComponentTransfer><feFuncR type="table" tableValues="0 .05 .22 .95"/><feFuncG type="table" tableValues="0 .02 .05 .16"/><feFuncB type="table" tableValues="0 .03 .07 .18"/></feComponentTransfer></filter>';
+}
+function echoEl(tag, at) { let s = '<' + tag; for (const k in at) s += ' ' + k + '="' + at[k] + '"'; return s + '/>'; }
+// E2: stitched-on plates, bent spikes and loose cable over the hull (hull = its box in picture pixels).
+function echoScrapSVG(hull, u, rnd) {
+  const hw = hull.maxX - hull.minX, hh = hull.maxY - hull.minY;
+  let o = '';
+  const plates = Math.max(3, Math.min(40, Math.round(16 * hw / (520 * u))));
+  for (let i = 0; i < plates; i++) {
+    const w = (18 + rnd() * 46) * u, h = (10 + rnd() * 26) * u, k = (rnd() * 10 - 5) * u;
+    const x = hull.minX + 0.06 * hw + rnd() * Math.max(1, 0.9 * hw - w), y = hull.minY + 0.15 * hh + rnd() * Math.max(1, 0.7 * hh - h);
+    o += echoEl('polygon', { points: [x, y, x + w, y + k, x + w - rnd() * 8 * u, y + h, x + rnd() * 6 * u, y + h + k].map(echoNum).join(' '), fill: rnd() < .5 ? '#4a4436' : '#3a3a33', stroke: '#0a0a08', 'stroke-width': echoNum(1.4 * u), opacity: '.92' });
+    for (let r = 0; r < 3; r++) o += echoEl('circle', { cx: echoNum(x + (4 + rnd() * Math.max(1, w / u - 8)) * u), cy: echoNum(y + (3 + rnd() * Math.max(1, h / u - 4)) * u), r: echoNum(1.6 * u), fill: '#9a8f70' });
+  }
+  const spikes = Math.max(2, Math.min(18, Math.round(7 * hw / (520 * u))));
+  for (let s = 0; s < spikes; s++) {
+    const sx = hull.minX + 0.2 * hw + rnd() * 0.7 * hw, top = rnd() < .5, len = (26 + rnd() * 40) * u * 0.6;
+    const sy = top ? hull.minY + (4 + rnd() * 14) * u : hull.maxY - (4 + rnd() * 14) * u;
+    o += echoEl('polygon', { points: [sx, sy, sx + 8 * u, sy, sx + 4 * u + (rnd() * 30 - 15) * u, sy + (top ? -len : len)].map(echoNum).join(' '), fill: '#5a5243', stroke: '#0a0a08', 'stroke-width': echoNum(u) });
+  }
+  for (let c = 0; c < 3; c++) {
+    const y0 = hull.minY + (0.2 + rnd() * 0.6) * hh, x0 = hull.minX + (0.1 + rnd() * 0.1) * hw, x1 = hull.minX + (0.75 + rnd() * 0.15) * hw;
+    o += echoEl('path', { d: 'M' + echoNum(x0) + ' ' + echoNum(y0) + ' C ' + echoNum(x0 + 0.3 * hw) + ' ' + echoNum(y0 + 0.3 * hh * (rnd() - .5)) + ', ' + echoNum(x0 + 0.5 * hw) + ' ' +
+      echoNum(y0 + 0.35 * hh * (rnd() - .5)) + ', ' + echoNum(x1) + ' ' + echoNum(y0 + 0.15 * hh * (rnd() - .5)), fill: 'none', stroke: '#1b1a16', 'stroke-width': echoNum(3 * u) });
+  }
+  return o;
+}
+// E5: a dark lattice grown over the hull, lit from inside (kept within the hull's box).
+function echoRootsSVG(hull, u, rnd) {
+  const hw = hull.maxX - hull.minX, hh = hull.maxY - hull.minY;
+  const n = Math.max(4, Math.min(36, Math.round(14 * hw / (520 * u))));
+  let o = '';
+  for (let i = 0; i < n; i++) {
+    let x = hull.minX + rnd() * hw, y = hull.minY + rnd() * hh, d = 'M' + echoNum(x) + ' ' + echoNum(y);
+    for (let j = 0; j < 6; j++) {
+      x = Math.max(hull.minX, Math.min(hull.maxX, x + (rnd() * 70 - 20) * u)); y = Math.max(hull.minY + 2, Math.min(hull.maxY - 2, y + (rnd() * 44 - 22) * u));
+      d += ' L' + echoNum(x) + ' ' + echoNum(y);
+    }
+    o += echoEl('path', { d: d, fill: 'none', stroke: '#060505', 'stroke-width': echoNum((3 + rnd() * 5) * u), 'stroke-linejoin': 'round', 'stroke-linecap': 'round' });
+    o += echoEl('path', { d: d, fill: 'none', stroke: '#ff6a4a', 'stroke-width': echoNum(0.9 * u), opacity: '.55' });
+  }
+  return o;
+}
+// A whole ship's drawing (SVG inside its picture box) in Echo look `look`. box = { x, y, w, h } the picture's box, hull = the hull's box (both in picture
+// pixels), seedText makes the plates and roots the same every time for this design. Gives back the new inside and the new box (bigger for the
+// Afterimage's trailing copies and for the bending filters' reach).
+function echoCloseSVG(inner, look, box, hull, seedText) {
+  const rnd = echoRng(seedText + '|' + look);
+  const u = Math.max(0.3, Math.min(3, (hull.maxX - hull.minX) / 520));     // the picture's scale against the art sheet's corvette (about 520 long)
+  const body = echoLetters(inner, rnd);
+  const defs = '<defs>' + echoFilterDefs(look, u, false) + '</defs>';
+  const b = { x: box.x, y: box.y, w: box.w, h: box.h };
+  const grow = function (m) { b.x -= m; b.y -= m; b.w += 2 * m; b.h += 2 * m; };
+  if (look === 'E2') { grow(15 * u); return { inner: defs + '<g filter="url(#ecLook)">' + body + echoScrapSVG(hull, u, rnd) + '</g>', box: b }; }
+  if (look === 'E5') { grow(7 * u); return { inner: defs + '<g filter="url(#ecLook)">' + body + echoRootsSVG(hull, u, rnd) + '</g>', box: b }; }
+  if (look === 'E4') {
+    // two copies a moment behind (towards the stern, the picture's left, and a little up), as the sheet's 34 and 66 units on a 640-wide picture
+    const hw = hull.maxX - hull.minX, dx1 = hw * 0.065, dy1 = hw * 0.02, dx2 = hw * 0.127, dy2 = hw * 0.04;
+    b.x -= dx2; b.w += dx2; b.y -= dy2; b.h += dy2;
+    return { inner: defs +
+      '<g opacity=".22" filter="url(#ecGhostB)"><g transform="translate(' + echoNum(-dx2) + ' ' + echoNum(-dy2) + ')">' + body + '</g></g>' +
+      '<g opacity=".4" filter="url(#ecGhostA)"><g transform="translate(' + echoNum(-dx1) + ' ' + echoNum(-dy1) + ')">' + body + '</g></g>' +
+      '<g filter="url(#ecLook)">' + body + '</g>', box: b };
+  }
+  return { inner: defs + '<g filter="url(#ecLook)">' + body + '</g>', box: b };   // E1, E3: colour only
+}
+// A turning gun's small drawing in the same look (its colours only: it turns, so no bending or trailing copies).
+function echoGunSVG(inner, look) {
+  return '<defs>' + echoFilterDefs(look, 1, true) + '</defs><g filter="url(#ecLook)">' + inner + '</g>';
+}
+
+// ---- The icons in an Echo look ----
+// Our own icon (an Echo ship shows the icon of the design it copies), drawn mirror-image, in the look's style, edged in the Echo's colour.
+// Same square and same painted length as our icon (iconFillOf), so the v110 sizes hold. plain = the small silhouette: just the mirrored shape.
+function drawIconEcho(g, p, id, color, k, plain, look) {
+  g.save();
+  g.scale(k, k);
+  g.translate(p.unit, 0); g.scale(-1, 1);                                 // mirror-image, nose still up
+  g.lineJoin = 'round'; g.lineCap = 'round';
+  const cutOut = function () {
+    g.globalCompositeOperation = 'destination-out';
+    if (p.cut) g.fill(p.cut);
+    if (p.seam) { g.lineWidth = 1.1; g.lineJoin = 'miter'; g.lineCap = 'butt'; g.stroke(p.seam); g.lineJoin = 'round'; g.lineCap = 'round'; }
+    g.globalCompositeOperation = 'source-over';
+  };
+  if (plain) { g.fillStyle = color; g.fill(p.body, 'nonzero'); g.restore(); return; }
+  const rnd = echoRng(id + look), U = p.unit;
+  const edge = function (col, w) { g.strokeStyle = col; g.lineWidth = w; g.stroke(p.body); };
+  if (look === 'E4') {                                                     // Afterimage: a teal and a red copy trailing (towards the stern, down)
+    g.save(); g.translate(U * 0.05, U * 0.065); g.globalAlpha = 0.22; g.fillStyle = '#d9335a'; g.fill(p.body, 'nonzero'); g.restore();
+    g.save(); g.translate(U * 0.025, U * 0.035); g.globalAlpha = 0.4; g.fillStyle = '#33d9cc'; g.fill(p.body, 'nonzero'); g.restore();
+    g.fillStyle = mixHex(color, '#dfeee9', 0.35); g.fill(p.body, 'nonzero');
+    cutOut();
+    g.restore(); return;
+  }
+  if (look === 'E2') g.transform(1, 0, 0.1, 1, -0.05 * U, 0);              // Scrap Twist: wrung slightly askew
+  const fill = look === 'E1' ? mixHex(color, '#05040a', 0.8) : look === 'E2' ? mixHex('#4a2c1a', color, 0.12) : look === 'E3' ? '#e6dcc4' : '#2a1414';
+  g.fillStyle = fill; g.fill(p.body, 'nonzero');
+  if (look === 'E3') {                                                     // Negative: the cuts and seams drawn dark instead of cut through
+    g.fillStyle = '#1a1712'; g.strokeStyle = '#1a1712';
+    if (p.cut) g.fill(p.cut);
+    if (p.seam) { g.lineWidth = 1.1; g.stroke(p.seam); }
+  } else {
+    g.save(); g.clip(p.body, 'nonzero');
+    if (look === 'E1' && p.seam) { g.strokeStyle = mixHex(color, '#ffffff', 0.5); g.globalAlpha = 0.6; g.lineWidth = 1; g.stroke(p.seam); g.globalAlpha = 1; }
+    if (look === 'E2') {                                                   // stitched-on plates and rivets
+      for (let n = 0; n < 6; n++) {
+        const x = U * (0.15 + rnd() * 0.55), y = U * (0.1 + rnd() * 0.75), w = U * (0.12 + rnd() * 0.16), h = U * (0.06 + rnd() * 0.1);
+        g.fillStyle = rnd() < .5 ? '#2e2a22' : '#5a4a36'; g.fillRect(x, y, w, h);
+        g.fillStyle = '#9a8f70'; g.fillRect(x + w * 0.2, y + h * 0.3, U * 0.025, U * 0.025);
+      }
+    }
+    if (look === 'E5') {                                                   // the ember-lit lattice
+      for (let n = 0; n < 6; n++) {
+        let x = U * rnd(), y = U * rnd();
+        g.beginPath(); g.moveTo(x, y);
+        for (let j = 0; j < 5; j++) { x += U * (rnd() * 0.36 - 0.18); y += U * (rnd() * 0.36 - 0.12); g.lineTo(x, y); }
+        g.strokeStyle = '#000000'; g.lineWidth = U * 0.06; g.stroke();
+        g.strokeStyle = '#ff6a4a'; g.globalAlpha = 0.8; g.lineWidth = U * 0.018; g.stroke(); g.globalAlpha = 1;
+      }
+    }
+    g.restore();
+    if (look !== 'E1') cutOut();                                           // E2, E5: hangar cuts and seams cut through, as ours
+    else if (p.cut) { g.globalCompositeOperation = 'destination-out'; g.fill(p.cut); g.globalCompositeOperation = 'source-over'; }   // E1: the seams stay lit
+  }
+  edge(look === 'E1' ? mixHex(color, '#ffffff', 0.45) : look === 'E5' ? mixHex(color, '#ff6a4a', 0.5) : color, U * 0.035);
+  g.restore();
 }
 // =====================================================================
 // 6w. THE BATTLE EFFECTS  (v33, notes/plans/graphics/plan.md)
@@ -65640,7 +65882,7 @@ function fxBlast(t, part) {
 // Ship i was destroyed: up close it breaks into pieces that drift apart, burning, and fade
 function fxShipDied(i) {
   if (closeDrawn[i] !== 1) return;
-  const e = closeArtEntry(shipType[i], closeLookKey());
+  const e = closeArtEntry(shipType[i], closeLookKey(), closeHouseOf(i));
   const L = fxShipLen(i);
   fxBoom(shipX[i], shipY[i], L * 0.22);
   if (!e || e.state !== 'ready') return;
@@ -69021,8 +69263,7 @@ function bsShipViewFrame() {
   const i = bsShip.slot;
   if (!bsShipHere()) { say(bsShipGone().replace('.', '').toUpperCase()); return; }   // lost or away: the view stops (a new pick starts it again)
   const t = shipType[i], side = shipSide[i], rec = SHIP_TYPES[t];
-  const pilot = rec && rec.faction === 'sylph' && typeof syPilotOf === 'function' ? syPilotOf(i) : null;
-  const e = typeof window.SHIP_ART !== 'undefined' ? closeArtEntry(t, closeLookKey(), pilot && pilot.house ? pilot.house : '') : null;
+  const e = typeof window.SHIP_ART !== 'undefined' ? closeArtEntry(t, closeLookKey(), closeHouseOf(i)) : null;   // (a Sylph in its house's colours, an Echo ship in its look)
   if (!e || e.state === 'none') {                                           // no close-up drawing for this type: its icon, big
     const px = Math.min(W, H) * 0.7;
     g.setTransform(1, 0, 0, 1, W / 2 - px / 2, H / 2 - px / 2);
@@ -78203,7 +78444,8 @@ const LAST_STAND = {
   ],
   // (v100.4, stage 5) EVERY ENEMY: each faction's waves (the first design fills what is left of a wave's strength; the others come in from their wave,
   // each up to its share), and its BOSSES: every bossEvery-th wave adds the last boss whose wave has come (one more for every 10 waves after wave 20),
-  // on top of the wave. The Echo has no ships of its own yet: its waves fly the stock human designs as drawn (Alex, 4 Nov).
+  // on top of the wave. The Echo has no ships of its own yet: its waves fly the stock human designs (Alex, 4 Nov), since v126.0 drawn in one of the
+  // Echo's five looks a run (section 6v2).
   factions: {
     swarm:  { name: 'Swarm', rows: null,                                                                     // (the swarm list above)
               bosses: [{ name: 'Mother', from: 5 }, { name: 'Hive warden', from: 10 }, { name: 'Deep mother', from: 15 }, { name: 'Leviathan', from: 20 }] },
@@ -78262,6 +78504,7 @@ function lsType(name) {
 // (v100.8, stage 7) opts: the test options, { wave, level, allTech, seed } (all optional): start at wave N, start at level N (the cards of the
 //   levels before it are dealt at once), every research project done, and a fixed seed (the same seed gives the same visitors and card deals).
 function lsStart(enemy, opts) {
+  const wantLook = opts && typeof echoLookById === 'function' && echoLookById(opts.echoLook) ? opts.echoLook : '';   // (v126.0) a check tool may name the Echo look
   opts = lsCleanOpts(opts);
   if (lastStand !== null) lsLeave();
   // (v124.0) the menu starts a run against one race: lsStart('random') picks one of LAST_STAND.enemyChoices (with the run's seed when one is fixed, so the
@@ -78329,7 +78572,9 @@ function lsStart(enemy, opts) {
                 // (v102.0) version 2: the card tree (31d), and each station squadron's hangar; (v102.1) the hand
                 v2: opts.v2 === true, tree: null, sqHangar: new Map(), hand: [],
                 // (v104.1) the weapon set's designs, by name
-                setTypes: setTypes };
+                setTypes: setTypes,
+                // (v126.0, section 6v2) the look the Echo's ships wear this run: one of the five at random (the same for the same fixed seed)
+                echoLook: wantLook || echoPickLook(opts.seed) };
   if (lastStand.v2) lastStand.tree = ls2NewTree();
   for (const t of pool) lastStand.versions.set(t, t);
   if (opts.allTech) lsAllResearch();                      // (v100.8) test option: every project done from the start
@@ -79540,7 +79785,7 @@ function lsRenderMenu(body) {
   body.appendChild(row);
   // (v124.0) THE ENEMY: Random (a new race each run) or one race; the Sylph drop in as visitors whatever is picked
   const ENEMY_HINT = { random: 'A different enemy race each run: Swarm, Delver or Echo.', swarm: 'The Swarm: masses of cheap living ships, growing bigger as the waves go on.',
-                       delver: 'The Delvers: drone swarms, then rock-hulled cruisers and mining arks.', echo: 'The Echo: for now they fly copies of our own stock designs (their own ships are not drawn yet).' };
+                       delver: 'The Delvers: drone swarms, then rock-hulled cruisers and mining arks.', echo: 'The Echo: copies of our own stock designs, twisted by the crossing. Each run they wear one of five looks.' };
   const enr = el('div', 'mm-row'); enr.appendChild(el('span', 'label', 'Enemy'));
   const eseg = el('span', 'seg'); eseg.id = 'lsEnemy';
   ['random'].concat(LAST_STAND.enemyChoices).forEach(function (k) {
@@ -79610,7 +79855,8 @@ function lsResultsData() {
     over: L.over, won: L.won, text: L.overText || (L.won ? 'Won at wave ' + LAST_STAND.winWave + '.' : ''), wave: L.wave, level: L.level, seconds: simTime,
     destroyed: lsKills(), visitorsDown: lsVisitorsKilled(), visitorsCome: L.visitorsCome, cards: L.picks.length, packages: L.owned.size, squadrons: L.hangars.length,
     test: lsOptsText(L.test), seed: L.seed,
-    enemy: L.enemy === 'mixed' ? 'Mixed' : LAST_STAND.factions[L.enemy].name + (L.pick === 'random' ? ' (random)' : ''),   // (v124.0) the race this run was against
+    enemy: (L.enemy === 'mixed' ? 'Mixed' : LAST_STAND.factions[L.enemy].name + (L.pick === 'random' ? ' (random)' : '')) +   // (v124.0) the race this run was against
+           (L.enemy === 'echo' || L.enemy === 'mixed' ? ', ' + echoLookById(L.echoLook).name + ' look' : ''),          // (v126.0) and the Echo's look
     ours: Array.from(ours.values()).sort(byDealt), theirs: Array.from(theirs.values()).sort(function (a, b) { return b.sent - a.sent; })
   };
 }
