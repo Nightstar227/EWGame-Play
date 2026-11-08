@@ -3464,7 +3464,7 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
   <div class="red oldOnly">Red: <b id="redCount">0</b></div>
   <div>Ships drawn on screen: <b id="onScreen">0</b></div>
   <div class="oldOnly">Battle time: <b id="battleTimeText">0.0</b> s</div>
-  <div class="oldOnly">Speed: <button id="speed1">1x</button><button id="speed4">4x</button><button id="speed16">16x</button></div>
+  <div class="oldOnly">Speed: <button id="speed1">1x</button><button id="speed4">4x</button><button id="speed16">16x</button><button id="speed64">64x</button><button id="speed256">256x</button></div>
   <div class="oldOnly"><button id="pauseButton">Pause (or change a design)</button></div>
   <div id="reinforceStatus" class="oldOnly"></div>
   <div><label><input type="checkbox" id="debugCheck"> Debug view</label> <label><input type="checkbox" id="dangerCheck"> Danger map</label></div>
@@ -3503,7 +3503,7 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
     <div class="bs-clock"><span class="label" id="bsClockLabel">Battle time</span><span class="data-lg" id="bsClock">00:00</span></div>
     <div class="bs-speed" role="group" aria-label="Speed">
       <button type="button" id="bsStop" title="Stop the clock (the map stays live: look around, click ships). Press again, or a speed, to go on."><svg viewBox="0 0 14 14"><path d="M3 2h3v10H3zM8 2h3v10H8z" fill="currentColor"/></svg></button>
-      <button type="button" id="bsSpeed1">1&times;</button><button type="button" id="bsSpeed4">4&times;</button><button type="button" id="bsSpeed16">16&times;</button>
+      <button type="button" id="bsSpeed1">1&times;</button><button type="button" id="bsSpeed4">4&times;</button><button type="button" id="bsSpeed16">16&times;</button><button type="button" id="bsSpeed64" title="64x: as fast as the computer allows in a big battle">64&times;</button><button type="button" id="bsSpeed256" title="256x: as fast as the computer allows in a big battle">256&times;</button>
     </div>
     <button type="button" class="btn btn-primary" id="bsRedesign" title="Pauses the battle: change the production order, or open the ship designer to change a design (saved designs join the battle as a new version).">
       <svg class="icon icon-20" viewBox="0 0 24 24"><path d="M4 20 L4 15 L15 4 L20 9 L9 20 Z"/><path d="M12.5 6.5 L17.5 11.5"/></svg><span id="bsRedesignText">Pause &amp; redesign</span>
@@ -29949,7 +29949,7 @@ function campaignFrame(realSeconds) {
   if (campaign.battle.state !== 'parked' && !(screenMode === 'campaign' && coreLoopTutorialQuiet())) return;   // (v82: the tutorial's quiet front runs at map speed on the map)
   const perWeek = SETTINGS.mapSecondsPerWeek;
   if (!(perWeek > 0)) return;
-  const mul = campaign.battle.state === 'parked' ? campaign.speed : (battleSpeed >= 16 ? 4 : (battleSpeed >= 4 ? 2 : 1));   // (v82: with the battle live, the map's 1x, 2x and 4x set the battle's speed: 24f cmSetSpeed)
+  const mul = campaign.battle.state === 'parked' ? campaign.speed : mapSpeedForBattleSpeed(battleSpeed);   // (v82: with the battle live, the map's buttons set the battle's speed: 24f cmSetSpeed; v133.0: five buttons, 24-7)
   campaignTick(realSeconds * mul / perWeek);
 }
 // =====================================================================
@@ -67078,8 +67078,13 @@ const statusText = document.getElementById('battleStatus');
 const hudPanel = document.getElementById('hud');
 const setupPanel = document.getElementById('setupScreen');
 const reportPanel = document.getElementById('reportScreen');
-const speedButtons = [document.getElementById('speed1'), document.getElementById('speed4'), document.getElementById('speed16')];
-const SPEED_VALUES = [1, 4, 16];
+const speedButtons = [document.getElementById('speed1'), document.getElementById('speed4'), document.getElementById('speed16'), document.getElementById('speed64'), document.getElementById('speed256')];
+const SPEED_VALUES = [1, 4, 16, 64, 256];   // (v133.0, Alex: early wars took hours to test) 64x and 256x added; when the computer cannot keep up the battle just runs as fast as it can
+// (v133.0) The war map's five speed buttons. With the battle parked they set the map speed (campaign.speed, a multiple of mapSecondsPerWeek);
+// with the battle live the same five buttons set the battle's speed. These two lists pair them up, button by button.
+const MAP_SPEED_VALUES = [1, 2, 4, 16, 64];
+function battleSpeedForMapSpeed(v) { const k = MAP_SPEED_VALUES.indexOf(v); return k >= 0 ? SPEED_VALUES[k] : 1; }
+function mapSpeedForBattleSpeed(v) { let k = 0; for (let j = 0; j < SPEED_VALUES.length; j++) if (v >= SPEED_VALUES[j]) k = j; return MAP_SPEED_VALUES[k]; }
 const backButton = document.getElementById('backButton');
 const reportToggleButton = document.getElementById('reportToggleButton');
 const reportBackButton = document.getElementById('reportBackButton');
@@ -67087,7 +67092,7 @@ const commandLogPanel = document.getElementById('commandLog');
 const commandLogLinesEl = document.getElementById('commandLogLines');
 
 let screenMode = 'setup';                       // 'setup', 'designer' or 'battle'
-let battleSpeed = 1;                            // 1, 4 or 16
+let battleSpeed = 1;                            // 1, 4, 16, 64 or 256 (v133.0: 64 and 256 added)
 
 function setBattleSpeed(value) {
   battleSpeed = value;
@@ -67315,12 +67320,12 @@ function updateHud(now) {
 const battleScreenEl = lookRootEl;
 const bsMapEl = document.getElementById('bsMap');
 const bsEl = {};                                 // the screen's elements by id (filled below)
-['bsOpLabel', 'bsName', 'bsObjective', 'bsObjName', 'bsObjNote', 'bsObjShield', 'bsObjHull', 'bsClock', 'bsClockLabel', 'bsStop', 'bsSpeed1', 'bsSpeed4', 'bsSpeed16',
+['bsOpLabel', 'bsName', 'bsObjective', 'bsObjName', 'bsObjNote', 'bsObjShield', 'bsObjHull', 'bsClock', 'bsClockLabel', 'bsStop', 'bsSpeed1', 'bsSpeed4', 'bsSpeed16', 'bsSpeed64', 'bsSpeed256',
  'bsRedesign', 'bsRedesignText', 'bsReportButton', 'bsDisplayButton', 'bsSetupButton', 'bsSetupText', 'bsMenuButton', 'bsFoldLeft', 'bsFoldRight', 'bsCommsSize', 'bsUnfoldLeft', 'bsUnfoldRight',
  'bsShipsUs', 'bsShipsThem', 'bsShipsUsNote', 'bsShipsThemNote', 'bsTug', 'bsTugUs', 'bsTugThem', 'bsTugWd', 'bsRatio', 'bsRatioWords', 'bsSqUs', 'bsSqThem',
  'bsLostUs', 'bsLostThem', 'bsTonUs', 'bsTonThem', 'bsWaveUs', 'bsWaveThem', 'bsAdmTag', 'bsAdmiralBody', 'bsLayerLine', 'bsLayerRange', 'bsLayerTags', 'bsLayerDanger',
  'bsTip', 'bsTipClose', 'bsStamp', 'bsScaleBar', 'bsScaleText', 'bsDisplayBox', 'bsDisplayBody', 'bsDisplayClose', 'bsSquadBody'].forEach(function (id) { bsEl[id] = document.getElementById(id); });
-const bsSpeedButtons = [bsEl.bsSpeed1, bsEl.bsSpeed4, bsEl.bsSpeed16];
+const bsSpeedButtons = [bsEl.bsSpeed1, bsEl.bsSpeed4, bsEl.bsSpeed16, bsEl.bsSpeed64, bsEl.bsSpeed256];   // (v133.0: 64x and 256x)
 let clockStopped = false;                        // the Stop button: the battle clock stands still without opening the pause panel (nothing is logged)
 let bsSelectedSq = 0;                            // the squadron shown in the Selected squadron column (0 = none)
 let bsTestDrawerOpen = false;                    // the Test tools drawer (the old panel) is open
@@ -69913,7 +69918,8 @@ function cmBuild() {
       '<div class="clockbox"><div class="date"><span class="label" id="cmDateLabel">War week</span><b id="cmDate">WEEK 0 · DAY 1</b></div>' +
         '<span class="speed-cap" id="cmSpeedCap">Map</span><div class="speed" role="group" aria-label="War speed">' +
           '<button type="button" data-cm="speed" data-id="0" title="Pause the war"><svg viewBox="0 0 14 14"><path d="M3 2h3v10H3zM8 2h3v10H8z" fill="currentColor"/></svg></button>' +
-          '<button type="button" data-cm="speed" data-id="1" id="cmSp1">1&times;</button><button type="button" data-cm="speed" data-id="2" id="cmSp2">2&times;</button><button type="button" data-cm="speed" data-id="4" id="cmSp4">4&times;</button></div>' +
+          '<button type="button" data-cm="speed" data-id="1" id="cmSp1">1&times;</button><button type="button" data-cm="speed" data-id="2" id="cmSp2">2&times;</button><button type="button" data-cm="speed" data-id="4" id="cmSp4">4&times;</button>' +
+          '<button type="button" data-cm="speed" data-id="16" id="cmSp16">16&times;</button><button type="button" data-cm="speed" data-id="64" id="cmSp64">64&times;</button></div>' +
         '<button class="menu-btn" type="button" data-cm="menu" title="New, load, import, export, display (Esc)">Menu</button></div>' +
       '<div class="rates" id="cmRates" aria-label="Resource rates a week"></div>' +                        // (v27 B3) every resource as a weekly rate (section 7s)
       '<div class="sup-drop" id="cmSupply" hidden></div>' +                                                  // (v67) the supply return drops down under the strip (section 7v)
@@ -70206,11 +70212,12 @@ function cmClick(e) {
   else if (what === 'research') researchTabClick(t);                     // (v30 C3) the Research tab's own buttons (section 7u)
   cmRender(true);
 }
-// The speed buttons: on the map, the map speed (campaign.speed: 0 pause, 1, 2, 4); while the battle is live, the battle's speed (1x, 4x, 16x), and pause stops both.
+// The speed buttons: on the map, the map speed (campaign.speed: 0 pause, 1, 2, 4, 16, 64); while the battle is live, the battle's speed (1x, 4x, 16x, 64x, 256x), and pause stops both.
+// (v133.0, Alex: testing an early war took hours) the 4th and 5th buttons are new: 16x/64x on the map, 64x/256x in the battle (24-7 MAP_SPEED_VALUES pairs them).
 function cmSetSpeed(v) {
   if (!campaign) return;
   if (v === 0) { campaign.speed = 0; return; }
-  if (campaignBattleLive()) { setBattleSpeed(v === 1 ? 1 : (v === 2 ? 4 : 16)); campaign.speed = 1; }
+  if (campaignBattleLive()) { setBattleSpeed(battleSpeedForMapSpeed(v)); campaign.speed = 1; }
   else campaign.speed = v;
   cmState.pausedBy = '';
 }
@@ -70244,9 +70251,9 @@ function cmRender(force) {
   setText(document.getElementById('cmDateLabel'), live ? 'War week · battle ' + fmtClock(simTime) : 'War week');
   // the speed group
   setText(document.getElementById('cmSpeedCap'), live ? 'Battle' : 'Map');
-  const labels = live ? ['1×', '4×', '16×'] : ['1×', '2×', '4×'];
-  ['cmSp1', 'cmSp2', 'cmSp4'].forEach(function (id, k) { setText(document.getElementById(id), labels[k]); });
-  const on = !(campaign.speed > 0) ? '0' : (live ? (battleSpeed === 1 ? '1' : (battleSpeed === 4 ? '2' : '4')) : String(campaign.speed));
+  const labels = (live ? SPEED_VALUES : MAP_SPEED_VALUES).map(function (v) { return v + '×'; });   // (v133.0: five buttons)
+  ['cmSp1', 'cmSp2', 'cmSp4', 'cmSp16', 'cmSp64'].forEach(function (id, k) { setText(document.getElementById(id), labels[k]); });
+  const on = !(campaign.speed > 0) ? '0' : (live ? String(mapSpeedForBattleSpeed(battleSpeed)) : String(campaign.speed));
   cmEl.querySelectorAll('[data-cm="speed"]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.id === on)); });
   const tabNow = cmState.view === 'dispatches' || cmState.view === 'council' || cmState.view === 'research' ? cmState.view : 'map';   // (stop 8: the Council Room is a tab too; v27 C3: Research)
   cmEl.querySelectorAll('[data-cm="tab"]').forEach(function (b) { if (b.dataset.id === 'map' || b.dataset.id === 'dispatches' || b.dataset.id === 'council' || b.dataset.id === 'research') b.setAttribute('aria-current', b.dataset.id === tabNow ? 'page' : 'false'); });
@@ -73764,7 +73771,7 @@ function tutProbeFights(ctx) {
       if (!coreLoopNeverParks()) campaignParkBattle('the raid is over');
       // the map's speed buttons drive the battle's speed while a fight is live (and hold the map at 1x): back on the map, the war runs at the speed the
       // player chose before the raid, or the one they pressed during it (16x in the battle = 4x on the map, 4x = 2x)
-      if (campaign.speed === 1) campaign.speed = Math.max(d.mapSpeed || 1, battleSpeed >= 16 ? 4 : (battleSpeed >= 4 ? 2 : 1));
+      if (campaign.speed === 1) campaign.speed = Math.max(d.mapSpeed || 1, mapSpeedForBattleSpeed(battleSpeed));   // (v133.0: the shared pairing, 24-7)
       tutDropAlienStaff(); tutLunaNobodys();
       if (d.raidOn) {
         const n = d.raidOn, ours = tutCount(d.trainerId);
