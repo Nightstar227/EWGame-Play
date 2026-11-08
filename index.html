@@ -8143,7 +8143,9 @@ TITANS.push({k:'halo',n:'Halo',role:'Laser · grand lance',grid:'Halo (laser)',g
 // ---------------------------------------------------------------------
 // 3. RAKE (third pass): a stepped half-moon wall with a solid stern castle and launcher casemates
 // (v110.1, Alex 6 Nov: "slim up the rake's art ... tall and slim") as tall as before, about half as deep nose to tail: a thinner dome, castle and casemates
+// (v129.0) launch: the mouths of the four siege launchers (art squares), where the game's siege missiles leave the ship (TITAN_ART.mounts)
 TITANS.push({k:'rake',n:'Rake',role:'Missiles · siege launchers',grid:'Rake (missiles)',gx:-38,gy:-55,span:[-205,110],tall:440,
+  launch:[[-134,-152],[-134,-96],[-134,96],[-134,152]],
   d:'A towering half-moon of stepped armour that keeps its dome to the enemy. Behind it stands a solid stern castle with the drives, and four armoured casemates where the siege launchers fire out of the back; the missiles loop round the ends to fall on the target. The antimatter magazine wall lies in a buttressed trench across the dome, and bastions stud its face.',
   draw:function(c,t){var i,X0=-40,RY=198;
     // radiators off the castle's top and bottom
@@ -8168,7 +8170,8 @@ TITANS.push({k:'rake',n:'Rake',role:'Missiles · siege launchers',grid:'Rake (mi
     for(i=0;i<12;i++){var am=-Math.PI/2+(i+.5)/12*Math.PI;turret(c,X0+Math.cos(am)*66,Math.sin(am)*(RY-6),2.6,am,2)}
     stencil(c,'EW-T 003',-88,-170,7);stencil(c,'RAKE',X0+16,-RY+44,7,.26);stripe(c,-88,-50,-120,.7);stripe(c,-88,-50,120,.7);
     navLight(c,X0+4,-RY+2,'#4cff7a',t,0);navLight(c,X0+4,RY-2,'#ff4a3a',t,.5);navLight(c,X0+70,0,'#ffffff',t,1);
-    L.forEach(function(y,j){var sd=y<0?-1:1,ph=((t*.09)+j*.12)%1;var path=curve([-134,y],[-190,y+sd*20],[-60,sd*250],[100,sd*120+y*.2],40);missile(c,path,ph*1.15)});
+    // (v129.0, Alex 8 Nov) no missiles painted on: the art used to draw four looping missiles here, which showed in the game as fake ones.
+    // The real siege missiles now leave from these launcher mouths (the `launch` points above).
   }});
 
 // ---------------------------------------------------------------------
@@ -8336,6 +8339,13 @@ window.TITAN_ART = {
     T.draw(c, STILL_AT);
     var gw = gridW || 0, gh = gridH || 0;
     return { canvas: cv, s: s, pivX: (T.gx + gw / 2 - x0) * s, pivY: (T.gy + gh / 2 - y0) * s, bodyW: gw > 0 ? gw * s : cv.width };
+  },
+  // (v129.0) Where a titan's weapons leave it: its `launch` points (the Rake's launcher mouths) in art squares from the ship's turning point (the build
+  // grid's middle), x toward the bow, y to starboard. The game turns them into map units with the art's scale (section 6b shipDrawLenOf / box.w). [] if none.
+  mounts: function (key, gridW, gridH) {
+    var T = BYKEY[key]; if (!T || !T.launch) return [];
+    var px = T.gx + (gridW || 0) / 2, py = T.gy + (gridH || 0) / 2;
+    return T.launch.map(function (m) { return [m[0] - px, m[1] - py]; });
   },
   // (v110.0) How big a titan's drawing really is, in art squares: { w: nose to tail, h: side to side, area: painted squares (v110.1) } of the painted part (the picture's box has empty
   // corners round some of them). Worked out once per titan from a small test drawing; the game sizes every titan by this, so all six come out alike.
@@ -11838,13 +11848,14 @@ const TACTIC_COLORS = ['#d5dcea', '#5ee08a', '#9fd3ff', '#35d6ff', '#ff9a5a', '#
 // Why a tactic was chosen (the matchup tables, section 3b; the report and the inspector print the text).
 const WHY_NONE = 0, WHY_UNARMED = 1, WHY_OUTRANGE_KITE = 2, WHY_OUTRANGE_STAND = 3, WHY_OUTRANGE_NOT_WORTH_IT = 4, WHY_OUTRANGED_BLINDSIDE = 5, WHY_OUTRANGED_CLOSE = 6,
       WHY_EVEN_BLINDSIDE = 7, WHY_EVEN_BEST_EXCHANGE = 8, WHY_TRACKING = 9, WHY_ENFILADE = 10, WHY_SHIELDS = 11, WHY_FOCUSED = 12, WHY_ODDS = 13, WHY_HEAT = 14, WHY_DOCTRINE = 15, WHY_FORBIDDEN = 16,
-      WHY_NO_ROOM = 17, WHY_FLANK_FAR = 18, WHY_ORDER = 19, WHY_EXPERIMENT = 20, WHY_LEARNED = 21, WHY_REPERTOIRE = 22, WHY_DRY = 23;
+      WHY_NO_ROOM = 17, WHY_FLANK_FAR = 18, WHY_ORDER = 19, WHY_EXPERIMENT = 20, WHY_LEARNED = 21, WHY_REPERTOIRE = 22, WHY_DRY = 23, WHY_TITAN_RANGE = 24, WHY_TITAN_BACK = 25;
 const WHY_TEXT = ['', 'the enemy cannot shoot back', 'outranges the enemy and can keep the gap: kites', 'outranges the enemy but cannot outrun it: stands off far out', 'outranges the enemy, but standing off is not worth it',
   'outranged: circles round to the blind side', 'outranged: goes in close', 'even reach: circles round to the blind side', 'even reach: the best exchange of damage', 'circles too fast for the enemy guns to follow',
   'attacks the end of the enemy line, where only its end ships can answer', 'shields low', 'under focused fire', 'bad odds', 'overheated', 'doctrine', 'the matchup tactic is forbidden by doctrine',
   'a standoff ring with the formation behind it would be out of its own reach: holds the line instead', 'the enemy is far off: swings out to its side first', 'the posture of the Admiral\'s order',
   'an experiment: the officer is trying something other than the doctrine and the matchup say', 'learned: this tactic has worked in this situation before',
-  'a move from the officer\'s repertoire (the Officers update, stop 3)', 'magazine dry: falls back to rearm (v18)'];
+  'a move from the officer\'s repertoire (the Officers update, stop 3)', 'magazine dry: falls back to rearm (v18)',
+  'a titan: hangs back and fires its super weapon from far out (v130)', 'a support titan: keeps to the back line, out of the enemy\'s reach (v130)'];
 // The tactics an officer may learn and experiment with (stage 10b), and the situations it learns them in: the reach relation of the matchup (we outrange them / even / they outrange us)
 // x the enemy's size against ours (below 0.7 of ours / 0.7 to 1.4 / above 1.4). An officer's learned weights (o.tw) are one number per situation and tactic.
 const LEARN_TACTICS = [TACTIC_LINE, TACTIC_STANDOFF, TACTIC_KITE, TACTIC_CLOSE, TACTIC_ORBIT, TACTIC_FLANK];
@@ -17058,7 +17069,7 @@ const MODULES_V3 = [
     rule: 'Built from picks: size, mount, lens and wavelength. A beam fires for as long as reactor power and capacitors keep up; all its power becomes heat. (Research: Infrared lasers.)' },
   // ---- Ammunition (s2.7, s5.2): a gun magazine square holds 120 rounds (size piece); a missile magazine is a row the missile's length long, one row a part, laid side by side for width ----
   { id: 'magazine', name: 'Magazine', cat: 'ammo', sub: 'Magazines', line: 'magazine', w: 1, h: 1, sizes: true, sizeBonus: true, role: 'machine', conductsHoist: true, cost: 1.6, magazine: { rounds: 120 }, volatile: 4, res: 'warhead',
-    rule: 'Any size. Each square holds 120 rounds. Feeds the guns joined to it by the ammo hoist. Blows up when destroyed.' },
+    rule: 'Any size. A 1 x 1 holds 120 rounds; a bigger block holds more for each square (+10% as a 2 x 2, +20% as a 3 x 3), so one big magazine beats several small ones. Feeds the guns joined to it by the ammo hoist. Blows up when destroyed.' },   // (v134.0, Alex: the old "each square holds 120" was wrong for the bigger sizes)
   { id: 'missilemag_light', name: 'Light missile rack', cat: 'ammo', sub: 'Missile racks', line: 'magazine', w: 3, h: 1, shrink: false, role: 'machine', conductsHoist: true, cost: 2.4, magazine: { missiles: 60, missileSize: 'light' }, volatile: 6, res: 'warhead',
     rule: 'A row of 60 Light missiles (3 squares long: a missile\'s length). Lay rows side by side for more. Feeds launchers of Light missiles or smaller over the hoist (smaller missiles packed by space, +10% a size step down). Blows up when destroyed.' },
   { id: 'missilemag_medium', name: 'Medium missile rack', cat: 'ammo', sub: 'Missile racks', line: 'magazine', w: 5, h: 1, shrink: false, role: 'machine', conductsHoist: true, cost: 4, magazine: { missiles: 33, missileSize: 'medium' }, volatile: 10, res: 'warhead',
@@ -20416,7 +20427,7 @@ function updateMovementAndTargeting(dtStep) {
       if (stSpeed[st] > 0) {
         let note = MOVE_NOTE_NONE;
         if (blocked && !kiting) { wvx = 0; wvy = 0; note |= MOVE_NOTE_BLOCKED; }   // an ally in the way ahead: brake (classic movement waits; a kiting ship backs away from it, as in the classic step)
-        if (smart && ringOnly && !follower && sq > 0 && sqMode[sq] === MODE_STATION && sqTactic[sq] !== TACTIC_FALLBACK) {   // (a fall-back suspends the leash)
+        if (smart && ringOnly && !follower && sq > 0 && sqMode[sq] === MODE_STATION && sqTactic[sq] !== TACTIC_FALLBACK && bbTitanRole(type) === 0) {   // (a fall-back suspends the leash; v130.0: a titan keeps its own distance, off the leash)
           // A squadron ordered to hold a place fights on a leash round that place (its leash anchor, section 5b): near the leash's end the pull back to it is added.
           const leash = squadronLeash(sq, st);
           const gx = sqLeashX[sq] - shipX[i], gy = sqLeashY[sq] - shipY[i];
@@ -21924,7 +21935,7 @@ function launchMissiles(i, st, target, n, ux, uy, p, band, d, dtIn, dmgIn, mslIn
   const dt = dtIn !== undefined ? dtIn : stDmgType[st];                                      // mslIn, trIn (optional, v30 B2): the missile's own flight numbers and the warhead's traits
   const step = Math.max(0, SETTINGS.bbVolleySpread) * Math.PI / 180;
   const speed = mslIn && mslIn.speed > 0 ? mslIn.speed : dmgMslSpeed[dt];
-  const v0 = 0.25 * speed;
+  const v0 = (mslIn && mslIn.v0Share > 0 ? mslIn.v0Share : 0.25) * speed;   // (v129.0) a titan's siege missile is thrown out faster, so it loops wide round the ship's ends
   const tst = shipSide[target] * TYPE_COUNT + shipType[target];
   const size = typeSize[shipType[i]];
   let launched = 0;
@@ -21933,7 +21944,8 @@ function launchMissiles(i, st, target, n, ux, uy, p, band, d, dtIn, dmgIn, mslIn
     if (slot < 0) { statMslWaits[st]++; break; }
     const a = (k - (n - 1) / 2) * step, c = Math.cos(a), s = Math.sin(a);
     const dx = ux * c - uy * s, dy = ux * s + uy * c;
-    mslX[slot] = shipX[i] + dx * size; mslY[slot] = shipY[i] + dy * size;
+    if (mslIn && mslIn.fromX !== undefined) { mslX[slot] = mslIn.fromX; mslY[slot] = mslIn.fromY; }   // (v129.0) from its own launcher (a titan's siege launchers)
+    else { mslX[slot] = shipX[i] + dx * size; mslY[slot] = shipY[i] + dy * size; }
     mslVX[slot] = shipVX[i] + dx * v0; mslVY[slot] = shipVY[i] + dy * v0;
     mslHp[slot] = mslIn && mslIn.hp > 0 ? mslIn.hp : dmgMslHp[dt]; mslFuel[slot] = mslIn && mslIn.fuel > 0 ? mslIn.fuel : dmgMslFuel[dt]; mslArm[slot] = 0;
     mslSpd[slot] = mslIn && mslIn.speed > 0 ? mslIn.speed : 0; mslTrn[slot] = mslIn && mslIn.turn > 0 ? mslIn.turn : 0; mslTr[slot] = trIn || 0; mslBlast[slot] = mslIn && mslIn.blastRadius > 0 ? mslIn.blastRadius : 0;   // (v30 B2; v87 the blast shape)
@@ -21951,6 +21963,61 @@ function launchMissiles(i, st, target, n, ux, uy, p, band, d, dtIn, dmgIn, mslIn
   return launched;
 }
 
+// ---------------------------------------------------------------------
+// (v129.0, Alex 8 Nov) AIMING A BLAST INTO A PACK, and never bursting by the ship that fired it.
+//   A missile with a blast (a titan's siege missile, a Blast-shape warhead) is sent not simply at the ship its launcher picked but at the ship near it
+//   whose burst would catch the most enemies: the middle of a pack, about one blast radius in, rather than the closest ship on its edge. Our own ships
+//   inside that burst count against it (friendly fire is on). A ship within one blast radius of the shooter is never picked, and a missile never bursts
+//   there: it flies on (and picks again) until its target is clear of the ship that fired it.
+// ---------------------------------------------------------------------
+const AOE_PICK = { look: 4, most: 24, ownCost: 2 };   // candidates within look x the blast radius of the first choice; at most this many; an own ship in the burst counts as this many enemies
+
+// Ships of `side` within r of (x, y) (their middles), from the target grid (section 4). except: a ship not counted (-1 = none).
+function shipsOfSideNear(side, x, y, r, except, list) {
+  const start = tgStart[side], items = tgItems[side], r2 = r * r;
+  let x0 = ((x - r - gOX) * gInv) | 0, x1 = ((x + r - gOX) * gInv) | 0, y0 = ((y - r - gOY) * gInv) | 0, y1 = ((y + r - gOY) * gInv) | 0;
+  if (x0 < 0) x0 = 0; if (y0 < 0) y0 = 0; if (x1 >= gW) x1 = gW - 1; if (y1 >= gH) y1 = gH - 1;
+  let n = 0;
+  for (let gy = y0; gy <= y1; gy++) {
+    const base = gy * gW, end = start[base + x1 + 1];
+    for (let k = start[base + x0]; k < end; k++) {
+      const j = items[k];
+      if (j === except || shipAlive[j] !== 1) continue;
+      const dx = shipX[j] - x, dy = shipY[j] - y;
+      if (dx * dx + dy * dy > r2) continue;
+      if (list) { if (list.length >= AOE_PICK.most) return n; list.push(j); }
+      n++;
+    }
+  }
+  return n;
+}
+// Is a burst on ship t too close to ship a (the shooter): within the blast radius R of its hull?
+function aoeTooClose(a, t, R) {
+  if (a < 0 || shipAlive[a] !== 1) return false;
+  const dx = shipX[t] - shipX[a], dy = shipY[t] - shipY[a], m = R + typeSize[shipType[a]] * 0.5 + typeSize[shipType[t]] * 0.5;
+  return dx * dx + dy * dy < m * m;
+}
+// The best ship to burst R-wide on for ship a (side `side`), looked for round `first` (its launcher's choice, or the nearest enemy) and no farther from
+// (fx, fy) than sqrt(reach2): the most enemies caught, less AOE_PICK.ownCost for each own ship caught. -1 when every candidate is too close to a.
+const aoeList = [];
+function aoeBestTarget(a, side, first, R, fx, fy, reach2) {
+  if (first < 0 || !(R > 0)) return first;
+  const foe = 1 - side;
+  aoeList.length = 0;
+  aoeList.push(first);
+  shipsOfSideNear(foe, shipX[first], shipY[first], R * AOE_PICK.look, first, aoeList);
+  let best = -1, bestScore = -1e9;
+  for (let q = 0; q < aoeList.length; q++) {
+    const j = aoeList[q];
+    if (aoeTooClose(a, j, R)) continue;
+    const dx = shipX[j] - fx, dy = shipY[j] - fy;
+    if (q > 0 && dx * dx + dy * dy > reach2) continue;
+    const score = 1 + shipsOfSideNear(foe, shipX[j], shipY[j], R, j, null) - AOE_PICK.ownCost * shipsOfSideNear(side, shipX[j], shipY[j], R, -1, null);
+    if (score > bestScore) { bestScore = score; best = j; }   // (the first choice wins a tie: it comes first)
+  }
+  return best;
+}
+
 // The nearest enemy of a missile flying from (px, py) with velocity (vx, vy) inside its seeker cone (half of seekerCone either side) and within reach, or -1.
 function missileRetarget(k) {
   const st = mslSt[k], dt = mslDt[k];
@@ -21960,11 +22027,12 @@ function missileRetarget(k) {
   if (j < 0) return -1;
   // (v127.0) a titan's siege missile is steered by the titan, not its own seeker: it takes the nearest enemy it can still reach, wherever that lies.
   // Before, when one burst killed the ship all four were sent at, the other three flew on blind until their fuel ran out.
-  if (mslSiege[k] === 1) return j;
+  if (mslSiege[k] === 1) return mslBlast[k] > 0 ? aoeBestTarget(mslShooter[k], Math.floor(st / TYPE_COUNT), j, mslBlast[k], mslX[k], mslY[k], reach * reach) : j;
   const dx = shipX[j] - mslX[k], dy = shipY[j] - mslY[k], vx = mslVX[k], vy = mslVY[k];
   const dd = Math.sqrt(dx * dx + dy * dy), v = Math.sqrt(vx * vx + vy * vy);
   if (dd < 1e-9 || v < 1e-9) return j;
-  return (dx * vx + dy * vy) / (dd * v) >= Math.cos(dmgMslCone[dt] * Math.PI / 360) ? j : -1;
+  if ((dx * vx + dy * vy) / (dd * v) < Math.cos(dmgMslCone[dt] * Math.PI / 360)) return -1;
+  return mslBlast[k] > 0 ? aoeBestTarget(mslShooter[k], Math.floor(st / TYPE_COUNT), j, mslBlast[k], mslX[k], mslY[k], reach * reach) : j;   // (v129.0) a blast: into the pack
 }
 
 // (v87, faction-modules-t0-t3.md s2b) THE BLAST SHAPE: missile k burst on ship t. Every OTHER ship within its blast radius, of either side (the Blast trait
@@ -22042,6 +22110,12 @@ function updateMissiles(dt) {
     mslX[k] = x1; mslY[k] = y1; mslVX[k] = vx; mslVY[k] = vy;
     if (mslArm[k] > 0) { mslArm[k] -= dt; continue; }
     if (t < 0) continue;
+    // (v129.0) a blast never goes off within its radius of the ship that fired it: it picks a target clear of it, or flies on until its target is clear
+    if (mslBlast[k] > 0 && aoeTooClose(mslShooter[k], t, mslBlast[k])) {
+      const nt = aoeBestTarget(mslShooter[k], Math.floor(st / TYPE_COUNT), t, mslBlast[k], x1, y1, (mslFuel[k] * vmax) * (mslFuel[k] * vmax));
+      if (nt >= 0 && nt !== t) mslTarget[k] = nt;
+      continue;
+    }
     // Did it pass close enough this step? (the nearest point of its path to the target)
     const tt = shipType[t];
     const R = typeSize[tt] * 0.5 + (mslLance[k] > 0 ? mslLance[k] : dmgMslProx[dtype]);   // (v90) a LANCE fires its beam from lanceReach out: it counts as arrived there
@@ -23008,6 +23082,8 @@ function bbLoadType(t, st, r) {
   // inspector): its stated range and scatter, and the wall as the type's maximum range (fireReach2 and stSearch2 then follow from the sampled curve, section 5t)
   if (info.groups.length === 0) { stStore[st] = 0; stStoreRefill[st] = 0; return; }   // (v89) an unarmed support ship: no main group
   if (SETTINGS.weaponModel === 1 && info.groups[0].proj === 1) { stOptimal[st] = info.groups[0].range; stFoScatter[st] = info.groups[0].scatterMul; stMaxRange[st] = info.groups[0].maxRange; }
+  // (v129.0) a titan's super weapon sets how far the titan can fight (the Rake's siege missiles: 14,000, not the missile damage type's 4,150)
+  if (SETTINGS.weaponModel === 1) for (let g = 0; g < info.groups.length; g++) if (info.groups[g].titan && info.groups[g].maxRange > stMaxRange[st]) stMaxRange[st] = info.groups[g].maxRange;
   // the type's store is the main group's ammunition (what the press rule, the report and the squadron card read); each ship keeps every kind in bbStore
   const kind = info.groups[0].store;
   stStore[st] = SETTINGS.weaponModel === 1 ? info.storeCap[kind] : 0;
@@ -23059,6 +23135,9 @@ function bbMakeTypeInfo(rec) {
     if (missile && SETTINGS.bbMissiles === 1 && G.missile) maxRange = G.range;
     else if (missile) maxRange = Math.min(maxRange, missileReach(d));
     else if (proj === 1 && G.range > 0) maxRange = G.range * SETTINGS.falloffWall;
+    // (v129.0) a titan's super weapon reaches its own stated range: the Rake's siege missiles carry fuel for it (05f-2c), so they are not held to the
+    // missile damage type's short reach (4,150) that kept the Rake closing in before it could fire
+    if (burstRow && burstRow.titanWeapon && G.range > 0) maxRange = G.range;
     // tracking: a spinal weapon follows as fast as the ship turns, a fixed one a little faster, a mounted one at its mount's traverse speed (WEAPON_SIZES, by the gun's
     // size; a part with no traverse of its own, the Swarm's, at the default turret rate); x the lens or fire control's tracking multiplier
     const traverse = G.traverse > 0 ? G.traverse : SETTINGS.defaultTurretTracking;
@@ -23640,7 +23719,11 @@ function bbFire(i, st, dt, withdrawing, deferred) {
       if (grp.missile) {
         // (v30 B2, spec 5) a VOLLEY: every ready launcher of the group fires one missile at once, bbVolleySpread degrees apart (there is no salvo part),
         // each one spending a missile of its magazine; the launcher then reloads for its own interval. grp.msl carries the missile's own flight numbers.
-        const n = launchMissiles(i, st, target, shots, dx * inv, dy * inv, p, band, d, grp.d, grp.damage, grp.msl, grp.traits);
+        // (v129.0) a Blast warhead is sent into the pack round the target (section 5r aoeBestTarget); none clear of this ship: the volley waits
+        const R = grp.msl && grp.msl.blastRadius > 0 ? grp.msl.blastRadius : 0;
+        const mt = R > 0 ? aoeBestTarget(i, shipSide[i], target, R, shipX[i], shipY[i], grp.maxRange2) : target;
+        if (mt < 0) { if (wm1 && kindIdx > 0) bbStore[storeAt] += shots * rps; if (wm1 && cps > 0) bbStore[chargeAt] += shots * cps; break; }   // (its rounds back in the magazine)
+        const n = launchMissiles(i, st, mt, shots, dx * inv, dy * inv, p, band, d, grp.d, grp.damage, grp.msl, grp.traits);
         if (n < shots && kindIdx > 0) bbStore[storeAt] += (shots - n) * rps;
         if (n === 0) break;
         fired++;
@@ -24647,7 +24730,7 @@ function bbBeamRake(i, grp, target, ux, uy, dmg, deferred, hits) {
 //     SWEEP (the Halo's grand lance): a beam held for `seconds` that sweeps a `cone`-degree fan across the ship's bow, from one side to the other.
 //       Every ship the beam lies across takes `tick` damage each tenth of a second it stays on it (as a beam's ticks: armour comes off each tick),
 //       our own ships too. Each firing puts `heat` on the ship. With one capacitor bank broken the beam lasts half as long.
-//     SIEGE (the Rake's siege launchers): each working launcher fires one siege missile ASTERN (out of the flat back); it swings round and flies at the
+//     SIEGE (the Rake's siege launchers): each working launcher fires one siege missile ASTERN out of its own mouth (v129.0); it swings round and flies at the
 //       target on the missile rules (05c), slow and tough. Where it bursts every ship within `blast` takes the warhead, half at the edge, our own
 //       too, and a burning cloud stays `cloudSeconds` (cloudRate a second). A broken loader halves the reload of the launchers.
 //   Display only: the strip leaves a long bright line, the sweep a beam drawn each frame (drawTitanBeams). Results never depend on the drawing.
@@ -24676,6 +24759,56 @@ function bbTitanFightRange(t) {
   return 0;
 }
 
+// (v129.0) THE SIEGE LAUNCHERS' MOUTHS. Where each launcher sits on the titan, in map units from its middle (x toward the bow, y to starboard): the art's
+// launcher points (UI/titan-art.js TITAN_ART.mounts) at the art's scale on the map (its drawn length over its painted length, section 6b). The same
+// numbers in every battle whatever the zoom or display settings (they come from the art's data, not from anything drawn). [] when the art has none.
+const TITAN_LAUNCH_OUT = 25 * Math.PI / 180;   // how far outward of straight astern a launcher throws its missile
+const TITAN_LAUNCH_SPEED = 0.55;               // ... and how fast, as a share of the missile's top speed (wide enough to loop round the ship's end)
+const bbTitanLaunchCache = new WeakMap();
+function bbTitanLaunchers(t) {
+  const rec = SHIP_TYPES[t];
+  if (!rec || !rec.design) return [];
+  let out = bbTitanLaunchCache.get(rec.design);
+  if (out) return out;
+  out = [];
+  const tf = titanSuperOfDesign(rec.design);
+  if (tf && typeof window.TITAN_ART !== 'undefined' && window.TITAN_ART.mounts && window.TITAN_ART.box) {
+    const box = window.TITAN_ART.box(tf.titanSuper), k = box && box.w > 0 ? shipDrawLenOf(t) / box.w : 0;
+    if (k > 0) out = window.TITAN_ART.mounts(tf.titanSuper, tf.w, tf.h).map(function (m) { return [m[0] * k, m[1] * k]; });
+  }
+  bbTitanLaunchCache.set(rec.design, out);
+  return out;
+}
+
+// (v130.0, Alex 8 Nov: "the titans should also hang back and try to fire at range, and titans like the colossus should avoid turning its back (and main
+// gun) from enemies. support titans should hang on the back line of the fleet, not charge in") A TITAN'S ROLE in battle, by its type: 1 = a weapon titan
+// (Colossus, Halo, Rake: a super weapon), 2 = a support titan (Wheel, Slip/Haven, Flattop: no super weapon), 0 = not a titan.
+//   A weapon titan stands off at its super weapon's fighting distance (bbTitanFightRange) and never kites away: it backs off keeping its bow, and its
+//   gun, to the enemy. A support titan holds a ring beyond the reach of every enemy type on the field (TITAN_BACK_MARGIN more), behind the fleet's line.
+const TITAN_BACK_MARGIN = 0.3;   // a support titan stays this share beyond the longest enemy reach
+const bbTitanRoleCache = new WeakMap();
+function bbTitanRole(t) {
+  const rec = SHIP_TYPES[t];
+  if (!rec || !rec.design) return 0;
+  let r = bbTitanRoleCache.get(rec.design);
+  if (r !== undefined) return r;
+  r = titanSuperOfDesign(rec.design) ? (bbTitanFightRange(t) > 0 ? 1 : 2) : 0;
+  bbTitanRoleCache.set(rec.design, r);
+  return r;
+}
+// The ring a support titan of side + type st holds from its enemy: the longest reach any enemy type on the field has against it, plus the margin and its size
+function bbTitanBackRing(st) {
+  const side = Math.floor(st / TYPE_COUNT), t = st % TYPE_COUNT;
+  let far = 0;
+  for (let e = 0; e < TYPE_COUNT; e++) {
+    const est = (1 - side) * TYPE_COUNT + e;
+    if (!(stCount[est] > 0)) continue;
+    const r = reachVs(est, t);
+    if (r > far) far = r;
+  }
+  return far * (1 + TITAN_BACK_MARGIN) + typeSize[t];
+}
+
 // Fires titan super weapon group g of ship i (side + type st) at target, d away. Returns 0 when it did not fire, else how many of its intervals it
 // now waits (1; 2 for siege launchers with a broken loader).
 function bbTitanFire(i, st, g, grp, target, d, deferred, ms) {
@@ -24699,7 +24832,9 @@ function bbTitanFire(i, st, g, grp, target, d, deferred, ms) {
       if (deferred) queueHit(i, j, vx, vy, undefined, undefined, undefined, undefined, dmg, grp.d, grp.traits);
       else resolveHit(i, j, vx, vy, undefined, undefined, undefined, undefined, dmg, grp.d, grp.traits);
     }
-    const sx = shipX[i] + ux * typeSize[shipType[i]] * 0.5, sy = shipY[i] + uy * typeSize[shipType[i]] * 0.5;
+    // (display only) the strip is drawn from the gun's muzzle at the bow of the titan's art (v129.0: it started at the middle of the art before)
+    const muzzle = Math.max(typeSize[shipType[i]] * 0.5, shipDrawLenOf(shipType[i]) * 0.48);
+    const sx = shipX[i] + ux * muzzle, sy = shipY[i] + uy * muzzle;
     addShot(sx, sy, sx + ux * reach, sy + uy * reach, shipSide[i], grp.d, i, 4);   // (v101.5) a titan's weapon: the heaviest class
     markShotTitan();                                                                 // (v127.0) ... and always drawn, however crowded the map is
     bbTitanFlashes.push({ x0: sx, y0: sy, x1: sx + ux * reach, y1: sy + uy * reach, w: T.width || 200, side: shipSide[i], until: simTime + 1.5, kind: 0 });
@@ -24723,10 +24858,23 @@ function bbTitanFire(i, st, g, grp, target, d, deferred, ms) {
   if (T.kind === 'siege') {
     const live = ms !== null && ms !== undefined ? ms.gLive[g] : grp.weapons;
     if (!(live > 0)) return 0;
-    const msl = { siege: true, size: 'titan', speed: T.speed || 250, turn: T.turn || 1.2, hp: T.hp || 300, fuel: (grp.range / (T.speed || 250)) * 1.3, blastRadius: T.blast || 500,
+    const base = { siege: true, size: 'titan', speed: T.speed || 250, turn: T.turn || 1.2, hp: T.hp || 300, fuel: (grp.range / (T.speed || 250)) * 1.3, blastRadius: T.blast || 500,
       linger: T.cloudSeconds > 0 ? { radius: T.blast || 500, seconds: T.cloudSeconds, share: (T.cloudRate || 40) / Math.max(1, grp.damage) } : null };
-    // astern: out of the flat back, then round to the target
-    const n = launchMissiles(i, st, target, live, -shipCos[i], -shipSin[i], 1, st * 3, d, grp.d, grp.damage, msl, grp.traits);
+    // (v129.0, Alex 8 Nov) each working launcher fires its missile out of its OWN mouth at the stern, astern and a little outward; thrown out fast, the
+    // missile swings round that end of the ship and on to the target, as the design says. (Before, all four left one spot just behind the middle.)
+    // (v129.0, Alex 8 Nov) aimed into the pack round the target, a blast radius in, and never at a ship within a blast radius of the Rake (section 5r)
+    target = aoeBestTarget(i, shipSide[i], target, T.blast || 500, shipX[i], shipY[i], grp.maxRange2);
+    if (target < 0) return 0;
+    const mounts = bbTitanLaunchers(shipType[i]);
+    const c = shipCos[i], s = shipSin[i];
+    let n = 0;
+    if (mounts.length === 0) n = launchMissiles(i, st, target, live, -c, -s, 1, st * 3, d, grp.d, grp.damage, base, grp.traits);   // (no launcher points known: the old way)
+    else for (let k = 0; k < live; k++) {
+      const m = mounts[k % mounts.length], side = m[1] < 0 ? -1 : 1, a = side * TITAN_LAUNCH_OUT;
+      const ax = -Math.cos(a), ay = -Math.sin(a);                       // astern, turned outward (in the ship's own frame: x to the bow, y to starboard)
+      const msl = Object.assign({}, base, { fromX: shipX[i] + m[0] * c - m[1] * s, fromY: shipY[i] + m[0] * s + m[1] * c, v0Share: TITAN_LAUNCH_SPEED });
+      n += launchMissiles(i, st, target, 1, ax * c - ay * s, ax * s + ay * c, 1, st * 3, d, grp.d, grp.damage, msl, grp.traits);
+    }
     if (n <= 0) return 0;
     S.siege += n;
     if (sndLive) soundShot(i, target, grp.snd || grp.part, grp.d, -1);
@@ -24806,6 +24954,10 @@ function drawTitanBeams(left, top, right, bottom) {
       continue;
     }
     const a = Math.max(0, Math.min(1, (f.until - simTime) / 1.5));
+    // (v129.0) the muzzle flash at the gun's mouth, so the shot reads up close as coming out of the gun
+    const mr = Math.max(f.w * 0.3 * (0.4 + 0.6 * a), px * M.burst);
+    ctx.globalAlpha = 0.55 * a; ctx.fillStyle = '#FFE6B0'; ctx.beginPath(); ctx.arc(f.x0, f.y0, mr, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 0.9 * a; ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.arc(f.x0, f.y0, mr * 0.35, 0, Math.PI * 2); ctx.fill();
     ctx.globalAlpha = 0.25 * a; ctx.strokeStyle = SETTINGS.colors.shot[f.side]; ctx.lineWidth = Math.max(f.w, px * M.stripGlow);
     ctx.beginPath(); ctx.moveTo(f.x0, f.y0); ctx.lineTo(f.x1, f.y1); ctx.stroke();
     ctx.globalAlpha = 0.9 * a; ctx.strokeStyle = '#fff4d8'; ctx.lineWidth = Math.max(8, f.w * 0.08, px * M.stripCore);
@@ -24832,7 +24984,7 @@ function drawTitanBeams(left, top, right, bottom) {
       if (x < left || x > right || y < top || y > bottom) continue;
       if (fxRec && k < fxMslSize.length && fxMslSize[k] > 0 && 1.5 * fxMslSize[k] >= px * 3) continue;   // (drawn up close: section 6w fxDrawOver)
       const v = Math.sqrt(mslVX[k] * mslVX[k] + mslVY[k] * mslVY[k]) || 1, ux = mslVX[k] / v, uy = mslVY[k] / v;
-      const len = Math.max(v * 0.8, px * M.missileLen);
+      const len = Math.max(Math.min(v * 0.8, px * M.missileLen * 3), px * M.missileLen);   // (a streak a few times its width: never a long line up close)
       ctx.globalAlpha = 0.95; ctx.strokeStyle = SETTINGS.colors.shot[Math.floor(mslSt[k] / TYPE_COUNT)]; ctx.lineWidth = px * M.missile;
       ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - ux * len, y - uy * len); ctx.stroke();
       if (mslFuel[k] > 0) { const r = px * M.head; ctx.globalAlpha = 1; ctx.fillStyle = '#FFF0C8'; ctx.beginPath(); ctx.arc(x, y, r * 0.6, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 0.45; ctx.fillStyle = '#FFD890'; ctx.beginPath(); ctx.arc(x, y, r * 1.3, 0, Math.PI * 2); ctx.fill(); }
@@ -42408,7 +42560,7 @@ function thinkShip(i, st) {
     } else {
       // Kite or hold? Kiting needs the "kite" doctrine, an enemy closer than the preferred range, and a ship that can get away.
       let kite = false;
-      if (stKite[st] === 1) {
+      if (stKite[st] === 1 && bbTitanRole(st % TYPE_COUNT) !== 1) {   // (v130.0) a weapon titan never kites: it would turn its gun away
         // Start backing away when the enemy is clearly inside the preferred range (kiteEnterFactor); once kiting, keep going
         // until it is a little farther than the preferred range (kiteExitFactor). The gap between the two stops it flickering.
         // Only an enemy closer than that matters, so that is the search radius (the search cost does not depend on it).
@@ -42515,9 +42667,12 @@ function thinkShipSmart(i, st) {
       setShipState(i, STATE_ESCORT);
     } else if (sq > 0 && sqFlank[sq] === FLANK_OUT) {
       setShipState(i, STATE_FLANK);
-    } else if (sq > 0 && sqMode[sq] === MODE_STATION && sqTactic[sq] !== TACTIC_FALLBACK && outsideLeash(i, sq, st)) {
+    } else if (sq > 0 && sqMode[sq] === MODE_STATION && sqTactic[sq] !== TACTIC_FALLBACK && outsideLeash(i, sq, st) && !(bbTitanRole(st % TYPE_COUNT) !== 0 && shipTarget[i] >= 0 && shipAlive[shipTarget[i]] === 1)) {   // (v130.0: a titan with an enemy in sight keeps its own distance)
       setShipState(i, STATE_HOLD);                           // ordered to hold a place and off its leash: go back to it (inside the leash it fights by its plan; a fall-back suspends the leash)
     } else {
+      // (v130.0) an unarmed support titan (the Slip, the Flattop) has no gun target, so it would advance on the enemy: it keeps its back-line ring from the
+      // nearest enemy instead (it never fires at it: it has no guns)
+      if (!(shipTarget[i] >= 0 && shipAlive[shipTarget[i]] === 1) && bbTitanRole(st % TYPE_COUNT) === 2) { const ne = findNearestEnemy(i, 1e18); if (ne >= 0) shipTarget[i] = ne; }
       const target = shipTarget[i];
       if (!(target >= 0 && shipAlive[target] === 1 && shipSide[target] !== side)) {
         // Nothing to fight: advance (the movement code heads for the enemy), without weaving or sliding. A squadron holding a place stays on it.
@@ -42698,6 +42853,11 @@ function chooseShipTactic(i, st, m, sq) {
   }
   if (tac === TACTIC_STANDOFF || tac === TACTIC_KITE) ring *= officerStandoffMul(o);
   if (ring > cap) ring = cap;
+  // (v130.0, 05f-2c bbTitanRole) a weapon titan stands off at its super weapon's distance (its own reach: not cut to the matchup's); a support titan keeps
+  // to the back line, beyond every enemy's reach
+  const role = bbTitanRole(st % TYPE_COUNT);
+  if (role === 1) { tac = TACTIC_STANDOFF; ring = bbTitanFightRange(st % TYPE_COUNT); why = WHY_TITAN_RANGE; }
+  else if (role === 2) { tac = TACTIC_STANDOFF; ring = bbTitanBackRing(st); why = WHY_TITAN_BACK; }
   shipTactic[i] = tac; shipRing[i] = ring; shipWhy[i] = why;
   syTactic(i, cap);   // (v77, section 5vc) a Sylph pilot flies its play goal's way instead (circling to get behind, or closing right in)
 }
@@ -43340,6 +43500,9 @@ function squadronTactics(sq) {
     want = TACTIC_ORBIT; why = WHY_TRACKING; sqExperiment[sq] = 0;
   }
   if (want === TACTIC_FLANK && sqFlank[sq] !== FLANK_OFF && sqFlank[sq] !== FLANK_PENDING && sqFlank[sq] !== FLANK_OUT) { want = sqWantTac; why = sqWantWhy; if (want === TACTIC_FLANK) { want = TACTIC_ORBIT; } }   // the swing is over: fight
+  // (v130.0, 05f-2c bbTitanRole) a titan stands off: a weapon titan at its super weapon's distance, a support titan on the back line (unless falling back)
+  const titanRole = bbTitanRole(st % TYPE_COUNT);
+  if (titanRole !== 0 && want !== TACTIC_FALLBACK && want !== TACTIC_WITHDRAW) { want = TACTIC_STANDOFF; why = titanRole === 1 ? WHY_TITAN_RANGE : WHY_TITAN_BACK; sqExperiment[sq] = 0; }
   if (want !== sqTactic[sq]) {
     if (want !== sqTacticWant[sq]) { sqTacticWant[sq] = want; sqTacticWantSince[sq] = now; }
     if (sqTactic[sq] === TACTIC_CLASSIC || want === TACTIC_FALLBACK || sqTactic[sq] === TACTIC_FALLBACK || why === WHY_EXPERIMENT || now - sqTacticWantSince[sq] >= SETTINGS.tacticMinSeconds * sqReaction[sq]) {   // (a fall-back starts and ends at once; so does an experiment)
@@ -43364,7 +43527,9 @@ function squadronTactics(sq) {
   // 3. The ring.
   const lineRing = docTacAt(st, m) === TACTIC_LINE ? Math.min(SETTINGS.weaponModel === 1 ? mtStop[m] : stStop[st], cap) : (bias > OFFICER_EFFECTS.tacticSwing ? mtRingNear[m] : mtRingFar[m]);
   let ring;
-  if (tac === TACTIC_FALLBACK) {
+  if (titanRole !== 0 && tac === TACTIC_STANDOFF) {
+    ring = titanRole === 1 ? bbTitanFightRange(st % TYPE_COUNT) : bbTitanBackRing(st) + sqRadius[sq];   // (v130.0) its own distance: not cut to the matchup's
+  } else if (tac === TACTIC_FALLBACK) {
     ring = reachVs(est, st % TYPE_COUNT) * (1 + SETTINGS.standoffMargin) / (1 - band) + sqRadius[sq];   // just beyond the enemy's reach with the formation behind the leader: never cut back to our own range
   } else if (tac === TACTIC_STANDOFF || tac === TACTIC_KITE) {
     const need = reachVs(est, st % TYPE_COUNT) * (1 + SETTINGS.standoffMargin);
@@ -43383,16 +43548,16 @@ function squadronTactics(sq) {
   else if (tac === TACTIC_ORBIT) ring = mtTactic[m] === TACTIC_ORBIT ? mtRing[m] : mtOrbitRing[m];
   else if (tac === TACTIC_FLANK) ring = sqWhy[sq] === WHY_ENFILADE ? lineRing : mtOrbitRing[m];
   else ring = mtRing[m];
-  if (ring > cap && tac !== TACTIC_FALLBACK) ring = cap;
-  // Impatience: a squadron that holds a line, stands off or kites, and has neither dealt nor taken damage for impatienceSeconds, creeps in toward its line ring.
-  if ((tac === TACTIC_STANDOFF || tac === TACTIC_LINE || tac === TACTIC_KITE) && now - sqLastDamageAt[sq] >= SETTINGS.impatienceSeconds && sqRing[sq] > 0 && !survivalOn()) {   // (v19: under survivalModel 1 the lone creep is gone; the fleet steps forward together, section 5u)
+  if (ring > cap && tac !== TACTIC_FALLBACK && !(titanRole !== 0 && tac === TACTIC_STANDOFF)) ring = cap;
+  // Impatience (v130.0: never a titan): a squadron that holds a line, stands off or kites, and has neither dealt nor taken damage for impatienceSeconds, creeps in toward its line ring.
+  if (titanRole === 0 && (tac === TACTIC_STANDOFF || tac === TACTIC_LINE || tac === TACTIC_KITE) && now - sqLastDamageAt[sq] >= SETTINGS.impatienceSeconds && sqRing[sq] > 0 && !survivalOn()) {   // (v19: under survivalModel 1 the lone creep is gone; the fleet steps forward together, section 5u)
     const crept = Math.max(Math.min(lineRing, ring), sqRing[sq] * (1 - SETTINGS.impatienceCreep));
     if (crept < ring) ring = crept;
     if (sqImpatient[sq] === 0) { sqImpatient[sq] = 1; statImpatience[st]++; }
   } else sqImpatient[sq] = 0;
   // (v18) Holding fire for want of odds: a squadron that has fired nothing for holdPressSeconds while holding a line, standing off or kiting creeps in the same way,
   // and past its line ring, down to its close ring: the planning ranges assume a typical target, and the one in front of it may weave harder.
-  if (SETTINGS.weaponModel === 1 && (tac === TACTIC_STANDOFF || tac === TACTIC_LINE || tac === TACTIC_KITE) && sq < sqLastFiredAt.length &&
+  if (SETTINGS.weaponModel === 1 && titanRole === 0 && (tac === TACTIC_STANDOFF || tac === TACTIC_LINE || tac === TACTIC_KITE) && sq < sqLastFiredAt.length &&   // (v130.0: a titan waits out its long reload where it is)
       now - sqLastFiredAt[sq] >= SETTINGS.holdPressSeconds && now - sqTacticSince[sq] >= SETTINGS.holdPressSeconds && sqRing[sq] > 0) {
     const crept = Math.max(mtRingClose[m], sqRing[sq] * (1 - SETTINGS.impatienceCreep));
     if (crept < ring) ring = crept;
@@ -49629,6 +49794,11 @@ DIVISION_RULES.push({
       // (v72) The Swarm never withdraws a worn squadron: with nobody to join, it stays in the fight. Sent back to its rally point it sat at the entry edge for good
       // (no top-ups come to it in a campaign), and those idle stragglers kept the battle going for weeks.
       if (best === 0 && typeIsSwarm(sqType[sq])) continue;
+      // (v132.0) A small squadron that has lost no ships is not worn down: it is simply new, such as the first corvette or two out of the yards. Alex: a real
+      // navy puts its newest warship straight into service. Before, the rule read "1 ship of a 4-ship squadron" as a wreck and sent it home, so early corvettes
+      // sat by the yard waiting for enough of their type to make a squadron. Now it stays in its Division and fights beside the small craft; with a squadron of
+      // its type that has room, it still joins that one (above).
+      if (best === 0 && sqLosses[sq] === 0) continue;
       add({
         kind: 'neutral', raw: SETTINGS.ruleScores.disband, squads: [sq], minSquads: 1, short: 'disband ' + squadronLabel(sq), into: best,
         text: best > 0 ? 'disband Squadron ' + squadronLabel(sq) + ' (' + plural(sqAlive[sq], 'ship') + '): its ships join Squadron ' + squadronLabel(best)
@@ -54795,17 +54965,20 @@ function fgGuardTake(c, sq) {
 function fgGuardPlan(c, sq) {
   const st = c.side * TYPE_COUNT + sqType[sq];
   sqMode[sq] = MODE_STATION; sqGoalAttack[sq] = 0;
-  sqGoalX[sq] = shipX[c.slot]; sqGoalY[sq] = shipY[c.slot];
+  const spot = lastStand !== null ? lsLineSpotOf(sq) : null;      // (v131.0, section 8h2) a Last Stand guard stands at its spot in its Fleet's line
+  sqGoalX[sq] = spot ? spot.x : shipX[c.slot]; sqGoalY[sq] = spot ? spot.y : shipY[c.slot];
   sqGoalFace[sq] = c.side === BLUE ? 0 : Math.PI;
-  sqGoalArrive[sq] = formationRadius(sq) + 2 * typeSpacing[c.type];
+  sqGoalArrive[sq] = spot ? 3 * typeSpacing[sqType[sq]] : formationRadius(sq) + 2 * typeSpacing[c.type];   // (v131.0: on its line spot it stands ON the spot, not a formation's width short of it)
   if (SETTINGS.commandModel === 1) { cmdSqLeashD[sq] = fgGuardLeash(sq, st); cmdSqMarch[sq] = SETTINGS.stationFighterGuardRadius; }
 }
 // (squadronLeash, section 5b) how far a guard may fly from its station: the guard radius plus its own weapon reach (so it can shoot at an enemy on the circle's edge).
-function fgGuardLeash(sq, st) { return (lastStand !== null ? Math.max(SETTINGS.stationFighterGuardRadius, LAST_STAND.threatReach) : SETTINGS.stationFighterGuardRadius) + stRange[st]; }   // (v101.4: a Last Stand guard may go out to the snipers, section 8h)
+function fgGuardLeash(sq, st) { const ln = lastStand !== null ? lsLineLeash(sq, st) : -1; if (ln > 0) return ln;   // (v131.0, section 8h2) a squadron in the guard line: a short leash round its spot
+  return (lastStand !== null ? Math.max(SETTINGS.stationFighterGuardRadius, LAST_STAND.threatReach) : SETTINGS.stationFighterGuardRadius) + stRange[st]; }   // (v101.4: a Last Stand guard may go out to the snipers, section 8h)
 // (chooseTargetCore, section 5b) a guard fighter's target: the nearest enemy to it that is inside the guard circle; else the enemy nearest the station inside it;
 // else only what is already in its weapon range (it is flying home and shoots back). -1 = nothing: it holds beside the station.
 function fgGuardPick(i, st, sq) {
   const c = fgCarriers[fgGuardOf[sq] - 1];
+  if (lastStand !== null) { const ln = lsLinePick(i, st, sq, c); if (ln > -2) return ln; }   // (v131.0, section 8h2) a ship in the guard line: the enemy nearest its squadron's spot
   const range2 = stRange2[st] * (1 + 1e-12);
   if (!c || c.state !== 'live') return findNearestEnemy(i, range2);
   const R = SETTINGS.stationFighterGuardRadius, R2 = R * R, sx = shipX[c.slot], sy = shipY[c.slot];
@@ -58213,8 +58386,9 @@ function pressRing(sq, st) {
 function survivalPress(sq, st, target, outOfFight, falling, limit) {
   const now = simTime;
   const foe = target >= 0 && shipAlive[target] === 1 ? shipSquad[target] : 0;
-  // hard stops: no target, a fall-back or a withdraw (its own or its squadron's), or more danger than it accepts
-  if (outOfFight || falling || foe <= 0 || sqEnemyType[sq] < 0 || sqDanger[sq] > limit) {
+  // hard stops: no target, a fall-back or a withdraw (its own or its squadron's), or more danger than it accepts; (v130.0) or a titan, which never presses
+  // in (it hangs back at its own distance: 05f-2c bbTitanRole)
+  if (outOfFight || falling || foe <= 0 || sqEnemyType[sq] < 0 || sqDanger[sq] > limit || bbTitanRole(st % TYPE_COUNT) !== 0) {
     sqPress[sq] = 0; sqPressWatchAt[sq] = -1;
     return false;
   }
@@ -61535,6 +61709,7 @@ const ctx = canvas.getContext('2d', { alpha: false });   // alpha:false = opaque
 const camera = { x: SETTINGS.worldWidth / 2, y: SETTINGS.worldHeight / 2, zoom: 0.1 };
 const BUCKET_ALPHA = [1.0, 0.6, 0.25];          // shot brightness as it fades
 let shipsDrawn = 0;                             // how many ships were drawn last frame (shown on screen)
+let shipsDrawnBig = 0;                          // (v126.3) ... and how many of them were big enough on screen to be icons (iconSilhouettePixels and more)
 
 // ---- Dot mode: when many ships are on screen, they are drawn as tiny squares written straight
 // ---- into a screen-sized pixel buffer. This is far faster than drawing thousands of triangles.
@@ -61562,11 +61737,15 @@ function makePixelBuffer() {
 
 // Decides between triangles and dots, based on how many ships were on screen last frame.
 // (It switches back to triangles only when the count falls to 80% of the limit, so it doesn't flicker.)
+// (v126.3, Alex 8 Nov: "the vast majority of ships jump straight from the max zoom simple icon to close art, with no ship icon middle step") the dots
+// are only for ships that are small on screen anyway: with more ships than the limit on screen but most of them big enough to be icons (a crowded
+// battle zoomed part way in), the icons stay. Before, a crowd of 2,000 ships stayed as big flat squares until one zoom step put them in close art.
 function chooseDrawMode() {
   const limit = SETTINGS.maxTriangleShips;
+  const mostlyBig = shipsDrawn > 0 && shipsDrawnBig > shipsDrawn * (dotMode ? 0.6 : 0.5);
   if (pixels === null) dotMode = false;
-  else if (dotMode) { if (shipsDrawn < limit * 0.8) dotMode = false; }
-  else if (shipsDrawn > limit) dotMode = true;
+  else if (dotMode) { if (shipsDrawn < limit * 0.8 || mostlyBig) dotMode = false; }
+  else if (shipsDrawn > limit && !mostlyBig) dotMode = true;
 }
 
 // Fills a square of pixels, centred on screen position (cx, cy).
@@ -61595,6 +61774,7 @@ function drawPixelLayer(w, h, z) {
     const fx = shipX[i] * z + offX, fy = shipY[i] * z + offY;
     if (fx < -d || fx >= w + d || fy < -d || fy >= h + d) continue; // off screen (a big dot can reach in from outside the screen)
     shipsDrawn++;
+    if (typeDrawLen[shipType[i]] * z >= UI_SETTINGS.iconSilhouettePixels) shipsDrawnBig++;   // (v126.3) would be an icon
     const pg = paintOn ? paintGroupOfShip(i) : shipSide[i];
     fillSquare(fx | 0, fy | 0, d, pg < 2 ? shipPixelFor(pg, shipType[i]) : paintPixels[pg], w, h);   // (v101.1: an enemy ship in its faction's colour)   // (v25, section 7p: Fleet shades and the selection)
   }
@@ -61647,6 +61827,7 @@ function drawShips(left, top, right, bottom, minSize) {
       if (x < left || x > right || y < top || y > bottom) continue;   // off screen
       shipsDrawn++;
       const L = triangleLen(shipType[i], minSize), nose = L * DRAWN_SIZE.triangleNose, back = L - nose, wing = L * DRAWN_SIZE.triangleWide * 0.5;   // (v110.0) as long as the icon
+      if (typeDrawLen[shipType[i]] * camera.zoom >= UI_SETTINGS.iconSilhouettePixels) shipsDrawnBig++;   // (v126.3)
       const c = shipCos[i], s = shipSin[i];
       const backX = x - c * back, backY = y - s * back;
       const wingX = -s * wing, wingY = c * wing;
@@ -61721,11 +61902,12 @@ function drawFlashes(left, top, right, bottom, minSize) {
 let shipsDrawnLastFrame = 0;                    // (v17) ships on screen last frame: too many, and the icons give way to triangles for a frame
 function draw() {
   const w = canvas.width, h = canvas.height, z = camera.zoom;
+  if (ctx.isContextLost && ctx.isContextLost()) return;          // (v126.4, section 6v3) the browser wiped the map: nothing to draw on until it is back
   drawLenRefresh();                                              // (v110.0, section 6b) each ship type's drawn length this frame
   paintPrepare();                                                // (v25, section 7p) Fleet shades and the selected Fleet or Division: who is drawn in which colour
   chooseDrawMode();
   shipsDrawnLastFrame = shipsDrawn;
-  shipsDrawn = 0;
+  shipsDrawn = 0; shipsDrawnBig = 0;
 
   if (dotMode) {
     fxRec = false;                                               // (v33, section 6w) no close effects among the dots
@@ -62045,9 +62227,9 @@ function shipSprite(id, color, px, plain, echo) {   // (v126.0) echo: an Echo lo
   for (let k = 0; k < SPRITE_BUCKETS.length; k++) if (SPRITE_BUCKETS[k] >= px) { b = SPRITE_BUCKETS[k]; break; }
   const key = id + '|' + color + '|' + b + (plain ? '|s' : '|f') + (echo ? '|' + echo : '');
   let s = shipSprites.get(key);
-  if (s) return s;
+  if (s && !s._lost) { shipSprites.delete(key); shipSprites.set(key, s); return s; }   // (v126.4) kept most recently used last (spriteMemoryTrim lets the oldest go)
   if (shipSprites.size > 600) shipSprites.clear();          // (a safety net: in practice a battle uses a few dozen)
-  s = document.createElement('canvas');
+  s = pmWatch(document.createElement('canvas'));          // (v126.4) a sprite the browser wipes is made again
   s.width = b; s.height = b;
   drawIconVector(s.getContext('2d'), id, color, b, plain, echo);
   shipSprites.set(key, s);
@@ -62145,7 +62327,8 @@ function drawShipIcons(left, top, right, bottom, minSize) {
       const px = len * z / iconFillOf(shipIconFor(t, side));
       iconPx[st] = px;
       iconLod[st] = px < UI_SETTINGS.iconSilhouettePixels ? ICON_TRIANGLE : (px < UI_SETTINGS.iconFullPixels ? ICON_SILHOUETTE : ICON_FULL);
-      iconSprite[st] = iconLod[st] === ICON_TRIANGLE || px > 512 ? null : shipSprite(shipIconFor(t, side), shipColorFor(side, t), px, iconLod[st] === ICON_SILHOUETTE, echoLookOfShip(side, t));
+      // (v126.2) a big icon too comes from its sprite (at most 512 pixels, drawn larger), so it keeps its look: it used to be painted flat
+      iconSprite[st] = iconLod[st] === ICON_TRIANGLE ? null : shipSprite(shipIconFor(t, side), shipColorFor(side, t), px, iconLod[st] === ICON_SILHOUETTE, echoLookOfShip(side, t));
     }
   }
   // 1. The small ones: triangles, one shape per side (as drawShips; v25, section 7p: one per paint group with Fleet shades or a selection)
@@ -62176,13 +62359,14 @@ function drawShipIcons(left, top, right, bottom, minSize) {
   // 2. The rest: icons, turned to the ship's heading (the drawings point nose UP), in screen pixels.
   //    (v33) Zoomed right in, a ship made in the Bureau is drawn as its own design instead (section 6v), when its picture is ready.
   closeFrameStart();
+  closeChooseShips(left, top, right, bottom);       // (v126.2) which ships get close art when more want it than CLOSE_LOOK.maxShips
   for (let i = 0; i < highWater; i++) {
     if (shipAlive[i] === 0) continue;
     const side = shipSide[i], st = side * TYPE_COUNT + shipType[i], lod = iconLod[st];
     if (lod === ICON_TRIANGLE) continue;
     const x = shipX[i], y = shipY[i];
     if (x < left || x > right || y < top || y > bottom) continue;
-    shipsDrawn++;
+    shipsDrawn++; shipsDrawnBig++;                             // (v126.3) an icon: big enough on screen (chooseDrawMode, section 6)
     const px = iconPx[st], sx = x * z + offX, sy = y * z + offY;
     if (lod === ICON_FACILITY) { if (!closeDrawStation(i, sx, sy, px, side)) drawFacilityMarker(sx, sy, px, side); continue; }
     const c = shipCos[i], s = shipSin[i];
@@ -64461,7 +64645,7 @@ const CLOSE_LOOK = {
   rimPixels: 1.6,            // the thin rim in the side's colour round a ship's outline (screen pixels), so the sides read apart at a glance
   // (v126.1, Alex 7 Nov: 68 minutes into an Echo Last Stand the close art broke and ships were drawn far too large) a long battle kept every picture it
   // ever made (each new version of a design after a research card is a new picture), so the browser ran short of picture memory and drawing failed.
-  dropAfterSeconds: 90,      // a picture not drawn for this long is let go (made again, quickly from the picture store, if that design comes back into view)
+  dropAfterSeconds: 240,     // a picture not drawn for this long is let go (made again, quickly from the picture store, if that design comes back into view)
   biggestShare: 12           // a picture drawn more than this many times its ship's drawn length is wrong: the ship is drawn as its icon instead
 };
 // The art sheet's names for the game's parts (section 2n's module ids). A part not listed is drawn as a plain plate in its category's colour.
@@ -64851,7 +65035,7 @@ function closeArtBuild(e, done) {
   const jobs = [{ svg: svg, put: function (c) { e.canvas = c; } }];
   let plainInk = 0;
   if (plainSvg) jobs.push({ svg: plainSvg, put: function (c) {
-    const sm = document.createElement('canvas');
+    const sm = pmWatch(document.createElement('canvas'));
     sm.width = Math.max(1, Math.round(c.width / 4)); sm.height = Math.max(1, Math.round(c.height / 4));
     const g2 = sm.getContext('2d'); g2.imageSmoothingEnabled = true; g2.imageSmoothingQuality = 'high'; g2.drawImage(c, 0, 0, sm.width, sm.height);
     plainInk = closeInkLength({ small: sm, w: c.width });
@@ -64862,7 +65046,7 @@ function closeArtBuild(e, done) {
     if (--left > 0) return;
     if (failed || !e.canvas) { e.state = 'none'; done(); return; }
     // the quarter-size copy, for ships drawn small
-    const sm = document.createElement('canvas');
+    const sm = pmWatch(document.createElement('canvas'));
     sm.width = Math.max(1, Math.round(e.w / 4)); sm.height = Math.max(1, Math.round(e.h / 4));
     const g2 = sm.getContext('2d'); g2.imageSmoothingEnabled = true; g2.imageSmoothingQuality = 'high';
     g2.drawImage(e.canvas, 0, 0, sm.width, sm.height);
@@ -64893,7 +65077,7 @@ function closeAlienBuild(e, done) {
   const finishOn = function (canvas, pivX, pivY) {
     if (!canvas) { e.state = 'none'; done(); return; }
     e.canvas = canvas; e.w = canvas.width; e.h = canvas.height;
-    const sm = document.createElement('canvas');
+    const sm = pmWatch(document.createElement('canvas'));
     sm.width = Math.max(1, Math.round(e.w / 4)); sm.height = Math.max(1, Math.round(e.h / 4));
     const g2 = sm.getContext('2d'); g2.imageSmoothingEnabled = true; g2.imageSmoothingQuality = 'high';
     g2.drawImage(canvas, 0, 0, sm.width, sm.height);
@@ -65046,7 +65230,7 @@ function closeSvgMake(svg, cb0, second, keepKey) {
   if (!url) { second = true; url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); }
   const img = new Image();
   img.onload = function () {
-    const c = document.createElement('canvas');
+    const c = pmWatch(document.createElement('canvas'));   // (v126.4) a picture the browser wipes is made again
     c.width = Math.max(1, img.naturalWidth || img.width); c.height = Math.max(1, img.naturalHeight || img.height);
     if (!second) URL.revokeObjectURL(url);
     try { c.getContext('2d').drawImage(img, 0, 0); } catch (e) { cb(null); return; }
@@ -65088,7 +65272,8 @@ let closeDropAt = 0;
 function closeDropOld() {
   const now = performance.now();
   if (now < closeDropAt) return;
-  closeDropAt = now + 10000;
+  closeDropAt = now + PICTURE_MEMORY.checkSeconds * 1000;
+  closeMemoryTrim(now); spriteMemoryTrim();          // (v126.4, section 6v3) wiped pictures made again; graphics memory kept under its budget
   const old = now - CLOSE_LOOK.dropAfterSeconds * 1000;
   for (const [key, e] of closeArt) if ((e.state === 'ready' || e.state === 'none') && (e.used || e.made || 0) < old) closeArt.delete(key);
 }
@@ -65101,9 +65286,44 @@ function closeFrameStart() {
   } else closeDrawn.fill(0);
   closeCountLast = closeCount; closeCount = 0;
 }
+// (v126.2, Alex 8 Nov: "the art and lod steps are unreliable for ships", one zoom step close art, the next its icon again; "sometimes the same ship
+// types are in different states") When more ships on screen are big enough for close art than CLOSE_LOOK.maxShips, whole ship types get it, the
+// biggest on screen first, so ships of one type always look alike: a type is left on its icons only if it would take the count past the cap (the
+// biggest type always gets it). Before, it went by the ships' order in the battle's lists, so a titan could lose its close art to a crowd of small ships,
+// and two ships of one type could be drawn differently.
+let closeAllowSt = new Uint8Array(0), closeRationed = false;
+function closeChooseShips(left, top, right, bottom) {
+  closeRationed = false;
+  if (!UI_SETTINGS.closeDetail) return;
+  const n = 2 * TYPE_COUNT;
+  if (closeAllowSt.length < n) closeAllowSt = new Uint8Array(n);
+  const count = new Int32Array(n);
+  let all = 0;
+  for (let i = 0; i < highWater; i++) {
+    if (shipAlive[i] === 0) continue;
+    const st = shipSide[i] * TYPE_COUNT + shipType[i];
+    if (iconLod[st] === ICON_TRIANGLE || iconLod[st] === ICON_FACILITY || iconPx[st] < CLOSE_LOOK.minPixels) continue;
+    const x = shipX[i], y = shipY[i];
+    if (x < left || x > right || y < top || y > bottom) continue;
+    count[st]++; all++;
+  }
+  if (all <= CLOSE_LOOK.maxShips) return;
+  closeRationed = true;
+  const groups = [];
+  for (let st = 0; st < n; st++) { closeAllowSt[st] = 0; if (count[st] > 0) groups.push(st); }
+  groups.sort(function (a, b) { return iconPx[b] - iconPx[a] || count[a] - count[b]; });
+  let used = 0;
+  for (let k = 0; k < groups.length; k++) {
+    const st = groups[k];
+    if (used + count[st] > CLOSE_LOOK.maxShips * (k === 0 ? 2 : 1)) continue;   // (the biggest type up to twice the cap; a smaller type with fewer ships may still fit)
+    closeAllowSt[st] = 1; used += count[st];
+  }
+}
 // Is this ship drawn in close detail this frame? (its picture ready, the setting on, under the cap)
 function closeWants(i, px) {
-  if (!UI_SETTINGS.closeDetail || px < CLOSE_LOOK.minPixels || closeCount >= CLOSE_LOOK.maxShips) return null;
+  if (!UI_SETTINGS.closeDetail || px < CLOSE_LOOK.minPixels) return null;
+  if (closeRationed && closeAllowSt[shipSide[i] * TYPE_COUNT + shipType[i]] !== 1) return null;   // (v126.2) over the cap: whole types, biggest first
+  if (!closeRationed && closeCount >= CLOSE_LOOK.maxShips) return null;
   const e = closeArtEntry(shipType[i], closeLookKey(), closeHouseOf(i));   // (v78.1) a Sylph in its house's colours; (v126.0) an Echo ship in the run's Echo look
   if (!e || e.state !== 'ready') return null;
   // (v126.1) a picture whose size came out wrong is never drawn (the ship shows its icon): it would cover the screen
@@ -65235,7 +65455,7 @@ function closeRim(e, col) {
   if (!e.rims) e.rims = {};
   let c = e.rims[col];
   if (c) return c;
-  c = document.createElement('canvas'); c.width = e.small.width; c.height = e.small.height;
+  c = pmWatch(document.createElement('canvas')); c.width = e.small.width; c.height = e.small.height;
   const g = c.getContext('2d');
   if (!g) return null;                                   // (v126.1) no picture memory left: no rim
   g.drawImage(e.small, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = col; g.fillRect(0, 0, c.width, c.height);
@@ -65688,6 +65908,99 @@ function drawIconEcho(g, p, id, color, k, plain, look) {
   edge(look === 'E1' ? mixHex(color, '#ffffff', 0.45) : look === 'E5' ? mixHex(color, '#ff6a4a', 0.5) : color, U * 0.035);
   g.restore();
 }
+// ---------------------------------------------------------------------
+// 6v3. (v126.4, Alex 8 Nov: "at about wave 50, 40 minutes in, almost all the art disappeared, just a few far-out icons ... zooming in didn't show art,
+// and the background disappeared as well") THE PICTURES' MEMORY. Every close picture, icon sprite and glow is a drawing surface (a canvas) the browser
+// keeps in graphics memory. A long crowded battle made more and more of them (a picture for every new design version after each research card, a
+// sprite for every icon size and colour, big 512-pixel icons since v126.2), until the browser ran out of graphics memory and wiped its drawing
+// surfaces, the map's own included: the ship pictures, the icons and the background all went blank, and the game never made them again.
+// Now:
+//   1. the close pictures stay under PICTURE_MEMORY.closeMB and the icon sprites under PICTURE_MEMORY.spriteMB: past that, the ones drawn longest
+//      ago are let go (they are made again if needed; a picture drawn in the last few seconds is always kept);
+//   2. when the browser wipes a drawing surface (its 'contextlost' / 'contextrestored' events), that picture is thrown away and made again; when it
+//      wipes the map itself, every picture is thrown away and the map is set up again (pictureMemoryReset), so the game recovers by itself.
+// Display only: nothing here touches the battle.
+// ---------------------------------------------------------------------
+const PICTURE_MEMORY = {
+  closeMB: 320,          // the close pictures (with their small copies, rims and gun pictures) at most this much graphics memory
+  spriteMB: 64,          // the icon sprites at most this much
+  keepSeconds: 3,        // a close picture drawn within this many seconds is never let go to make room
+  checkSeconds: 2        // how often the memory is looked at
+};
+const pictureMemory = { lost: 0, resets: 0, trimmed: 0, spriteBytes: 0 };
+// Marks a drawing surface so that, if the browser wipes it, it is known to be blank (c._lost) and is made again.
+function pmWatch(c) {
+  if (!c || !c.addEventListener || c._pmWatched) return c;
+  c._pmWatched = true;
+  const mark = function () { c._lost = true; pictureMemory.lost++; };
+  c.addEventListener('contextlost', mark);
+  c.addEventListener('contextrestored', mark);
+  return c;
+}
+function pmLost(c) {
+  if (!c) return false;
+  if (c._lost) return true;
+  try { if (c.getContext) { const g = c.getContext('2d'); if (g && g.isContextLost && g.isContextLost()) return true; } } catch (e) { /* (not a canvas) */ }
+  return false;
+}
+function pmBytes(c) { return c && c.width > 0 && c.height > 0 ? c.width * c.height * 4 : 0; }
+// The graphics memory one close picture holds: the picture, its small copy, its rims and its gun pictures.
+function closeEntryBytes(e) {
+  let n = pmBytes(e.canvas) + pmBytes(e.small);
+  if (e.rims) for (const k in e.rims) n += pmBytes(e.rims[k]);
+  if (e.guns) for (const k in e.guns) n += pmBytes(e.guns[k] && e.guns[k].canvas);
+  return n;
+}
+function closeEntryLost(e) {
+  if (pmLost(e.canvas) || pmLost(e.small)) return true;
+  if (e.guns) for (const k in e.guns) if (pmLost(e.guns[k] && e.guns[k].canvas)) return true;
+  return false;
+}
+// Throws away wiped close pictures, then lets go of the ones drawn longest ago while over the budget. Called by closeDropOld.
+function closeMemoryTrim(now) {
+  const ready = [];
+  let total = 0;
+  for (const [key, e] of closeArt) {
+    if (e.state !== 'ready') continue;
+    if (closeEntryLost(e)) { closeArt.delete(key); pictureMemory.trimmed++; continue; }
+    if (e.rims) for (const k in e.rims) if (pmLost(e.rims[k])) delete e.rims[k];
+    const b = closeEntryBytes(e); total += b; ready.push({ key: key, e: e, b: b });
+  }
+  const limit = PICTURE_MEMORY.closeMB * 1048576;
+  if (total <= limit) return total;
+  ready.sort(function (a, b) { return (a.e.used || a.e.made || 0) - (b.e.used || b.e.made || 0); });
+  const keepFrom = now - PICTURE_MEMORY.keepSeconds * 1000;
+  for (let k = 0; k < ready.length && total > limit; k++) {
+    const r = ready[k];
+    if ((r.e.used || r.e.made || 0) >= keepFrom) break;
+    closeArt.delete(r.key); total -= r.b; pictureMemory.trimmed++;
+  }
+  return total;
+}
+// The icon sprites: wiped ones thrown away, and the oldest let go while over the budget (the sprite list keeps the most recently used last).
+function spriteMemoryTrim() {
+  let total = 0;
+  for (const [key, s] of shipSprites) { if (pmLost(s)) shipSprites.delete(key); else total += pmBytes(s); }
+  const limit = PICTURE_MEMORY.spriteMB * 1048576;
+  for (const [key, s] of shipSprites) { if (total <= limit) break; total -= pmBytes(s); shipSprites.delete(key); }
+  pictureMemory.spriteBytes = total;
+  if (typeof fxSprites !== 'undefined') for (const k in fxSprites) if (pmLost(fxSprites[k])) delete fxSprites[k];
+}
+// The browser wiped the map's own drawing surface: every picture is thrown away and made again, and the map set up again.
+function pictureMemoryReset() {
+  pictureMemory.resets++;
+  try {
+    closeArt.clear(); closeArtQueue.length = 0;
+    if (typeof closeBlue !== 'undefined') closeBlue.clear();
+    if (typeof closeStationArt !== 'undefined') closeStationArt.clear();
+    shipSprites.clear();
+    if (typeof fxSprites !== 'undefined') for (const k in fxSprites) delete fxSprites[k];
+    if (typeof makePixelBuffer === 'function') makePixelBuffer();
+    if (typeof applyLookColors === 'function') applyLookColors();
+  } catch (e) { console.error('Picture memory reset: ' + e.message); }
+}
+canvas.addEventListener('contextlost', function (ev) { pictureMemory.lost++; });
+canvas.addEventListener('contextrestored', function () { pictureMemoryReset(); });
 // =====================================================================
 // 6w. THE BATTLE EFFECTS  (v33, notes/plans/graphics/plan.md)
 //   Two parts:
@@ -65732,8 +66045,8 @@ let fxView = { left: 0, top: 0, right: 0, bottom: 0 };
 const fxSprites = {};
 function fxGlowSprite(col) {
   let c = fxSprites[col];
-  if (c) return c;
-  c = document.createElement('canvas'); c.width = c.height = 64;
+  if (c && !c._lost) return c;
+  c = pmWatch(document.createElement('canvas')); c.width = c.height = 64;   // (v126.4) made again if the browser wipes it
   const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
   gr.addColorStop(0, col); gr.addColorStop(0.35, col + 'AA'); gr.addColorStop(1, col + '00');
   g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
@@ -65742,8 +66055,8 @@ function fxGlowSprite(col) {
 }
 function fxScorchSprite() {
   let c = fxSprites._scorch;
-  if (c) return c;
-  c = document.createElement('canvas'); c.width = c.height = 64;
+  if (c && !c._lost) return c;
+  c = pmWatch(document.createElement('canvas')); c.width = c.height = 64;
   const g = c.getContext('2d');
   for (let n = 0; n < 9; n++) {                               // a few dark blots on top of each other (made once, so the randomness never shows)
     const x = 20 + Math.random() * 24, y = 20 + Math.random() * 24, r = 8 + Math.random() * 14;
@@ -67824,7 +68137,7 @@ function paintSpriteFor(g, st, side, t, px, plain) {
   let list = paintSprites[g];
   if (!list) { list = paintSprites[g] = new Array(2 * TYPE_COUNT).fill(undefined); }
   let s = list[st];
-  if (s === undefined) s = list[st] = px > 512 ? null : shipSprite(shipIconFor(t, side), paintColors[g], px, plain);
+  if (s === undefined) s = list[st] = shipSprite(shipIconFor(t, side), paintColors[g], px, plain);   // (v126.2) big ones too (the sprite is drawn larger)
   return s;
 }
 
@@ -73110,19 +73423,14 @@ TUTORIAL_SCRIPTS.main = {
     { id: 'sentryHeat', target: function () { return tutZoneRect(['heat', 'armour']); }, lock: false, wait: { until: function () { return tutZonesDone(['heat']) && tutDesignClean(); }, next: true },
       onStart: function (ctx) { tutResume(ctx, 'sentryZones', tutSentryOpen); },
       text: 'Heat last: a Radiator on each long strip along the hull. Then armour plates on the grey strips and the nose, as many as you like. When the problem list is empty, the ship is ready.', waitText: 'Clear the problems, or press Next.' },
-    { id: 'sentryName', target: '#b2Name', lock: false, wait: { event: ['localAsked', 'designSaved'] },
+    { id: 'sentryName', target: '#b2Name', lock: false, wait: { event: 'designSaved' },
       onStart: function (ctx) { tutResume(ctx, 'sentryZones', tutSentryOpen); },
       // (v93.4, AI tester Jess) the build steps can all be skipped with Next: an empty frame cannot be saved, so the card says to go back to the bays first
       text: function () { const n = typeof b2 !== 'undefined' && b2.d && Array.isArray(b2.d.parts) ? b2.d.parts.length : 0;
                           return n === 0 ? 'The frame is still empty: the bays you skipped with Next are still to fill. Drop a part on each coloured bay (cockpit, rockets and tanks, guns and magazines, batteries, radiators). Then name your ship in the box at the top left (Sentry is a good name) and press Save version.'
                                          : 'Name your ship in the box at the top left (Sentry is a good name), then press Save version.'; },
       waitText: 'Save the design to go on.' },
-    // (v93.4, AI tester Jess) answering No took the question away and left this card waiting for it: now the card says what to do instead, and a save that
-    // is not Local (fuel added for a transfer) goes on too
-    { id: 'sentryLocal', target: '#b2Msg', lock: false, reword: true, wait: { event: ['localAnswered', 'designSaved'], test: function (d) { return d.yes === true || !!d.id; } },
-      onStart: function (ctx) { if (tutLatestRec('sc_sentry')) { tutorialNext(ctx.index); return; } tutResume(ctx, 'sentryZones', tutSentryOpen); },
-      text: 'The Bureau asks: a Local design, is that intended? The Trainer never asked, because the refit was always going to be Local. This one is your choice. Yes: she is guarding home.',
-      waitText: function () { return typeof b2 !== 'undefined' && b2.localAsk ? 'Answer the question to go on.' : 'You said No: press Save version again to be asked again, or add fuel tanks so she can transfer, then save.'; } },
+    // (v134.0) the "is Local intended?" card is gone with the question itself: saving goes straight on to approving
     { id: 'sentryApprove', target: '#b2Approve', lock: false, wait: { event: 'designApproved', test: function (d, ctx) { if (d.frames.indexOf('sc_sentry') < 0) return false; ctx.data.sentryId = d.id; return true; } },
       onStart: function (ctx) { tutApproveResume(ctx, '', 'sc_sentry', 'sentryId', 'sentryZones', tutSentryOpen); },
       text: function () { const rec = tutLatestRec('sc_sentry'); return rec && rec.design && !tutDesignArmed(rec.design) ? 'Saved, but she has no weapon, and the yards won\'t build an unarmed warship. Put at least one Light Repeater in a gun bay, with a magazine touching it, then save again and approve.' : 'Saved. Now approve it for the yards.'; } },
@@ -78536,6 +78844,15 @@ const LAST_STAND = {
     titan:     { start: 1, cap: 4,  rebuild: 240 }
   },
   threatReach: 6000, threatMargin: 600,       // (v101.4) the guard also goes after an enemy up to this far from the station whose weapons reach the station (+ the margin): the drones that snipe from outside the guard circle
+  // (v131.0, section 8h2) THE GUARD LINE: each station's squadrons stand in a line in front of it, Division by Division, instead of heaped on the station.
+  //   on: 1 = the line (0 = as before v131.0); ahead: how far in front of the station the line stands (u); maxAhead: how far it may move up to meet an
+  //   enemy that fires at the station from further off (u): it stands reachShare x its shortest weapon reach short of that enemy; divisionGap: the gap between two Divisions (u);
+  //   rowGap: the extra gap between a Division's rows (u); lineGap: between a Fleet's first and second line (u); lastAhead: the least room between the
+  //   station and a Fleet's back line (u); bandShare: how much of the Fleet's share of the map's height its line should take (the Divisions stand fewer
+  //   squadrons abreast to keep within it); overflow: a line up to this x too long still stays one line, a longer one folds its last Divisions back into a
+  //   second line; leashMin / leashRange: how far a squadron may go from
+  //   its spot in a fight (u, or this x its weapon reach, whichever is longer); huntSeconds: how long it may chase a sniper that can hit the station.
+  guardLine: { on: 1, ahead: 1200, maxAhead: 5000, reachShare: 0.7, lastAhead: 500, divisionGap: 250, rowGap: 60, lineGap: 300, bandShare: 1, overflow: 1.3, leashMin: 500, leashRange: 0.4, huntSeconds: 6 },
   waveGrowth: 0.15,                           // (v101.4) with each new wave every squadron grows by this share of its size (at least one ship), up to its cap: the fleet grows as the waves do
   biggerShare: 0.5,                           // (v101.4) a Bigger squadron card adds this share of the squadron (at least its hull's starting size)
   biggerCapShare: 0.5,                        // (v128.0, Alex 8 Nov) and raises that squadron's cap by this share of its hull's cap (each card again), so it keeps growing
@@ -78664,6 +78981,7 @@ function lsStart(enemy, opts) {
   if (yard) { yard.name = LAST_STAND.stationName; yard.x = 0.07; yard.y = 0.5; }
   const savedScenario = activeScenario;
   activeScenario = null;
+  lsLineReset();                                          // (v131.0, section 8h2) the guard line starts empty
   lastStand = { wave: 0, nextWaveAt: LAST_STAND.firstWaveSeconds, waveDesigns: designs, starter: starter, saved: saved, yard: yard, savedYard: savedYard,
                 savedScenario: savedScenario, aimAt: 0, kills: 0, shipsSent: 0, over: false, overText: '', hud: null,
                 // (v100.1) levels and cards
@@ -79121,8 +79439,8 @@ function lsCardText(c) {
     out.officer = lsOfficerName(rank); out.rank = rank; out.temper = olLsTemper(out.officer, lsTemperFor(L.dealt * 7 + (c.type | 0)));
     out.label = 'New squadron' + (lsIsMine(c.type) ? ' · your design' : ''); out.title = typeName[c.type];
     const st = BLUE * TYPE_COUNT + c.type;
-    out.text = 'A new hangar at the station with ' + row.start + ' ' + typeName[c.type] + (row.start === 1 ? '' : 's') + ' (' + lsHullOf(c.type) + '), led by ' + (rk ? rk.name + ' ' : '') + out.officer + ' (' + lsTemperName(out.temper) + '). Up to ' + row.cap + ' with Bigger squadron; a lost ship is rebuilt in ' + Math.round(row.rebuild * L.rebuildMul) + ' s.' +
-               (stHull.length > st ? ' Each: hull ' + fmtWhole(stHull[st]) + ', speed ' + fmtWhole(stSpeed[st]) + ', damage ' + fmtWhole(stDps[st]) + '/s.' : '');
+    out.text = 'A new hangar at the station with ' + row.start + ' ' + typeName[c.type] + (row.start === 1 ? '' : 's') + ' (' + lsHullOf(c.type) + '), led by ' + (rk ? rk.name + ' ' : '') + out.officer + ' (' + lsTemperName(out.temper) + '). Up to ' + row.cap + ' with Bigger squadron; a lost ship is rebuilt in ' + Math.round(row.rebuild * L.rebuildMul) + ' s.';
+    out.facts = lsShipFacts(c.type);   // (v134.0) the ship's weapons and numbers, listed on the card
   } else if (L.v2 && c.kind === 'gate') ls2GateText(c, out);       // (v102.4) version 2's research played on a Fleet
   else if (L.v2 && c.kind === 'weapon') ls2WeaponText(c, out);   // (v102.3) version 2's weapon cards
   else if (L.v2 && c.general) ls2UpgradeText(c, out);        // (v102.2) version 2's general upgrade cards
@@ -79135,8 +79453,8 @@ function lsCardText(c) {
     out.label = 'Bigger hull' + (lsIsMine(c.type) ? ' · your design' : ''); out.title = typeName[h.type] + ' to ' + typeName[c.type];
     const up = !lsRankAllows(h.rank, c.type) && rankById(lsRankFor(c.type));
     out.text = (rankById(h.rank) ? rankById(h.rank).name + ' ' : '') + h.officer + '\'s squadron of ' + plural(h.size, typeName[h.type]) + ' becomes ' + plural(size, typeName[c.type]) +
-               ' (' + lsHullOf(c.type) + '). Ships in flight are refitted on the spot.' + (up ? ' ' + h.officer + ' is promoted to ' + up.name + ' to lead them.' : '') +
-               (stHull.length > st ? ' Each: hull ' + fmtWhole(stHull[st]) + ', speed ' + fmtWhole(stSpeed[st]) + ', damage ' + fmtWhole(stDps[st]) + '/s.' : '');
+               ' (' + lsHullOf(c.type) + '). Ships in flight are refitted on the spot.' + (up ? ' ' + h.officer + ' is promoted to ' + up.name + ' to lead them.' : '');
+    out.facts = lsShipFacts(c.type);   // (v134.0)
   } else if (c.kind === 'commodore') {
     out.officer = lsOfficerName('commodore');
     out.label = 'Commodore'; out.title = 'Commodore ' + out.officer;
@@ -79167,6 +79485,42 @@ function lsCardText(c) {
   if (L.v2 && ls2HandKind(c.kind)) out.text = ls2HandLine(c.kind) + ' ' + out.text;   // (v102.1) version 2: where the card goes
     return out;
 }
+// (v134.0, Alex 8 Nov: "the last stand cards for ships should give a description of that ships weapons and stats") What a ship card lists about
+// the ship: one line for each kind of weapon it carries (how many, how hard and how often each hits, how far), then its point defence and craft, then
+// its hull, shield, armour, speed and damage a second. Reload times and damage a second count the longer-battles fire rate (SETTINGS.fireRateScale,
+// x0.5 = half as often), as the Bureau's tooltips do; the hull is the design's own hit points, as the Bureau shows them.
+// Returns [ [label, words], ... ] (empty for a type with no Bureau design).
+function lsShipFacts(t) {
+  const rec = SHIP_TYPES[t], sm = rec && rec.summary; if (!sm) return [];
+  const fr = SETTINGS.fireRateScale > 0 ? SETTINGS.fireRateScale : 1;
+  const out = [], byName = {}, order = [];
+  let dps = 0;
+  for (const g of (sm.weapons || [])) {
+    if (!(g.weapons > 0)) continue;
+    dps += (g.dps || 0) * fr;
+    if (!byName[g.name]) { byName[g.name] = Object.assign({}, g, { n: 0 }); order.push(g.name); }
+    byName[g.name].n += g.weapons;
+  }
+  const r1 = function (x) { return x >= 10 ? fmtWhole(x) : String(Math.round(x * 10) / 10); };
+  for (const name of order) {
+    const g = byName[name], every = g.interval > 0 ? r1(g.interval / fr) + ' s' : '', reach = 'range ' + fmtWhole(g.range);
+    let what;
+    if (g.ammo === 'beam') what = r1(g.damage) + ' damage a second while it burns, ' + reach;
+    else if (g.ammo === 'missiles') what = r1(g.damage) + '-damage ' + ((MISSILE_SIZES[g.missileSize] || { name: '' }).name.toLowerCase() + ' missiles').trim() + (every ? ', one every ' + every : '') + ', ' + reach;
+    else what = r1(g.damage) + ' damage' + (every ? ' every ' + every : '') + ', ' + reach;
+    out.push([(g.n > 1 ? g.n + ' × ' : '') + name, what]);
+  }
+  if (!order.length) out.push(['Weapons', 'none']);
+  if (sm.pd && sm.pd.mounts > 0) out.push(['Point defence', plural(sm.pd.mounts, 'mount') + ' against missiles']);
+  if (Array.isArray(sm.hangars) && sm.hangars.length) out.push(['Carries', sm.hangars.length + ' craft in its hangars']);
+  const st = BLUE * TYPE_COUNT + t, hull = stHull && stHull.length > st && stHull[st] > 0 ? stHull[st] : (sm.hp || 0);
+  const speed = stSpeed && stSpeed.length > st && stSpeed[st] > 0 ? stSpeed[st] : (sm.speed || 0);
+  out.push(['Hull', fmtWhole(hull) + (sm.shield > 0 ? ' · shield ' + fmtWhole(sm.shield) : '') + (Array.isArray(sm.armour) && sm.armour.some(function (v) { return v > 0; }) ? ' · armour plate' : '')]);
+  out.push(['Speed', fmtWhole(speed) + ' · ' + r1(dps) + ' damage a second']);
+  return out;
+}
+// The same, in one line of words (a hand card's or a squadron's hover note).
+function lsShipFactsWords(t) { return lsShipFacts(t).map(function (f) { return f[0] + ': ' + f[1]; }).join('. ') + '.'; }
 // (v128.0) more = 1: the ships a Bigger squadron card adds, with the cap the card itself raises.
 function lsBiggerBy(h, more) { const row = lsHullRow(h.type); return Math.max(1, Math.min(lsCapOf(h, more) - h.size, Math.max(row.start, Math.ceil(h.size * LAST_STAND.biggerShare)))); }
 // (v128.0, Alex 8 Nov: "the bigger squadrons card should raise the ship size cap for that squad") A squadron's cap: its hull's cap, raised by half of it
@@ -79240,7 +79594,7 @@ function lsCardsShow() {
   el.innerHTML = '<div class="ls-cards-head">' + (lastStand.cardsHead || 'Level ' + lastStand.level + ': choose one') + '</div><div class="ls-cards-row">' +
     lastStand.cards.map(function (c, k) {
       return '<button type="button" class="ls-card ls-card-' + c.kind + '" data-k="' + k + '"><span class="ls-card-label">' + esc(c.label) + '</span>' +
-             '<span class="ls-card-title">' + esc(c.title) + '</span>' + (c.officer ? '<span class="ls-card-officer">' + portraitHtml(null) + '<span>' + esc(c.officer) + (c.temper ? '<br>' + esc(lsTemperName(c.temper)) : '') + '</span></span>' : '') + '<span class="ls-card-text">' + esc(c.text) + '</span><span class="ls-card-key">' + (k + 1) + '</span></button>';
+             '<span class="ls-card-title">' + esc(c.title) + '</span>' + (c.officer ? '<span class="ls-card-officer">' + portraitHtml(null) + '<span>' + esc(c.officer) + (c.temper ? '<br>' + esc(lsTemperName(c.temper)) : '') + '</span></span>' : '') + '<span class="ls-card-text">' + esc(c.text) + '</span>' + (c.facts && c.facts.length ? '<span class="ls-card-facts">' + c.facts.map(function (f) { return '<span><b>' + esc(f[0]) + '</b> ' + esc(f[1]) + '</span>'; }).join('') + '</span>' : '') + '<span class="ls-card-key">' + (k + 1) + '</span></button>';
     }).join('') + '</div>';
   el.querySelectorAll('.ls-card').forEach(function (b) { b.addEventListener('click', function () { lsPick(Number(b.dataset.k)); }); });
 }
@@ -80047,6 +80401,7 @@ function lsResultsShow() {
     '.ls-card-officer{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--dim);margin:2px 0 6px}.ls-card-officer .bs-portrait{width:34px;height:34px;flex:0 0 34px}.ls-card-officer svg{width:100%;height:100%}' +
     '.ls-card-label{font-family:var(--font-data);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}' +
     '.ls-card-title{font-family:var(--font-display);font-size:18px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}' +
+    '.ls-card-facts{display:flex;flex-direction:column;gap:2px;font-size:12px;line-height:1.3;color:var(--dim);border-top:1px solid var(--line);padding-top:6px}.ls-card-facts b{color:var(--text);font-weight:600}' +
     '.ls-card-key{position:absolute;top:10px;right:12px;font-family:var(--font-data);font-size:11px;color:var(--dim)}' +
     '@media (max-width:640px){.ls-card{width:100%;min-height:0}.ls-cards{justify-content:flex-start;overflow:auto}}' +
     // (v100.8) the results screen and the menu panel
@@ -80075,6 +80430,181 @@ if (typeof window !== 'undefined') setTimeout(function () {
                           pick: lsPick, choosing: lsChoosing, runDesign: lsRunDesign, gateMissing: lsGateMissing, offerable: lsOfferable, research: lsResearchOffers,
                           results: lsResultsData, resultsText: function () { return lsResultsText(lsResultsData()); }, showResults: lsResultsShow };   // (v100.8)
 }, 0);
+// =====================================================================
+// 8h2. LAST STAND: THE GUARD LINE (v131.0)
+//
+// Alex (8 Nov, Echo Last Stand on v128): "I am still not seeing the fleet and division organization. There is no line being formed. Seemingly no
+// relationships being formed between squadrons in a division, or divisions in a fleet. I see only individual squadrons doing their own thing and mass blobs."
+//
+// What was wrong: since v101.3 every squadron of a run flies as its station's guard (section 5jf, 17b). Each guard squadron was sent to the station's own
+// point, so all the squadrons of every Division of a Fleet were heaped on one spot. Their Divisions and Fleets were names on the card tree and nothing more:
+// no Commodore or Admiral order reaches a guard squadron (that is what stops the run's ships chasing the enemy across the map). In a fight each guard ship
+// went for the nearest enemy anywhere inside a 6,000 u circle round the station, so the heap broke up into ships all doing their own thing.
+//
+// With LAST_STAND.guardLine.on = 1 the guard keeps the station but stands in a line in front of it, laid out by the chain of command:
+//  - each station's Fleet forms one line across its own part of the map, facing the enemy (to the right), guardLine.ahead in front of its station; when
+//    the enemy stands off to fire at the station from beyond the line's reach, the whole line moves up to meet it (up to guardLine.maxAhead);
+//  - the Fleet's Divisions stand side by side along that line, the 1st in the middle, the 2nd beside it, the 3rd on the other side, and so on outwards,
+//    with a clear gap (guardLine.divisionGap) between Divisions, so you can see which squadrons belong together;
+//  - inside a Division its squadrons stand shoulder to shoulder (the battle line's own small gap), up to cmdMaxAbreast in a row, more rows behind;
+//  - a Fleet's line too long for its share of the map folds: the next Divisions form a second line behind the first;
+//  - in a fight a squadron holds its spot: its ships pick the enemy nearest their squadron's spot within guardLine reach (their leash: guardLine.leashMin,
+//    or guardLine.leashRange x their weapon reach, whichever is longer), and are pulled back to the spot past it;
+//  - the v101.4 snipers rule stays: when nothing is near its spot but an enemy outside the line can hit the station, the squadron goes out after it (for
+//    guardLine.huntSeconds at a time, on the old long leash), then comes back to its spot.
+// With on = 0 the guard is as before v131.0 (every squadron on the station's point, the long leash).
+// =====================================================================
+
+const lsLineSpot = [];        // per squadron: { x, y } its spot in the line, or undefined
+const lsLineHuntUntil = [];   // per squadron: until when it may chase a sniper on the old long leash
+let lsLineAt = -1;            // when the line was last laid out
+
+function lsLineOn() { return lastStand !== null && LAST_STAND.guardLine && LAST_STAND.guardLine.on === 1; }
+
+// (lsStart) a new run: no spots yet.
+function lsLineReset() { lsLineSpot.length = 0; lsLineHuntUntil.length = 0; lsLineAt = -1; }
+
+// The height of the map this station's Fleet has to itself: a third of it in version 2 (three Fleet bands), all of it in version 1.
+function lsLineBand() { return SETTINGS.worldHeight / (lastStand && lastStand.v2 ? 3 : 1); }
+
+// Lays out every station's guard (at most once a second; the spots barely move, the ships only follow them).
+function lsLineLayout() {
+  if (lsLineAt >= 0 && simTime < lsLineAt + 1) return;
+  lsLineAt = simTime;
+  lsLineSpot.length = 0;
+  for (const c of fgCarriers) if (c && c.state === 'live' && c.station >= 0 && c.guard.length > 0) lsLineLayoutOne(c);
+}
+
+// How much room a squadron takes in the line (u): its ships in a square block at its officer's formation spacing, plus one spacing round it. Counted from its number of
+// ships, not from its formation of the moment (that changes shape in a fight, and the line would twitch with it).
+function lsLineSquadSize(sq) { const n = Math.max(1, sqAlive[sq] + (sqAway[sq] || 0)); return (Math.ceil(Math.sqrt(n)) + 1) * formationSpacingFor(sqType[sq], sqOfficer[sq]); }
+
+// One station's line.
+function lsLineLayoutOne(c) {
+  const G = LAST_STAND.guardLine;
+  const groups = new Map();                       // Division id (or -squadron for a squadron in no Division) -> its squadrons, in launch order
+  for (const sq of c.guard) {
+    if (!(sqAlive[sq] > 0) || sqRetired[sq] === 1) continue;
+    const key = sqDivision[sq] > 0 ? sqDivision[sq] : -sq;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(sq);
+  }
+  if (groups.size === 0) return;
+  // the Divisions in the order they were formed (1st, 2nd, 3rd ...), loose squadrons after them
+  const keys = Array.from(groups.keys()).sort(function (p, q) { return (p < 0) - (q < 0) || Math.abs(p) - Math.abs(q); });
+  // each Division's rows: up to `abreast` squadrons shoulder to shoulder, more rows behind
+  const len = function (sq) { return lsLineSquadSize(sq) + SETTINGS.lineGapFactor * typeSpacing[sqType[sq]]; };
+  const makeBlocks = function (abreast) {
+    return keys.map(function (k) {
+      const sqs = groups.get(k);
+      const rows = [];
+      for (let i = 0; i < sqs.length; i += abreast) rows.push(sqs.slice(i, i + abreast));
+      const rowDepth = rows.map(function (r) { let d = 0; for (const sq of r) d = Math.max(d, lsLineSquadSize(sq)); return d; });
+      let w = 0, depth = 0;
+      for (const r of rows) { let t = 0; for (const sq of r) t += len(sq); w = Math.max(w, t); }
+      for (let i = 0; i < rows.length; i++) depth += rowDepth[i] * (i === 0 ? 1 : SETTINGS.cmdRankGapFactor) + (i > 0 ? G.rowGap : 0);
+      return { rows: rows, rowDepth: rowDepth, len: len, w: w, depth: depth };
+    });
+  };
+  // the Fleet keeps ONE line of Divisions side by side if it can: when the line is too long for the Fleet's share of the map, each Division stands
+  // fewer squadrons abreast (deeper) first; only when even one abreast does not fit do the last Divisions fold back into a second line
+  const room = lsLineBand() * G.bandShare;
+  let blocks = null, total = 0;
+  for (let abreast = cmdMaxAbreast(); abreast >= 1; abreast--) {
+    blocks = makeBlocks(abreast);
+    total = G.divisionGap * Math.max(0, blocks.length - 1); for (const b of blocks) total += b.w;
+    if (total <= room) break;
+  }
+  const lineRoom = total <= room * G.overflow ? Infinity : room;   // (a line a little too long stays one line: it may reach into the next Fleet's share)
+  // the Divisions into lines: each line as long as the Fleet's share of the map allows (at least one Division a line)
+  const lines = [[]];
+  let used = 0;
+  for (const b of blocks) {
+    const add = b.w + (lines[lines.length - 1].length > 0 ? G.divisionGap : 0);
+    if (lines[lines.length - 1].length > 0 && used + add > lineRoom) { lines.push([]); used = 0; }
+    used += b.w + (lines[lines.length - 1].length > 0 ? G.divisionGap : 0);
+    lines[lines.length - 1].push(b);
+  }
+  // facing the enemy: our side looks right (+x), the line runs up and down the map
+  const fx = c.side === BLUE ? 1 : -1;
+  const H = SETTINGS.worldHeight, margin = 200;
+  // the lines' depths
+  const deep = lines.map(function (line) { let d = 0; for (const b of line) d = Math.max(d, b.depth); return d; });
+  let back = 0; for (let k = 1; k < lines.length; k++) back += deep[k - 1] + G.lineGap;
+  let x = shipX[c.slot] + fx * Math.max(lsLineAhead(c, blocks), G.lastAhead + back);   // (the last line still stands guardLine.lastAhead in front of the station)
+  for (const line of lines) {
+    // the 1st Division in the middle, then one each side in turn, outwards
+    const order = [];
+    for (let k = 0; k < line.length; k++) { if (k % 2 === 0) order.push(line[k]); else order.unshift(line[k]); }
+    let total = 0; for (const b of order) total += b.w; total += G.divisionGap * Math.max(0, order.length - 1);
+    let y0 = shipY[c.slot] - total / 2;
+    y0 = Math.max(margin, Math.min(H - margin - total, y0));   // (kept on the map; a line longer than the map just starts at its top)
+    let deepest = 0;
+    for (const b of order) {
+      let rx = x;
+      for (let r = 0; r < b.rows.length; r++) {
+        const row = b.rows[r];
+        let rowW = 0; for (const sq of row) rowW += b.len(sq);
+        let y = y0 + (b.w - rowW) / 2;            // (a short back row stands in the middle)
+        for (const sq of row) {
+          const l = b.len(sq);
+          lsLineSpot[sq] = { x: rx, y: y + l / 2 };
+          y += l;
+        }
+        if (r + 1 < b.rows.length) rx -= fx * (b.rowDepth[r] / 2 + SETTINGS.cmdRankGapFactor * b.rowDepth[r + 1] / 2 + G.rowGap);
+      }
+      deepest = Math.max(deepest, b.depth);
+      y0 += b.w + G.divisionGap;
+    }
+    x -= fx * (deepest + G.lineGap);              // (the next line stands behind this one)
+  }
+}
+
+// How far in front of its station a Fleet's line stands: guardLine.ahead, or further out when the enemy stands off out of the line's reach to fire at the
+// station (the line moves up together, so it can reach them, instead of single squadrons breaking off after them), never more than guardLine.maxAhead.
+// The line's reach is the shortest weapon reach of its squadrons (so the shortest-ranged still get to fire).
+function lsLineAhead(c, blocks) {
+  const G = LAST_STAND.guardLine, fx = c.side === BLUE ? 1 : -1;
+  let reach = Infinity;
+  for (const b of blocks) for (const r of b.rows) for (const sq of r) reach = Math.min(reach, stRange[c.side * TYPE_COUNT + sqType[sq]]);
+  if (!isFinite(reach)) return G.ahead;
+  let front = Infinity;                                            // the nearest enemy that can hit the station, along the facing
+  for (const j of lsThreats(c)) if (shipAlive[j] === 1) front = Math.min(front, fx * (shipX[j] - shipX[c.slot]));
+  if (!isFinite(front)) return G.ahead;
+  return Math.max(G.ahead, Math.min(G.maxAhead, front - G.reachShare * reach));
+}
+
+// (fgGuardPlan, 17b) The squadron's spot in the line, or null (not a run, the line is off, or not laid out yet).
+function lsLineSpotOf(sq) {
+  if (!lsLineOn()) return null;
+  lsLineLayout();
+  return lsLineSpot[sq] || null;
+}
+
+// (fgGuardLeash, 17b) How far a squadron in the line may go from its spot: its leash, or the old long leash while it hunts a sniper. -1 = not in the line.
+function lsLineLeash(sq, st) {
+  if (!lsLineOn() || !lsLineSpot[sq]) return -1;
+  if (lsLineHuntUntil[sq] > simTime) return -1;
+  const G = LAST_STAND.guardLine;
+  return Math.max(G.leashMin, G.leashRange * stRange[st]) + formationRadius(sq);
+}
+
+// (fgGuardPick, 17b) A line ship's target: the enemy nearest its squadron's spot within its leash and reach; else a sniper that can hit the station
+// (the squadron goes out after it); else whatever is already in its weapon range. -2 = not in the line (the old rule decides).
+function lsLinePick(i, st, sq, c) {
+  if (!lsLineOn()) return -2;
+  const p = lsLineSpot[sq];
+  if (!p) return -2;
+  const G = LAST_STAND.guardLine;
+  const reach = Math.max(G.leashMin, G.leashRange * stRange[st]) + formationRadius(sq) + 0.5 * stRange[st];
+  const t = nearestOfSide(1 - shipSide[i], p.x, p.y, reach * reach);
+  if (t >= 0) return t;
+  if (c && c.state === 'live') {
+    const w = lsThreatFor(i, c);
+    if (w >= 0) { lsLineHuntUntil[sq] = simTime + G.huntSeconds; return w; }
+  }
+  return findNearestEnemy(i, stRange2[st] * (1 + 1e-12));
+}
 // =====================================================================
 // 8i. (v102.0) LAST STAND VERSION 2: THE CARD TREE (stage 1 of 6)
 //   Alex, 5 Nov: "the chain of command now has a clickable visual representation off the left side of the battle map. these are solitaire
@@ -81193,7 +81723,7 @@ function ls2SquadCard(hi, f, d, s) {
   const sq = ls2SquadOf(hi), sel = sq > 0 && bsSelectedSq === sq ? ' sel' : '';
   const held = ls2Held !== null && ls2Held.hangar === hi ? ' held' : '';
   const title = typeName[h.type] + ' squadron (' + lsHullOf(h.type) + '): ' + alive + ' of ' + h.size + ' flying. Led by ' + (rk ? rk.name + ' ' : '') + h.officer +
-                ' (' + lsTemperName(h.temper) + '). Click to select it; drag it to another slot to move it.';
+                ' (' + lsTemperName(h.temper) + '). ' + lsShipFactsWords(h.type) + ' Click to select it; drag it to another slot to move it.';   // (v134.0) its weapons and numbers too
   return '<div class="ls2-card ls2-squad' + sel + held + ls2Ok({ kind: 'slot', f: f, d: d, s: s }) + (alive === 0 ? ' down' : '') + '" draggable="true" data-hangar="' + hi + '" data-f="' + f + '" data-d="' + d + '" data-s="' + s + '" title="' + ls2Esc(title) + '">' +
          shipIconHtml(shipIconFor(h.type, BLUE), 20) + '<span class="ls2-count">' + alive + '/' + h.size + '</span><span class="ls2-type">' + ls2Esc(typeName[h.type]) + '</span></div>';
 }
@@ -81205,7 +81735,7 @@ function ls2HandCard(c, k) {
   else if (c.general) face = '<span class="ls2-hk-sign">' + ({ bigger: '+', hull: '&#9650;' })[c.kind] + '</span><span class="ls2-type">' + ls2Esc(c.label) + '</span>';
   else if (c.kind === 'squadron') face = shipIconHtml(shipIconFor(c.type, BLUE), 20) + '<span class="ls2-type">' + ls2Esc(typeName[c.type]) + '</span>';
   else face = portraitHtml(null) + '<span class="ls2-type">' + ls2Esc(String(c.officer).split(' ').slice(-1)[0]) + '</span>';   // (the surname: the card is small)
-  return '<div class="ls2-card ls2-handcard ls2-hk-' + c.kind + held + '" draggable="true" data-hand="' + k + '" title="' + ls2Esc(c.title + ': ' + c.text) + '">' +
+  return '<div class="ls2-card ls2-handcard ls2-hk-' + c.kind + held + '" draggable="true" data-hand="' + k + '" title="' + ls2Esc(c.title + ': ' + c.text + (c.kind === 'squadron' ? ' ' + lsShipFactsWords(c.type) : '')) + '">' +
          '<span class="ls2-hk-label">' + ls2Esc(c.kind === 'gate' ? 'Research' : c.kind === 'weapon' ? ls2WeaponById(c.weapon).job.charAt(0).toUpperCase() + ls2WeaponById(c.weapon).job.slice(1) : c.general ? 'Upgrade' : (c.kind === 'squadron' ? 'Squadron' : (c.kind === 'vice' ? 'Vice Adm.' : 'Commodore'))) + '</span>' + face +
          '<button type="button" class="ls2-discard" data-discard="' + k + '" title="Throw this card away">&times;</button></div>';
 }
@@ -88555,6 +89085,15 @@ function b2MarkLocked(mk, line) {
 // (v78.3) A size of a size piece that research has not opened yet (4 x 4 and 5 x 5 tanks before "Large tanks"), and the project that opens it.
 function b2SizeLocked(m, z) { return !b2.unlockAll && z > bureauKitSizeFor(b2Kit(), m); }
 function b2SizeTech(m) { for (const name in TECH_EXTRA) if (TECH_EXTRA[name].lineSizes && TECH_EXTRA[name].lineSizes[m.line]) return 'research "' + name + '" opens this size'; return 'needs research'; }
+// (v134.0, Alex 8 Nov: "dont show supply ports until unlocking a size of hull that needs it") The supply port is left out of the parts list until the
+// campaign has opened a hull size that must carry one (BUREAU_RULES.supplyPortRank: cruisers and up), or a cargo hold (a tender passes its supplies
+// through a port). Outside a campaign, with "Unlock everything", or on a design that already has one, it shows as before.
+function b2SupplyPortsOpen() {
+  const kit = b2Kit(); if (!kit) return true;
+  if (b2.d && Array.isArray(b2.d.parts) && b2.d.parts.some(function (p) { return MODULE_BY_ID[p.p] && MODULE_BY_ID[p.p].supplyPort; })) return true;
+  if (HULL_CLASSES.some(function (c) { return (c.rank || 0) >= BUREAU_RULES.supplyPortRank && !b2HullLocked(c.id); })) return true;
+  return MODULES_V3.some(function (m) { return m.cargo > 0 && !m.alien && !b2ModLocked(m); });
+}
 function b2HullLocked(id) { return !bureauKitAllows(b2Kit(), 'hulls', id); }
 function b2FrameLocked(f) { return (f.locked && !b2.unlockAll) || !bureauKitAllows(b2Kit(), 'frames', f.id); }
 // (v58, stats-panels.md s3; v62 step-by-step-flow.md s3, Alex 29 Oct: only FORBIDDEN parts are hidden, never legal ones) Can a part ever be legal on this
@@ -88710,6 +89249,7 @@ function b2RenderParts() {
       if (m.titanPart) return false;                               // (v97) a titan super part only comes fitted with its frame
       if (b2ModLocked(m) && !showLocked) { hidden++; return false; }
       if (!b2.showUnfit && b2PartUnfit(m)) { unfit++; return false; }   // (v58) parts that can never fit this hull are left out
+      if (m.supplyPort && !b2SupplyPortsOpen()) return false;      // (v134.0) no supply port until a hull that needs one (or a cargo hold) is open
       return true;
     });
     // a folded pick shows when any of its variants matches the search
@@ -88831,10 +89371,20 @@ function b2PicksWith(line, o, axis, v) { const t = Object.assign({}, partOptions
 // Words for searching a built row: the names of its current picks.
 function b2BuildWords(line) { const o = b2Picks(line); return BUILD_LINES[line].axes.map(function (ax) { return ax.table[o[ax.key]].name; }).join(' '); }
 // One short line of a weapon's numbers ("10 dmg every 1 s · range 1,120").
+// (v134.0, Alex 8 Nov: "weapon tooltips are not indicating a firing rate slowdown") The longer-battles fire rate dial (SETTINGS.fireRateScale, x0.5 since
+// v104.8: every weapon fires half as often in battle; point defence is not changed) is counted in every reload time the Bureau shows, so the numbers are
+// the ones the battle uses. b2FireScale() is the dial (1 = no change); b2BattleInterval(w) a weapon's time between shots in battle.
+function b2FireScale() { return SETTINGS.fireRateScale > 0 ? SETTINGS.fireRateScale : 1; }
+function b2BattleInterval(w) { return (w && w.interval > 0 ? w.interval : 0) / b2FireScale(); }
+// The note under a weapon's numbers when the dial is not x1: what it does, in plain words.
+function b2FireScaleNote() {
+  const f = b2FireScale(); if (Math.abs(f - 1) < 1e-6) return '';
+  return 'Longer battles: every weapon fires ' + (f < 1 ? 'x' + b2Round(f, 2) + ' as often (' + (Math.abs(f - 0.5) < 1e-6 ? 'half as often' : 'slower') + ')' : 'x' + b2Round(f, 2) + ' as often') + ' as on paper; the times above already count it. Point defence is not changed.';
+}
 function b2WeaponLine(s) {
   const w = s.weapon; if (!w) return '';
-  if (w.ammo === 'beam') return b2Round(w.damage, 1) + ' dmg a second (beam) · range ' + Math.round(w.range).toLocaleString('en-GB');
-  return b2Round(w.damage, 1) + ' dmg every ' + b2Round(w.interval, 2) + ' s · range ' + Math.round(w.range).toLocaleString('en-GB');
+  if (w.ammo === 'beam') return b2Round(w.damage * b2FireScale(), 1) + ' dmg a second (beam) · range ' + Math.round(w.range).toLocaleString('en-GB');
+  return b2Round(w.damage, 1) + ' dmg every ' + b2Round(b2BattleInterval(w), 2) + ' s · range ' + Math.round(w.range).toLocaleString('en-GB');
 }
 // The picks as lines of buttons under a built row. A pick that is later tech (Tier 2+ paper data) is left out unless locked parts are shown; a pick the
 // kit has not opened is greyed with a padlock; a pick not made with the others is dimmed (choosing it moves the others).
@@ -88953,16 +89503,16 @@ function b2BuildNums(s) {
   const w = s.weapon, out = []; if (!w) return out;
   const more = b2ResWords(b2PartRes(s), ' + '), al = 'Alloys ' + Math.round(s.alloys) + (more ? ' + ' + more : '');
   const sq = s.w + '×' + s.h + ' = ' + s.squares + (s.ringSquares > 0 ? ' (gun ' + s.gunW + '×' + s.gunH + ' on its mount)' : '');
-  const dps = b2Round(w.damage / Math.max(0.01, w.interval), 1);
+  const iv = b2BattleInterval(w), dps = b2Round(w.damage / Math.max(0.01, iv), 1), f = b2FireScale(), slowed = Math.abs(f - 1) > 1e-6;   // (v134.0) battle times
   if (w.ammo === 'beam') {
-    out.push(['Beam', b2Round(w.beamTick, 2) + ' a tick: ' + b2Round(w.damage, 1) + ' damage a second'], ['Range', Math.round(w.range).toLocaleString('en-GB') + ' (full damage to a third of it)'], ['Arc', b2ArcWords(w)],
+    out.push(['Beam', b2Round(w.beamTick, 2) + ' a tick: ' + b2Round(w.damage, 1) + ' damage a second while it burns' + (slowed ? ' (burns ' + (Math.abs(f - 0.5) < 1e-6 ? 'half' : b2Round(f * 100, 0) + '%') + ' of the time in battle: ' + b2Round(w.damage * f, 1) + ' a second on average)' : '')], ['Range', Math.round(w.range).toLocaleString('en-GB') + ' (full damage to a third of it)'], ['Arc', b2ArcWords(w)],
       ['Squares', sq], ['Power while firing', b2Round(-s.power, 1)], ['Heat while firing', b2Round(s.heat, 1) + ' a second'], ['Crew', s.crew], ['Cost', al]);
   } else if (w.ammo === 'missiles') {
-    out.push(['Warhead', b2Round(w.damage, 1) + ' damage (' + MISSILE_SIZES[w.missileSize].name + ' missile)'], ['Reload', b2Round(w.interval, 2) + ' s (' + dps + ' damage a second)'],
+    out.push(['Warhead', b2Round(w.damage, 1) + ' damage (' + MISSILE_SIZES[w.missileSize].name + ' missile)'], ['Reload', b2Round(iv, 2) + ' s (' + dps + ' damage a second)' + (slowed ? ' in battle; ' + b2Round(w.interval, 2) + ' s on paper' : '')],
       ['Missile', 'speed ' + w.missile.speed + ', fuel ' + w.missile.fuel + ' s, ' + w.missile.hp + ' hp'], ['Range', Math.round(w.range).toLocaleString('en-GB') + ' (for now)'], ['Squares', sq], ['Power', b2Round(-s.power, 1)],
       ['Heat a launch', b2Round(w.heatShot, 2)], ['Feeds from', w.ready > 0 ? 'its own ' + w.ready + ' ready missile (no magazine; filled again when the ship docks)' : 'a ' + MISSILE_SIZES[w.missileSize].name + ' or bigger missile rack'], ['Crew', s.crew], ['Cost', al]);
   } else {
-    out.push(['Damage a shot', b2Round(w.damage, 1)], ['Fires every', b2Round(w.interval, 2) + ' s (' + dps + ' damage a second)'], ['Range', Math.round(w.range).toLocaleString('en-GB')], ['Arc', b2ArcWords(w)],
+    out.push(['Damage a shot', b2Round(w.damage, 1)], ['Fires every', b2Round(iv, 2) + ' s (' + dps + ' damage a second)' + (slowed ? ' in battle; ' + b2Round(w.interval, 2) + ' s on paper' : '')], ['Range', Math.round(w.range).toLocaleString('en-GB')], ['Arc', b2ArcWords(w)],
       ['Squares', sq], ['Power', b2Round(-s.power, 1)], ['Heat a shot', b2Round(w.heatShot, 2)], ['Rounds a shot', b2Round(w.roundsPerShot, 2)], ['Crew', s.crew], ['Cost', al]);
     if (w.chargePerShot > 0) out.splice(out.length - 2, 0, ['Charge a shot', b2Round(w.chargePerShot, 1) + ' from the capacitors']);   // (v120) a railgun needs both
   }
@@ -89366,7 +89916,7 @@ function b2RenderNums() {
   h += '<dt>Defence</dt><dd>shield ' + b2Round(sm.shield, 1) + '<small>armour F ' + b2Round(sm.armour[0], 1) + ' · R ' + b2Round(sm.armour[1], 1) + ' · sides ' + b2Round((sm.armour[2] + sm.armour[3]) / 2, 1) + '</small></dd>';
   const hv = b2HeatVerdict(sm);
   h += '<dt>' + b2Term('heatlim', 'Heat') + '</dt><dd' + (hv.cls ? ' class="' + hv.cls + '"' : '') + '>' + hv.word + '<small>' + esc(hv.short) + '</small></dd>';
-  const dps = sm.weapons.reduce(function (s, g) { return s + g.dps; }, 0);
+  const dps = sm.weapons.reduce(function (s, g) { return s + g.dps; }, 0) * b2FireScale();   // (v134.0) at the battle's fire rate
   h += '<dt>Weapons</dt><dd>' + (sm.weapons.length ? b2Round(dps, 1) + ' dmg/s<small>' + b2Plural(sm.weapons.length, 'group') + (sm.pd ? ' · ' + sm.pd.mounts + ' PD' : '') + '</small>' : 'none') + '</dd>';
   h += '</dl><dl class="kv kcost">';
   // (v45) every resource the ship costs: Alloys, then each other resource the frames and parts need (all are charged by the campaign's yards)
@@ -89537,7 +90087,7 @@ function b2RenderAmmo() {
   let h = '';
   if (order.length) h += '<div class="hsub">Weapons</div><div class="rlist" aria-label="Weapons and the ammunition they need">';
   for (let k = 0; k < order.length; k++) {
-    const g = groups[order[k]], w = g.w, live = g.n - g.dry, iv = Math.max(0.01, w.interval || 0);
+    const g = groups[order[k]], w = g.w, live = g.n - g.dry, iv = Math.max(0.01, b2BattleInterval(w));   // (v134.0) at the battle's fire rate
     let need;
     if (w.ammo !== 'rounds' && w.ammo !== 'missiles') need = w.ammo === 'beam' ? 'no ammo: fires on power' : (w.ammo === 'charge' ? 'fires from the capacitors' : 'no ammo to carry');
     else if (w.ammo === 'missiles' && w.ready > 0) need = w.ready + ' ready ' + MISSILE_SIZES[w.missileSize].name + ' missile, no magazine';
@@ -89963,12 +90513,8 @@ function b2Save() {
   if (!a.statBlock || a.problems.length > 0) { b2.msg = 'Cannot save: ' + b2Plural(a.problems.length, 'problem') + ' to fix first (' + (a.problems[0] || 'no hull') + ')'; b2RenderMsg(); b2Flash('b2BoxProbs'); return false; }
   let name = (b2El('b2Name').value || '').trim().replace(/\s+/g, ' ');
   if (name === '' || name.toLowerCase() === 'new design') { b2.msg = 'Cannot save: give the ship a name (top left of the drawing).'; b2RenderMsg(); b2El('b2Name').focus(); return false; }
-  // (v27 A2) the one-time "is Local intended?" prompt (bureau-v2.md section 10): a 0-jump design is asked about once per name, in the message bar
-  // (v27 C2) ... except on a frame that teaches Local itself (the Trainer: noLocalPrompt), where the tutorial explains it instead
-  const quietLocal = b2.d.frames.some(function (id) { return FRAME_V3_BY_ID[id] && FRAME_V3_BY_ID[id].noLocalPrompt; });
-  // (v30.1, Alex) ... and never when saving an updated design: a new version of a family already saved just saves
-  const updating = SHIP_TYPES.some(function (r) { return r && r.design && !r.campaignStock && !r.stockV3 && designFamily(r).toLowerCase() === name.toLowerCase(); });
-  if (a.summary.fuel.local && !quietLocal && !updating && b2.localOkFor !== name.toLowerCase()) { b2.localAsk = name.toLowerCase(); b2.msgBad = false; b2RenderMsg(); b2Flash('b2BoxFuel'); if (typeof tutorialEvent === 'function') tutorialEvent('localAsked', { name: name }); return false; }
+  // (v134.0, Alex 8 Nov: "no need for is local intended warning, as a local design is chosen when selecting a new design") The v27 one-time
+  // "is Local intended?" question on saving a 0-jump design is gone: the range (Local or transfers) is picked in step 1 of a new design.
   const lower = name.toLowerCase();
   for (let t = 0; t < SHIP_TYPES.length; t++) if (!SHIP_TYPES[t].design && (SHIP_TYPES[t].name.toLowerCase() === lower || SHIP_TYPES[t].id.toLowerCase() === lower)) { b2.msg = 'Cannot save: "' + name + '" is the name of a ship type in the table. Pick another name.'; b2RenderMsg(); return false; }
   const family = findDesignFamilyName(name);
@@ -91089,6 +91635,7 @@ function b2TipModule(id, mk, sz, item, opt) {
     h += '<div class="nums">'; const bn = b2BuildNums(s); for (let k = 0; k < bn.length; k++) h += '<span>' + esc(bn[k][0]) + '</span><span>' + esc(String(bn[k][1])) + '</span>'; h += '<span>Hull points</span><span>' + Math.round(s.hp) + '</span></div>';
     const btr = (s.traits || []).filter(function (x) { return !!B2_TRAITS[x]; }); if (btr.length) h += '<div class="chips">' + btr.map(b2TraitWord).join('') + '</div>';
     h += b2MissileFeedTip(s);   // (v70) a launcher lists the magazines that can feed it, and how many of its missiles each holds
+    if (s.weapon && !m.pd && b2FireScaleNote()) h += '<div class="seen">' + esc(b2FireScaleNote()) + '</div>';   // (v134.0) the longer-battles fire rate, said plainly
     // (v94.1) in a campaign the kit alone says what is locked: a part's own paper flag (every Mk III or IV reads as locked) was showing "later tech" on researched parts
     if (((s.locked && !b2Kit()) || b2ModLocked(m) || b2MarkLocked(s.mk, m.line) || (b2Kit() && bureauKitAllowsPart(b2Kit(), { p: id, mk: s.mk, opt: s.opt })))) h += '<div class="seen bad">Locked: ' + esc((b2Kit() && bureauKitAllowsPart(b2Kit(), { p: id, mk: s.mk, opt: s.opt })) || 'later tech') + (b2.unlockAll ? ' (unlocked for testing)' : '') + '.</div>';
     if (item) { if (!item.working) h += '<div class="eg bad">Not working: ' + esc(item.why) + '</div>'; if (partLockV3(item.rec)) h += '<div class="seen">' + (partLockV3(item.rec) === 'locked' ? 'Locked: ' : 'Removable: ') + esc(b2LockText(item.rec)) + '.</div>'; }
@@ -91107,6 +91654,12 @@ function b2TipModule(id, mk, sz, item, opt) {
   if (s.dc > 0) nums.push('Mends at once', s.dc + (s.dc === 1 ? ' part' : ' parts'));
   if (s.bridgeBonus > 1) nums.push('Accuracy, reload, turn', b2Pct(s.bridgeBonus));
   if (m.pd) nums.push('PD reach', s.pdRange, 'Kill chance', Math.round(s.pdKill * 100) + '%', 'Stops shells', Math.round(s.pdStopShells * 100) + '%');
+  // (v134.0, Alex 8 Nov: "each size says 120 rounds per square, despite that being blatantly untrue") a gun magazine says what THIS size holds, what that is a
+  // square, and what every size holds, so the size bonus is plain to see
+  if (s.magazine && s.magazine.rounds > 0) {
+    nums.push('Holds', b2Round(s.magazine.rounds, 0).toLocaleString('en-GB') + ' rounds' + (s.squares > 1 ? ' (' + b2Round(s.magazine.rounds / s.squares, 1) + ' a square)' : ''));
+    if (m.sizes) { const all = []; for (let z = 1; z <= (m.maxSize || 3); z++) { const zs = moduleStats(id, mk || 1, z, opt); if (zs && zs.magazine) all.push(z + '×' + z + ' ' + b2Round(zs.magazine.rounds, 0).toLocaleString('en-GB')); } if (all.length > 1) nums.push('Each size holds', all.join(' · ')); }
+  }
   if (s.tank) nums.push('Holds fuel', b2Round(s.tank.cap, 1) + ' ' + (FUEL_BY_ID[s.tank.type] || { name: s.tank.type }).name);
   if (m.fuel) nums.push('Burns', (FUEL_BY_ID[m.fuel.type] || { name: m.fuel.type }).name + ', efficiency x' + b2Round(m.fuel.eff, 2));   // (stop 2: fuel in tonnes, FUEL_RULES)
   if (s.armour > 0) nums.push('Armour', b2Round(s.armour / Math.max(1, s.squares), 1) + ' a square (4 x the block\'s side)');
