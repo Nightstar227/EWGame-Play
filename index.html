@@ -20696,7 +20696,7 @@ let flashX, flashY, flashSize, flashLife;
 let shotKind, shotShip, shotFxd, flashKind, flashShip, flashMax;
 // (v101.5, display only) each shot's WEIGHT CLASS (0 light gun ... 4 titan weapon: fxTierOfDamage, section 6w), whether it is its squadron's VOICE (the one gun a
 // squadron keeps on screen however crowded it is, so the player sees who fires at whom), and where its target was (the far end of the voice's fire line)
-let shotTier, shotVoice, shotTX, shotTY;
+let shotTier, shotVoice, shotTX, shotTY, shotTitan;   // (v127.0) shotTitan: 1 = a titan super weapon's shot (always drawn)
 let shotBeam, shotMax, flashTier;          // (v101.6, display only) 1 = a laser's (or particle) beam, drawn the length of the line for most of a second; how long the shot lasts; a hit flash's weight class
 let fxVoiceAt = new Float64Array(0), fxVoiceTier = new Int8Array(0), fxVoiceTierAt = new Float64Array(0);   // [squadron] when its voice last spoke, the heaviest class it has fired lately and when
 let shotLast = -1;
@@ -20721,7 +20721,7 @@ function allocateEffectArrays() {
   flashSize = new Float64Array(MAX_FLASHES);
   shotKind = new Int8Array(MAX_SHOTS); shotShip = new Int32Array(MAX_SHOTS); shotFxd = new Uint8Array(MAX_SHOTS);   // (v33, display only)
   shotBeam = new Uint8Array(MAX_SHOTS); shotMax = new Float32Array(MAX_SHOTS).fill(1); flashTier = new Uint8Array(MAX_FLASHES).fill(1);   // (v101.6, display only)
-  shotTier = new Uint8Array(MAX_SHOTS); shotVoice = new Uint8Array(MAX_SHOTS); shotTX = new Float32Array(MAX_SHOTS); shotTY = new Float32Array(MAX_SHOTS);   // (v101.5, display only)
+  shotTier = new Uint8Array(MAX_SHOTS); shotVoice = new Uint8Array(MAX_SHOTS); shotTitan = new Uint8Array(MAX_SHOTS); shotTX = new Float32Array(MAX_SHOTS); shotTY = new Float32Array(MAX_SHOTS);   // (v101.5, display only)
   flashKind = new Uint8Array(MAX_FLASHES); flashShip = new Int32Array(MAX_FLASHES).fill(-1); flashMax = new Float32Array(MAX_FLASHES).fill(1);
   flashLife = new Float32Array(MAX_FLASHES);
   markX1 = new Float64Array(MAX_SHOTS); markY1 = new Float64Array(MAX_SHOTS); markX2 = new Float64Array(MAX_SHOTS); markY2 = new Float64Array(MAX_SHOTS);
@@ -20753,8 +20753,11 @@ function addMark(a, t, ux, uy, sig, scatter, hit) {
 // (v33) kind = the shot's damage type (its colour on the map), ship = the ship that fired it; both for the drawing only (left out: not known)
 // (v101.5) tier = the gun's weight class (fxTierOfDamage: 0 light ... 4 titan), (tx, ty) = where its target is; both for the drawing only (left out: class 1, the line's end)
 function addShot(x1, y1, x2, y2, side, kind, ship, tier, tx, ty) {
-  const k = shotNext;
-  shotNext = (shotNext + 1) % MAX_SHOTS;
+  // (v127.0) a titan's shot still showing is never written over: the next free slot is used instead (looked for a few slots on at most)
+  let k = shotNext;
+  for (let n = 0; n < 8 && shotTitan[k] === 1 && shotLife[k] > 0; n++) k = (k + 1) % MAX_SHOTS;
+  shotNext = (k + 1) % MAX_SHOTS;
+  shotTitan[k] = 0;
   shotX1[k] = x1; shotY1[k] = y1; shotX2[k] = x2; shotY2[k] = y2;
   shotSide[k] = side;
   shotLife[k] = SETTINGS.shotSeconds; fxShotsOn = true;
@@ -20766,6 +20769,8 @@ function addShot(x1, y1, x2, y2, side, kind, ship, tier, tx, ty) {
   shotBeam[k] = 0; shotMax[k] = shotLife[k];
 }
 // (v101.6, display only) the shot just added is a beam: it shows for FX_FAR_BEAM.seconds, all the way to its target
+// (v127.0, display only) the shot just added came from a titan's super weapon: it is always drawn, whatever the crowding (section 6w fxPickShots)
+function markShotTitan() { const k = shotLast; if (k >= 0) shotTitan[k] = 1; }
 function markShotBeam() { const k = shotLast; if (k < 0) return; shotBeam[k] = 1; shotLife[k] = shotMax[k] = FX_FAR_BEAM.seconds; }
 // (v101.5, display only) Is this shot its squadron's voice? Each squadron speaks with its heaviest gun (the heaviest class it has fired in the last
 // FX_VOICE.forgetSeconds) at most every FX_VOICE.gapSeconds, and with any gun once FX_VOICE.anySeconds have passed in silence. Reads nothing the battle keeps
@@ -21953,6 +21958,9 @@ function missileRetarget(k) {
   const enemy = 1 - Math.floor(st / TYPE_COUNT);
   const j = nearestOfSide(enemy, mslX[k], mslY[k], reach * reach);
   if (j < 0) return -1;
+  // (v127.0) a titan's siege missile is steered by the titan, not its own seeker: it takes the nearest enemy it can still reach, wherever that lies.
+  // Before, when one burst killed the ship all four were sent at, the other three flew on blind until their fuel ran out.
+  if (mslSiege[k] === 1) return j;
   const dx = shipX[j] - mslX[k], dy = shipY[j] - mslY[k], vx = mslVX[k], vy = mslVY[k];
   const dd = Math.sqrt(dx * dx + dy * dy), v = Math.sqrt(vx * vx + vy * vy);
   if (dd < 1e-9 || v < 1e-9) return j;
@@ -22057,6 +22065,7 @@ function updateMissiles(dt) {
       if (mslLinger[k] && mslDmg[k] > 0 && typeof bbLingerAdd === 'function') bbLingerAdd(k, t);   // (v90) a Lingering missile leaves its cloud where it burst
       if (flashes) addFlash(shipX[t], shipY[t], typeSize[tt] * 0.3, 0, t, fxTierOfDamage(mslDmg[k] >= 0 ? mslDmg[k] : stDamage[st]));   // (v101.6) its weight class, for the flash's size
       if (fxRec) fxMissileHit(k, t);                            // (v33, section 6w: display only)
+      if (mslSiege[k] === 1 && typeof bbTitanBurst === 'function') bbTitanBurst(mslX[k], mslY[k], mslBlast[k], Math.floor(st / TYPE_COUNT));   // (v127.0, display only) always shown
       if (sndLive) soundLand(t, null, dtype);                   // (v28, section 6t) heard: sound only
       missileGone(k);
     } else if (mslRetries[k] > 0 && mslFuel[k] > 2) {
@@ -24642,6 +24651,10 @@ function bbBeamRake(i, grp, target, ux, uy, dmg, deferred, hits) {
 //       target on the missile rules (05c), slow and tough. Where it bursts every ship within `blast` takes the warhead, half at the edge, our own
 //       too, and a burning cloud stays `cloudSeconds` (cloudRate a second). A broken loader halves the reload of the launchers.
 //   Display only: the strip leaves a long bright line, the sweep a beam drawn each frame (drawTitanBeams). Results never depend on the drawing.
+//   (v127.0) THE TITANS' EFFECTS ARE ALWAYS SHOWN (Alex, 7 Nov 2026: "titan weapons effects are always shown. max priority"). drawTitanBeams draws the
+//   strips, the lances, the siege missiles in flight, their bursts and their burning clouds LAST, over everything, at every zoom (among the dots too),
+//   never thinner or smaller than a few screen pixels, with no limit on how many; no display setting turns them off, and the shot culling never drops
+//   a titan's shot (section 6w fxPickShots). Up close the siege missiles are drawn at the titan missile size and their trails and bursts skip the effect limits.
 // =====================================================================
 const bbTitanSweeps = [];   // the lances sweeping now: { i, grp, side, start, until, a0, a1, last, range, tick, acc: Map(ship -> tenths owed) }
 
@@ -24688,6 +24701,7 @@ function bbTitanFire(i, st, g, grp, target, d, deferred, ms) {
     }
     const sx = shipX[i] + ux * typeSize[shipType[i]] * 0.5, sy = shipY[i] + uy * typeSize[shipType[i]] * 0.5;
     addShot(sx, sy, sx + ux * reach, sy + uy * reach, shipSide[i], grp.d, i, 4);   // (v101.5) a titan's weapon: the heaviest class
+    markShotTitan();                                                                 // (v127.0) ... and always drawn, however crowded the map is
     bbTitanFlashes.push({ x0: sx, y0: sy, x1: sx + ux * reach, y1: sy + uy * reach, w: T.width || 200, side: shipSide[i], until: simTime + 1.5, kind: 0 });
     if (sndLive) soundShot(i, target, grp.snd || grp.part, grp.d, 1);
     return 1;
@@ -24709,7 +24723,7 @@ function bbTitanFire(i, st, g, grp, target, d, deferred, ms) {
   if (T.kind === 'siege') {
     const live = ms !== null && ms !== undefined ? ms.gLive[g] : grp.weapons;
     if (!(live > 0)) return 0;
-    const msl = { siege: true, speed: T.speed || 250, turn: T.turn || 1.2, hp: T.hp || 300, fuel: (grp.range / (T.speed || 250)) * 1.3, blastRadius: T.blast || 500,
+    const msl = { siege: true, size: 'titan', speed: T.speed || 250, turn: T.turn || 1.2, hp: T.hp || 300, fuel: (grp.range / (T.speed || 250)) * 1.3, blastRadius: T.blast || 500,
       linger: T.cloudSeconds > 0 ? { radius: T.blast || 500, seconds: T.cloudSeconds, share: (T.cloudRate || 40) / Math.max(1, grp.damage) } : null };
     // astern: out of the flat back, then round to the target
     const n = launchMissiles(i, st, target, live, -shipCos[i], -shipSin[i], 1, st * 3, d, grp.d, grp.damage, msl, grp.traits);
@@ -24752,19 +24766,49 @@ function bbTitanStep(dt, deferred) {
     }
   }
 }
-const bbTitanFlashes = [];   // (display only) the siege driver's strip, glowing for a moment
+const bbTitanFlashes = [];   // (display only) the siege driver's strip (kind 0), glowing for a moment; (v127.0) a siege missile's burst (kind 1), a ring
+// (v127.0, display only) a siege missile burst at (x, y), its blast radius r: a ring that grows out to the blast's edge and fades (05c updateMissiles)
+const TITAN_BURST_SECONDS = 1.6;
+function bbTitanBurst(x, y, r, side) { bbTitanFlashes.push({ kind: 1, x: x, y: y, r: r > 0 ? r : 500, side: side, start: simTime, until: simTime + TITAN_BURST_SECONDS }); }
 // Clears the titans' beams at the start of a battle (resetBattleState via bbReset).
 function bbTitanReset() { bbTitanSweeps.length = 0; bbTitanFlashes.length = 0; }
 
-// (display only) the sweeping lances and the driver's strips, in world units, over the ships' layer.
+// (display only) the sweeping lances and the driver's strips, (v127.0) the siege missiles, their bursts and clouds, in world units, over everything.
+// Every line and mark is at least TITAN_FX_MIN screen pixels across, so it shows at any zoom.
+const TITAN_FX_MIN = { stripGlow: 6, stripCore: 2, lanceGlow: 6, lanceCore: 2, missile: 4, missileLen: 18, head: 5, burst: 10, cloud: 6 };
 function drawTitanBeams(left, top, right, bottom) {
-  if (bbTitanSweeps.length === 0 && bbTitanFlashes.length === 0) return;
+  const anyMsl = SETTINGS.weaponModel === 1 && mslInFlight > 0, anyCloud = typeof bbClouds !== 'undefined' && bbClouds.length > 0;
+  if (bbTitanSweeps.length === 0 && bbTitanFlashes.length === 0 && !anyMsl && !anyCloud) return;
+  const px = 1 / camera.zoom, M = TITAN_FX_MIN;
   ctx.save();
+  ctx.lineCap = 'butt';
+  // the burning clouds the siege missiles leave
+  if (anyCloud) for (let n = 0; n < bbClouds.length; n++) {
+    const c = bbClouds[n]; if (!c.titan) continue;
+    const r = Math.max(c.r, px * M.cloud);
+    if (c.x + r < left || c.x - r > right || c.y + r < top || c.y - r > bottom) continue;
+    const a = Math.max(0, Math.min(1, (c.until - simTime) / 10));
+    ctx.globalAlpha = 0.14 + 0.16 * a; ctx.fillStyle = SETTINGS.colors.shot[c.side];
+    ctx.beginPath(); ctx.arc(c.x, c.y, r, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 0.5 * a + 0.2; ctx.strokeStyle = '#FFB070'; ctx.lineWidth = Math.max(px, r * 0.02);
+    ctx.stroke();
+  }
   for (let n = 0; n < bbTitanFlashes.length; n++) {
-    const f = bbTitanFlashes[n], a = Math.max(0, Math.min(1, (f.until - simTime) / 1.5));
-    ctx.globalAlpha = 0.25 * a; ctx.strokeStyle = SETTINGS.colors.shot[f.side]; ctx.lineWidth = f.w; ctx.lineCap = 'butt';
+    const f = bbTitanFlashes[n];
+    if (f.kind === 1) {   // a siege burst: a hot core and a ring running out to the blast's edge
+      const age = Math.max(0, simTime - f.start) / TITAN_BURST_SECONDS, a = Math.max(0, 1 - age);
+      const r = Math.max(f.r * (0.35 + 0.65 * Math.min(1, age * 2.5)), px * M.burst);
+      if (f.x + r < left || f.x - r > right || f.y + r < top || f.y - r > bottom) continue;
+      ctx.globalAlpha = 0.35 * a; ctx.fillStyle = '#FFD08A';
+      ctx.beginPath(); ctx.arc(f.x, f.y, r * 0.55 * (1 - 0.5 * age), 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 0.9 * a; ctx.strokeStyle = '#FFF0C8'; ctx.lineWidth = Math.max(px * 2, r * 0.04);
+      ctx.beginPath(); ctx.arc(f.x, f.y, r, 0, Math.PI * 2); ctx.stroke();
+      continue;
+    }
+    const a = Math.max(0, Math.min(1, (f.until - simTime) / 1.5));
+    ctx.globalAlpha = 0.25 * a; ctx.strokeStyle = SETTINGS.colors.shot[f.side]; ctx.lineWidth = Math.max(f.w, px * M.stripGlow);
     ctx.beginPath(); ctx.moveTo(f.x0, f.y0); ctx.lineTo(f.x1, f.y1); ctx.stroke();
-    ctx.globalAlpha = 0.9 * a; ctx.strokeStyle = '#fff4d8'; ctx.lineWidth = Math.max(8, f.w * 0.08);
+    ctx.globalAlpha = 0.9 * a; ctx.strokeStyle = '#fff4d8'; ctx.lineWidth = Math.max(8, f.w * 0.08, px * M.stripCore);
     ctx.beginPath(); ctx.moveTo(f.x0, f.y0); ctx.lineTo(f.x1, f.y1); ctx.stroke();
   }
   for (let n = 0; n < bbTitanSweeps.length; n++) {
@@ -24774,10 +24818,25 @@ function drawTitanBeams(left, top, right, bottom) {
     // the cone it sweeps, faint; the beam itself, bright
     ctx.globalAlpha = 0.07; ctx.fillStyle = SETTINGS.colors.shot[w.side];
     ctx.beginPath(); ctx.moveTo(x0, y0); ctx.arc(x0, y0, w.range, head + w.a0, head + w.a1); ctx.closePath(); ctx.fill();
-    ctx.globalAlpha = 0.35; ctx.strokeStyle = SETTINGS.colors.shot[w.side]; ctx.lineWidth = 60;
+    ctx.globalAlpha = 0.35; ctx.strokeStyle = SETTINGS.colors.shot[w.side]; ctx.lineWidth = Math.max(60, px * M.lanceGlow);
     ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
-    ctx.globalAlpha = 0.95; ctx.strokeStyle = '#e8fbff'; ctx.lineWidth = 14;
+    ctx.globalAlpha = 0.95; ctx.strokeStyle = '#e8fbff'; ctx.lineWidth = Math.max(14, px * M.lanceCore);
     ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+  }
+  // the siege missiles in flight: a thick streak in the side's colour and a hot motor at the head (the ones drawn as close art, big enough, are left to it)
+  if (anyMsl) {
+    ctx.lineCap = 'round';
+    for (let k = 0; k < mslHigh; k++) {
+      if (mslAlive[k] === 0 || mslSiege[k] !== 1) continue;
+      const x = mslX[k], y = mslY[k];
+      if (x < left || x > right || y < top || y > bottom) continue;
+      if (fxRec && k < fxMslSize.length && fxMslSize[k] > 0 && 1.5 * fxMslSize[k] >= px * 3) continue;   // (drawn up close: section 6w fxDrawOver)
+      const v = Math.sqrt(mslVX[k] * mslVX[k] + mslVY[k] * mslVY[k]) || 1, ux = mslVX[k] / v, uy = mslVY[k] / v;
+      const len = Math.max(v * 0.8, px * M.missileLen);
+      ctx.globalAlpha = 0.95; ctx.strokeStyle = SETTINGS.colors.shot[Math.floor(mslSt[k] / TYPE_COUNT)]; ctx.lineWidth = px * M.missile;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - ux * len, y - uy * len); ctx.stroke();
+      if (mslFuel[k] > 0) { const r = px * M.head; ctx.globalAlpha = 1; ctx.fillStyle = '#FFF0C8'; ctx.beginPath(); ctx.arc(x, y, r * 0.6, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 0.45; ctx.fillStyle = '#FFD890'; ctx.beginPath(); ctx.arc(x, y, r * 1.3, 0, Math.PI * 2); ctx.fill(); }
+    }
   }
   ctx.restore();
 }
@@ -25102,7 +25161,7 @@ let bbScreenNext = 0;
 function bbLingerAdd(k, t) {
   const L = mslLinger[k];
   if (!L || !(L.seconds > 0) || !(L.radius > 0)) return;
-  bbClouds.push({ x: shipX[t], y: shipY[t], r: L.radius, until: simTime + L.seconds, next: simTime + 1, dmg: mslDmg[k] * L.share, a: mslShooter[k], sq: mslSq[k], st: mslSt[k], d: mslDt[k], side: Math.floor(mslSt[k] / TYPE_COUNT), tr: 0 });
+  bbClouds.push({ titan: mslSiege[k] === 1, x: shipX[t], y: shipY[t], r: L.radius, until: simTime + L.seconds, next: simTime + 1, dmg: mslDmg[k] * L.share, a: mslShooter[k], sq: mslSq[k], st: mslSt[k], d: mslDt[k], side: Math.floor(mslSt[k] / TYPE_COUNT), tr: 0 });
   bbStats.lingerClouds++;
 }
 // (v92, Tier 3 plan s5b) a cloud left by a grown weapon's hit (the acid geyser): the same cloud, from a gun group of ship `a`. `tr` are the weapon's own traits
@@ -25157,6 +25216,7 @@ function drawClouds(left, top, right, bottom) {
   if (bbClouds.length === 0) return;
   for (let n = 0; n < bbClouds.length; n++) {
     const c = bbClouds[n];
+    if (c.titan) continue;   // (v127.0) a titan's siege cloud is drawn with the titan weapons, always (05f-2c drawTitanBeams)
     if (c.x + c.r < left || c.x - c.r > right || c.y + c.r < top || c.y - c.r > bottom) continue;
     ctx.globalAlpha = 0.12 + 0.13 * Math.max(0, Math.min(1, (c.until - simTime) / 15));
     ctx.fillStyle = SETTINGS.colors.shot[c.side];
@@ -61546,7 +61606,7 @@ function drawPixelLayer(w, h, z) {
   if (SETTINGS.weaponModel === 1 && mslInFlight > 0) {
     const mc = colorToPixel('#FFD890');
     for (let k = 0; k < mslHigh; k++) {
-      if (mslAlive[k] === 0) continue;
+      if (mslAlive[k] === 0 || mslSiege[k] === 1) continue;   // (v127.0) a titan's siege missile is drawn over the dots with the titan weapons
       const sx = (mslX[k] * z + offX) | 0, sy = (mslY[k] * z + offY) | 0;
       if (sx < 0 || sx >= w || sy < 0 || sy >= h) continue;
       pixels[sy * w + sx] = mc;
@@ -61678,6 +61738,8 @@ function draw() {
     ctx.strokeStyle = SETTINGS.colors.border;
     ctx.strokeRect(0, 0, SETTINGS.worldWidth, SETTINGS.worldHeight);
     if (placesTracked()) drawPlaces(w, h, z, true);              // (v21, section 5w) the places: outlines and names only, over the dots
+    // (v127.0) the titans' weapons are always shown, among the dots too: strips, lances, siege missiles, their bursts and clouds, on top of everything
+    if (typeof drawTitanBeams === 'function') drawTitanBeams(camera.x - w / (2 * z), camera.y - h / (2 * z), camera.x + w / (2 * z), camera.y + h / (2 * z));
     return;
   }
 
@@ -61713,12 +61775,14 @@ function draw() {
   fxDrawMissiles(left, top, right, bottom);                     // (v18, section 5r; v101.6, section 6w: bigger warheads longer and glowing)
   if (typeof drawMines === 'function') drawMines(left, top, right, bottom, z);   // (v89, section 5vb) mines lying in wait
   if (typeof drawClouds === 'function') drawClouds(left, top, right, bottom);   // (v90, section 5vb) lingering missile clouds
-  if (typeof drawTitanBeams === 'function') drawTitanBeams(left, top, right, bottom);   // (v97, section 5vb) the titans' strips and sweeping lances
   drawPdTracers(left, top, right, bottom, z);                   // (v18, section 5s)
   ctx.lineWidth = 1.5 / z;
   if (SETTINGS.missMarks && SETTINGS.hitModel !== HIT_ALWAYS) drawMarks(left, top, right, bottom);
   fxDrawFlashes(left, top, right, bottom, minSize, z);          // (v33, section 6w: glowing flashes; drawFlashes is the v32 drawing)
   fxDrawOver(z);                                                // (v33) up close: shells, beams, missiles, sparks and fire
+  // (v97, section 5vb) the titans' strips, sweeping lances and (v127.0) siege missiles, bursts and clouds: drawn last, so nothing covers them
+  // (Alex, 7 Nov 2026: titan weapon effects are always shown, at top priority; no effect limit, culling or display setting leaves them out)
+  if (typeof drawTitanBeams === 'function') drawTitanBeams(left, top, right, bottom);
 }
 
 
@@ -64394,7 +64458,11 @@ const CLOSE_LOOK = {
   smallBelow: 0.4,           // drawn at less than this share of its picture's size, a ship uses the quarter-size copy (smoother, and cheaper)
   maxTurrets: 24,            // turning guns a ship can show (more are drawn fixed)
   glowAlpha: 0.3,            // the side-colour glow under a ship
-  rimPixels: 1.6             // the thin rim in the side's colour round a ship's outline (screen pixels), so the sides read apart at a glance
+  rimPixels: 1.6,            // the thin rim in the side's colour round a ship's outline (screen pixels), so the sides read apart at a glance
+  // (v126.1, Alex 7 Nov: 68 minutes into an Echo Last Stand the close art broke and ships were drawn far too large) a long battle kept every picture it
+  // ever made (each new version of a design after a research card is a new picture), so the browser ran short of picture memory and drawing failed.
+  dropAfterSeconds: 90,      // a picture not drawn for this long is let go (made again, quickly from the picture store, if that design comes back into view)
+  biggestShare: 12           // a picture drawn more than this many times its ship's drawn length is wrong: the ship is drawn as its icon instead
 };
 // The art sheet's names for the game's parts (section 2n's module ids). A part not listed is drawn as a plain plate in its category's colour.
 const CLOSE_ART_KIND = {
@@ -64803,11 +64871,16 @@ function closeArtBuild(e, done) {
     e.pivX = info.centre[0] * s - e.x0; e.pivY = info.centre[1] * s - e.y0;
     // world units a picture pixel: the painted ship as long as its drawn length (section 6b), the icon's length too, so the zoom between the two looks
     // does not jump (v110.0: the painted part, not the whole picture with its margins)
-    e.worldPerPx = shipDrawLenOf(e.t) / (plainInk > 0 ? plainInk : closeInkLength(e));
+    // (v126.1) a measured length far from the design's own length on the grid is a failed measurement: the grid length is used instead
+    const gridLen = info.W * s, ink = plainInk > 0 ? plainInk : closeInkLength(e);
+    e.worldPerPx = shipDrawLenOf(e.t) / (ink > gridLen * 0.5 && ink < gridLen * 2.5 ? ink : gridLen);
+    e.made = performance.now();
     e.state = 'ready';
     done();
   };
-  for (let k = 0; k < jobs.length; k++) closeSvgToCanvas(jobs[k].svg, function (c) { if (c) jobs[k].put(c); else failed = true; finish(); });
+  // (v126.1) a picture the browser could not make (out of picture memory) fails this design's picture, but never stops the pictures after it
+  const safeFinish = function () { try { finish(); } catch (err) { e.state = 'none'; done(); } };
+  for (let k = 0; k < jobs.length; k++) closeSvgToCanvas(jobs[k].svg, function (c) { try { if (c) jobs[k].put(c); else failed = true; } catch (err) { failed = true; } safeFinish(); });
 }
 // (v78.1) The picture of a Delver or Sylph ship from its art sheet: the Delvers' as SVG (made into an image like ours), the Sylphs' painted straight onto a
 // canvas in the pilot's house colours. The ship's middle is its turning point; the rest (the quarter-size copy, the size on the map) is as for ours.
@@ -64815,7 +64888,9 @@ function closeAlienBuild(e, done) {
   const info = e.info, AA = window.ALIEN_ART;
   let s = Math.max(CLOSE_LOOK.squareMin, Math.min(CLOSE_LOOK.squareMax, Math.floor(CLOSE_LOOK.pictureLongest / (info.W + 16))));
   e.state = 'busy'; e.s = s; e.guns = {};
-  const finish = function (canvas, pivX, pivY) {
+  // (v126.1) a failure while finishing (out of picture memory) fails only this picture, never the ones after it
+  const finish = function (canvas, pivX, pivY) { try { finishOn(canvas, pivX, pivY); } catch (err) { e.state = 'none'; done(); } };
+  const finishOn = function (canvas, pivX, pivY) {
     if (!canvas) { e.state = 'none'; done(); return; }
     e.canvas = canvas; e.w = canvas.width; e.h = canvas.height;
     const sm = document.createElement('canvas');
@@ -64826,6 +64901,7 @@ function closeAlienBuild(e, done) {
     // (v110.0) the painted ship as long as its drawn length (section 6b); (v91.2) a Swarm ship's body, not its trailing tentacles, is the ship's length;
     // a titan's art is measured by TITAN_ART.box (its painted length, in art squares; e.s picture pixels a square)
     e.worldPerPx = shipDrawLenOf(e.t) / (e.inkLen || e.bodyW || closeInkLength(e));
+    e.made = performance.now();
     e.state = 'ready';
     done();
   };
@@ -65007,7 +65083,17 @@ function closeArtWarm() {
 // ---------------------------------------------------------------------
 // Drawing. drawShipIcons (section 6b) asks closeWants(i, px) for each ship big enough on screen, and draws it with closeDrawShip when it says yes.
 // ---------------------------------------------------------------------
+// (v126.1) Lets go of the pictures nobody has drawn for a while (CLOSE_LOOK.dropAfterSeconds), so a long battle does not fill the browser's picture memory.
+let closeDropAt = 0;
+function closeDropOld() {
+  const now = performance.now();
+  if (now < closeDropAt) return;
+  closeDropAt = now + 10000;
+  const old = now - CLOSE_LOOK.dropAfterSeconds * 1000;
+  for (const [key, e] of closeArt) if ((e.state === 'ready' || e.state === 'none') && (e.used || e.made || 0) < old) closeArt.delete(key);
+}
 function closeFrameStart() {
+  closeDropOld();
   const n = shipAlive ? shipAlive.length : 0;                  // (one entry a ship slot)
   if (closeDrawn.length < n) {
     closeDrawn = new Uint8Array(n); closeRadExt = new Float32Array(n).fill(1); closeSlotType = new Int32Array(n).fill(-1);
@@ -65020,6 +65106,9 @@ function closeWants(i, px) {
   if (!UI_SETTINGS.closeDetail || px < CLOSE_LOOK.minPixels || closeCount >= CLOSE_LOOK.maxShips) return null;
   const e = closeArtEntry(shipType[i], closeLookKey(), closeHouseOf(i));   // (v78.1) a Sylph in its house's colours; (v126.0) an Echo ship in the run's Echo look
   if (!e || e.state !== 'ready') return null;
+  // (v126.1) a picture whose size came out wrong is never drawn (the ship shows its icon): it would cover the screen
+  if (!(e.worldPerPx > 0 && e.w * e.worldPerPx < CLOSE_LOOK.biggestShare * Math.max(1e-6, shipDrawLenOf(shipType[i])))) return null;
+  e.used = performance.now();
   return e;
 }
 // Draws ship i from its picture e, centred on screen position (sx, sy), with the world zoom z. The camera transform is put back by the caller.
@@ -65030,7 +65119,16 @@ let closeG = null;                                   // the drawing context in u
 function closeCtx() { return closeG || ctx; }
 function closeDrawShip(i, e, sx, sy, z, paintColour, dtSim, view) {
   closeG = view ? view.g : null;
-  try { closeDrawShipOn(i, e, sx, sy, z, paintColour, dtSim, view || null); } finally { closeG = null; }
+  const g = closeCtx();
+  e.used = performance.now();                        // (v126.1) drawn now: kept (closeDropOld)
+  try { closeDrawShipOn(i, e, sx, sy, z, paintColour, dtSim, view || null); }
+  catch (err) {
+    // (v126.1) a picture that cannot be drawn (the browser short of picture memory) is dropped, and the drawing state put back, so one bad picture
+    // never leaves the rest of the map drawn at the wrong scale; the ship shows its icon until a new picture is made
+    e.state = 'none'; closeArt.delete(e.key);
+    try { g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; } catch (e2) { /* (nothing more to put back) */ }
+  }
+  finally { closeG = null; }
 }
 function closeDrawShipOn(i, e, sx, sy, z, paintColour, dtSim, view) {
   const ctx = closeCtx();
@@ -65139,6 +65237,7 @@ function closeRim(e, col) {
   if (c) return c;
   c = document.createElement('canvas'); c.width = e.small.width; c.height = e.small.height;
   const g = c.getContext('2d');
+  if (!g) return null;                                   // (v126.1) no picture memory left: no rim
   g.drawImage(e.small, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = col; g.fillRect(0, 0, c.width, c.height);
   e.rims[col] = c;
   return c;
@@ -65690,8 +65789,9 @@ const FXK_FLASH = 0, FXK_SPARK = 1, FXK_SMOKE = 2, FXK_TRAIL = 3, FXK_RING = 4, 
 const FXK_CHUNK = 11, FXK_VAPOUR = 12, FXK_ARC = 13, FXK_DRIP = 14;   // (v101.7) hull chunks knocked off, a beam's vapour, a particle beam's crackle, molten drops
 // (v101.5) fxAddShare: the share of the particle list the effect being made may fill (a light gun's sparks stop first when the list is crowded: FX_TIER_SHARE)
 let fxAddShare = 1;
+let fxTitanNow = false;   // (v127.0) true while a titan weapon's effect is being made: it is added even when the list is full (titan effects are always shown)
 const FX_TIER_SHARE = [0.5, 0.7, 0.85, 1, 1];      // per weight class (light ... titan): how full the shell and particle lists may be for it to add more; a squadron's voice: always
-function fxAdd(p) { if (fxP.length < FX_LIMITS.particles * fxAddShare) fxP.push(p); return p; }
+function fxAdd(p) { if (fxTitanNow || fxP.length < FX_LIMITS.particles * fxAddShare) fxP.push(p); return p; }
 function fxRnd(a, b) { return a + Math.random() * (b - a); }
 function fxFlash(x, y, r, col, ttl) { fxAdd({ k: FXK_FLASH, x: x, y: y, r: r, c: col || '#FFD9A0', t: 0, ttl: ttl || 0.12 }); }
 function fxSparks(x, y, n, ang, spread, sp, col, ttl) {
@@ -65863,6 +65963,11 @@ function fxMissileLaunch(slot, i, mslIn) {
 }
 function fxMissileHit(k, t) {
   if (closeDrawn[t] !== 1 && !fxVisible(mslX[k], mslY[k])) return;
+  fxTitanNow = mslSiege[k] === 1;   // (v127.0) a titan's siege missile: its burst is always drawn in full
+  fxMissileHitLook(k, t);
+  fxTitanNow = false;
+}
+function fxMissileHitLook(k, t) {
   const m = k < fxMslSize.length && fxMslSize[k] > 0 ? fxMslSize[k] : fxSquare(t);
   fxBoom(mslX[k], mslY[k], m * 1.5);
   // (v101.7) the warhead's shock ring, plating thrown off, a column of smoke and a scorched crater
@@ -65924,7 +66029,9 @@ function fxStep(dt) {
       if (mslAlive[k] === 0 || !(fxMslSize[k] > 0) || simTime < fxMslLit[k] || mslFuel[k] <= 0) continue;
       if (!fxVisible(mslX[k], mslY[k]) || Math.random() > dt * 40) continue;
       const m = fxMslSize[k], v = Math.sqrt(mslVX[k] * mslVX[k] + mslVY[k] * mslVY[k]) || 1;
+      fxTitanNow = mslSiege[k] === 1;   // (v127.0) a titan's siege missile always leaves its trail
       fxAdd({ k: FXK_TRAIL, x: mslX[k] - mslVX[k] / v * m, y: mslY[k] - mslVY[k] / v * m, r: m * 0.37, t: 0, ttl: m > 1.3 * fxSquareRef(k) ? 1.6 : 0.9 });
+      fxTitanNow = false;
     }
   }
   // particles
@@ -66248,6 +66355,7 @@ function fxShotColours() {
 //   The map draws at most a BUDGET of shots a frame (FX_SHOT_BUDGET, smaller when many ships are on screen, x the Display box's "Weapons fire" choice).
 //   Over the budget, shots are left out lightest first: the voices go last of all, then titan, capital, heavy, medium, light. Inside the class that only
 //   partly fits, an even spread is kept (by slot, so it does not flicker). Display only: the battle never reads any of this.
+//   (v127.0) A TITAN SUPER WEAPON's shot (shotTitan) is never left out and never counted: titan weapon effects are always shown (Alex, 7 Nov).
 // ---------------------------------------------------------------------
 const FX_TIER_CUTS = [12, 60, 250, 1500];                       // damage a round: below 12 light, below 60 medium, below 250 heavy, below 1,500 capital, else titan
 function fxTierOfDamage(dmg) { let t = 0; while (t < 4 && dmg >= FX_TIER_CUTS[t]) t++; return t; }
@@ -66274,26 +66382,29 @@ let fxClassCount = new Int32Array(6);
 function fxPickShots(budget, inView) {
   if (fxShotKeep.length < MAX_SHOTS) fxShotKeep = new Uint8Array(MAX_SHOTS);
   const keep = fxShotKeep, cc = fxClassCount; cc.fill(0);
-  let seen = 0;
+  let seen = 0, titan = 0;
   for (let k = 0; k < MAX_SHOTS; k++) {
     keep[k] = 0;
     if (shotLife[k] <= 0 || !inView(k)) continue;
-    keep[k] = 1; seen++;
+    keep[k] = 1;
+    if (shotTitan[k] === 1) { titan++; continue; }   // (v127.0, Alex 7 Nov: titan weapon effects are always shown) never counted against the budget, never left out
+    seen++;
     cc[shotVoice[k] === 1 ? 5 : shotTier[k]]++;
   }
-  if (seen <= budget) { fxShotsCulled = 0; return seen; }
+  if (seen <= budget) { fxShotsCulled = 0; return seen + titan; }
   // the class where the budget runs out, and the share of it that is kept
   let left = budget, cut = 5, share = 1;
   for (cut = 5; cut >= 0; cut--) { if (cc[cut] <= left) { left -= cc[cut]; continue; } share = left / cc[cut]; break; }
   let kept = 0;
   for (let k = 0; k < MAX_SHOTS; k++) {
     if (keep[k] === 0) continue;
+    if (shotTitan[k] === 1) { kept++; continue; }
     const c = shotVoice[k] === 1 ? 5 : shotTier[k];
     if (c > cut) { kept++; continue; }
     if (c === cut && ((k * 0.6180339887) % 1) < share) { kept++; continue; }   // an even spread through the slots
     keep[k] = 0;
   }
-  fxShotsCulled = seen - kept;
+  fxShotsCulled = seen + titan - kept;
   return kept;
 }
 function fxDrawShots(left, top, right, bottom) {
@@ -66404,6 +66515,7 @@ function fxDrawMissiles(left, top, right, bottom) {
   for (let k = 0; k < mslHigh; k++) {                    // which missiles are drawn here, and their class (-1 = not drawn)
     fxMslTier[k] = -1;
     if (mslAlive[k] === 0 || (fxRec && k < fxMslSize.length && fxMslSize[k] > 0)) continue;   // (drawn up close instead)
+    if (mslSiege[k] === 1) continue;                      // (v127.0) a titan's siege missile: drawn with the titan weapons, on top (05f-2c drawTitanBeams)
     const x = mslX[k], y = mslY[k];
     if (x < left || x > right || y < top || y > bottom) continue;
     fxMslTier[k] = fxTierOfDamage(mslDmg[k] >= 0 ? mslDmg[k] : stDamage[mslSt[k]]);
