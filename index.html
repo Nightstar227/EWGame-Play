@@ -78538,6 +78538,7 @@ const LAST_STAND = {
   threatReach: 6000, threatMargin: 600,       // (v101.4) the guard also goes after an enemy up to this far from the station whose weapons reach the station (+ the margin): the drones that snipe from outside the guard circle
   waveGrowth: 0.15,                           // (v101.4) with each new wave every squadron grows by this share of its size (at least one ship), up to its cap: the fleet grows as the waves do
   biggerShare: 0.5,                           // (v101.4) a Bigger squadron card adds this share of the squadron (at least its hull's starting size)
+  biggerCapShare: 0.5,                        // (v128.0, Alex 8 Nov) and raises that squadron's cap by this share of its hull's cap (each card again), so it keeps growing
   techOpensWeight: 3,                         // (v101.4) a research card that lets a new design into the pool comes up this many times as often
   // (v100.1) the chain of command: squadrons per Commodore, Commodores per Vice Admiral, the Admiral's own Commodores, the most Vice Admirals
   squadronsPerCommodore: 4, commodoresPerVice: 3, admiralCommodores: 2, maxVice: 4, startSquadronSlots: 3,   // (v101.4: 4 and 3; were 3 and 2)                           // the enemy's squadrons are made of this many ships at most (big ships: fewer, see lsSquadSize)
@@ -79018,7 +79019,7 @@ function lsStationCarrier() { return lastStand && lastStand.carrier >= 0 ? fgCar
 function lsWaveGrowth() {
   const L = lastStand;
   L.hangars.forEach(function (h, i) {
-    const add = Math.min(lsHullRow(h.type).cap - h.size, Math.max(1, Math.round(h.size * LAST_STAND.waveGrowth)));
+    const add = Math.min(lsCapOf(h) - h.size, Math.max(1, Math.round(h.size * LAST_STAND.waveGrowth)));
     if (add <= 0) return;
     h.size += add; lsAddBays(i, add);
   });
@@ -79074,17 +79075,15 @@ function lsCandidates() {
   }
   if (L.v2) ls2GateCandidates(out);                               // (v102.4) and again for a Fleet that has not got it
   // Bigger squadron: each hangar below its cap
-  // (v102.2) version 2: Bigger squadron, Bigger hull and Promotion are general cards for the hand, played on a squadron you choose (ls2UpgradeCandidates)
+  // (v102.2) version 2: Bigger squadron and Bigger hull are general cards for the hand, played on a squadron you choose (ls2UpgradeCandidates)
   if (L.v2) { ls2UpgradeCandidates(out); ls2WeaponCandidates(out); }   // (v102.3: and the weapon cards)
-  else L.hangars.forEach(function (h, i) { if (h.size < lsHullRow(h.type).cap) out.push({ kind: 'bigger', hangar: i, weight: 2.5 / Math.max(1, L.hangars.length / 2) }); });
-  // (v100.3) Bigger hull: a squadron moves up to the next hull size that has a design of its job (its officer's rank must allow it);
-  // Promotion: a squadron officer below Captain goes up a rank (more often when that opens a Bigger hull)
+  else L.hangars.forEach(function (h, i) { out.push({ kind: 'bigger', hangar: i, weight: 2.5 / Math.max(1, L.hangars.length / 2) }); });   // (v128.0: it raises the cap, so it always fits)
+  // (v100.3) Bigger hull: a squadron moves up to the next hull size that has a design of its job (its officer is promoted when the hull needs it).
+  // (v128.0, Alex 8 Nov: "remove it entirely") there is no Promotion card any more: a rank only ever mattered for the hull, and Bigger hull promotes.
   if (!L.v2) L.hangars.forEach(function (h, i) {
     const up = lsBiggerHulls(h);
     const ok = up;                                                 // (v101.4) any rank: the card promotes the officer when the bigger hull needs it
     for (const t of ok) out.push({ kind: 'hull', hangar: i, type: t, weight: 2 / Math.max(1, ok.length) / Math.max(1, L.hangars.length / 3) });
-    const next = lsNextRank(h.rank);
-    if (next) out.push({ kind: 'promote', hangar: i, opens: false, weight: 0.4 / Math.max(1, L.hangars.length / 3) });   // (v101.4: a Bigger hull no longer waits on a Promotion)
   });
   // Commodore: when there is room under the Admiral or a Vice Admiral (more often when the squadrons are full)
   if (freeCdre > 0) out.push({ kind: 'commodore', weight: freeSq > 0 ? 1 : 4 });
@@ -79128,9 +79127,9 @@ function lsCardText(c) {
   else if (L.v2 && c.kind === 'weapon') ls2WeaponText(c, out);   // (v102.3) version 2's weapon cards
   else if (L.v2 && c.general) ls2UpgradeText(c, out);        // (v102.2) version 2's general upgrade cards
   else if (c.kind === 'bigger') {
-    const h = L.hangars[c.hangar], add = lsBiggerBy(h);
+    const h = L.hangars[c.hangar], add = lsBiggerBy(h, 1);
     out.label = 'Bigger squadron'; out.title = typeName[h.type] + ': ' + h.size + ' to ' + (h.size + add);
-    out.text = (rankById(h.rank) ? rankById(h.rank).name + ' ' : '') + h.officer + '\'s squadron gets ' + add + ' more ' + typeName[h.type] + (add === 1 ? '' : 's') + '.';
+    out.text = (rankById(h.rank) ? rankById(h.rank).name + ' ' : '') + h.officer + '\'s squadron gets ' + add + ' more ' + typeName[h.type] + (add === 1 ? '' : 's') + ', and its cap rises from ' + lsCapOf(h) + ' to ' + lsCapOf(h, 1) + '.';
   } else if (c.kind === 'hull') {
     const h = L.hangars[c.hangar], size = lsHullSwapSize(h, c.type), st = BLUE * TYPE_COUNT + c.type;
     out.label = 'Bigger hull' + (lsIsMine(c.type) ? ' · your design' : ''); out.title = typeName[h.type] + ' to ' + typeName[c.type];
@@ -79138,11 +79137,6 @@ function lsCardText(c) {
     out.text = (rankById(h.rank) ? rankById(h.rank).name + ' ' : '') + h.officer + '\'s squadron of ' + plural(h.size, typeName[h.type]) + ' becomes ' + plural(size, typeName[c.type]) +
                ' (' + lsHullOf(c.type) + '). Ships in flight are refitted on the spot.' + (up ? ' ' + h.officer + ' is promoted to ' + up.name + ' to lead them.' : '') +
                (stHull.length > st ? ' Each: hull ' + fmtWhole(stHull[st]) + ', speed ' + fmtWhole(stSpeed[st]) + ', damage ' + fmtWhole(stDps[st]) + '/s.' : '');
-  } else if (c.kind === 'promote') {
-    const h = L.hangars[c.hangar], next = lsNextRank(h.rank), rk = rankById(h.rank), nk = rankById(next);
-    out.label = 'Promotion'; out.officer = h.officer; out.temper = h.temper; out.title = (nk ? nk.name + ' ' : '') + h.officer;
-    out.text = (rk ? rk.name + ' ' : '') + h.officer + ' (' + typeName[h.type] + ' squadron) is promoted: can now lead ' + LS_RANK_HULLS[next] + '.' +
-               (c.opens ? ' Opens a Bigger hull for this squadron.' : '');
   } else if (c.kind === 'commodore') {
     out.officer = lsOfficerName('commodore');
     out.label = 'Commodore'; out.title = 'Commodore ' + out.officer;
@@ -79173,7 +79167,11 @@ function lsCardText(c) {
   if (L.v2 && ls2HandKind(c.kind)) out.text = ls2HandLine(c.kind) + ' ' + out.text;   // (v102.1) version 2: where the card goes
     return out;
 }
-function lsBiggerBy(h) { const row = lsHullRow(h.type); return Math.max(1, Math.min(row.cap - h.size, Math.max(row.start, Math.ceil(h.size * LAST_STAND.biggerShare)))); }
+// (v128.0) more = 1: the ships a Bigger squadron card adds, with the cap the card itself raises.
+function lsBiggerBy(h, more) { const row = lsHullRow(h.type); return Math.max(1, Math.min(lsCapOf(h, more) - h.size, Math.max(row.start, Math.ceil(h.size * LAST_STAND.biggerShare)))); }
+// (v128.0, Alex 8 Nov: "the bigger squadrons card should raise the ship size cap for that squad") A squadron's cap: its hull's cap, raised by half of it
+// (LAST_STAND.biggerCapShare) for each Bigger squadron card it has taken (h.bigger; more = cards not yet counted). It moves with the squadron to a bigger hull.
+function lsCapOf(h, more) { const row = lsHullRow(h.type); return Math.round(row.cap * (1 + LAST_STAND.biggerCapShare * ((h.bigger | 0) + (more | 0)))); }
 // The player picks card k (0, 1 or 2): it is applied, and the battle carries on (or the next level's cards are dealt).
 function lsPick(k) {
   const L = lastStand;
@@ -79200,17 +79198,14 @@ function lsPick(k) {
     if (L.v2) ls2ApplyFleet(L.hangars.length - 1);         // (v102.4) built to its Fleet's research
     logEvent(BLUE, 'Level ' + L.level + ': a new squadron of ' + plural(h.size, typeName[h.type]) + ' under ' + h.officer + ' launches from the station.');
   } else if (c.kind === 'bigger') {
-    const h = L.hangars[c.hangar], add = lsBiggerBy(h);
-    h.size += add; lsAddBays(c.hangar, add);
+    const h = L.hangars[c.hangar], add = lsBiggerBy(h, 1);
+    h.bigger = (h.bigger | 0) + 1; h.size += add; lsAddBays(c.hangar, add);
     logEvent(BLUE, 'Level ' + L.level + ': ' + h.officer + '\'s squadron grows to ' + plural(h.size, typeName[h.type]) + '.');
   } else if (c.kind === 'hull') {
     const h = L.hangars[c.hangar], was = typeName[h.type];
     if (!lsRankAllows(h.rank, c.type)) h.rank = lsRankFor(c.type);   // (v101.4) promoted with the card
     lsSwapHull(c.hangar, c.type);
     logEvent(BLUE, 'Level ' + L.level + ': ' + h.officer + '\'s squadron moves up from ' + was + ' to ' + plural(h.size, typeName[h.type]) + '.');
-  } else if (c.kind === 'promote') {
-    const h = L.hangars[c.hangar]; h.rank = lsNextRank(h.rank);
-    logEvent(BLUE, 'Level ' + L.level + ': ' + h.officer + ' is promoted to ' + (rankById(h.rank) ? rankById(h.rank).name : h.rank) + '.');
   } else if (c.kind === 'commodore' && L.v2) { L.commodores++; ls2OpenDivision(c.officer); lsCommandCaps(); logEvent(BLUE, 'Level ' + L.level + ': Commodore ' + c.officer + ' joins to lead a Division.'); }
   else if (c.kind === 'vice' && L.v2) { L.vices++; ls2OpenFleet(c.officer); lsCommandCaps(); logEvent(BLUE, 'Level ' + L.level + ': Vice Admiral ' + c.officer + ' joins to lead a new Fleet: room for 3 more squadrons and 3 more Commodores.'); }
   else if (c.kind === 'commodore') { L.commodores++; L.cdreNames.push(c.officer); lsCommandCaps(); logEvent(BLUE, 'Level ' + L.level + ': Commodore ' + c.officer + ' joins to lead a new Division: room for ' + LAST_STAND.squadronsPerCommodore + ' more squadrons.'); }
@@ -79683,10 +79678,10 @@ function lsBiggerHulls(h) {
   const same = at.filter(function (t) { return lsJobOf(t) === job; });
   return same.length > 0 ? same : at;
 }
-// The squadron's size after the swap: the same share of its size cap (at least the new hull's starting size).
+// The squadron's size after the swap: the same share of its size cap (at least the new hull's starting size). (v128.0: its own cap, raised by its Bigger squadron cards)
 function lsHullSwapSize(h, t) {
-  const was = lsHullRow(h.type), now = lsHullRow(t);
-  return Math.max(now.start, Math.min(now.cap, Math.round(h.size * now.cap / Math.max(1, was.cap))));
+  const was = lsCapOf(h), now = lsCapOf({ type: t, bigger: h.bigger });
+  return Math.max(lsHullRow(t).start, Math.min(now, Math.round(h.size * now / Math.max(1, was))));
 }
 // The swap: every bay of the hangar now holds the new design, and the squadron's ships in flight are refitted to it on the spot (as a research
 // refit is: their damage kept as a share of the hull). Bays beyond the new size are closed (a ship of a closed bay flies on but is not rebuilt).
@@ -80308,11 +80303,11 @@ function ls2ShortName(name, rank) { return officerShortName({ name: name, rank: 
 //   empty slot (it moves to that Division) or onto another squadron (the two swap). Placing does not pause the battle (Alex). A card you do not
 //   want can be thrown away (the x on it). While the hand is full, no more officer or New squadron cards are dealt.
 // =====================================================================
-const LS2_HAND_KINDS = ['squadron', 'commodore', 'vice', 'bigger', 'hull', 'promote', 'weapon', 'gate'];   // (v102.2: and the upgrade cards; v102.3: the weapon cards; v102.4: the Fleet research cards)
+const LS2_HAND_KINDS = ['squadron', 'commodore', 'vice', 'bigger', 'hull', 'weapon', 'gate'];   // (v128.0: no Promotion card any more)   // (v102.2: and the upgrade cards; v102.3: the weapon cards; v102.4: the Fleet research cards)
 // Does a card of this kind go to the hand now? (lsPick asks: a full hand means the card is placed for you, as in stage 1.)
 function ls2HandKind(kind) { return ls2On() && LS2_HAND_KINDS.indexOf(kind) >= 0 && lastStand.hand.length < LS2.handSize; }
 function ls2HandLine(kind) {
-  if (kind === 'bigger' || kind === 'hull' || kind === 'promote' || kind === 'weapon') return 'To your hand: drop it on a squadron.';
+  if (kind === 'bigger' || kind === 'hull' || kind === 'weapon') return 'To your hand: drop it on a squadron.';
   if (kind === 'squadron') return 'To your hand: drop it on an empty squadron slot.';
   if (kind === 'gate') return 'To your hand: drop it on a Fleet.';
   if (kind === 'commodore') return 'To your hand: drop it on a Division with no Commodore (a closed one opens).';
@@ -80342,7 +80337,7 @@ function ls2CanPlay(c, t) {
   if (c.kind === 'commodore') return t.kind === 'div' && F.open && (!F.divs[t.d].open || !F.divs[t.d].officer);   // (v104.0: or an open Division with no Commodore)
   if (c.kind === 'vice') return t.kind === 'fleet' && !F.open;
   if (c.kind === 'gate') return t.kind === 'fleet' && F.open && ls2FleetGates(t.f).indexOf(c.project) < 0;   // (v102.4) a Fleet that has not got it yet
-  if (c.kind === 'bigger' || c.kind === 'hull' || c.kind === 'promote' || c.kind === 'weapon') {
+  if (c.kind === 'bigger' || c.kind === 'hull' || c.kind === 'weapon') {
     if (t.kind !== 'slot' || !F.open || !F.divs[t.d].open) return false;
     const hi = F.divs[t.d].slots[t.s];
     if (hi < 0) return false;
@@ -80385,7 +80380,7 @@ function ls2Play(k, t) {
     lsCommandCaps();
     logEvent(BLUE, 'Vice Admiral ' + c.officer + ' takes command of the ' + cmdFleetName(BLUE, F.no) + ': room for 3 squadrons and 3 Commodores.');
   }
-  else if (c.kind === 'bigger' || c.kind === 'hull' || c.kind === 'promote') ls2Upgrade(c.kind, F.divs[t.d].slots[t.s]);
+  else if (c.kind === 'bigger' || c.kind === 'hull') ls2Upgrade(c.kind, F.divs[t.d].slots[t.s]);
   else if (c.kind === 'weapon') ls2Weapon(c.weapon, F.divs[t.d].slots[t.s]);
   else if (c.kind === 'gate') ls2PlayGate(c, t.f);
   L.syncAt = 0;
@@ -80420,12 +80415,11 @@ function ls2Move(hi, t) {
 
 // =====================================================================
 // (v102.2, stage 3) THE UPGRADE CARDS
-//   Bigger squadron, Bigger hull and Promotion are no longer dealt for one squadron: each is a general card for the hand, dropped on the squadron
+//   Bigger squadron and Bigger hull (and Promotion, until v128.0 removed it) are no longer dealt for one squadron: each is a general card for the hand, dropped on the squadron
 //   you choose (it glows when the card fits it).
-//     Bigger squadron: the squadron gets more ships (as version 1's card: lsBiggerBy), up to its hull's cap.
+//     Bigger squadron: the squadron gets more ships (as version 1's card: lsBiggerBy), and (v128.0) its cap rises by half its hull's cap (lsCapOf).
 //     Bigger hull: the squadron moves up to the next hull size, a design of the same job where there is one (your own design first); its officer is
 //       promoted when the bigger hull needs it, and its ships in flight are refitted on the spot (lsSwapHull).
-//     Promotion: the squadron's officer goes up a rank (Lieutenant, Lieutenant Commander, Captain).
 // =====================================================================
 // The design a Bigger hull card turns this hangar into (-1 = none).
 function ls2HullFor(h) {
@@ -80439,9 +80433,8 @@ function ls2HullFor(h) {
 }
 function ls2UpgradeFits(kind, h) {
   if (!h) return false;
-  if (kind === 'bigger') return h.size < lsHullRow(h.type).cap;
+  if (kind === 'bigger') return true;                    // (v128.0) it raises the squadron's cap, so it always fits
   if (kind === 'hull') return ls2HullFor(h) >= 0;
-  if (kind === 'promote') return lsNextRank(h.rank) !== '';
   return false;
 }
 // (lsCandidates) the general upgrade cards, each while at least one squadron could take it (weights as version 1's cards, for the whole station).
@@ -80451,31 +80444,26 @@ function ls2UpgradeCandidates(out) {
   const any = function (kind) { return L.hangars.some(function (h) { return ls2UpgradeFits(kind, h); }); };
   if (any('bigger')) out.push({ kind: 'bigger', general: true, weight: 2.5 });
   if (any('hull')) out.push({ kind: 'hull', general: true, weight: 2 });
-  if (any('promote')) out.push({ kind: 'promote', general: true, weight: 0.6 });
 }
 // (lsCardText) what a general upgrade card says.
 function ls2UpgradeText(c, out) {
-  if (c.kind === 'bigger') { out.label = 'Bigger squadron'; out.title = 'Bigger squadron'; out.text = 'A squadron of your choice gets about half as many ships again (at least its starting size), up to its hull\'s cap.'; }
+  if (c.kind === 'bigger') { out.label = 'Bigger squadron'; out.title = 'Bigger squadron'; out.text = 'A squadron of your choice gets about half as many ships again (at least its starting size), and its cap rises by half its hull\'s cap, so the waves keep growing it.'; }
   else if (c.kind === 'hull') { out.label = 'Bigger hull'; out.title = 'Bigger hull'; out.text = 'A squadron of your choice moves up to the next hull size, a design of the same job where there is one. Its officer is promoted if the bigger hull needs it, and its ships are refitted on the spot.'; }
-  else { out.label = 'Promotion'; out.title = 'Promotion'; out.text = 'The officer of a squadron of your choice goes up a rank (Lieutenant, Lieutenant Commander, Captain).'; }
 }
 // Plays an upgrade card on hangar hi.
 function ls2Upgrade(kind, hi) {
   const L = lastStand, h = L.hangars[hi];
   if (!ls2UpgradeFits(kind, h)) return false;
   if (kind === 'bigger') {
-    const add = lsBiggerBy(h);
-    h.size += add; lsAddBays(hi, add);
-    logEvent(BLUE, h.officer + '\'s squadron grows to ' + plural(h.size, typeName[h.type]) + '.');
+    const add = lsBiggerBy(h, 1);
+    h.bigger = (h.bigger | 0) + 1; h.size += add; lsAddBays(hi, add);
+    logEvent(BLUE, h.officer + '\'s squadron grows to ' + plural(h.size, typeName[h.type]) + ' (room for ' + lsCapOf(h) + ').');
   } else if (kind === 'hull') {
     const t = ls2HullFor(h), was = typeName[h.type];
     if (!lsRankAllows(h.rank, t)) h.rank = lsRankFor(t);
     lsSwapHull(hi, t);
     ls2ApplyFleet(hi);                                   // (v102.3) its weapon card goes with it, where the bigger hull can take it; (v102.4) and its Fleet's research
     logEvent(BLUE, h.officer + '\'s squadron moves up from ' + was + ' to ' + plural(h.size, typeName[h.type]) + '.');
-  } else {
-    h.rank = lsNextRank(h.rank);
-    logEvent(BLUE, h.officer + ' is promoted to ' + (rankById(h.rank) ? rankById(h.rank).name : h.rank) + '.');
   }
   return true;
 }
@@ -81214,7 +81202,7 @@ function ls2HandCard(c, k) {
   let face = '';
   if (c.kind === 'gate') face = '<span class="ls2-hk-sign">&#9881;</span><span class="ls2-type">' + ls2Esc(ls2GateShort(c.project)) + '</span>';
   else if (c.kind === 'weapon') face = '<span class="ls2-hk-sign">' + ({ gun: '&#8226;&#8226;', missile: '&#10148;', laser: '&#8213;' })[ls2WeaponById(c.weapon).job] + '</span><span class="ls2-type">' + ls2Esc(ls2WeaponById(c.weapon).short) + '</span>';
-  else if (c.general) face = '<span class="ls2-hk-sign">' + ({ bigger: '+', hull: '&#9650;', promote: '&#9733;' })[c.kind] + '</span><span class="ls2-type">' + ls2Esc(c.label) + '</span>';
+  else if (c.general) face = '<span class="ls2-hk-sign">' + ({ bigger: '+', hull: '&#9650;' })[c.kind] + '</span><span class="ls2-type">' + ls2Esc(c.label) + '</span>';
   else if (c.kind === 'squadron') face = shipIconHtml(shipIconFor(c.type, BLUE), 20) + '<span class="ls2-type">' + ls2Esc(typeName[c.type]) + '</span>';
   else face = portraitHtml(null) + '<span class="ls2-type">' + ls2Esc(String(c.officer).split(' ').slice(-1)[0]) + '</span>';   // (the surname: the card is small)
   return '<div class="ls2-card ls2-handcard ls2-hk-' + c.kind + held + '" draggable="true" data-hand="' + k + '" title="' + ls2Esc(c.title + ': ' + c.text) + '">' +
