@@ -14403,7 +14403,7 @@ const FRAME_VARIANTS_V117 = [
       'EE         ...',
       'EE            '
     ] },
-  { id: 'pod_frigate_thrust', tag: 'FR-T3', name: 'Outrigger pods (frigate)', cls: 'frigate', kind: 'thrust', weight: 'light', fits: ['frigate'], joints: { stern: '', bow: 'J10' }, jointY: { stern: 0, bow: 2 }, openWithHull: true,
+  { id: 'pod_frigate_thrust', tag: 'FR-T3', name: 'Outrigger pods (frigate)', cls: 'frigate', kind: 'thrust', weight: 'light', fits: ['frigate'], joints: { stern: '', bow: 'J10' }, jointY: { stern: 0, bow: 2 }, openWithHull: true, wholeOnly: true,
     alloys: 8, note: '+ two engine pods past the normal outline, with drive-bay squares; more squares and edge. - pods hang on thin pylons; the core is a row slimmer; +20% Alloys', ship: [], v117: { squares: 184, standard: 160 },
     rows: [
       'EE.......     ',
@@ -14426,13 +14426,13 @@ const FRAME_VARIANTS_V117 = [
       'EE.......     '
     ] },
   { id: 'ham_frigate_prow', tag: 'FR-P2', name: 'Hammerhead (frigate)', cls: 'frigate', kind: 'prow', weight: 'light', fits: ['frigate'], joints: { stern: 'J10', bow: '' }, jointY: { stern: 2, bow: 0 }, openWithHull: true,
-    alloys: 14, note: '+ your shape: a blunt full-height body, then a tall head that sticks out 2 rows past it each side; weapons on the head tips fire 10% faster. - a one-square neck notch stops big parts reaching the head; bigger than the Standard prow, so it costs more Alloys in step with its size', ship: [], v117: { squares: 318, standard: 252 },
+    alloys: 14, note: '+ your shape: a blunt full-height body, then a tall head that sticks out 2 rows past it each side; weapons on the head tips fire 10% faster; a mast patch on each edge (a sensor there counts twice). - a one-square neck notch stops big parts reaching the head; bigger than the Standard prow, so it costs more Alloys in step with its size', ship: [], v117: { squares: 318, standard: 252 },
     rows: [
       '                  WWWWWW',
       '                  WWWWWW',
       '                  WWWWWW',
-      '................. ......',
-      '................. ......',
+      '...........MM.... ......',
+      '...........MM.... ......',
       '................. ......',
       '........................',
       '........................',
@@ -14441,8 +14441,8 @@ const FRAME_VARIANTS_V117 = [
       '........................',
       '........................',
       '................. ......',
-      '................. ......',
-      '................. ......',
+      '...........MM.... ......',
+      '...........MM.... ......',
       '                  WWWWWW',
       '                  WWWWWW',
       '                  WWWWWW'
@@ -14466,50 +14466,51 @@ const FRAME_VARIANTS_V117 = [
       '                     '
     ] },
   { id: 'spine_frigate_prow', tag: 'FR-P4', name: 'Spinal lance (frigate)', cls: 'frigate', kind: 'prow', weight: 'light', fits: ['frigate'], joints: { stern: 'J10', bow: '' }, jointY: { stern: 2, bow: 0 },
-    alloys: 12, note: '+ a spinal gun on the spine gets +10% range; half again as long as the Standard. - needs Spinal mounts research; slim, so little room beside the gun', ship: [], v117: { squares: 264, standard: 252, tech: 'Spinal mounts' },
+    alloys: 12, note: '+ a spinal gun on the spine gets +10% range; half again as long as the Standard; a mast patch on each edge (a sensor there counts twice). - needs Spinal mounts research; slim, so little room beside the gun', ship: [], v117: { squares: 264, standard: 252, tech: 'Spinal mounts' },
     rows: [
       '                                    ',
       '..............                      ',
-      '................                    ',
-      '................                    ',
+      '..............MM                    ',
+      '..............MM                    ',
       '................                    ',
       '..................................  ',
       'SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS',
       'SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS',
       '..................................  ',
       '................                    ',
-      '................                    ',
-      '................                    ',
+      '..............MM                    ',
+      '..............MM                    ',
       '..............                      ',
       '                                    '
     ] },
   { id: 'slim_frigate_thrust', tag: 'FR-T4', name: 'Slim drive block (frigate)', cls: 'frigate', kind: 'thrust', weight: 'light', fits: ['frigate'], joints: { stern: '', bow: 'J10' }, jointY: { stern: 0, bow: 2 }, openWithHull: true,
-    alloys: 7, note: '+ a slim 9-row block, a smaller target, with drive-bay squares: +15% thrust. - about 10% less room; nothing bigger than 9 x 9 fits', ship: [], v117: { squares: 144, standard: 160 },
+    alloys: 7, note: '+ a slim target. - one big drive; 10 rows only', ship: [], v117: { squares: 160, standard: 160 },
     rows: [
+      '................',
+      '................',
       'EE..............',
       'EE..............',
       'EE..............',
       'EE..............',
       'EE..............',
       'EE..............',
-      'EE..............',
-      'EE..............',
-      'EE..............'
+      '................',
+      '................'
     ] },
   { id: 'neck_frigate_prow', tag: 'FR-P5', name: 'Gun block on a neck (frigate)', cls: 'frigate', kind: 'prow', weight: 'light', fits: ['frigate'], joints: { stern: 'J10', bow: '' }, jointY: { stern: 2, bow: 0 }, openWithHull: true,
-    alloys: 11, note: '+ a long gun block on a 3-row neck; mounts on its top and bottom rows are 10% lighter. - about 10% less room; the neck stops big parts; 9 rows tall', ship: [], v117: { squares: 226, standard: 252 },
+    alloys: 11, note: '+ a long gun block on a 3-row neck; mounts on its top and bottom rows are 10% lighter; a mast patch on each edge (a sensor there counts twice). - about 10% less room; the neck stops big parts; 9 rows tall', ship: [], v117: { squares: 226, standard: 252 },
     rows: [
       '     HHHHHHHHHHHHHHHHHHHHHH   ',
-      '    .......................   ',
-      '    .......................   ',
+      '    ..........MM...........   ',
+      '    ..........MM...........   ',
       '..............................',
       '..............................',
       '..............................',
-      '    .......................   ',
-      '    .......................   ',
+      '    ..........MM...........   ',
+      '    ..........MM...........   ',
       '     HHHHHHHHHHHHHHHHHHHHHH   '
     ] },
-  { id: 'mast_frigate_prow', tag: 'FR-P6', name: 'Sensor mast (frigate)', cls: 'frigate', kind: 'prow', weight: 'light', fits: ['frigate'], joints: { stern: 'J10', bow: '' }, jointY: { stern: 2, bow: 0 }, openWithHull: true,
+  { id: 'mast_frigate_prow', tag: 'FR-P6', name: 'Sensor mast (frigate)', cls: 'frigate', kind: 'prow', weight: 'light', fits: ['frigate'], joints: { stern: 'J10', bow: '' }, jointY: { stern: 2, bow: 0 }, openWithHull: true, wholeOnly: true,
     alloys: 11, note: '+ a thin mast reaching ahead of the nose; a sensor on it counts twice. - mast squares are hit first; about 5% less room', ship: [], v117: { squares: 236, standard: 252 },
     rows: [
       '                            ',
@@ -14528,26 +14529,27 @@ const FRAME_VARIANTS_V117 = [
       '                            '
     ] },
   { id: 'twin_frigate_thrust', tag: 'FR-T5', name: 'Twin hulls (frigate)', cls: 'frigate', kind: 'thrust', weight: 'light', fits: ['frigate'], joints: { stern: '', bow: 'J10' }, jointY: { stern: 0, bow: 2 }, openWithHull: true,
-    alloys: 7, note: '+ two engine bodies, a row past the outline each side: a wide drive wall of drive-bay squares and lots of edge. - the gap between them is wasted room; about 10% less room', ship: [], v117: { squares: 144, standard: 160 },
+    alloys: 11, note: '+ two big drives, lots of edge. - plate 1 on the bodies, thinner than a frigate\'s 2', ship: [], v117: { squares: 229, standard: 160 },
     rows: [
-      'EE....        ',
-      'EE....        ',
+      '..............',
       'EE............',
       'EE............',
-      '      ........',
-      '      ........',
-      '      ........',
-      '      ........',
-      '      ........',
-      '      ........',
-      '      ........',
-      '      ........',
       'EE............',
       'EE............',
-      'EE....        ',
-      'EE....        '
+      'EE............',
+      'EE............',
+      '..............',
+      '         .....',
+      '..............',
+      'EE............',
+      'EE............',
+      'EE............',
+      'EE............',
+      'EE............',
+      'EE............',
+      '..............'
     ] },
-  { id: 'tank_frigate_thrust', tag: 'FR-T6', name: 'Tanker (frigate)', cls: 'frigate', kind: 'thrust', weight: 'light', fits: ['frigate'], joints: { stern: '', bow: 'J10' }, jointY: { stern: 0, bow: 2 }, openWithHull: true,
+  { id: 'tank_frigate_thrust', tag: 'FR-T6', name: 'Tanker (frigate)', cls: 'frigate', kind: 'thrust', weight: 'light', fits: ['frigate'], joints: { stern: '', bow: 'J10' }, jointY: { stern: 0, bow: 2 }, openWithHull: true, wholeOnly: true,
     alloys: 8, note: '+ two fuel blocks on struts past the outline: room for big tanks and long transfers. - the blocks are exposed and only reach the ship by thin struts; +10% Alloys', ship: [], v117: { squares: 186, standard: 160 },
     rows: [
       '     TTT      ',
@@ -14593,7 +14595,7 @@ const FRAME_VARIANTS_V117 = [
       'EE.           ....',
       'EE.               '
     ] },
-  { id: 'pod_destroyer_thrust', tag: 'DD-T3', name: 'Outrigger pods (destroyer)', cls: 'destroyer', kind: 'thrust', weight: 'heavy', fits: ['destroyer'], joints: { stern: '', bow: 'J12' }, jointY: { stern: 0, bow: 2 }, openWithHull: true,
+  { id: 'pod_destroyer_thrust', tag: 'DD-T3', name: 'Outrigger pods (destroyer)', cls: 'destroyer', kind: 'thrust', weight: 'heavy', fits: ['destroyer'], joints: { stern: '', bow: 'J12' }, jointY: { stern: 0, bow: 2 }, openWithHull: true, wholeOnly: true,
     alloys: 23, note: '+ two engine pods past the normal outline, with drive-bay squares; more squares and edge. - pods hang on thin pylons; the core is a row slimmer; +20% Alloys', ship: [], v117: { squares: 280, standard: 244 },
     rows: [
       'EE............    ',
@@ -14618,13 +14620,13 @@ const FRAME_VARIANTS_V117 = [
       'EE............    '
     ] },
   { id: 'ham_destroyer_prow', tag: 'DD-P2', name: 'Hammerhead (destroyer)', cls: 'destroyer', kind: 'prow', weight: 'heavy', fits: ['destroyer'], joints: { stern: 'J12', bow: '' }, jointY: { stern: 2, bow: 0 }, openWithHull: true,
-    alloys: 35, note: '+ your shape: a blunt full-height body, then a tall head that sticks out 2 rows past it each side; weapons on the head tips fire 10% faster. - a one-square neck notch stops big parts reaching the head; bigger than the Standard prow, so it costs more Alloys in step with its size', ship: [], v117: { squares: 454, standard: 372 },
+    alloys: 35, note: '+ your shape: a blunt full-height body, then a tall head that sticks out 2 rows past it each side; weapons on the head tips fire 10% faster; a mast patch on each edge (a sensor there counts twice). - a one-square neck notch stops big parts reaching the head; bigger than the Standard prow, so it costs more Alloys in step with its size', ship: [], v117: { squares: 454, standard: 372 },
     rows: [
       '                       WWWWWWW',
       '                       WWWWWWW',
       '                       WWWWWWW',
-      '...................... .......',
-      '...................... .......',
+      '..............MM...... .......',
+      '..............MM...... .......',
       '...................... .......',
       '...................... .......',
       '..............................',
@@ -14635,8 +14637,8 @@ const FRAME_VARIANTS_V117 = [
       '..............................',
       '...................... .......',
       '...................... .......',
-      '...................... .......',
-      '...................... .......',
+      '..............MM...... .......',
+      '..............MM...... .......',
       '                       WWWWWWW',
       '                       WWWWWWW',
       '                       WWWWWWW'
@@ -14662,19 +14664,19 @@ const FRAME_VARIANTS_V117 = [
       '                         '
     ] },
   { id: 'spine_destroyer_prow', tag: 'DD-P4', name: 'Spinal lance (destroyer)', cls: 'destroyer', kind: 'prow', weight: 'heavy', fits: ['destroyer'], joints: { stern: 'J12', bow: '' }, jointY: { stern: 2, bow: 0 },
-    alloys: 32, note: '+ a spinal gun on the spine gets +10% range; half again as long as the Standard. - needs Spinal mounts research; slim, so little room beside the gun', ship: [], v117: { squares: 390, standard: 372, tech: 'Spinal mounts' },
+    alloys: 32, note: '+ a spinal gun on the spine gets +10% range; half again as long as the Standard; a mast patch on each edge (a sensor there counts twice). - needs Spinal mounts research; slim, so little room beside the gun', ship: [], v117: { squares: 390, standard: 372, tech: 'Spinal mounts' },
     rows: [
       '                                             ',
       '..............                               ',
       '................                             ',
       '................                             ',
       '................                             ',
-      '...........................................  ',
-      '.............................................',
+      '.....................MM....................  ',
+      '.....................MM......................',
       'SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS',
       'SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS',
-      '.............................................',
-      '...........................................  ',
+      '.....................MM......................',
+      '.....................MM....................  ',
       '................                             ',
       '................                             ',
       '................                             ',
@@ -14682,22 +14684,26 @@ const FRAME_VARIANTS_V117 = [
       '                                             '
     ] },
   { id: 'cut_destroyer_thrust', tag: 'DD-T4', name: 'Cutter stern (destroyer)', cls: 'destroyer', kind: 'thrust', weight: 'heavy', fits: ['destroyer'], joints: { stern: '', bow: 'J12' }, jointY: { stern: 0, bow: 2 }, openWithHull: true,
-    alloys: 19, note: '+ stepped flanks with drive-bay squares on the stern: +15% thrust. - about 10% less room than the Standard stern', ship: [], v117: { squares: 216, standard: 244 },
+    alloys: 25, note: '+ the biggest chemical drive in one piece. - flanks step in toward the bow', ship: [], v117: { squares: 294, standard: 244 },
     rows: [
-      '    ....          ',
-      ' E................',
-      ' E................',
-      ' E................',
-      ' E................',
+      '   .......        ',
+      '..............    ',
+      '..................',
       'EE................',
       'EE................',
       'EE................',
       'EE................',
-      ' E................',
-      ' E................',
-      ' E................',
-      ' E................',
-      '    ....          '
+      'EE................',
+      'EE................',
+      'EE................',
+      'EE................',
+      'EE................',
+      'EE................',
+      'EE................',
+      'EE................',
+      '..................',
+      '..............    ',
+      '   .......        '
     ] },
   { id: 'cut_destroyer_prow', tag: 'DD-P5', name: 'Cutter prow (destroyer)', cls: 'destroyer', kind: 'prow', weight: 'heavy', fits: ['destroyer'], joints: { stern: 'J12', bow: '' }, jointY: { stern: 2, bow: 0 }, openWithHull: true,
     alloys: 31, note: '+ a blunt full-width nose with a raised spine: more room up front. - 6% bigger than the Standard prow, and Alloys rise to match', ship: [], v117: { squares: 396, standard: 372 },
@@ -14719,7 +14725,7 @@ const FRAME_VARIANTS_V117 = [
       ' ...................          ',
       '        .....                 '
     ] },
-  { id: 'mast_destroyer_prow', tag: 'DD-P6', name: 'Sensor mast (destroyer)', cls: 'destroyer', kind: 'prow', weight: 'heavy', fits: ['destroyer'], joints: { stern: 'J12', bow: '' }, jointY: { stern: 2, bow: 0 }, openWithHull: true,
+  { id: 'mast_destroyer_prow', tag: 'DD-P6', name: 'Sensor mast (destroyer)', cls: 'destroyer', kind: 'prow', weight: 'heavy', fits: ['destroyer'], joints: { stern: 'J12', bow: '' }, jointY: { stern: 2, bow: 0 }, openWithHull: true, wholeOnly: true,
     alloys: 29, note: '+ a thin mast reaching ahead of the nose; a sensor on it counts twice. - mast squares are hit first; about 5% less room', ship: [], v117: { squares: 358, standard: 372 },
     rows: [
       '                                   ',
@@ -14740,28 +14746,29 @@ const FRAME_VARIANTS_V117 = [
       '                                   '
     ] },
   { id: 'twin_destroyer_thrust', tag: 'DD-T5', name: 'Twin hulls (destroyer)', cls: 'destroyer', kind: 'thrust', weight: 'heavy', fits: ['destroyer'], joints: { stern: '', bow: 'J12' }, jointY: { stern: 0, bow: 2 }, openWithHull: true,
-    alloys: 19, note: '+ two engine bodies, a row past the outline each side: a wide drive wall of drive-bay squares and lots of edge. - the gap between them is wasted room; about 10% less room', ship: [], v117: { squares: 220, standard: 244 },
+    alloys: 28, note: '+ four big drives, lots of edge. - plate 2 on the bodies, thinner than a destroyer\'s 3', ship: [], v117: { squares: 332, standard: 244 },
     rows: [
-      'EE......          ',
-      'EE......          ',
+      '..................',
+      '..................',
       'EE................',
       'EE................',
       'EE................',
-      '        ..........',
-      '        ..........',
-      '        ..........',
-      '        ..........',
-      '        ..........',
-      '        ..........',
-      '        ..........',
-      '        ..........',
       'EE................',
       'EE................',
       'EE................',
-      'EE......          ',
-      'EE......          '
+      '..................',
+      '          ........',
+      '..................',
+      'EE................',
+      'EE................',
+      'EE................',
+      'EE................',
+      'EE................',
+      'EE................',
+      '..................',
+      '..................'
     ] },
-  { id: 'tank_destroyer_thrust', tag: 'DD-T6', name: 'Tanker (destroyer)', cls: 'destroyer', kind: 'thrust', weight: 'heavy', fits: ['destroyer'], joints: { stern: '', bow: 'J12' }, jointY: { stern: 0, bow: 2 }, openWithHull: true,
+  { id: 'tank_destroyer_thrust', tag: 'DD-T6', name: 'Tanker (destroyer)', cls: 'destroyer', kind: 'thrust', weight: 'heavy', fits: ['destroyer'], joints: { stern: '', bow: 'J12' }, jointY: { stern: 0, bow: 2 }, openWithHull: true, wholeOnly: true,
     alloys: 21, note: '+ two fuel blocks on struts past the outline: room for big tanks and long transfers. - the blocks are exposed and only reach the ship by thin struts; +10% Alloys', ship: [], v117: { squares: 284, standard: 244 },
     rows: [
       '       TTTT       ',
@@ -14817,7 +14824,7 @@ const FRAME_VARIANTS_V117 = [
       'EEE             ....',
       'EEE                 '
     ] },
-  { id: 'pod_cruiser_thrust', tag: 'CR-T3', name: 'Outrigger pods (cruiser)', cls: 'cruiser', kind: 'thrust', weight: 'heavy', fits: ['cruiser'], joints: { stern: '', bow: 'J16' }, jointY: { stern: 0, bow: 3 }, openWithHull: true,
+  { id: 'pod_cruiser_thrust', tag: 'CR-T3', name: 'Outrigger pods (cruiser)', cls: 'cruiser', kind: 'thrust', weight: 'heavy', fits: ['cruiser'], joints: { stern: '', bow: 'J16' }, jointY: { stern: 0, bow: 3 }, openWithHull: true, wholeOnly: true,
     alloys: 76, note: '+ two engine pods past the normal outline, with drive-bay squares; more squares and edge. - pods hang on thin pylons; the core is a row slimmer; +20% Alloys', ship: [], v117: { squares: 440, standard: 382 },
     rows: [
       'EEE.........        ',
@@ -14850,15 +14857,15 @@ const FRAME_VARIANTS_V117 = [
       'EEE.........        '
     ] },
   { id: 'ham_cruiser_prow', tag: 'CR-P2', name: 'Hammerhead (cruiser)', cls: 'cruiser', kind: 'prow', weight: 'heavy', fits: ['cruiser'], joints: { stern: 'J16', bow: '' }, jointY: { stern: 3, bow: 0 }, openWithHull: true,
-    alloys: 102, note: '+ your shape: a blunt full-height body, then a tall head that sticks out 2 rows past it each side; weapons on the head tips fire 10% faster. - a one-square neck notch stops big parts reaching the head; bigger than the Standard prow, so it costs more Alloys in step with its size', ship: [], v117: { squares: 504, standard: 370 },
+    alloys: 102, note: '+ your shape: a blunt full-height body, then a tall head that sticks out 2 rows past it each side; weapons on the head tips fire 10% faster; a mast patch on each edge (a sensor there counts twice). - a one-square neck notch stops big parts reaching the head; bigger than the Standard prow, so it costs more Alloys in step with its size', ship: [], v117: { squares: 504, standard: 370 },
     rows: [
       '                  WWWWWW',
       '                  WWWWWW',
       '                  WWWWWW',
-      '................. WWWWWW',
-      '................. ......',
-      '................. ......',
-      '................. ......',
+      '..........MMMM... WWWWWW',
+      '..........MMMM... ......',
+      '..........MMMM... ......',
+      '..........MMMM... ......',
       '................. ......',
       '................. ......',
       '........................',
@@ -14871,10 +14878,10 @@ const FRAME_VARIANTS_V117 = [
       '........................',
       '................. ......',
       '................. ......',
-      '................. ......',
-      '................. ......',
-      '................. ......',
-      '................. WWWWWW',
+      '..........MMMM... ......',
+      '..........MMMM... ......',
+      '..........MMMM... ......',
+      '..........MMMM... WWWWWW',
       '                  WWWWWW',
       '                  WWWWWW',
       '                  WWWWWW'
@@ -14906,13 +14913,13 @@ const FRAME_VARIANTS_V117 = [
       '                     '
     ] },
   { id: 'spine_cruiser_prow', tag: 'CR-P4', name: 'Spinal lance (cruiser)', cls: 'cruiser', kind: 'prow', weight: 'heavy', fits: ['cruiser'], joints: { stern: 'J16', bow: '' }, jointY: { stern: 3, bow: 0 },
-    alloys: 83, note: '+ a spinal gun on the spine gets +10% range; half again as long as the Standard. - needs Spinal mounts research; slim, so little room beside the gun', ship: [], v117: { squares: 388, standard: 370, tech: 'Spinal mounts' },
+    alloys: 83, note: '+ a spinal gun on the spine gets +10% range; half again as long as the Standard; a mast patch on each edge (a sensor there counts twice). - needs Spinal mounts research; slim, so little room beside the gun', ship: [], v117: { squares: 388, standard: 370, tech: 'Spinal mounts' },
     rows: [
       '                                    ',
-      '.......                             ',
-      '.........                           ',
-      '.........                           ',
-      '.........                           ',
+      '...MMMM                             ',
+      '...MMMM..                           ',
+      '...MMMM..                           ',
+      '...MMMM..                           ',
       '.........                           ',
       '.........                           ',
       '..................................  ',
@@ -14925,19 +14932,23 @@ const FRAME_VARIANTS_V117 = [
       '..................................  ',
       '.........                           ',
       '.........                           ',
-      '.........                           ',
-      '.........                           ',
-      '.........                           ',
-      '.......                             ',
+      '...MMMM..                           ',
+      '...MMMM..                           ',
+      '...MMMM..                           ',
+      '...MMMM                             ',
       '                                    '
     ] },
   { id: 'spon_cruiser_hull', tag: 'CR-H2', name: 'Broadside sponsons (cruiser)', cls: 'cruiser', kind: 'hull', weight: 'heavy', fits: ['cruiser'], joints: { stern: 'J16', bow: 'J16' }, jointY: { stern: 3, bow: 3 }, openWithHull: true,
-    alloys: 98, note: '+ two bulges past the normal outline; weapons on their rim fire 10% faster. - the body is a row slimmer; +20% Alloys', ship: [], v117: { squares: 580, standard: 520 },
+    alloys: 98, note: '+ two bulges past the normal outline; weapons on their rim fire 10% faster; a mast patch on each edge (a sensor there counts twice). - the body is a row slimmer; +20% Alloys', ship: [], v117: { squares: 580, standard: 520 },
     rows: [
       '      WWWWWWWWWWWWWW      ',
       '      W............W      ',
       '      W............W      ',
       '      W............W      ',
+      '..MMMM....................',
+      '..MMMM....................',
+      '..MMMM....................',
+      '..MMMM....................',
       '..........................',
       '..........................',
       '..........................',
@@ -14948,14 +14959,10 @@ const FRAME_VARIANTS_V117 = [
       '..........................',
       '..........................',
       '..........................',
-      '..........................',
-      '..........................',
-      '..........................',
-      '..........................',
-      '..........................',
-      '..........................',
-      '..........................',
-      '..........................',
+      '..MMMM....................',
+      '..MMMM....................',
+      '..MMMM....................',
+      '..MMMM....................',
       '      W............W      ',
       '      W............W      ',
       '      W............W      ',
@@ -15022,34 +15029,36 @@ const FRAME_VARIANTS_V117 = [
       '                          '
     ] },
   { id: 'twin_cruiser_thrust', tag: 'CR-T4', name: 'Twin hulls (cruiser)', cls: 'cruiser', kind: 'thrust', weight: 'heavy', fits: ['cruiser'], joints: { stern: '', bow: 'J16' }, jointY: { stern: 0, bow: 3 }, openWithHull: true,
-    alloys: 63, note: '+ two engine bodies, a row past the outline each side: a wide drive wall of drive-bay squares and lots of edge. - the gap between them is wasted room; about 10% less room', ship: [], v117: { squares: 344, standard: 382 },
+    alloys: 89, note: '+ four of the biggest drives. - plate 3 on the bodies, thinner than a cruiser\'s 4', ship: [], v117: { squares: 492, standard: 382 },
     rows: [
-      'EE.....             ',
-      'EE.....             ',
+      '....................',
+      '....................',
+      '....................',
       'EE..................',
       'EE..................',
       'EE..................',
       'EE..................',
-      '       .............',
-      '       .............',
-      '       .............',
-      '       .............',
-      '       .............',
-      '       .............',
-      '       .............',
-      '       .............',
-      '       .............',
-      '       .............',
-      '       .............',
-      '       .............',
       'EE..................',
       'EE..................',
       'EE..................',
       'EE..................',
-      'EE.....             ',
-      'EE.....             '
+      '....................',
+      '              ......',
+      '              ......',
+      '....................',
+      'EE..................',
+      'EE..................',
+      'EE..................',
+      'EE..................',
+      'EE..................',
+      'EE..................',
+      'EE..................',
+      'EE..................',
+      '....................',
+      '....................',
+      '....................'
     ] },
-  { id: 'tank_cruiser_thrust', tag: 'CR-T5', name: 'Tanker (cruiser)', cls: 'cruiser', kind: 'thrust', weight: 'heavy', fits: ['cruiser'], joints: { stern: '', bow: 'J16' }, jointY: { stern: 0, bow: 3 }, openWithHull: true,
+  { id: 'tank_cruiser_thrust', tag: 'CR-T5', name: 'Tanker (cruiser)', cls: 'cruiser', kind: 'thrust', weight: 'heavy', fits: ['cruiser'], joints: { stern: '', bow: 'J16' }, jointY: { stern: 0, bow: 3 }, openWithHull: true, wholeOnly: true,
     alloys: 69, note: '+ two fuel blocks on struts past the outline: room for big tanks and long transfers. - the blocks are exposed and only reach the ship by thin struts; +10% Alloys', ship: [], v117: { squares: 440, standard: 382 },
     rows: [
       '        TTTT        ',
@@ -15146,12 +15155,15 @@ const FRAME_VARIANTS_V117 = [
       '                          '
     ] },
   { id: 'gdk_cruiser_hull', tag: 'CR-H7', name: 'Gun deck (cruiser)', cls: 'cruiser', kind: 'hull', weight: 'heavy', fits: ['cruiser'], joints: { stern: 'J16', bow: 'J16' }, jointY: { stern: 3, bow: 3 }, openWithHull: true,
-    alloys: 90, note: '+ turret-ring bumps past the outline; guns on them fire 10% faster. - the bumps hold only one turret each; +10% Alloys', ship: [], v117: { squares: 556, standard: 520 },
+    alloys: 90, note: '+ turret-ring bumps past the outline; guns on them fire 10% faster; a mast patch on each edge (a sensor there counts twice). - the bumps hold only one turret each; +10% Alloys', ship: [], v117: { squares: 556, standard: 520 },
     rows: [
       '                          ',
       '   BBB     BBB     BBB    ',
       '   BBB     BBB     BBB    ',
-      '...BBB.....BBB.....BBB....',
+      '...BBB.....BBBMMMM.BBB....',
+      '..............MMMM........',
+      '..............MMMM........',
+      '..............MMMM........',
       '..........................',
       '..........................',
       '..........................',
@@ -15164,13 +15176,10 @@ const FRAME_VARIANTS_V117 = [
       '..........................',
       '..........................',
       '..........................',
-      '..........................',
-      '..........................',
-      '..........................',
-      '..........................',
-      '..........................',
-      '..........................',
-      '...BBB.....BBB.....BBB....',
+      '..............MMMM........',
+      '..............MMMM........',
+      '..............MMMM........',
+      '...BBB.....BBBMMMM.BBB....',
       '   BBB     BBB     BBB    ',
       '   BBB     BBB     BBB    ',
       '                          '
@@ -15235,7 +15244,7 @@ const FRAME_VARIANTS_V117 = [
       'EEE.                .....',
       'EEE.                     '
     ] },
-  { id: 'pod_capital_thrust', tag: 'CP-T3', name: 'Outrigger pods (capital)', cls: 'capital', kind: 'thrust', weight: 'heavy', fits: ['capital'], joints: { stern: '', bow: 'J22' }, jointY: { stern: 0, bow: 4 }, openWithHull: true,
+  { id: 'pod_capital_thrust', tag: 'CP-T3', name: 'Outrigger pods (capital)', cls: 'capital', kind: 'thrust', weight: 'heavy', fits: ['capital'], joints: { stern: '', bow: 'J22' }, jointY: { stern: 0, bow: 4 }, openWithHull: true, wholeOnly: true,
     alloys: 120, note: '+ two engine pods past the normal outline, with drive-bay squares; more squares and edge. - pods hang on thin pylons; the core is a row slimmer; +20% Alloys', ship: [], v117: { squares: 778, standard: 676 },
     rows: [
       'EEE.........             ',
@@ -15280,17 +15289,17 @@ const FRAME_VARIANTS_V117 = [
       'EEE.........             '
     ] },
   { id: 'ham_capital_prow', tag: 'CP-P2', name: 'Hammerhead (capital)', cls: 'capital', kind: 'prow', weight: 'heavy', fits: ['capital'], joints: { stern: 'J22', bow: '' }, jointY: { stern: 4, bow: 0 }, openWithHull: true,
-    alloys: 100, note: '+ your capital shape: a short stub at the joint, then a huge head that sticks out 2 rows past the body each side; weapons on the head tips fire 10% faster. - a one-square neck notch stops big parts reaching the head; bigger than the Standard prow, so it costs more Alloys in step with its size', ship: [], v117: { squares: 474, standard: 378 },
+    alloys: 100, note: '+ your capital shape: a short stub at the joint, then a huge head that sticks out 2 rows past the body each side; weapons on the head tips fire 10% faster; a mast patch on each edge (a sensor there counts twice). - a one-square neck notch stops big parts reaching the head; bigger than the Standard prow, so it costs more Alloys in step with its size', ship: [], v117: { squares: 474, standard: 378 },
     rows: [
       '   WWWWWWWWWWWW',
       '   WWWWWWWWWWWW',
       '   WWWWWWWWWWWW',
       '.. WWWWWWWWWWWW',
       '.. WWWWWWWWWWWW',
-      '.. ............',
-      '.. ............',
-      '.. ............',
-      '.. ............',
+      '.. ..MMMM......',
+      '.. ..MMMM......',
+      '.. ..MMMM......',
+      '.. ..MMMM......',
       '.. ............',
       '.. ............',
       '.. ............',
@@ -15307,10 +15316,10 @@ const FRAME_VARIANTS_V117 = [
       '.. ............',
       '.. ............',
       '.. ............',
-      '.. ............',
-      '.. ............',
-      '.. ............',
-      '.. ............',
+      '.. ..MMMM......',
+      '.. ..MMMM......',
+      '.. ..MMMM......',
+      '.. ..MMMM......',
       '.. WWWWWWWWWWWW',
       '.. WWWWWWWWWWWW',
       '   WWWWWWWWWWWW',
@@ -15352,7 +15361,7 @@ const FRAME_VARIANTS_V117 = [
       '                  '
     ] },
   { id: 'spine_capital_prow', tag: 'CP-P4', name: 'Spinal lance (capital)', cls: 'capital', kind: 'prow', weight: 'heavy', fits: ['capital'], joints: { stern: 'J22', bow: '' }, jointY: { stern: 4, bow: 0 },
-    alloys: 88, note: '+ a spinal gun on the spine gets +10% range; half again as long as the Standard. - needs Spinal mounts research; slim, so little room beside the gun', ship: [], v117: { squares: 416, standard: 378, tech: 'Spinal mounts' },
+    alloys: 88, note: '+ a spinal gun on the spine gets +10% range; half again as long as the Standard; a mast patch on each edge (a sensor there counts twice). - needs Spinal mounts research; slim, so little room beside the gun', ship: [], v117: { squares: 416, standard: 378, tech: 'Spinal mounts' },
     rows: [
       '                              ',
       '..                            ',
@@ -15363,18 +15372,18 @@ const FRAME_VARIANTS_V117 = [
       '....                          ',
       '....                          ',
       '....                          ',
-      '............................  ',
-      '..............................',
-      '..............................',
-      '..............................',
+      '.............MMMM...........  ',
+      '.............MMMM.............',
+      '.............MMMM.............',
+      '.............MMMM.............',
       '..............................',
       'SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS',
       'SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS',
       '..............................',
-      '..............................',
-      '..............................',
-      '..............................',
-      '............................  ',
+      '.............MMMM.............',
+      '.............MMMM.............',
+      '.............MMMM.............',
+      '.............MMMM...........  ',
       '....                          ',
       '....                          ',
       '....                          ',
@@ -15386,7 +15395,7 @@ const FRAME_VARIANTS_V117 = [
       '                              '
     ] },
   { id: 'spon_capital_hull', tag: 'CP-H2', name: 'Broadside sponsons (capital)', cls: 'capital', kind: 'hull', weight: 'heavy', fits: ['capital'], joints: { stern: 'J22', bow: 'J22' }, jointY: { stern: 4, bow: 4 }, openWithHull: true,
-    alloys: 120, note: '+ two bulges past the normal outline; weapons on their rim fire 10% faster. - the body is a row slimmer; +20% Alloys', ship: [], v117: { squares: 782, standard: 700 },
+    alloys: 120, note: '+ two bulges past the normal outline; weapons on their rim fire 10% faster; a mast patch on each edge (a sensor there counts twice). - the body is a row slimmer; +20% Alloys', ship: [], v117: { squares: 782, standard: 700 },
     rows: [
       '       WWWWWWWWWWW       ',
       '       W.........W       ',
@@ -15394,6 +15403,10 @@ const FRAME_VARIANTS_V117 = [
       '       W.........W       ',
       '       W.........W       ',
       '       W.........W       ',
+      '...MMMM..................',
+      '...MMMM..................',
+      '...MMMM..................',
+      '...MMMM..................',
       '.........................',
       '.........................',
       '.........................',
@@ -15412,14 +15425,10 @@ const FRAME_VARIANTS_V117 = [
       '.........................',
       '.........................',
       '.........................',
-      '.........................',
-      '.........................',
-      '.........................',
-      '.........................',
-      '.........................',
-      '.........................',
-      '.........................',
-      '.........................',
+      '...MMMM..................',
+      '...MMMM..................',
+      '...MMMM..................',
+      '...MMMM..................',
       '       W.........W       ',
       '       W.........W       ',
       '       W.........W       ',
@@ -15506,42 +15515,46 @@ const FRAME_VARIANTS_V117 = [
       '                         '
     ] },
   { id: 'twin_capital_thrust', tag: 'CP-T4', name: 'Twin hulls (capital)', cls: 'capital', kind: 'thrust', weight: 'heavy', fits: ['capital'], joints: { stern: '', bow: 'J22' }, jointY: { stern: 0, bow: 4 }, openWithHull: true,
-    alloys: 100, note: '+ two engine bodies, a row past the outline each side: a wide drive wall of drive-bay squares and lots of edge. - the gap between them is wasted room; about 10% less room', ship: [], v117: { squares: 610, standard: 676 },
+    alloys: 142, note: '+ six of the biggest drives. - plate 4 on the bodies, thinner than a capital\'s 5', ship: [], v117: { squares: 872, standard: 676 },
     rows: [
-      'EE...                    ',
-      'EE...                    ',
+      '.........................',
+      '.........................',
+      '.........................',
+      '.........................',
       'EE.......................',
       'EE.......................',
       'EE.......................',
-      '     ....................',
-      '     ....................',
-      '     ....................',
-      '     ....................',
-      '     ....................',
-      '     ....................',
-      '     ....................',
-      '     ....................',
-      '     ....................',
-      '     ....................',
-      '     ....................',
-      '     ....................',
-      '     ....................',
-      '     ....................',
-      '     ....................',
-      '     ....................',
-      '     ....................',
-      '     ....................',
-      '     ....................',
-      '     ....................',
-      '     ....................',
-      '     ....................',
       'EE.......................',
       'EE.......................',
       'EE.......................',
-      'EE...                    ',
-      'EE...                    '
+      'EE.......................',
+      'EE.......................',
+      'EE.......................',
+      'EE.......................',
+      'EE.......................',
+      'EE.......................',
+      '.........................',
+      '              ...........',
+      '              ...........',
+      '.........................',
+      'EE.......................',
+      'EE.......................',
+      'EE.......................',
+      'EE.......................',
+      'EE.......................',
+      'EE.......................',
+      'EE.......................',
+      'EE.......................',
+      'EE.......................',
+      'EE.......................',
+      'EE.......................',
+      'EE.......................',
+      '.........................',
+      '.........................',
+      '.........................',
+      '.........................'
     ] },
-  { id: 'tank_capital_thrust', tag: 'CP-T5', name: 'Tanker (capital)', cls: 'capital', kind: 'thrust', weight: 'heavy', fits: ['capital'], joints: { stern: '', bow: 'J22' }, jointY: { stern: 0, bow: 4 }, openWithHull: true,
+  { id: 'tank_capital_thrust', tag: 'CP-T5', name: 'Tanker (capital)', cls: 'capital', kind: 'thrust', weight: 'heavy', fits: ['capital'], joints: { stern: '', bow: 'J22' }, jointY: { stern: 0, bow: 4 }, openWithHull: true, wholeOnly: true,
     alloys: 110, note: '+ two fuel blocks on struts past the outline: room for big tanks and long transfers. - the blocks are exposed and only reach the ship by thin struts; +10% Alloys', ship: [], v117: { squares: 784, standard: 676 },
     rows: [
       '         TTTTTT          ',
@@ -15668,14 +15681,17 @@ const FRAME_VARIANTS_V117 = [
       '                         '
     ] },
   { id: 'gdk_capital_hull', tag: 'CP-H7', name: 'Gun deck (capital)', cls: 'capital', kind: 'hull', weight: 'heavy', fits: ['capital'], joints: { stern: 'J22', bow: 'J22' }, jointY: { stern: 4, bow: 4 }, openWithHull: true,
-    alloys: 110, note: '+ turret-ring bumps past the outline; guns on them fire 10% faster. - the bumps hold only one turret each; +10% Alloys', ship: [], v117: { squares: 780, standard: 700 },
+    alloys: 110, note: '+ turret-ring bumps past the outline; guns on them fire 10% faster; a mast patch on each edge (a sensor there counts twice). - the bumps hold only one turret each; +10% Alloys', ship: [], v117: { squares: 780, standard: 700 },
     rows: [
       '                         ',
       '    BBBBB      BBBBB     ',
       '    BBBBB      BBBBB     ',
       '    BBBBB      BBBBB     ',
       '    BBBBB      BBBBB     ',
-      '....BBBBB......BBBBB.....',
+      '....BBBBB.MMMM.BBBBB.....',
+      '..........MMMM...........',
+      '..........MMMM...........',
+      '..........MMMM...........',
       '.........................',
       '.........................',
       '.........................',
@@ -15696,13 +15712,10 @@ const FRAME_VARIANTS_V117 = [
       '.........................',
       '.........................',
       '.........................',
-      '.........................',
-      '.........................',
-      '.........................',
-      '.........................',
-      '.........................',
-      '.........................',
-      '....BBBBB......BBBBB.....',
+      '..........MMMM...........',
+      '..........MMMM...........',
+      '..........MMMM...........',
+      '....BBBBB.MMMM.BBBBB.....',
       '    BBBBB      BBBBB     ',
       '    BBBBB      BBBBB     ',
       '    BBBBB      BBBBB     ',
@@ -16142,7 +16155,7 @@ const FRAME_SQUARE_BONUSES = {
   C: { id: 'C', name: 'Citadel',     cat: 'crew',        stat: 'deep',       mul: 1,    text: 'Parts here are hit last, and a bridge here takes 20% less damage' },
   S: { id: 'S', name: 'Spine',       cat: 'weapons',     stat: 'range',      mul: 1.10, text: 'A spinal cradle here: +10% range' },
   W: { id: 'W', name: 'Sponson',     cat: 'weapons',     stat: 'fireRate',   mul: 1.10, text: 'Weapons here fire 10% faster' },
-  M: { id: 'M', name: 'Mast',        cat: 'electronics', stat: 'sensor',     mul: 2,    text: 'A sensor here counts twice; parts here are hit first' },
+  M: { id: 'M', name: 'Mast',        cat: 'electronics', stat: 'sensor',     mul: 2,    text: 'Sensors, ECM jammers and point defence here count twice; parts here are hit first' },
   G: { id: 'G', name: 'Hangar bay',  cat: 'ports',       stat: 'hangar',     mul: 1.20, text: 'A hangar here launches 20% faster' },
   R: { id: 'R', name: 'Heat trunk',  cat: 'heat',        stat: 'cooling',    mul: 1.15, text: 'Radiators here shed 15% more heat' },
   // (v27 C2) the colour zones of the Sentry frame (first-fighter.md): two new bonuses, a gun bay (as a sponson well) and two guide-only zones
@@ -16480,18 +16493,22 @@ const SHELL_OPTIONS = {
 const LAUNCHER_TYPES = {
   standard: { name: 'Standard', fires: 0,  powerPerSquare: 0.1, heatPerWarhead: 0.05, text: 'One ready missile of its own size, reloaded from the magazine.' },
   rapid:    { name: 'Rapid',    fires: -1, powerPerSquare: 0.2, heatPerWarhead: 0.15, text: 'Square; fires missiles one size down, fast. Hot and power hungry. (Rocket pods are these.)' },
-  torpedo:  { name: 'Torpedo',  fires: 1,  powerPerSquare: 0.1, heatPerWarhead: 0.05, text: 'Long and thin; fires missiles one size up, slowly (damage a second x0.6).' },
+  torpedo:  { name: 'Torpedo',  fires: 1,  powerPerSquare: 0.1, heatPerWarhead: 0.05, text: 'Long and thin; fires missiles one size up, slowly: for the squares it takes, 3/4 the fire of the Standard launcher one size up.' },
   // (v58, module-revamp.md s8, Alex D5) one-shot racks for small craft: ONE ready missile and no magazine (nothing to feed it); it fires once, and is
   // filled again only when the ship docks or refits, like the rest of a fighter's ammunition. ready: the missiles it holds. The rail is Tier 3 (paper data).
   rack:     { name: 'Torpedo rack',          fires: 0, powerPerSquare: 0.1, heatPerWarhead: 0.05, ready: 1, text: 'A 3 x 1 rack on the outside edge holding one ready Light missile and no magazine. It fires once, then is filled again when the ship docks.' },
   rail:     { name: 'Compact torpedo rail',  fires: 0, powerPerSquare: 0.1, heatPerWarhead: 0.05, ready: 1, text: 'A 5 x 1 rail holding one ready Medium missile, so a fighter can carry one. No magazine. (Tier 3: Compact torpedo rail.)' }   // (v90) open to research
 };
 // The spec's table (s5.1): footprint [w, h] by type and size, and the seconds between launches. Standard reloads every 2 / 6 / 16 / 40 / 120 s; Rapid's
-// reloads give the spec's "about 33 / 30 / 40 / 42 damage a second"; Torpedo's give x0.6 of the Standard launcher's damage a second for the missile it fires.
+// reloads give the spec's "about 33 / 30 / 40 / 42 damage a second"; Torpedo's: (v143.0, Alex 8 Nov: "2x medium torpedoes are the same size as 1 heavy standard
+// launcher, but have a faster fire rate. torpedos are supposed to give up fire rate to fire the larger missile") square for square of hull, a Torpedo launcher
+// fires 3/4 as many missiles as the Standard launcher one size up (which fires the same missile): reload = that launcher's reload x its squares / (0.75 x
+// the torpedo's squares). Before v143.0 torpedoes fired 1.2 to 1.6 times as much per square as that Standard launcher. What a torpedo buys is the bigger
+// missile on a smaller, long thin part (a Medium torpedo fits where a Heavy launcher cannot).
 const LAUNCHER_TABLE = {
   standard: { light: { w: 3, h: 2, reload: 2 },  medium: { w: 5, h: 3, reload: 6 },    heavy: { w: 9, h: 4, reload: 16 },    capital: { w: 15, h: 6, reload: 40 },   titan: { w: 22, h: 10, reload: 120 } },
   rapid:    {                                   medium: { w: 4, h: 4, reload: 0.6 },  heavy: { w: 6, h: 6, reload: 2 },     capital: { w: 10, h: 10, reload: 4.5 }, titan: { w: 15, h: 15, reload: 13 } },
-  torpedo:  { light: { w: 6, h: 1, reload: 10 }, medium: { w: 9, h: 2, reload: 27 },  heavy: { w: 14, h: 3, reload: 67 },   capital: { w: 21, h: 4, reload: 200 } },
+  torpedo:  { light: { w: 6, h: 1, reload: 20 }, medium: { w: 9, h: 2, reload: 43 },  heavy: { w: 14, h: 3, reload: 114 },  capital: { w: 21, h: 4, reload: 420 } },   // (v143.0) was 10 / 27 / 67 / 200
   rack:     { light: { w: 3, h: 1, reload: 2 } },
   rail:     {                                    medium: { w: 5, h: 1, reload: 6 } }
 };
@@ -17114,8 +17131,8 @@ const MODULES_V3 = [
     sporeField: { reach: 400, rate: 6 }, screen: { reach: 400, rate: 6 },
     rule: 'On the outside. A field 400 round the ship: every enemy missile in it loses 6 hit points a second, and every enemy small craft in it takes 6 damage a second. No dice, no ammunition; covers the ships nearby. Power 20. 1 Antimatter. (Research: Particle screen, after Particle beams.)' },
   // ---- Electronics (s9.5: sensors and ECM stay as they are; v88: the shields are the magnetic shields of faction-modules-t0-t3.md s2b) ----
-  { id: 'sensors', name: 'Sensors', cat: 'electronics', sub: 'Sensors', line: 'sensors', w: 2, h: 2, role: 'room', edge: true, cost: 8, power: -2, powerClass: 'sensors', heat: 1, crew: 1, sensor: 1, scatterMul: 0.93, res: 'magnetic', adv: { rareEarths: 1 },
-    rule: 'On the outside. Every weapon scatters 7% less (up to three sets). On a mast it counts twice.' },
+  { id: 'sensors', name: 'Sensors', cat: 'electronics', sub: 'Sensors', line: 'sensors', w: 2, h: 2, role: 'room', edge: true, cost: 8, power: -2, powerClass: 'sensors', heat: 1, crew: 1, sensor: 1, scatterMul: 0.88, res: 'magnetic', adv: { rareEarths: 1 },
+    rule: 'On the outside. Every weapon scatters 12% less (up to three sets). On a mast it counts twice.' },   // (v140.0, Alex 8 Nov: sensors too weak) 7% -> 12%
   // (v87, s2b) LONG-RANGE SENSORS: a big dish array. Counts as one of the three sensor sets, but each weapon scatters 20% less (the scatter only grows past a
   // weapon's stated range, so this is what lets the long guns land at long range).
   { id: 'longsensor', name: 'Long-range sensors', cat: 'electronics', sub: 'Sensors', line: 'sensors', w: 4, h: 4, role: 'room', edge: true, cost: 30, power: -4, powerClass: 'sensors', heat: 2, crew: 3, sensor: 1, scatterMul: 0.8, res: 'magnetic', adv: { rareEarths: 4 },
@@ -17123,7 +17140,7 @@ const MODULES_V3 = [
   { id: 'firecontrol', name: 'Fire control room', cat: 'electronics', sub: 'Fire control', line: 'firecontrol', w: 6, h: 6, role: 'room', cost: 60, power: -4, powerClass: 'sensors', crew: 20, spreadMul: 0.85, trackingMul: 1.15, res: 'magnetic', adv: { rareEarths: 9 },
     rule: 'A room built for capital ships (20 crew): the weapons it reaches by passageway scatter 15% less and track 15% faster. A minor buff. Uses 9 Rare earths. (Research: Fire control.)' },
   { id: 'ecm', name: 'ECM jammer', cat: 'electronics', sub: 'Electronic war', line: 'ecm', w: 2, h: 1, role: 'external', edge: true, cost: 6, power: -2, powerClass: 'pd', heat: 1, jam: 0.08, crew: 1, res: 'magnetic', adv: { rareEarths: 2 }, traits: ['Decoying'],
-    rule: 'On the outside. Enemy guns scatter 8% more against this ship (two at most), and enemy drones near it lose their way. (Research: ECM jammer.)' },
+    rule: 'On the outside. Enemy guns scatter 8% more against this ship (two at most; on a mast it counts twice), and enemy drones near it lose their way. (Research: ECM jammer.)' },
   // (v88, s2b) ACTIVE MEASURES. The sand caster throws a sand cloud when a beam hits the ship: beams into or out of the cloud do SETTINGS.sandBeamMul of
   // their damage for sandCaster.seconds (05f bbBeamSecond). It spends sandCaster.rounds of the ship's rounds a cloud. The drone bay is point defence by
   // blocking: each of its drones that catches a missile is used up (pdUseOnKill).
@@ -42017,10 +42034,16 @@ function allocMemberBlock(sq, n, st) {
   return start;
 }
 // Packs the member list (every live squadron's block moved down, the freed blocks dropped): called when the freed places pass memberCompactShare of the list.
+// (v137.0) The blocks are packed in the order they sit in the list (lowest start first), not in squadron-number order. A reused squadron number can own a
+// block far down the list, and packing by number then wrote another squadron's ships over blocks not yet moved: every member of those squadrons read 0, so
+// they counted no ships of their own ("lost 100%"), refused every attack, and the Admiral saw odds of 0 to 1 (Alex's week-47 save: nobody ever went for Phobos).
+// In start order each block only ever moves down, onto places already packed or freed, so nothing is overwritten.
 function compactMembers() {
   let at = 0;
-  for (let sq = 1; sq < squadronCount; sq++) {
-    if (sqRetired[sq] === 1 || sqBlock[sq] <= 0) continue;
+  const order = [];
+  for (let sq = 1; sq < squadronCount; sq++) if (sqRetired[sq] !== 1 && sqBlock[sq] > 0) order.push(sq);
+  order.sort(function (p, q) { return sqStart[p] - sqStart[q]; });
+  for (const sq of order) {
     const start = sqStart[sq], size = sqBlock[sq];
     if (start !== at) { sqMembers.copyWithin(at, start, start + size); sqMemberAway.copyWithin(at, start, start + size); sqStart[sq] = at; }
     at += size;
@@ -42471,12 +42494,20 @@ function setShipState(i, newState) {
 
 // Called when a ship is destroyed or leaves: takes it out of the state counters and out of its squadron.
 function removeShipFromCommand(i) {
+  const wasFighting = shipRetreating[i] === 0;               // (v137.1) noted before the state is cleared: a ship still in the fight counts in sqActive
   setShipState(i, STATE_NONE);
   if (shipProtectedBy[i] > 0) releaseEscorts(i);             // squadrons guarding this ship go back to normal
   const sq = shipSquad[i];
   shipSquad[i] = 0;
   if (sq > 0) {
+    // (v137.1) Its place in the member list is emptied now. Before, the place kept the lost ship's number; when a new ship later took that same number
+    // (a freed slot used again) and joined the same squadron at another place, the list named it twice: the squadron counted it twice, gave it two
+    // formation places and read its losses as smaller than they were (seen in long Last Stand runs). A ship going for repairs has already left its place
+    // empty and reserved (section 5j), so nothing is found here for it.
+    const start = sqStart[sq], end = start + sqSize[sq];
+    for (let k = start; k < end; k++) if (sqMembers[k] === i && sqMemberAway[k] === 0) { sqMembers[k] = -1; break; }
     sqAlive[sq]--;
+    if (wasFighting && sqActive[sq] > 0) sqActive[sq]--;   // (v137.1) the fighting count drops at once, not only at the squadron's next think (a hard-hit squadron read its losses late)
     sqDirty[sq] = 1;
     if (sqLeader[sq] === i) electLeader(sq);
     if (sqAlive[sq] === 0) {
@@ -58164,7 +58195,8 @@ function survivalSteer(sq) {
   const screening = stSpFast[st] === 1 && fr.hasLine && !fr.lineEngaged && sqCommitted[sq] === 0 && !survivalPressing(side);
   // (stop 6) a Bureau v2 squadron is not held to the line's pace once the line is fighting (small craft no longer creep behind a slow capital ship's missiles)
   const freed = stV3[st] === 1 && fr.lineEngaged && !screening;
-  if (!outOfFight && !falling && (!contact || screening) && fr.many && fr.march > 0 && !freed) {
+  const formedUp = lastStand !== null && lsWFHeld(sq);       // (v135.0, section 8h3) a Last Stand wave Fleet sets its own pace (lsWFStep)
+  if (!outOfFight && !falling && (!contact || screening) && fr.many && fr.march > 0 && !freed && !formedUp) {
     const proj = (sqCenterX[sq] - fr.ox) * fr.gx + (sqCenterY[sq] - fr.oy) * fr.gy;
     const ahead = proj - fr.line;
     const allow = (stSpFast[st] === 1 && fr.hasLine ? SETTINGS.screenAhead : SETTINGS.aheadMax) * spacing;   // (the screens ride just in front of the line, the rest at most aheadMax ahead)
@@ -61709,7 +61741,11 @@ const ctx = canvas.getContext('2d', { alpha: false });   // alpha:false = opaque
 const camera = { x: SETTINGS.worldWidth / 2, y: SETTINGS.worldHeight / 2, zoom: 0.1 };
 const BUCKET_ALPHA = [1.0, 0.6, 0.25];          // shot brightness as it fades
 let shipsDrawn = 0;                             // how many ships were drawn last frame (shown on screen)
-let shipsDrawnBig = 0;                          // (v126.3) ... and how many of them were big enough on screen to be icons (iconSilhouettePixels and more)
+let shipsDrawnBig = 0;                          // (v126.3) ... and how many of them were big on screen (DOTS_UNTIL_PIXELS long or more)
+// (v136.0, Alex 8 Nov: "I'm no longer seeing far out simple art at all, and the game runs a bit slower") v126.3 kept the icons as soon as most ships
+// were 6 pixels long, so in a big battle the fast far-out dots never came back. Now the dots (when very many ships are on screen) last until most
+// ships are this many pixels long: zooming in still goes dots -> icons -> close art (which starts at 40 pixels), with a couple of icon steps between.
+const DOTS_UNTIL_PIXELS = 20;
 
 // ---- Dot mode: when many ships are on screen, they are drawn as tiny squares written straight
 // ---- into a screen-sized pixel buffer. This is far faster than drawing thousands of triangles.
@@ -61774,7 +61810,7 @@ function drawPixelLayer(w, h, z) {
     const fx = shipX[i] * z + offX, fy = shipY[i] * z + offY;
     if (fx < -d || fx >= w + d || fy < -d || fy >= h + d) continue; // off screen (a big dot can reach in from outside the screen)
     shipsDrawn++;
-    if (typeDrawLen[shipType[i]] * z >= UI_SETTINGS.iconSilhouettePixels) shipsDrawnBig++;   // (v126.3) would be an icon
+    if (typeDrawLen[shipType[i]] * z >= DOTS_UNTIL_PIXELS) shipsDrawnBig++;   // (v126.3, v136.0) big on screen
     const pg = paintOn ? paintGroupOfShip(i) : shipSide[i];
     fillSquare(fx | 0, fy | 0, d, pg < 2 ? shipPixelFor(pg, shipType[i]) : paintPixels[pg], w, h);   // (v101.1: an enemy ship in its faction's colour)   // (v25, section 7p: Fleet shades and the selection)
   }
@@ -61827,7 +61863,7 @@ function drawShips(left, top, right, bottom, minSize) {
       if (x < left || x > right || y < top || y > bottom) continue;   // off screen
       shipsDrawn++;
       const L = triangleLen(shipType[i], minSize), nose = L * DRAWN_SIZE.triangleNose, back = L - nose, wing = L * DRAWN_SIZE.triangleWide * 0.5;   // (v110.0) as long as the icon
-      if (typeDrawLen[shipType[i]] * camera.zoom >= UI_SETTINGS.iconSilhouettePixels) shipsDrawnBig++;   // (v126.3)
+      if (typeDrawLen[shipType[i]] * camera.zoom >= DOTS_UNTIL_PIXELS) shipsDrawnBig++;   // (v126.3, v136.0)
       const c = shipCos[i], s = shipSin[i];
       const backX = x - c * back, backY = y - s * back;
       const wingX = -s * wing, wingY = c * wing;
@@ -62366,7 +62402,8 @@ function drawShipIcons(left, top, right, bottom, minSize) {
     if (lod === ICON_TRIANGLE) continue;
     const x = shipX[i], y = shipY[i];
     if (x < left || x > right || y < top || y > bottom) continue;
-    shipsDrawn++; shipsDrawnBig++;                             // (v126.3) an icon: big enough on screen (chooseDrawMode, section 6)
+    shipsDrawn++;
+    if (typeDrawLen[shipType[i]] * z >= DOTS_UNTIL_PIXELS) shipsDrawnBig++;   // (v126.3, v136.0) big on screen (chooseDrawMode, section 6)
     const px = iconPx[st], sx = x * z + offX, sy = y * z + offY;
     if (lod === ICON_FACILITY) { if (!closeDrawStation(i, sx, sy, px, side)) drawFacilityMarker(sx, sy, px, side); continue; }
     const c = shipCos[i], s = shipSin[i];
@@ -78859,6 +78896,19 @@ const LAST_STAND = {
   //   squadrons abreast to keep within it); overflow: a line up to this x too long still stays one line, a longer one folds its last Divisions back into a
   //   second line; leashMin / leashRange: how far a squadron may go from
   //   its spot in a fight (u, or this x its weapon reach, whichever is longer); huntSeconds: how long it may chase a sniper that can hit the station.
+  // (v135.0, section 8h3) THE ENEMY'S FLEETS AND DIVISIONS: the waves of these races come in formed up (the Swarm floods, the Sylph are too few).
+  //   on: 1 = formed up (0 = as before v135.0). Jobs: artillery = reach at least artilleryReach x the wave's usual reach (and at least artilleryMinReach u);
+  //   flanker = speed at least flankerSpeed x the wave's usual speed (or, with none, the two outermost line squadrons once there are minForFlanks).
+  //   divisionSquads: squadrons a Division; fleetSquads: squadrons a Fleet before the wave splits into more Fleets. Layout (u): squadGap between squadrons,
+  //   divisionGap between Divisions, rowGap between the line and the artillery behind it, flankAhead: how far ahead of the line the flankers stand.
+  //   Marching: paceShare x its slowest ships' speed (but at least paceFloor x its usual ships' speed: slower ships trail), slowed when its squadrons are more than lagFree u behind their spots (nearly stopped at lagFree +
+  //   lagStop); turnRate (radians a second); it halts when our ships or the station are within haltReach x its line's shortest weapon reach of its front, or when an earlier wave's Fleet stands
+  //   in its way (it waits echelonGap u behind it).
+  //   Leashes round a squadron's spot: leashMarch u on the march; halted, leashLine / leashArtillery / leashFlank x its weapon reach, at least leashMin u. A carrier's drones fly with its Fleet,
+  //   droneAhead u in front of their carrier's squadron, on the flankers' leash.
+  waveFormations: { on: 1, factions: ['delver', 'echo'], artilleryReach: 1.4, artilleryMinReach: 1500, flankerSpeed: 1.3, minForFlanks: 6, divisionSquads: 3, fleetSquads: 12,
+                    squadGap: 40, divisionGap: 220, rowGap: 350, flankAhead: 250, paceShare: 0.85, paceFloor: 0.6, lagFree: 300, lagStop: 600, turnRate: 0.15, haltReach: 0.9, echelonGap: 400,
+                    leashLine: 0.6, leashArtillery: 0.3, leashFlank: 1.0, leashMin: 500, leashMarch: 300, droneAhead: 300 },
   guardLine: { on: 1, ahead: 1200, maxAhead: 5000, reachShare: 0.7, lastAhead: 500, divisionGap: 250, rowGap: 60, lineGap: 300, bandShare: 1, overflow: 1.3, leashMin: 500, leashRange: 0.4, huntSeconds: 6 },
   waveGrowth: 0.15,                           // (v101.4) with each new wave every squadron grows by this share of its size (at least one ship), up to its cap: the fleet grows as the waves do
   biggerShare: 0.5,                           // (v101.4) a Bigger squadron card adds this share of the squadron (at least its hull's starting size)
@@ -78989,6 +79039,7 @@ function lsStart(enemy, opts) {
   const savedScenario = activeScenario;
   activeScenario = null;
   lsLineReset();                                          // (v131.0, section 8h2) the guard line starts empty
+  lsWFReset();                                            // (v135.0, section 8h3) no wave Fleets yet
   lastStand = { wave: 0, nextWaveAt: LAST_STAND.firstWaveSeconds, waveDesigns: designs, starter: starter, saved: saved, yard: yard, savedYard: savedYard,
                 savedScenario: savedScenario, aimAt: 0, kills: 0, shipsSent: 0, over: false, overText: '', hud: null,
                 // (v100.1) levels and cards
@@ -79094,12 +79145,29 @@ function lastStandStep() {
   lsVisitorStep();
   lsXpStep();
   if (lastStand.v2) ls2Sync();
+  if (lastStand.wfAt === undefined || simTime >= lastStand.wfAt) { const dt = lastStand.wfAt === undefined ? 0.5 : simTime - lastStand.wfAt + 0.5; lastStand.wfAt = simTime + 0.5; lsWFStep(dt); }   // (v135.0, section 8h3) the wave Fleets march
   if (simTime >= lastStand.aimAt) { lastStand.aimAt = simTime + 2; for (const sq of fleets[RED].squads) if (sqAlive[sq] > 0) lsAim(sq); }
+}
+// One wave squadron of k ships of type t, spawned in a small block round (gx, gy). Returns the squadron (0 when no ship could be placed).
+function lsWaveSquad(n, t, k, gx, gy, boss) {
+  const W = SETTINGS.worldWidth, H = SETTINGS.worldHeight, spacing = typeSpacing[t] || 60, slots = [];
+  for (let j = 0; j < k; j++) {
+    const ox = (j % 3) * spacing * 1.5, oy = (Math.floor(j / 3) - 1) * spacing * 1.5 + ((j % 3) - 1) * spacing;
+    if (!spawnShip(RED, t, clampNumber(gx + ox, 0, W), clampNumber(gy + oy, 0, H))) break;
+    slots.push(lastSpawnedSlot);
+    const st = RED * TYPE_COUNT + t; statDeployed[st]++; statArrived[st]++;
+  }
+  if (slots.length === 0) return 0;
+  const sq = addSquadron(RED, t, slots, null);
+  lsWaveFleetOf[sq] = 0;
+  if (boss) for (const sl of slots) lastStand.bosses.push({ slot: sl, name: typeName[t], wave: n });
+  quietReport(sq, 'reinforced', 'wave ' + n);
+  return sq;
 }
 // A wave squadron's plan: fight what it meets, and with nothing to fight head for the station (MODE_GOTO, section 5d).
 function lsAim(sq) {
   const o = lastStand.v2 ? ls2NearestStation(sqCenterX[sq], sqCenterY[sq]) : battleObjectives.find(function (b) { return b.owner === BLUE && b.alive; });   // (v102.5: the nearest station)
-  if (!o || sqMode[sq] === MODE_FLANK) return;
+  if (!o || sqMode[sq] === MODE_FLANK || lsWFHeld(sq)) return;   // (v135.0: a squadron in a formed-up wave Fleet keeps its spot, section 8h3)
   sqMode[sq] = MODE_GOTO; sqGoalX[sq] = o.x; sqGoalY[sq] = o.y; sqGoalFace[sq] = Math.PI; sqGoalArrive[sq] = 300;
 }
 // The "Call next wave" button: the next wave now, and the timer starts again from it.
@@ -79189,27 +79257,22 @@ function lsSendWave() {
   if (n > 1) lsWaveGrowth();                                  // (v101.4) the station's yards grow every squadron a little with each wave
   const plan = lsWavePlan(n, lsWaveRoom()), W = SETTINGS.worldWidth, H = SETTINGS.worldHeight;
   let sent = 0, groups = 0;
+  const formed = [];                                          // (v135.0, section 8h3) the Delver's and the Echo's squadrons come in formed up, in Fleets and Divisions
   for (const p of plan) {
-    const size = Math.max(1, lsSquadSize(p.type)), spacing = typeSpacing[p.type] || 60;
+    const size = Math.max(1, lsSquadSize(p.type));
     let left = p.n;
     while (left > 0) {
-      const k = Math.min(size, left), slots = [];
+      const k = Math.min(size, left);
+      if (lsWFFaction(p.faction)) { formed.push({ type: p.type, k: k, boss: !!p.boss, faction: p.faction }); left -= k; continue; }
       const gy = H * (0.15 + 0.7 * hash01(n * 131 + groups, 7));   // where along the right edge this squadron comes in (fixed by the wave and the group: no random numbers drawn)
-      const gx = W * 0.97 - spacing * 2 * (groups % 4);
-      for (let j = 0; j < k; j++) {
-        const ox = (j % 3) * spacing * 1.5, oy = (Math.floor(j / 3) - 1) * spacing * 1.5 + ((j % 3) - 1) * spacing;
-        if (!spawnShip(RED, p.type, clampNumber(gx + ox, 0, W), clampNumber(gy + oy, 0, H))) break;
-        slots.push(lastSpawnedSlot);
-        const st = RED * TYPE_COUNT + p.type; statDeployed[st]++; statArrived[st]++;
-      }
-      if (slots.length === 0) { left = 0; break; }
-      const sq = addSquadron(RED, p.type, slots, null);
-      if (p.boss) for (const sl of slots) lastStand.bosses.push({ slot: sl, name: typeName[p.type], wave: n });
-      quietReport(sq, 'reinforced', 'wave ' + n);
+      const gx = W * 0.97 - (typeSpacing[p.type] || 60) * 2 * (groups % 4);
+      const sq = lsWaveSquad(n, p.type, k, gx, gy, p.boss);
+      if (sq <= 0) { left = 0; break; }
       lsAim(sq);
-      sent += slots.length; groups++; left -= k;
+      sent += sqSize[sq]; groups++; left -= k;
     }
   }
+  sent += lsWFSend(n, formed);
   lastStand.shipsSent += sent;
   lsVisitorRoll(n);
   logEvent(RED, 'Wave ' + n + ' (' + lsWaveFactions(n).map(function (f) { return LAST_STAND.factions[f].name; }).join(' and ') + '): ' + plural(sent, 'ship') + ' coming in from the right (' +
@@ -80612,6 +80675,252 @@ function lsLinePick(i, st, sq, c) {
   }
   return findNearestEnemy(i, stRange2[st] * (1 + 1e-12));
 }
+// =====================================================================
+// 8h3. LAST STAND: THE ENEMY'S FLEETS AND DIVISIONS (v135.0)
+//
+// Alex (8 Nov): "the flood at enemy target is good for the swarm. the sylph behave uniquely and have too few ships for formations anyways. but the delvers
+// and echo need formations. even when attacking a target, they need to build divisions and fleets. line ships in front, long range ships behind, flankers, etc"
+//
+// Before v135.0 every wave squadron came in at its own place along the right edge and flew straight at the nearest station (lsAim), so a wave arrived
+// as a stream of loose squadrons and fought as a blob. With LAST_STAND.waveFormations.on = 1, a wave's squadrons of the races in
+// waveFormations.factions (the Delver and the Echo) come in already formed up:
+//  - each squadron gets a job from its ships: ARTILLERY (weapon reach at least artilleryReach x the wave's usual reach), FLANKER (speed at least
+//    flankerSpeed x the wave's usual speed), otherwise LINE. A wave with no fast ships still puts its two outermost line squadrons on the wings once it
+//    has minForFlanks line squadrons or more;
+//  - squadrons of a job are grouped into Divisions of up to divisionSquads; a wave of more than fleetSquads squadrons is split into Fleets, each with its
+//    share of every job, and each Fleet goes for a station (in turn, so a three-station run is attacked on several fronts);
+//  - a Fleet's layout, facing its target: the line Divisions side by side in front, the artillery Divisions side by side behind them, the flankers on
+//    both wings a little ahead. Ships spawn at their spots, so the formation is there from the first second;
+//  - the Fleet marches as one body (at the pace of its slowest ships, but not below waveFormations.paceFloor x its usual speed; slower when its
+//    squadrons fall behind their spots), turning slowly towards its
+//    target. When its line comes within reach of our ships or the station it halts and fights there; it moves on when nothing is in reach;
+//  - on the march a squadron keeps to its spot (a short leash, waveFormations.leashMarch) and fires only at what is already in its reach; halted, each
+//    squadron holds its spot on a leash (the line a medium one, the artillery a short one so it stays at the back, the flankers a long one so
+//    they can swing round) and picks targets within reach of its spot (the ordinary station rules, section 5b).
+// With on = 0 the waves are as before v135.0. The Swarm (the flood) and the Sylph are never formed up.
+// =====================================================================
+
+const lsWaveFleetOf = [];       // per squadron: the index + 1 of its wave Fleet in lastStand.waveFleets, or 0
+
+function lsWFOn() { return lastStand !== null && LAST_STAND.waveFormations && LAST_STAND.waveFormations.on === 1; }
+function lsWFFaction(f) { return lsWFOn() && LAST_STAND.waveFormations.factions.indexOf(f) >= 0; }
+
+// (lsStart) a new run: no wave Fleets.
+function lsWFReset() { lsWaveFleetOf.length = 0; }
+
+// How much room a squadron of k ships of type t takes (u): a square block at the usual formation spacing, plus one spacing round it.
+function lsWFSize(t, k) {
+  const sp = Math.max(typeSpacing[t] * SETTINGS.formationMinFactor, typeSpacing[t] * SETTINGS.formationSpacingFactor);
+  return (Math.ceil(Math.sqrt(Math.max(1, k))) + 1) * sp;
+}
+
+// The middle value of a list of numbers (0 for none).
+function lsWFMedian(a) { if (a.length === 0) return 0; const b = a.slice().sort(function (p, q) { return p - q; }); return b[Math.floor(b.length / 2)]; }
+
+// (lsSendWave) Sends the formed-up part of wave n: units = [{ type, k, boss, faction }] (one entry per squadron). Returns the ships sent.
+function lsWFSend(n, units) {
+  if (units.length === 0) return 0;
+  const G = LAST_STAND.waveFormations, L = lastStand;
+  if (!L.waveFleets) L.waveFleets = [];
+  const range = function (u) { return stRange[RED * TYPE_COUNT + u.type]; }, speed = function (u) { return stSpeed[RED * TYPE_COUNT + u.type]; };
+  const R = lsWFMedian(units.map(range)), S = lsWFMedian(units.map(speed));
+  // jobs
+  for (const u of units) {
+    u.size = lsWFSize(u.type, u.k);
+    u.job = range(u) >= G.artilleryReach * R && range(u) >= G.artilleryMinReach ? 'artillery' : (speed(u) >= G.flankerSpeed * S ? 'flank' : 'line');
+  }
+  if (!units.some(function (u) { return u.job === 'flank'; })) {
+    const line = units.filter(function (u) { return u.job === 'line' && !u.boss; });
+    if (line.length >= G.minForFlanks) { line[line.length - 1].job = 'flank'; line[line.length - 2].job = 'flank'; }
+  }
+  if (!units.some(function (u) { return u.job === 'line'; })) for (const u of units) if (u.job === 'artillery') u.job = 'line';   // (no line: the artillery is the line)
+  // Fleets: each takes its share of every job
+  const nF = Math.max(1, Math.ceil(units.length / G.fleetSquads));
+  const fleetUnits = []; for (let f = 0; f < nF; f++) fleetUnits.push([]);
+  let turn = 0;
+  for (const job of ['line', 'artillery', 'flank']) for (const u of units) if (u.job === job) fleetUnits[turn++ % nF].push(u);
+  // targets: the live stations, each Fleet the next one in turn (top to bottom), starting from the one this wave number picks
+  const stations = battleObjectives.filter(function (o) { return o.owner === BLUE && o.alive; }).sort(function (p, q) { return p.y - q.y; });
+  const W = SETTINGS.worldWidth, H = SETTINGS.worldHeight;
+  let sent = 0;
+  for (let f = 0; f < nF; f++) {
+    const list = fleetUnits[f];
+    if (list.length === 0) continue;
+    const F = { no: L.waveFleets.length + 1, wave: n, faction: list[0].faction, squads: [], divs: [], off: new Map(), job: new Map(), ax: 0, ay: 0, face: Math.PI, reach: Infinity, front: 0, back: 0, halted: false };
+    for (const u of list) if (u.job === 'line') F.reach = Math.min(F.reach, range(u));
+    if (!isFinite(F.reach)) F.reach = R;
+    // Divisions per job, then the layout (x = forward, towards the target; y = across, to the right of the facing)
+    const divsOf = function (job) { const us = list.filter(function (u) { return u.job === job; }), out = []; for (let i = 0; i < us.length; i += G.divisionSquads) out.push(us.slice(i, i + G.divisionSquads)); return out; };
+    const lineDivs = divsOf('line'), artDivs = divsOf('artillery'), flankDivs = divsOf('flank');
+    const rowW = function (divs) { let w = 0; for (const d of divs) for (const u of d) w += u.size + G.squadGap; return w + G.divisionGap * Math.max(0, divs.length - 1); };
+    const rowD = function (divs) { let d = 0; for (const dv of divs) for (const u of dv) d = Math.max(d, u.size); return d; };
+    const placeRow = function (divs, x) {          // side by side, centred; the 1st Division in the middle, the next either side
+      const order = []; for (let k = 0; k < divs.length; k++) { if (k % 2 === 0) order.push(divs[k]); else order.unshift(divs[k]); }
+      let y = -rowW(divs) / 2;
+      for (const d of order) { for (const u of d) { u.ox = x; u.oy = y + (u.size + G.squadGap) / 2; y += u.size + G.squadGap; } y += G.divisionGap; }
+    };
+    const lineD = rowD(lineDivs), artD = rowD(artDivs);
+    placeRow(lineDivs, 0);
+    if (artDivs.length) placeRow(artDivs, -(lineD / 2 + G.rowGap + artD / 2));
+    // flankers: half on each wing, a little ahead, each wing's Divisions one behind another
+    const lw = Math.max(rowW(lineDivs), rowW(artDivs)) / 2;
+    for (let k = 0; k < flankDivs.length; k++) {
+      const side = k % 2 === 0 ? -1 : 1, depth = Math.floor(k / 2);
+      let w = 0; for (const u of flankDivs[k]) w = Math.max(w, u.size);
+      let x = G.flankAhead - depth * (w + G.rowGap);
+      for (const u of flankDivs[k]) { u.ox = x; u.oy = side * (lw + G.divisionGap + w / 2); x -= u.size + G.squadGap; }
+    }
+    // where it comes in: at the right edge, in front of its target station, far enough in that every spot is on the map
+    const tgt = stations.length ? stations[(n + f) % stations.length] : null;
+    let ahead = 0, behind = 0, span = 0;
+    for (const u of list) { ahead = Math.max(ahead, u.ox + u.size / 2); behind = Math.max(behind, -u.ox + u.size / 2); span = Math.max(span, Math.abs(u.oy) + u.size / 2); }
+    F.front = ahead; F.back = behind; F.span = span;
+    F.ax = W - 150 - behind; F.ay = clampNumber(tgt ? tgt.y + (f >= stations.length ? (f % 2 ? 1 : -1) * span : 0) : H / 2, span + 100, H - span - 100);
+    F.face = Math.PI;                                // (facing left, at our stations)
+    // the Divisions' names, for the Fleet record (the tags drawn on the map read them)
+    let dn = 0;
+    const name = function (job, d) { dn++; F.divs.push({ name: ordinalWord(dn) + ' Division', job: job, units: d }); };
+    lineDivs.forEach(function (d) { name('line', d); }); artDivs.forEach(function (d) { name('artillery', d); }); flankDivs.forEach(function (d) { name('flank', d); });
+    // the ships, at their spots
+    const idx = L.waveFleets.length;
+    for (const D of F.divs) {
+      D.squads = [];
+      for (const u of D.units) {
+        const p = lsWFSpot(F, u.ox, u.oy);
+        const sq = lsWaveSquad(n, u.type, u.k, p.x, p.y, u.boss);
+        if (sq <= 0) continue;
+        sent += sqSize[sq];
+        F.squads.push(sq); D.squads.push(sq);
+        F.off.set(sq, { x: u.ox, y: u.oy }); F.job.set(sq, u.job);
+        lsWaveFleetOf[sq] = idx + 1;
+        sqFormation[sq] = 0;
+      }
+      delete D.units;
+    }
+    F.name = ordinalWord(F.no) + ' Fleet';
+    L.waveFleets.push(F);
+    for (const sq of F.squads) lsWFPlan(F, sq);
+  }
+  return sent;
+}
+
+// A spot of Fleet F: its anchor plus the offset (x forward, y across), turned to its facing.
+function lsWFSpot(F, ox, oy) {
+  const c = Math.cos(F.face), s = Math.sin(F.face);
+  return { x: F.ax + ox * c - oy * s, y: F.ay + ox * s + oy * c };
+}
+
+// A wave squadron's orders while it is in a formed-up Fleet: hold its spot, on the leash its job allows.
+function lsWFPlan(F, sq) {
+  const G = LAST_STAND.waveFormations, off = F.off.get(sq);
+  if (!off) return;
+  const st = RED * TYPE_COUNT + sqType[sq], p = lsWFSpot(F, off.x, off.y), job = F.job.get(sq);
+  sqMode[sq] = MODE_STATION; sqGoalAttack[sq] = 0;
+  sqGoalX[sq] = clampNumber(p.x, 0, SETTINGS.worldWidth); sqGoalY[sq] = clampNumber(p.y, 0, SETTINGS.worldHeight);
+  sqGoalFace[sq] = F.face;
+  sqGoalArrive[sq] = 3 * typeSpacing[sqType[sq]];
+  if (SETTINGS.commandModel === 1) {
+    const share = job === 'artillery' ? G.leashArtillery : (job === 'flank' || job === 'drone' ? G.leashFlank : G.leashLine);
+    if (!F.halted) { cmdSqLeashD[sq] = G.leashMarch; cmdSqMarch[sq] = stRange[st]; return; }   // (on the march: keep the spot, and fire only at what is already in reach)
+    const leash = Math.max(G.leashMin, share * stRange[st]);
+    cmdSqLeashD[sq] = leash; cmdSqMarch[sq] = leash + stRange[st] * (job === 'artillery' ? 0.5 : 1);
+  }
+}
+
+// (lastStandStep, every half second) Each Fleet marches, halts, turns; its squadrons are given their spots again.
+function lsWFStep(dt) {
+  const L = lastStand;
+  if (!L || !L.waveFleets || L.waveFleets.length === 0) return;
+  const G = LAST_STAND.waveFormations;
+  let anyLive = false;
+  lsWFAdoptDrones();
+  for (let f = 0; f < L.waveFleets.length; f++) {
+    const F = L.waveFleets[f];
+    if (F.gone) continue;
+    F.squads = F.squads.filter(function (sq) { const ok = sqAlive[sq] > 0 && sqRetired[sq] !== 1 && sqSide[sq] === RED && lsWaveFleetOf[sq] === f + 1; if (!ok && lsWaveFleetOf[sq] === f + 1) lsWaveFleetOf[sq] = 0; return ok; });
+    if (F.squads.length === 0) { F.gone = true; continue; }
+    anyLive = true;
+    // its target: the nearest live station
+    const o = ls2NearestStation(F.ax, F.ay);
+    if (!o) continue;
+    // turn slowly towards it
+    const want = Math.atan2(o.y - F.ay, o.x - F.ax);
+    let turn = want - F.face; while (turn > Math.PI) turn -= 2 * Math.PI; while (turn < -Math.PI) turn += 2 * Math.PI;
+    F.face += clampNumber(turn, -G.turnRate * dt, G.turnRate * dt);
+    // how far behind their spots its squadrons are, and its slowest ships' speed
+    // (its pace: its slowest ships', but never below paceFloor x its usual speed, so one very slow ship, such as the Delver's Mining ark, does not hold a
+    // whole Fleet to a crawl: such a ship trails behind and catches up when the Fleet halts, and is left out of the stragglers' count)
+    const speeds = [];
+    for (const sq of F.squads) speeds.push(stSpeed[RED * TYPE_COUNT + sqType[sq]]);
+    let slow = Infinity; for (const v of speeds) slow = Math.min(slow, v);
+    const pace = Math.max(slow, G.paceFloor * lsWFMedian(speeds));
+    let lag = 0, n = 0;
+    for (const sq of F.squads) {
+      if (stSpeed[RED * TYPE_COUNT + sqType[sq]] < pace) continue;
+      const off = F.off.get(sq), p = lsWFSpot(F, off.x, off.y);
+      lag += Math.hypot(sqCenterX[sq] - p.x, sqCenterY[sq] - p.y); n++;
+    }
+    lag /= Math.max(1, n);
+    // halt when the line is in reach of our ships or the station
+    const fc = Math.cos(F.face), fs = Math.sin(F.face);
+    const frontX = F.ax + fc * F.front, frontY = F.ay + fs * F.front;
+    const reach = F.reach * G.haltReach;
+    const near = nearestOfSide(BLUE, frontX, frontY, reach * reach);
+    const dSt = Math.hypot(o.x - frontX, o.y - frontY);
+    F.halted = near >= 0 || dSt <= reach || lsWFBlocked(F, f);
+    if (!F.halted) {
+      const keep = clampNumber(1 - (lag - G.lagFree) / G.lagStop, 0.05, 1);   // (wait for the stragglers)
+      const step = Math.min(pace * G.paceShare * keep * dt, Math.max(0, dSt - reach * 0.8));
+      F.ax += fc * step; F.ay += fs * step;
+    }
+    for (const sq of F.squads) lsWFPlan(F, sq);
+  }
+  if (!anyLive && L.waveFleets.length > 40) L.waveFleets.length = 0;   // (all gone: the list starts again)
+}
+
+// The drones a carrier of Fleet F launches (the Delver's Spike and Seeker drones) fly with the Fleet: a new drone squadron whose carrier is in F takes a spot
+// just ahead of its carrier's squadron, with the flankers' long leash (they screen the carrier and strike what comes near), instead of flying off alone at
+// the station.
+function lsWFAdoptDrones() {
+  const L = lastStand;
+  for (const sq of fleets[RED].squads) {
+    if (!(sqAlive[sq] > 0) || sqRetired[sq] === 1 || lsWaveFleetOf[sq] > 0) continue;
+    let carrierSq = 0;
+    for (let j = 0; j < sqSize[sq] && carrierSq === 0; j++) {
+      const m = sqMembers[sqStart[sq] + j];
+      if (shipAlive[m] !== 1 || shipSquad[m] !== sq || !(shipBay[m] >= 0)) continue;
+      const b = fgBays[shipBay[m]], c = b ? fgCarriers[b.carrier] : null;
+      if (c && c.slot >= 0 && shipAlive[c.slot] === 1) carrierSq = shipSquad[c.slot];
+    }
+    if (!(carrierSq > 0) || !lsWFHeld(carrierSq)) continue;
+    const f = lsWaveFleetOf[carrierSq] - 1, F = L.waveFleets[f];
+    const off = F ? F.off.get(carrierSq) : null;
+    if (!off || F.gone) continue;
+    if (!F.carrierOf) F.carrierOf = new Map();
+    let k = 0; for (const q of F.squads) if (F.carrierOf.get(q) === carrierSq) k++;
+    F.off.set(sq, { x: off.x + LAST_STAND.waveFormations.droneAhead, y: off.y + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * lsWFSize(sqType[sq], sqSize[sq]) });
+    F.job.set(sq, 'drone');
+    F.carrierOf.set(sq, carrierSq);
+    F.squads.push(sq);
+    lsWaveFleetOf[sq] = f + 1;
+  }
+}
+
+// Is an earlier wave Fleet standing just in front of Fleet F (in its way, and overlapping it across)? Then F waits behind it, as a second echelon, instead
+// of marching into it and mixing the two.
+function lsWFBlocked(F, f) {
+  const L = lastStand, G = LAST_STAND.waveFormations, fc = Math.cos(F.face), fs = Math.sin(F.face);
+  for (let e = 0; e < f; e++) {
+    const E = L.waveFleets[e];
+    if (!E || E.gone) continue;
+    const dx = E.ax - F.ax, dy = E.ay - F.ay, fwd = dx * fc + dy * fs, lat = Math.abs(-dx * fs + dy * fc);
+    if (fwd > 0 && fwd < F.front + E.back + G.echelonGap && lat < F.span + E.span) return true;
+  }
+  return false;
+}
+
+// (lsAim) Is this squadron held in a wave Fleet's formation? (Then lsAim leaves it alone.)
+function lsWFHeld(sq) { return lsWaveFleetOf[sq] > 0 && sqSide[sq] === RED; }
 // =====================================================================
 // 8i. (v102.0) LAST STAND VERSION 2: THE CARD TREE (stage 1 of 6)
 //   Alex, 5 Nov: "the chain of command now has a clickable visual representation off the left side of the battle map. these are solitaire
@@ -87735,7 +88044,8 @@ function passNumbersV3(L, a) {
   const sensors = L.parts.filter(function (u) { return u.m.scatterMul > 0 && u.working; }).sort(function (p, q) { return p.s.scatterMul - q.s.scatterMul; });
   for (let k = 0; k < sensors.length && radar < 3; k++) { const times = sensors[k].bonus.M ? 2 : 1; for (let t = 0; t < times && radar < 3; t++) { scatter *= sensors[k].s.scatterMul; radar++; } }
   a.scatterMul = scatter;
-  const jammers = L.parts.filter(function (u) { return u.m.jam > 0 && u.working; }); for (let k = 0; k < jammers.length && k < 2; k++) a.jam += jammers[k].s.jam;
+  // (v140.0, Alex 8 Nov) an ECM jammer on a mast counts twice, like a sensor (still two counts at most)
+  const jammers = L.parts.filter(function (u) { return u.m.jam > 0 && u.working; }); let jamN = 0; for (let k = 0; k < jammers.length && jamN < 2; k++) { const times = jammers[k].bonus.M ? 2 : 1; for (let t = 0; t < times && jamN < 2; t++) { a.jam += jammers[k].s.jam; jamN++; } }
   // (v30 A1) the bridge's bonus (s9.2: a combat bridge +3%, a command deck +5% to accuracy, reload and turn)
   const bridgeBonus = L.bridge && L.bridge.working && L.bridge.m.bridgeBonus > 1 ? L.bridge.m.bridgeBonus : 1;
   a.bridgeBonus = bridgeBonus;
@@ -87794,8 +88104,9 @@ function passNumbersV3(L, a) {
     if (types.length > 1) addProblem(a, 'WEAPONS_MIXED', 'note', 'Mixed weapons (' + types.join(', ') + '): each group fires on its own arc and range in battle.', null, [], []);
   } else if (L.parts.length > 0) addProblem(a, 'WEAPONS_NONE', 'warning', 'No working weapons: this ship cannot damage anything.', null, [], []);
   // point defence (s6): the average mount, plus the shells they stop (3% a gun PD mount up to 6 mounts and SETTINGS.bbPdStopCap, 15%, in all; a Flak battery about 6%)
+  // (v140.0, Alex 8 Nov) point defence on a mast counts as two mounts
   let pdN = 0, stopShells = 0, pdGunMounts = 0; const pd = { pdRange: 0, pdRate: 0, pdDamage: 0, pdKill: 0 };
-  for (let i = 0; i < L.parts.length; i++) { const u = L.parts[i]; if (!u.m.pd || !u.working) continue; pdN++; pd.pdRange += u.s.pdRange; pd.pdRate += u.s.pdRate; pd.pdDamage += u.s.pdDamage; pd.pdKill += u.s.pdKill; if (u.m.pdTier === 'gun' || u.m.pdTier === 'laser' || u.m.pdTier === 'coil') { if (pdGunMounts < 6) stopShells += u.s.pdStopShells || 0; pdGunMounts++; } else stopShells += u.s.pdStopShells || 0; }
+  for (let i = 0; i < L.parts.length; i++) { const u = L.parts[i]; if (!u.m.pd || !u.working) continue; for (let t = u.bonus.M ? 2 : 1; t > 0; t--) { pdN++; pd.pdRange += u.s.pdRange; pd.pdRate += u.s.pdRate; pd.pdDamage += u.s.pdDamage; pd.pdKill += u.s.pdKill; if (u.m.pdTier === 'gun' || u.m.pdTier === 'laser' || u.m.pdTier === 'coil') { if (pdGunMounts < 6) stopShells += u.s.pdStopShells || 0; pdGunMounts++; } else stopShells += u.s.pdStopShells || 0; } }
   a.pdMounts = pdN; if (pdN > 0) a.pd = { pdRange: pd.pdRange / pdN, pdRate: pd.pdRate / pdN, pdDamage: pd.pdDamage / pdN, pdKill: pd.pdKill / pdN, stopShells: Math.min(SETTINGS.bbPdStopCap, roundTo(stopShells, 3)) };
   // the power chart: what each class needs (parts that are joined to a reactor), what it gets, where it runs out.
   // (v71, Alex 2026-10-29) ONE CHART PER POWER NETWORK: a reactor or battery powers only the parts on its own network (as a radiator cools only its own),
@@ -89340,6 +89651,7 @@ function b2PickModule(id) {
 // The picks a line is laid with next (the line's start picks, or a frame's own: a frame's `picks`, as the tutorial's frames have).
 function b2Picks(line) {
   if (!b2.picks[line]) b2.picks[line] = b2PicksFixed(line, partOptionsV3(line, null), '');
+  else if (b2FeedLock(line, b2.picks[line])) b2.picks[line] = b2PicksFixed(line, b2.picks[line], '');   // (v139.0) picks kept from before that no open rack can feed move to ones it can
   return b2.picks[line];
 }
 // Puts a frame's starting picks (02c: a frame's `picks`) into the browser.
@@ -89359,17 +89671,31 @@ function b2PickLock(line, axis, v) {
   if (row.locked) return row.name + ' is ' + b2TechWords(tech || 'Tier 2');
   return '';
 }
+// (v139.0, Alex 8 Nov: "dont ever show a torpedo as an option if the player doesnt have the size of missiles unlocked for racks ... Thats a build trap")
+// Can this launcher be fed? A launcher that reloads from a missile rack (Standard, Rapid, Torpedo; not the one-shot Torpedo rack or Compact torpedo rail,
+// which hold their own missile) needs an open missile rack for the missile it fires: one of that size or bigger (a rack feeds its own size and smaller).
+// A Heavy Torpedo launcher fires Capital missiles, so it waits until the Capital missile rack opens. Returns '' when it can be fed, else the reason.
+// Such a pick is left out of the picks altogether (b2PicksHtml), and the picks never move onto it (b2PicksFixed).
+function b2FeedLock(line, o) {
+  if (line !== 'launcher' || b2.unlockAll) return '';
+  o = partOptionsV3(line, o);
+  const type = LAUNCHER_TYPES[o.type]; if (!type || type.ready > 0) return '';
+  const fired = launcherMissileSizeV3(o); if (!fired) return '';
+  for (let r = WEAPON_SIZE_ORDER.indexOf(fired); r < WEAPON_SIZE_ORDER.length; r++) { const m = MODULE_BY_ID['missilemag_' + WEAPON_SIZE_ORDER[r]]; if (m && !b2ModLocked(m)) return ''; }
+  return 'it fires ' + MISSILE_SIZES[fired].name + ' missiles, and no missile rack that holds them is open yet';
+}
 // The picks made to exist together: when the combination does not exist, the fewest other picks (one, else two) are moved, open picks first and in table
 // order, the last axes first (so choosing a role moves the size before the family). keep = the axis just chosen (left alone).
 function b2PicksFixed(line, o, keep) {
   o = partOptionsV3(line, o);
-  if (!buildComboProblemV3(line, o)) return o;
+  const bad = function (t) { return buildComboProblemV3(line, t) || b2FeedLock(line, t); };   // (v139.0) a launcher with no open rack for its missiles counts as not made
+  if (!bad(o)) return o;
   const axes = BUILD_LINES[line].axes.filter(function (ax) { return ax.key !== keep; });
   const tries = function (ax, base, openOnly) { const out = []; for (const v in ax.table) { if (v === base[ax.key]) continue; if (openOnly && b2PickLock(line, ax.key, v)) continue; const t = Object.assign({}, base); t[ax.key] = v; out.push(t); } return out; };
   for (let pass = 0; pass < 2; pass++) {
     const openOnly = pass === 0;
-    for (let i = axes.length - 1; i >= 0; i--) { const ts = tries(axes[i], o, openOnly); for (let k = 0; k < ts.length; k++) if (!buildComboProblemV3(line, ts[k])) return ts[k]; }
-    for (let i = axes.length - 1; i >= 0; i--) for (let j = i - 1; j >= 0; j--) { const ts = tries(axes[i], o, openOnly); for (let k = 0; k < ts.length; k++) { const us = tries(axes[j], ts[k], openOnly); for (let n = 0; n < us.length; n++) if (!buildComboProblemV3(line, us[n])) return us[n]; } }
+    for (let i = axes.length - 1; i >= 0; i--) { const ts = tries(axes[i], o, openOnly); for (let k = 0; k < ts.length; k++) if (!bad(ts[k])) return ts[k]; }
+    for (let i = axes.length - 1; i >= 0; i--) for (let j = i - 1; j >= 0; j--) { const ts = tries(axes[i], o, openOnly); for (let k = 0; k < ts.length; k++) { const us = tries(axes[j], ts[k], openOnly); for (let n = 0; n < us.length; n++) if (!bad(us[n])) return us[n]; } }
   }
   return o;
 }
@@ -89378,16 +89704,12 @@ function b2PicksWith(line, o, axis, v) { const t = Object.assign({}, partOptions
 // Words for searching a built row: the names of its current picks.
 function b2BuildWords(line) { const o = b2Picks(line); return BUILD_LINES[line].axes.map(function (ax) { return ax.table[o[ax.key]].name; }).join(' '); }
 // One short line of a weapon's numbers ("10 dmg every 1 s · range 1,120").
-// (v134.0, Alex 8 Nov: "weapon tooltips are not indicating a firing rate slowdown") The longer-battles fire rate dial (SETTINGS.fireRateScale, x0.5 since
-// v104.8: every weapon fires half as often in battle; point defence is not changed) is counted in every reload time the Bureau shows, so the numbers are
-// the ones the battle uses. b2FireScale() is the dial (1 = no change); b2BattleInterval(w) a weapon's time between shots in battle.
+// (v134.0, Alex 8 Nov: "weapon tooltips are not indicating a firing rate slowdown"; v142.0, Alex: no "on paper" numbers, only the real ones) The
+// longer-battles fire rate dial (SETTINGS.fireRateScale, x0.5 since v104.8: every weapon fires half as often; point defence is not changed) is counted
+// in every reload time and damage a second the game shows, so each tooltip gives the one number the battle really uses. b2FireScale() is the dial
+// (1 = no change); b2BattleInterval(w) a weapon's real time between shots.
 function b2FireScale() { return SETTINGS.fireRateScale > 0 ? SETTINGS.fireRateScale : 1; }
 function b2BattleInterval(w) { return (w && w.interval > 0 ? w.interval : 0) / b2FireScale(); }
-// The note under a weapon's numbers when the dial is not x1: what it does, in plain words.
-function b2FireScaleNote() {
-  const f = b2FireScale(); if (Math.abs(f - 1) < 1e-6) return '';
-  return 'Longer battles: every weapon fires ' + (f < 1 ? 'x' + b2Round(f, 2) + ' as often (' + (Math.abs(f - 0.5) < 1e-6 ? 'half as often' : 'slower') + ')' : 'x' + b2Round(f, 2) + ' as often') + ' as on paper; the times above already count it. Point defence is not changed.';
-}
 function b2WeaponLine(s) {
   const w = s.weapon; if (!w) return '';
   if (w.ammo === 'beam') return b2Round(w.damage * b2FireScale(), 1) + ' dmg a second (beam) · range ' + Math.round(w.range).toLocaleString('en-GB');
@@ -89405,6 +89727,7 @@ function b2PicksHtml(line, o, showLocked) {
       if (row.locked && lock && !showLocked) continue;
       if (ax.key === 'size' && fit && fit[v] === false && v !== o.size) continue;
       const t = Object.assign({}, o); t[ax.key] = v;
+      if (v !== o[ax.key] && b2FeedLock(line, t)) continue;   // (v139.0) never offer a launcher whose missiles no open rack can hold (a build trap)
       const combo = !lock && v !== o[ax.key] ? buildComboProblemV3(line, t) : '';
       chips += '<button type="button" data-pl="' + line + '" data-pa="' + ax.key + '" data-pv="' + v + '" aria-pressed="' + (o[ax.key] === v) + '" class="' + (lock ? 'lk' : '') + (combo ? ' na' : '') + '">' + (lock ? '<i class="pad" aria-hidden="true"></i>' : '') + esc(b2PickShort(ax, row)) + '</button>';
     }
@@ -89510,16 +89833,16 @@ function b2BuildNums(s) {
   const w = s.weapon, out = []; if (!w) return out;
   const more = b2ResWords(b2PartRes(s), ' + '), al = 'Alloys ' + Math.round(s.alloys) + (more ? ' + ' + more : '');
   const sq = s.w + '×' + s.h + ' = ' + s.squares + (s.ringSquares > 0 ? ' (gun ' + s.gunW + '×' + s.gunH + ' on its mount)' : '');
-  const iv = b2BattleInterval(w), dps = b2Round(w.damage / Math.max(0.01, iv), 1), f = b2FireScale(), slowed = Math.abs(f - 1) > 1e-6;   // (v134.0) battle times
+  const iv = b2BattleInterval(w), dps = b2Round(w.damage / Math.max(0.01, iv), 1), f = b2FireScale();   // (v134.0) the real times
   if (w.ammo === 'beam') {
-    out.push(['Beam', b2Round(w.beamTick, 2) + ' a tick: ' + b2Round(w.damage, 1) + ' damage a second while it burns' + (slowed ? ' (burns ' + (Math.abs(f - 0.5) < 1e-6 ? 'half' : b2Round(f * 100, 0) + '%') + ' of the time in battle: ' + b2Round(w.damage * f, 1) + ' a second on average)' : '')], ['Range', Math.round(w.range).toLocaleString('en-GB') + ' (full damage to a third of it)'], ['Arc', b2ArcWords(w)],
+    out.push(['Beam', b2Round(w.damage * f, 1) + ' damage a second'], ['Range', Math.round(w.range).toLocaleString('en-GB') + ' (full damage to a third of it)'], ['Arc', b2ArcWords(w)],
       ['Squares', sq], ['Power while firing', b2Round(-s.power, 1)], ['Heat while firing', b2Round(s.heat, 1) + ' a second'], ['Crew', s.crew], ['Cost', al]);
   } else if (w.ammo === 'missiles') {
-    out.push(['Warhead', b2Round(w.damage, 1) + ' damage (' + MISSILE_SIZES[w.missileSize].name + ' missile)'], ['Reload', b2Round(iv, 2) + ' s (' + dps + ' damage a second)' + (slowed ? ' in battle; ' + b2Round(w.interval, 2) + ' s on paper' : '')],
+    out.push(['Warhead', b2Round(w.damage, 1) + ' damage (' + MISSILE_SIZES[w.missileSize].name + ' missile)'], ['Reload', b2Round(iv, 2) + ' s (' + dps + ' damage a second)'],
       ['Missile', 'speed ' + w.missile.speed + ', fuel ' + w.missile.fuel + ' s, ' + w.missile.hp + ' hp'], ['Range', Math.round(w.range).toLocaleString('en-GB') + ' (for now)'], ['Squares', sq], ['Power', b2Round(-s.power, 1)],
       ['Heat a launch', b2Round(w.heatShot, 2)], ['Feeds from', w.ready > 0 ? 'its own ' + w.ready + ' ready missile (no magazine; filled again when the ship docks)' : 'a ' + MISSILE_SIZES[w.missileSize].name + ' or bigger missile rack'], ['Crew', s.crew], ['Cost', al]);
   } else {
-    out.push(['Damage a shot', b2Round(w.damage, 1)], ['Fires every', b2Round(iv, 2) + ' s (' + dps + ' damage a second)' + (slowed ? ' in battle; ' + b2Round(w.interval, 2) + ' s on paper' : '')], ['Range', Math.round(w.range).toLocaleString('en-GB')], ['Arc', b2ArcWords(w)],
+    out.push(['Damage a shot', b2Round(w.damage, 1)], ['Fires every', b2Round(iv, 2) + ' s (' + dps + ' damage a second)'], ['Range', Math.round(w.range).toLocaleString('en-GB')], ['Arc', b2ArcWords(w)],
       ['Squares', sq], ['Power', b2Round(-s.power, 1)], ['Heat a shot', b2Round(w.heatShot, 2)], ['Rounds a shot', b2Round(w.roundsPerShot, 2)], ['Crew', s.crew], ['Cost', al]);
     if (w.chargePerShot > 0) out.splice(out.length - 2, 0, ['Charge a shot', b2Round(w.chargePerShot, 1) + ' from the capacitors']);   // (v120) a railgun needs both
   }
@@ -90378,6 +90701,7 @@ function b2RenderInsp() {
       for (const v in ax.table) {
         const row = ax.table[v], lock = b2PickLock(rec.p, ax.key, v);
         if (row.locked && lock && !showLocked && v !== o[ax.key]) continue;
+        if (v !== o[ax.key]) { const t = Object.assign({}, o); t[ax.key] = v; if (b2FeedLock(rec.p, t)) continue; }   // (v139.0) no launcher whose missiles no open rack can hold
         opts += '<option value="' + v + '"' + (v === o[ax.key] ? ' selected' : '') + (lock && v !== o[ax.key] ? ' disabled' : '') + '>' + esc(row.name + (lock ? ' (locked)' : '')) + '</option>';
       }
       h += '<label data-ipa="' + ax.key + '">' + esc(ax.name) + ' <select data-ipick="' + ax.key + '" aria-label="' + esc(ax.name) + '">' + opts + '</select></label>';
@@ -90497,7 +90821,7 @@ function b2RenderCompare() {
   rows.forEach(function (r) { h += '<tr><td>' + esc(r[0]) + '</td><td class="n">' + esc(r[1]) + '</td><td class="n ' + r[3] + '">' + esc(r[2]) + '</td></tr>'; });
   const num = function (n, a, b, better, places) { const d = b2Round(b - a, places || 0), cls = d === 0 ? '' : ((better === 'up' ? d > 0 : d < 0) ? 'up' : 'dn'); return '<tr><td>' + n + '</td><td class="n">' + b2Round(a, places || 0) + '</td><td class="n ' + cls + '">' + b2Round(b, places || 0) + '</td></tr>'; };
   if (s0 && s1) {
-    const short = function (s) { return Math.max(0, s.power.used - s.power.made); }, dps = function (s) { return s.weapons.reduce(function (x, g) { return x + g.dps; }, 0); };
+    const short = function (s) { return Math.max(0, s.power.used - s.power.made); }, dps = function (s) { return s.weapons.reduce(function (x, g) { return x + g.dps; }, 0) * b2FireScale(); };   // (v142.0) the real fire rate
     h += num('Power made', s0.power.made, s1.power.made, 'up', 1) + num('Power short in a full fight', short(s0), short(s1), 'down', 1) + num('Free squares', s0.squares.free, s1.squares.free, 'up') + num('Freed squares (hatched)', s0.squares.freed, s1.squares.freed, 'up') +
       num('Tonnage', s0.tonnage, s1.tonnage, 'down') + num('Balance %', s0.balance.score * 100, s1.balance.score * 100, 'up') + num('Speed', s0.speed, s1.speed, 'up', 1) + num('Firepower (dmg/s)', dps(s0), dps(s1), 'up', 1) +
       num('Problems and warnings', a0.problemList.filter(function (p) { return p.level !== 'note'; }).length, a1.problemList.filter(function (p) { return p.level !== 'note'; }).length, 'down');
@@ -91642,7 +91966,6 @@ function b2TipModule(id, mk, sz, item, opt) {
     h += '<div class="nums">'; const bn = b2BuildNums(s); for (let k = 0; k < bn.length; k++) h += '<span>' + esc(bn[k][0]) + '</span><span>' + esc(String(bn[k][1])) + '</span>'; h += '<span>Hull points</span><span>' + Math.round(s.hp) + '</span></div>';
     const btr = (s.traits || []).filter(function (x) { return !!B2_TRAITS[x]; }); if (btr.length) h += '<div class="chips">' + btr.map(b2TraitWord).join('') + '</div>';
     h += b2MissileFeedTip(s);   // (v70) a launcher lists the magazines that can feed it, and how many of its missiles each holds
-    if (s.weapon && !m.pd && b2FireScaleNote()) h += '<div class="seen">' + esc(b2FireScaleNote()) + '</div>';   // (v134.0) the longer-battles fire rate, said plainly
     // (v94.1) in a campaign the kit alone says what is locked: a part's own paper flag (every Mk III or IV reads as locked) was showing "later tech" on researched parts
     if (((s.locked && !b2Kit()) || b2ModLocked(m) || b2MarkLocked(s.mk, m.line) || (b2Kit() && bureauKitAllowsPart(b2Kit(), { p: id, mk: s.mk, opt: s.opt })))) h += '<div class="seen bad">Locked: ' + esc((b2Kit() && bureauKitAllowsPart(b2Kit(), { p: id, mk: s.mk, opt: s.opt })) || 'later tech') + (b2.unlockAll ? ' (unlocked for testing)' : '') + '.</div>';
     if (item) { if (!item.working) h += '<div class="eg bad">Not working: ' + esc(item.why) + '</div>'; if (partLockV3(item.rec)) h += '<div class="seen">' + (partLockV3(item.rec) === 'locked' ? 'Locked: ' : 'Removable: ') + esc(b2LockText(item.rec)) + '.</div>'; }
