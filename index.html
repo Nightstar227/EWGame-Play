@@ -10863,7 +10863,7 @@ const SETTINGS = {
   longMapFog: 1,             // (v154.0) 1 = on the long map the battle screen draws an enemy ship only within longMapFogRange of our eyes (a ship of ours, a standing station or people of ours; 23i); 0 = show all
   longMapFogRange: 60000,    // ... that far, in units (about three quarters of a slot). The true range is between this and about 1.4 x it (a coarse grid)
   // (v159.0) THE MOONS TEST (06b3, section 5w3): moons go round their planets on the battle map, carrying their places and stations. Off by default.
-  moonOrbits: 0,             // 1 = moons move (also the debug menu's "Moons orbit their planets" tick, kept in this browser); 0 = everything stands still, as before
+  moonOrbits: 1,             // (v182.0) on by default. 1 = moons move (also the debug menu's "Moons orbit their planets" tick, kept in this browser); 0 = everything stands still, as before
   moonOrbitMinutes: 60,      // ... battle minutes for one trip round, for a moon moonOrbitRef units from its planet (further out takes longer: time grows with distance^1.5)
   moonOrbitRef: 20000,       // ... that distance, in units
   moonOrbitMaxSpeed: 60,     // ... no moon moves faster than this, in units a second (a slow big ship does about 100)
@@ -29198,7 +29198,7 @@ function swarmSurfaceLabel(p) {
   return 'INFESTED ' + Math.ceil(p.infest) + '/' + Math.round(p.infestCap) + (p.burnNow > 0 ? ' (BURNING)' : (p.shipsIn[BLUE] === 0 && p.infest < p.infestCap ? ' (GROWING)' : ''));
 }
 // =====================================================================
-// 5w3. MOONS ORBIT THEIR PLANETS  (v159.0, a TEST, off by default: SETTINGS.moonOrbits, or the debug menu's "Moons orbit their planets" tick)
+// 5w3. MOONS ORBIT THEIR PLANETS  (v159.0, a TEST, on by default since v182.0: SETTINGS.moonOrbits, or the debug menu's "Moons orbit their planets" tick)
 //
 //   Alex, 9 Nov: "brainstorm and test some minor orbital mechanics. moons around planets".
 //
@@ -29263,10 +29263,11 @@ function moonOrbitsOn() { return SETTINGS.moonOrbits === 1; }
 function moonOrbitsLoad() {
   let v = null; try { v = window.localStorage.getItem(MOON_ORBIT_STORE); } catch (e) { v = null; }
   if (v === '1') SETTINGS.moonOrbits = 1;
+  else if (v === '0') SETTINGS.moonOrbits = 0;   // (v182.0) the moons move by default, so turning them off is what this browser remembers
 }
 function moonOrbitsSet(on) {
   SETTINGS.moonOrbits = on ? 1 : 0;
-  try { if (on) window.localStorage.setItem(MOON_ORBIT_STORE, '1'); else window.localStorage.removeItem(MOON_ORBIT_STORE); } catch (e) { /* storage blocked: lasts until the page closes */ }
+  try { window.localStorage.setItem(MOON_ORBIT_STORE, on ? '1' : '0'); } catch (e) { /* storage blocked: lasts until the page closes */ }
 }
 if (typeof window !== 'undefined') moonOrbitsLoad();
 
@@ -74240,10 +74241,10 @@ function bsShipViewFrame() {
 const cmEl = document.getElementById('campaignScreen');
 const cmState = { built: false, view: 'map', sel: null, openDispatch: '', feedFilter: 'all', nextRender: 0, nextWatch: 0, pausedBy: '', watching: false, inBureau: false, bureauPause: null,   // (Bureau pause fix) bureauPause: the speed to put back on leaving the Bureau
                   battleWake: -1, sheet: '', sheetMsg: '', aoId: '',     // (v27 B3) aoId: the AO the AO view shows ('' = the front)
-                  newTutorial: 1,
+                  newTutorial: 0,     // (v182.0) off by default now, because the long map and the docks (both on by default) skip the tutorial
                   newEnemy: 'swarm',
-                  newLongMap: 0,     // (v153.0)
-                  newDocks: 0 };     // (v170.0) 1 = the next new campaign runs the dock economy test (06f2); it skips the tutorial, like the long map   // 1 = the next new campaign is the long map test (one battlefield from the Sun to the Kuiper Belt, 06d2)   // (v74) the enemy for the next new campaign (ALIEN_FACTIONS, 06d2): a Delver or Sylph war starts with the tutorial off   // (v27 C1) the Menu's Tutorial choice for the next new campaign: 1 on, 0 off (v27 C3: on by default, now that the 10 steps are written)
+                  newLongMap: 1,     // (v153.0) (v182.0) on by default; Normal on the New campaign panel turns it off
+                  newDocks: 1 };     // (v182.0) on by default; Normal on the New campaign panel turns it off. (v170.0) 1 = the next new campaign runs the dock economy test (06f2); it skips the tutorial, like the long map   // 1 = the next new campaign is the long map test (one battlefield from the Sun to the Kuiper Belt, 06d2)   // (v74) the enemy for the next new campaign (ALIEN_FACTIONS, 06d2): a Delver or Sylph war starts with the tutorial off   // (v27 C1) the Menu's Tutorial choice for the next new campaign: 1 on, 0 off (v27 C3: on by default, now that the 10 steps are written)
 const CM_W = 1300, CM_H = 680;
 const CM_SL0 = 10, CM_PY = 300, CM_ESX = -2600, CM_ESY = 320;
 const CM_PR = { sun: 36, earth: 42, mars: 32, ceres: 28, jupiter: 48, saturn: 28, uranus: 34, neptune: 33, pluto: 26 };   // the planet's drawn radius, by its art
@@ -79850,7 +79851,7 @@ function cmDebugSheetHtml() {
         '<input type="range" min="' + d.min + '" max="' + d.max + '" step="' + d.step + '" value="' + v + '" data-dial="' + d.key + '" aria-label="' + esc(d.label) + '">' +
         '<b id="dialVal-' + d.key + '">' + battleDialWords(v) + '</b></span></div>'; }).join('') +
     '<div class="row"><button type="button" class="btn btn-ghost" id="dialReset" title="Evasion x' + BATTLE_DIAL_GAME.evasionStrength + ', fire rate x' + BATTLE_DIAL_GAME.fireRateScale + ', hit points x' + BATTLE_DIAL_GAME.hpScale + '">Battle dials back to the game\'s values</button></div>' +   // (v104.8)
-    '<div class="opt"><span class="label" title="A test of simple orbits: Luna, Phobos, Deimos and the other moons go slowly round their planets on the battle map, carrying their stations with them. Planets, the Belt and the Sun\'s worlds stand still. Every battle, kept in this browser. Off is the normal game.">Moons orbit their planets</span>' +
+    '<div class="opt"><span class="label" title="A test of simple orbits: Luna, Phobos, Deimos and the other moons go slowly round their planets on the battle map, carrying their stations with them. Planets, the Belt and the Sun\'s worlds stand still. Every battle, kept in this browser. On by default since v182.0; untick to keep the moons still.">Moons orbit their planets</span>' +
       '<label class="check"><input type="checkbox" id="dbgMoons"' + (moonOrbitsOn() ? ' checked' : '') + '><span class="check-box"></span>Test: moons move round their planets in battle</label></div>' +   // (v159.0, section 5w3)
     '<div class="opt"><span class="label" title="A test of the economy: Alloys build DOCKS instead of ships. A dock costs what its ship costs and its ship appears at once; when that ship is lost the dock replaces it free at the place it was built, so the fleet stays about as big as the docks. Switching it on gives every ship a dock. Upkeep is paid per dock. The Swarm gets hatcheries the same way (v171.0): at least as many as we have docks or ships, and its economy grows on its own in a long stalemate, leaning to larger hulls. Switching off goes back to building ships.">Dock economy</span>' +
       '<label class="check"><input type="checkbox" id="dbgDocks"' + (typeof dockModelOn === 'function' && dockModelOn() ? ' checked' : '') + '><span class="check-box"></span>Test: the yards build docks, each keeping one ship in service</label></div>' +   // (v170.0, 06f2)
