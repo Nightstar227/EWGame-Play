@@ -11010,6 +11010,10 @@ const SETTINGS = {
   longMapCommand: 1,         // (v189.0) 1 = THE LONG MAP COMMAND (06c3): on the long map both Admirals plan only for the regions at the front (the places within one transfer of
                              //   the other side's), the idle Divisions of the rear move up to it, a Division is never sent where its fuel cannot take it, Divisions stay
                              //   together, and the plan is told in a sentence. 0 = v188: the whole system is one AO to the Admirals
+  longMapLine: 1,            // (v197.0) 1 = ON THE LONG MAP OUR ADMIRAL HOLDS ITS LINE (06c4): the Defence Fleets stand side by side on a line in front of the region the
+                             //   Admiral defends, each Division in its formation; and a Division moving to its spot marches there together, in shape, behind its marker.
+                             //   0 = v196: on the long map the line never formed (the whole system counted as "an AO not ours", so the Admiral stayed in attack mode)
+  longMapLineDepthSlots: 0.25,   // ... how far out from the defended place the line may stand at most, in region widths (it must stay inside a Local ship's fuel)
   longMapJoinSlots: 0.5,     // ... a squadron joins a Division only within this many region widths of it, and a Division spread wider is split by where its squadrons are
   longMapSwarmWaveSeconds: 1800,   // ... the Swarm's bar for an attack falls from placesSwarmAttackOdds to longMapSwarmWaveOdds as the front stands quiet this long (a week and a half)
   longMapSwarmWaveOdds: 0.1, // ... so after that it goes in with whatever has gathered
@@ -12209,12 +12213,12 @@ const SETTING_MUST_BE_NON_NEGATIVE = ['scuttleKillShare', 'scuttleXpCost', 'camp
   'arrivalStandOff', 'arrivalEdgeMargin', 'arrivalEdgeHeight', 'repairOffMapMinSeconds', 'repairForwardSetback', 'repairReleaseSpreadFactor', 'repairReturnDelay',
   'learningSpeed', 'learningStep', 'learningSoftZone', 'learningMaxRoomShare', 'levelEffect', 'serviceEffectPerHour', 'adaptabilityMin', 'xpPerAction', 'xpScoreBonus', 'driftSize', 'learningMinWindow', 'learningMinActivity',
   'expectationWeight', 'successScore', 'notableScore', 'arrowThreshold', 'objectiveMinShare', 'fireBarLowStoreBelow', 'pdProtectedFactor', 'pdSlugPerMount', 'pdSlugCap', 'pdCrossingKill', 'spinalDeadband', 'safeRingMargin', 'stationHysteresis', 'holdHysteresis', 'stationLeeBelow', 'hotWeaveOutgunned', 'hotWeaveShare', 'stragglerFactorSurvival', 'probeWindow', 'probeRecover', 'probeShieldBack', 'probeLossLimit', 'probeOutgunned', 'commitOdds', 'commitDropFactor', 'aheadMax', 'screenAhead', 'marchQuantile', 'massAttackOdds', 'massAttackWaitedOdds', 'flankMinSquadrons', 'survivalPressSeconds', 'abandonAfter', 'abandonRatio', 'abandonRatioNow', 'abandonWaitReinf', 'abandonLossShare', 'dangerRadiusPad', 'surroundRadiusFactor', 'surroundShare', 'supportRadiusFactor', 'supportWant', 'lineSpacingMin', 'dangerAttackFactor', 'dangerWeakFactor', 'dangerWeakBelow'];
-const SETTING_WHOLE_NUMBERS = ['matchupsInPlay', 'calmShips', 'calmLookEvery', 'cmRenderParts', 'simBudgetModel', 'closeWarmAll', 'closeKeepPictures', 'allyShoveOff', 'allyNudge', 'allyNudgeEvery', 'allyNudgeChecks', 'divisionSpots', 'divisionSpotsInFight', 'allyFineGrid', 'campaignTidyLive', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftMax', 'campaignSensors', 'showBoost', 'coreLoop', 'coreLoopFleetCommand', 'coreLoopFleetDivisions', 'coreLoopRecompose', 'coreLoopAlienCommand', 'coreLoopDivisionShips', 'coreLoopDivisionMinShips', 'coreLoopStreamMinShips', 'coreLoopLine', 'coreLoopLineLooks', 'coreLoopBerths', 'divisionMergeSmall', 'mergeFarOutOfContact', 'divisionMergeSlack', 'repairOffMap', 'supplyNoteWeeks', 'divisionPaceModel', 'swarmFormations', 'campaignBuildDays', 'campaignLiveEnterShips', 'cmdMaxAbreast', 'divisionFormations', 'doctrineModel', 'doctrineAlienClose', 'facingByGuns', 'facingVsTarget', 'facingTwoSided', 'freshSide', 'crossT', 'facingDodge', 'doctrineFindBattles', 'doctrineReviewMinLosses', 'doctrineReviewWeeks', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerMinLoss', 'ledgerAssaultWeeks', 'devCapStart', 'devCapAlien', 'devMaxBuilds', 'bbBeams', 'bbHeatModel', 'bbMissiles', 'bbPointDefence', 'bbBeamTicks', 'bbMissileRetries', 'bbPdFlakMax', 'bbLineOfFire', 'lineMinRanks', 'lineDeepRanks', 'lineDeepAbove', 'squadronMaxShips', 'tightOrbit', 'stationRebuild', 'radioMaxPerMinute', 'cmdReviewBattles', 'huntMaxShips', 'commandModel', 'cmdPassThrough', 'cmdSquadronBudget', 'cmdSquadronMax', 'cmdFleetMax', 'cmdRankBumpShips', 'cmdDivisionsMin', 'cmdDivisionsPerFleet', 'cmdDivisionsMax', 'orgScale', 'orgSquadronBudget', 'orgSquadronMax', 'orgDivisionTarget', 'orgDivisionMax', 'campaignLateAdmiral', 'campaignStartKit', 'placesFacilityApart', 'campaignFacilityApart', 'campaignStragglerShips', 'alienGarrisonCap', 'alienGatherMinShips', 'alienFirstPool', 'campaignFallenMax', 'placesHoldClear', 'campaignHoldClear', 'campaignPoolCap', 'campaignGarrisonCap', 'minLaunchShips', 'campaignYardShips', 'campaignModel', 'officerCarryOver', 'campaignAutosave', 'campaignLogMax', 'placesRetry', 'placesSweep', 'placesDecisive', 'siegeYardSlowdown', 'placesModel', 'placesAllowAbandon', 'placesTheatre', 'placesMaxOpposite', 'designModel', 'bureauBattle', 'moduleDamage', 'pressModel', 'partLossCall', 'crewRuleSquares', 'supplyReach', 'heatReach', 'exhaustLane', 'designMinSquares', 'designMaxSquares', 'survivalModel', 'allowAbandon', 'flankMinSquadrons', 'weaponModel', 'maxMissiles', 'pdSlugMaxMounts', 'missileInboundCall', 'formationModel', 'lockStep', 'columnMaxFile', 'wedgeMaxArm', 'reorgModel', 'disbandAt', 'fallenKeep', 'stagingModel', 'entrySegments', 'minNewSquadron', 'successionMode', 'woundedBattles', 'divisionTier', 'divisionTargetSize', 'divisionMinSize', 'divisionMaxSize', 'divisionMinSquadrons', 'rosterHistoryKeep', 'repertoireSize', 'aceKills', 'scarShakenBattles', 'maxShipsTotal', 'maxGridCells', 'targetCandidates', 'maxSalvosPerStep', 'maxShots', 'maxFlashes', 'formationMatchMaxShips', 'defaultSquadronSize',
+const SETTING_WHOLE_NUMBERS = ['longMapLine', 'matchupsInPlay', 'calmShips', 'calmLookEvery', 'cmRenderParts', 'simBudgetModel', 'closeWarmAll', 'closeKeepPictures', 'allyShoveOff', 'allyNudge', 'allyNudgeEvery', 'allyNudgeChecks', 'divisionSpots', 'divisionSpotsInFight', 'allyFineGrid', 'campaignTidyLive', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftMax', 'campaignSensors', 'showBoost', 'coreLoop', 'coreLoopFleetCommand', 'coreLoopFleetDivisions', 'coreLoopRecompose', 'coreLoopAlienCommand', 'coreLoopDivisionShips', 'coreLoopDivisionMinShips', 'coreLoopStreamMinShips', 'coreLoopLine', 'coreLoopLineLooks', 'coreLoopBerths', 'divisionMergeSmall', 'mergeFarOutOfContact', 'divisionMergeSlack', 'repairOffMap', 'supplyNoteWeeks', 'divisionPaceModel', 'swarmFormations', 'campaignBuildDays', 'campaignLiveEnterShips', 'cmdMaxAbreast', 'divisionFormations', 'doctrineModel', 'doctrineAlienClose', 'facingByGuns', 'facingVsTarget', 'facingTwoSided', 'freshSide', 'crossT', 'facingDodge', 'doctrineFindBattles', 'doctrineReviewMinLosses', 'doctrineReviewWeeks', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerMinLoss', 'ledgerAssaultWeeks', 'devCapStart', 'devCapAlien', 'devMaxBuilds', 'bbBeams', 'bbHeatModel', 'bbMissiles', 'bbPointDefence', 'bbBeamTicks', 'bbMissileRetries', 'bbPdFlakMax', 'bbLineOfFire', 'lineMinRanks', 'lineDeepRanks', 'lineDeepAbove', 'squadronMaxShips', 'tightOrbit', 'stationRebuild', 'radioMaxPerMinute', 'cmdReviewBattles', 'huntMaxShips', 'commandModel', 'cmdPassThrough', 'cmdSquadronBudget', 'cmdSquadronMax', 'cmdFleetMax', 'cmdRankBumpShips', 'cmdDivisionsMin', 'cmdDivisionsPerFleet', 'cmdDivisionsMax', 'orgScale', 'orgSquadronBudget', 'orgSquadronMax', 'orgDivisionTarget', 'orgDivisionMax', 'campaignLateAdmiral', 'campaignStartKit', 'placesFacilityApart', 'campaignFacilityApart', 'campaignStragglerShips', 'alienGarrisonCap', 'alienGatherMinShips', 'alienFirstPool', 'campaignFallenMax', 'placesHoldClear', 'campaignHoldClear', 'campaignPoolCap', 'campaignGarrisonCap', 'minLaunchShips', 'campaignYardShips', 'campaignModel', 'officerCarryOver', 'campaignAutosave', 'campaignLogMax', 'placesRetry', 'placesSweep', 'placesDecisive', 'siegeYardSlowdown', 'placesModel', 'placesAllowAbandon', 'placesTheatre', 'placesMaxOpposite', 'designModel', 'bureauBattle', 'moduleDamage', 'pressModel', 'partLossCall', 'crewRuleSquares', 'supplyReach', 'heatReach', 'exhaustLane', 'designMinSquares', 'designMaxSquares', 'survivalModel', 'allowAbandon', 'flankMinSquadrons', 'weaponModel', 'maxMissiles', 'pdSlugMaxMounts', 'missileInboundCall', 'formationModel', 'lockStep', 'columnMaxFile', 'wedgeMaxArm', 'reorgModel', 'disbandAt', 'fallenKeep', 'stagingModel', 'entrySegments', 'minNewSquadron', 'successionMode', 'woundedBattles', 'divisionTier', 'divisionTargetSize', 'divisionMinSize', 'divisionMaxSize', 'divisionMinSquadrons', 'rosterHistoryKeep', 'repertoireSize', 'aceKills', 'scarShakenBattles', 'maxShipsTotal', 'maxGridCells', 'targetCandidates', 'maxSalvosPerStep', 'maxShots', 'maxFlashes', 'formationMatchMaxShips', 'defaultSquadronSize',
   'farGoalBlocksAcross', 'debugMaxLines', 'maxTriangleShips', 'sectorsAcross', 'eventLogMax', 'logPanelLines', 'logBatchDetail', 'lineOrderRetries',
   'reportSquadronRows', 'reportPacketRows', 'reinforceMaxSquadrons', 'flankMaxSquadrons', 'counterMaxSquadrons', 'withdrawSamples', 'versionLogMax', 'serviceLastMax', 'serviceHistoryMax', 'serviceEventsMax', 'dossierLastActions', 'reportOfficerRows',
   'movementModel', 'hitModel', 'tacticsModel', 'flightAssist', 'retreatFiring', 'simultaneousFire', 'officerModel', 'strengthMapSteps', 'oddsCellsPerRadius', 'oddsMaxCells', 'maxRouts', 'maxBreakOffs', 'overheatFallback', 'smartTargetCandidates'];
 // The switches (section 1b, "The rules in force"): the values each may have, and the names the code uses for them.
-const SETTING_CHOICES = { moonOrbits: [0, 1], dockModel: [0, 1], dockSpareModel: [0, 1], dockSpareSwarm: [0, 1], scuttleOnLedger: [0, 1], swarmDockModel: [0, 1], dockEvoModel: [0, 1], dockEvoSwarmSplit: [0, 1], matchupsInPlay: [0, 1], calmShips: [0, 1], cmRenderParts: [0, 1], simBudgetModel: [0, 1], closeWarmAll: [0, 1], closeKeepPictures: [0, 1], allyShoveOff: [0, 1], allyNudge: [0, 1], divisionSpots: [0, 1], divisionSpotsInFight: [0, 1], campaignSensors: [0, 1], showBoost: [0, 1], coreLoop: [0, 1], coreLoopLine: [0, 1], coreLoopFleetCommand: [0, 1], coreLoopFleetDivisions: [0, 1], coreLoopRecompose: [0, 1], coreLoopAlienCommand: [0, 1], divisionMergeSmall: [0, 1], mergeFarOutOfContact: [0, 1], berthPairingModel: [0, 1], swarmNestModel: [0, 1], swarmGrowUpModel: [0, 1], swarmOpeningSpread: [0, 1], swarmLifeModel: [0, 1], swarmSurfaceModel: [0, 1], swarmEatsEnemies: [0, 1], swarmEatsHatchlings: [0, 1], fighterHangarModel: [0, 1], fighterLaunchModel: [0, 1], hangarRefillFromFleet: [0, 1], hangarOrphansStay: [0, 1], tenderDocking: [0, 1], supplyRuns: [0, 1], cargoKept: [0, 1], ferryRuns: [0, 1], stationFighterGuard: [0, 1], stationNoSquadron: [0, 1], stationCrewSquad: [0, 1], stationPass: [0, 1], droneJamModel: [0, 1], divisionPaceModel: [0, 1], swarmFormations: [0, 1], facingVsTarget: [0, 1], facingTwoSided: [0, 1], freshSide: [0, 1], crossT: [0, 1], facingDodge: [0, 1], placesPicket: [0, 1], placesPicketSwarm: [0, 1], campaignStandoffPark: [0, 1], placesWithdrawOrder: [0, 1], placesWithdrawGuardDry: [0, 1], campaignLiveYardDawn: [0, 1], longMapReach: [0, 1], longMapLeash: [0, 1], longMapFog: [0, 1], sleepShips: [0, 1, 2], campaignResourceGate: [0, 1], bbAcid: [0, 1], bbRegrow: [0, 1], bbBurst: [0, 1], bbMissileStoreBySize: [0, 1], bbBeams: [0, 1], bbHeatModel: [0, 1], bbMissiles: [0, 1], bbPointDefence: [0, 1], bbLineOfFire: [0, 1], tightOrbit: [0, 1], campaignStartAtEarth: [0, 1], placesCrush: [0, 1], placesMassAttack: [0, 1], assaultSendAll: [0, 1], assaultReachOnly: [0, 1], frontReachOnly: [0, 1], placesNoLeapfrog: [0, 1], placesClaimKeeps: [0, 1], enemyWaitTurnBack: [0, 1], placesClaimFirm: [0, 1], placesSwarmPress: [0, 1], campaignSupplyLine: [0, 1], commandModel: [0, 1], stationRebuild: [0, 1], cmdHelpMarches: [0, 1], cmdOpCommit: [0, 1, 2], cmdPassThrough: [0, 1, 2], orgScale: [0, 1], campaignLateAdmiral: [0, 1], campaignStartKit: [0, 1], placesFacilityApart: [0, 1], campaignFacilityApart: [0, 1], placesHoldClear: [0, 1], campaignHoldClear: [0, 1], campaignModel: [0, 1], officerCarryOver: [0, 1], campaignAutosave: [0, 1], placesRetry: [0, 1], placesSweep: [0, 1], placesDecisive: [0, 1], siegeYardSlowdown: [0, 1], placesModel: [0, 1], placesAllowAbandon: [0, 1], placesTheatre: [0, 1], designModel: [0, 1, 2], bureauBattle: [0, 1], moduleDamage: [0, 1], pressModel: [0, 1], partLossCall: [0, 1], survivalModel: [0, 1], allowAbandon: [0, 1], weaponModel: [0, 1], formationModel: [0, 1], lockStep: [0, 1], reorgModel: [0, 1], movementModel: [0, 1], hitModel: [0, 1, 2], tacticsModel: [0, 1], flightAssist: [0, 1], retreatFiring: [0, 1], overheatFallback: [0, 1], newSetupDefaults: [0, 1], unmannedRearGuard: [0, 1], simultaneousFire: [0, 1], officerModel: [0, 1], promoteNeedsVacancy: [0, 1], divisionTier: [0, 1], successionMode: [0, 1, 2], stagingModel: [0, 1] };
+const SETTING_CHOICES = { longMapLine: [0, 1], moonOrbits: [0, 1], dockModel: [0, 1], dockSpareModel: [0, 1], dockSpareSwarm: [0, 1], scuttleOnLedger: [0, 1], swarmDockModel: [0, 1], dockEvoModel: [0, 1], dockEvoSwarmSplit: [0, 1], matchupsInPlay: [0, 1], calmShips: [0, 1], cmRenderParts: [0, 1], simBudgetModel: [0, 1], closeWarmAll: [0, 1], closeKeepPictures: [0, 1], allyShoveOff: [0, 1], allyNudge: [0, 1], divisionSpots: [0, 1], divisionSpotsInFight: [0, 1], campaignSensors: [0, 1], showBoost: [0, 1], coreLoop: [0, 1], coreLoopLine: [0, 1], coreLoopFleetCommand: [0, 1], coreLoopFleetDivisions: [0, 1], coreLoopRecompose: [0, 1], coreLoopAlienCommand: [0, 1], divisionMergeSmall: [0, 1], mergeFarOutOfContact: [0, 1], berthPairingModel: [0, 1], swarmNestModel: [0, 1], swarmGrowUpModel: [0, 1], swarmOpeningSpread: [0, 1], swarmLifeModel: [0, 1], swarmSurfaceModel: [0, 1], swarmEatsEnemies: [0, 1], swarmEatsHatchlings: [0, 1], fighterHangarModel: [0, 1], fighterLaunchModel: [0, 1], hangarRefillFromFleet: [0, 1], hangarOrphansStay: [0, 1], tenderDocking: [0, 1], supplyRuns: [0, 1], cargoKept: [0, 1], ferryRuns: [0, 1], stationFighterGuard: [0, 1], stationNoSquadron: [0, 1], stationCrewSquad: [0, 1], stationPass: [0, 1], droneJamModel: [0, 1], divisionPaceModel: [0, 1], swarmFormations: [0, 1], facingVsTarget: [0, 1], facingTwoSided: [0, 1], freshSide: [0, 1], crossT: [0, 1], facingDodge: [0, 1], placesPicket: [0, 1], placesPicketSwarm: [0, 1], campaignStandoffPark: [0, 1], placesWithdrawOrder: [0, 1], placesWithdrawGuardDry: [0, 1], campaignLiveYardDawn: [0, 1], longMapReach: [0, 1], longMapLeash: [0, 1], longMapFog: [0, 1], sleepShips: [0, 1, 2], campaignResourceGate: [0, 1], bbAcid: [0, 1], bbRegrow: [0, 1], bbBurst: [0, 1], bbMissileStoreBySize: [0, 1], bbBeams: [0, 1], bbHeatModel: [0, 1], bbMissiles: [0, 1], bbPointDefence: [0, 1], bbLineOfFire: [0, 1], tightOrbit: [0, 1], campaignStartAtEarth: [0, 1], placesCrush: [0, 1], placesMassAttack: [0, 1], assaultSendAll: [0, 1], assaultReachOnly: [0, 1], frontReachOnly: [0, 1], placesNoLeapfrog: [0, 1], placesClaimKeeps: [0, 1], enemyWaitTurnBack: [0, 1], placesClaimFirm: [0, 1], placesSwarmPress: [0, 1], campaignSupplyLine: [0, 1], commandModel: [0, 1], stationRebuild: [0, 1], cmdHelpMarches: [0, 1], cmdOpCommit: [0, 1, 2], cmdPassThrough: [0, 1, 2], orgScale: [0, 1], campaignLateAdmiral: [0, 1], campaignStartKit: [0, 1], placesFacilityApart: [0, 1], campaignFacilityApart: [0, 1], placesHoldClear: [0, 1], campaignHoldClear: [0, 1], campaignModel: [0, 1], officerCarryOver: [0, 1], campaignAutosave: [0, 1], placesRetry: [0, 1], placesSweep: [0, 1], placesDecisive: [0, 1], siegeYardSlowdown: [0, 1], placesModel: [0, 1], placesAllowAbandon: [0, 1], placesTheatre: [0, 1], designModel: [0, 1, 2], bureauBattle: [0, 1], moduleDamage: [0, 1], pressModel: [0, 1], partLossCall: [0, 1], survivalModel: [0, 1], allowAbandon: [0, 1], weaponModel: [0, 1], formationModel: [0, 1], lockStep: [0, 1], reorgModel: [0, 1], movementModel: [0, 1], hitModel: [0, 1, 2], tacticsModel: [0, 1], flightAssist: [0, 1], retreatFiring: [0, 1], overheatFallback: [0, 1], newSetupDefaults: [0, 1], unmannedRearGuard: [0, 1], simultaneousFire: [0, 1], officerModel: [0, 1], promoteNeedsVacancy: [0, 1], divisionTier: [0, 1], successionMode: [0, 1, 2], stagingModel: [0, 1] };
 // Rule switches that an imported file may lack: a missing one is read as 0 (the file was made before the rule existed), not as this version's default (stage 12).
 const SETTING_SWITCHES_OLD_FILES = ['commandModel', 'orgScale', 'movementModel', 'hitModel', 'tacticsModel', 'newSetupDefaults', 'simultaneousFire', 'officerModel', 'divisionTier', 'stagingModel', 'reorgModel', 'formationModel', 'lockStep', 'weaponModel', 'survivalModel', 'designModel', 'moduleDamage', 'pressModel', 'placesModel'];
 const MOVE_CLASSIC = 0, MOVE_THRUST = 1;
@@ -31047,7 +31051,15 @@ function theatreAdmiralAssign(a, live) {
   if (th.withdraw) { theatreWithdrawStep(a, th, v, live); th.plan = theatrePlanText(a, th, v); return; }   // (v31 D1) the withdrawal ordered from above: nothing else is planned
   if (coreFleetCmdOn(a.side)) coreFleetCommand(a, th, live);                               // (v83) Fleet Command: squadrons assigned to the Defence Fleet and the Assault Fleet (06e part 6)
   else if (coreAssaultOn(a.side)) coreDraft(a, th, live);                                  // (v80) the assault fleet: our ships that can transfer beyond what the line needs (06e part 5)
-  if (coreLineOn(a.side) && !coreLineAttacking(th)) { coreLineStep(a, th, live); return; }   // (v80) the Admiral's line in place of the place-based steps below (coreLoopLine);
+  if (coreLineOn(a.side) && !coreLineAttacking(th)) {                                      // (v80) the Admiral's line in place of the place-based steps below (coreLoopLine);
+    if (!(long && longLineOn(a.side))) { coreLineStep(a, th, live); return; }
+    // (v197.0, 06c4) the long map: the Defence Fleets at the front stand on the line; every other Division follows the place steps below
+    const busy = longLineIntercepting(a, live);                                             // (out meeting an enemy that came into our region)
+    const onLine = longLineDivisions(a, th, live).filter(function (dv) { return busy.indexOf(dv) < 0; });
+    coreLineStep(a, th, onLine);
+    longLineIntercept(a, onLine, busy);
+    live = live.filter(function (dv) { return onLine.indexOf(dv) < 0 && busy.indexOf(dv) < 0; });
+  }
                                                                                              // (v85.3) but in an AO not ours the steps below take its places (06e part 6)
   if (coreHiveOn(a.side)) coreHiveCommand(a, th, live);                                    // (v86) the hive: the alien side's Pressing Swarm and Holding Swarm (06e part 6)
   theatreOperation(a, th, v);
@@ -31434,6 +31446,155 @@ function longEnemyNear(side) {
     longEnemyNearMemo = { at: simTime, v: v };
   }
   return longEnemyNearMemo.v[side];
+}
+// =====================================================================
+// 5x4. THE ADMIRAL'S LINE ON THE LONG MAP  (v197.0, SETTINGS.longMapLine)
+//
+//   Alex, 10 Nov 2026: "i never see the division formations at all, the fleets never form up or form the line, fleets are never adjacent to one another on a
+//   line ... its just clumps of squadrons", and "they dont move in formation, each squadron forms a column to move, and then they all head to the same single
+//   point, at their own speed, which converges them all as a stream".
+//
+//   WHY. The Admiral's line (06e part 5: one stretch per Fleet side by side, one per Division inside it, each Division in its formation rows) only runs in an AO
+//   that is ours. On the long map the whole solar system is one "AO", and the Swarm always holds some of it, so Fleet Command stayed in its ATTACK phase for the
+//   whole war and the line never formed. Instead the old place rules sent each Division to a place on its own (garrison, picket, move up), and each squadron
+//   flew to its own point there at its own speed, as a column.
+//
+//   WHAT THIS DOES (our side only; the Swarm keeps its swarming):
+//     1. On the long map Fleet Command is in its HOLD phase (the line's phase) while the region at the front is all ours: the attack on the next region is
+//        the Assault Fleet's job, run by the place rules as before. While the enemy holds a place in our own region (Luna, say) it is in its ATTACK phase
+//        as in an AO not ours: no line, and the place rules send our Divisions to take the place back.
+//     2. The line is drawn in front of the region the Admiral defends: Earth while Earth is at the front, else our place nearest the front. The places it covers
+//        are ours in that region (Earth and Luna, say). The threat is the enemy near that region (or, with none, the nearest enemy place). The line never stands
+//        further out than longMapLineDepthSlots of a region's width, so Local ships can always reach it.
+//     3. The Defence Fleets' Divisions in that region stand on the line (their stretches side by side, each Division in its formation, the reserve behind).
+//        Every other Division (the Assault Fleet, Divisions in other regions) follows the place rules as before.
+//     4. A Division going to its stretch of the line MARCHES THERE TOGETHER (15b hold_line, the v50 marker): it forms up, moves at one shared pace in its
+//        formation, and arrives in shape; a new order on the way carries on from the marker instead of forming up again. On the long map a squadron on
+//        the move keeps its block shape instead of stringing out into a column (20b).
+//     5. INTERCEPTING: an enemy group that comes into the region is met by the nearest line Division strong enough for it, which then returns (below).
+//   With longMapLine 0, or off the long map, nothing here runs.
+// =====================================================================
+
+function longLineOn(side) { return side === 0 && SETTINGS.longMapLine === 1 && typeof longCmdOn === 'function' && longCmdOn() && coreLineOn(side); }
+// Is a battle on the long map running with the v197.0 rules (for the marching in shape, both sides' Divisions)?
+function longLineMarchOn() { return SETTINGS.longMapLine === 1 && typeof longBattleOn === 'function' && longBattleOn(); }
+
+// The place the line is drawn in front of: Earth (the AO's main place) while it is ours and at the front; else our place nearest the front; else Earth while
+// ours; else -1.
+function longLineTop(side) {
+  const M = longPlayOf(side), specs = campaignFrontPlaces();
+  let main = -1;
+  for (const s of specs) if (s.main) { for (let k = 0; k < battlePlaces.length; k++) if (battlePlaces[k].id === s.id && battlePlaces[k].owner === side) main = k; }
+  if (main >= 0 && M.play[main] === 1) return main;
+  if (M.front >= 0) return M.front;
+  return main >= 0 ? main : (M.own.length > 0 ? M.own[0] : -1);
+}
+// Does the enemy hold a place in the region the line would defend (Luna taken, say)? Then, as in an AO not ours, there is no line: the place steps send our
+// Divisions to take it back, as before v197.0.
+function longLineRegionContested(side) {
+  const top = longLineTop(side);
+  if (top < 0) return true;
+  const P0 = battlePlaces[top], R = 0.6 * longMapSlotWidth();
+  for (const p of battlePlaces) if (p.owner === 1 - side && theatreDist(p.x, p.y, P0.x, P0.y) <= R) return true;
+  return false;
+}
+// The places the line covers: the top place first, then our other places in its region (within 0.6 of a region's width), by value.
+function longLineDefended(a, L) {
+  const side = a.side, top = longLineTop(side);
+  L.top = top;
+  if (top < 0) return [];
+  const P0 = battlePlaces[top], R = 0.6 * longMapSlotWidth(), out = [];
+  for (let k = 0; k < battlePlaces.length; k++) { const p = battlePlaces[k]; if (k !== top && p.owner === side && theatreDist(p.x, p.y, P0.x, P0.y) <= R) out.push(k); }
+  out.sort(function (i, j) { return battlePlaces[j].value - battlePlaces[i].value || i - j; });
+  out.unshift(top);
+  const n = Math.max(1, out.length - Math.max(0, L.dropped | 0));
+  return out.slice(0, n);
+}
+// The threat: the enemy within one transfer of the top place, weighted by strength; with none there, the nearest enemy place in play; null when neither.
+function longLineThreat(a) {
+  const side = a.side, top = longLineTop(side);
+  if (top < 0) return null;
+  const P0 = battlePlaces[top], pic = a.picture, D = longFrontDist();
+  let sx = 0, sy = 0, w = 0;
+  for (let c = 0; c < pic.contactCount; c++) {
+    const e = pic.contacts[c];
+    if (sqAlive[e] <= 0 || theatreDist(pic.cX[e], pic.cY[e], P0.x, P0.y) > D) continue;
+    const s = Math.max(pic.cStrength[e], 1e-6); sx += pic.cX[e] * s; sy += pic.cY[e] * s; w += s;
+  }
+  if (w > 0) return { x: sx / w, y: sy / w, edge: '', strength: w };
+  const M = longPlayOf(side);
+  if (M.target >= 0) { const p = battlePlaces[M.target]; return { x: p.x, y: p.y, edge: '', strength: 0 }; }
+  return null;
+}
+// The furthest out the line may stand from the top place (a share of a region's width).
+function longLineMaxDepth(P0) { return Math.max(1.3 * P0.radius, Math.max(0.05, SETTINGS.longMapLineDepthSlots) * longMapSlotWidth()); }
+// The Divisions that stand on the line: the Defence Fleets' (coreRole 'line') in the top place's region that are not in the Assault Fleet's operation.
+function longLineDivisions(a, th, live) {
+  const top = longLineTop(a.side);
+  if (top < 0) return [];
+  const P0 = battlePlaces[top], R = longMapSlotWidth();
+  return live.filter(function (dv) {
+    if (dv.coreRole !== 'line' || dv.transfer !== null || theatreInOp(th, dv)) return false;
+    const c = divisionCentre(dv);
+    return theatreDist(c.x, c.y, P0.x, P0.y) <= R;
+  });
+}
+// Does this squadron travel as a block rather than a column (20b)? On the long map, yes: a squadron on the move with no target keeps its block, whether it
+// marches with its Division behind the marker or goes somewhere on its own (Alex: "each squadron forms a column to move").
+function longLineMarching(sq) { return longLineMarchOn(); }
+
+// ---- INTERCEPTING (Alex's week 9 save: "they seem to have entirely given up trying to hold a line or intercept enemies") ----
+// An enemy group that comes into the region the line defends (within the line's depth and a quarter region past it, of the top place) is met by the nearest
+// Division of the line strong enough for it (not already fighting, at most half the line at once). It hunts that group (the Counter task), and once the group
+// is dead or has left the region it goes back to its stretch of the line. Returns the Divisions out intercepting (they are not on the line meanwhile).
+function longLineReach(P0) { return longLineMaxDepth(P0) + 0.25 * longMapSlotWidth(); }
+function longLineIntercepting(a, live) {
+  const top = longLineTop(a.side), out = [];
+  if (top < 0) return out;
+  const P0 = battlePlaces[top], R = 1.5 * longLineReach(P0);
+  for (const dv of live) {
+    if (!(dv.longIcpt > 0)) continue;
+    const e = dv.longIcpt;
+    if (sqAlive[e] > 0 && theatreDist(sqCenterX[e], sqCenterY[e], P0.x, P0.y) <= R && simTime - dv.longIcptAt < 600) {
+      out.push(dv);
+      if (!divisionInContact(dv) && theatreDist(sqCenterX[e], sqCenterY[e], dv.icptX, dv.icptY) > 3000) longLineSendAt(a, dv, e);   // (it has moved: the Division turns after it)
+      continue;
+    }
+    dv.longIcpt = 0; if (dv.lineWhy) dv.lineAt = 0;                                     // (back to its stretch: the line gives it its spot again at once)
+  }
+  return out;
+}
+function longLineIntercept(a, onLine, busy) {
+  const top = longLineTop(a.side);
+  if (top < 0 || onLine.length === 0) return;
+  const P0 = battlePlaces[top], R = longLineReach(P0), pic = a.picture;
+  const most = Math.max(1, Math.floor((onLine.length + busy.length) / 2)) - busy.length;
+  if (most <= 0) return;
+  const chased = new Set(busy.map(function (dv) { return dv.longIcpt; }));
+  const free = onLine.filter(function (dv) { return !cmdInContact(dv); });
+  let sent = 0;
+  for (let c = 0; c < pic.contactCount && sent < most && free.length > 0; c++) {
+    const e = pic.contacts[c];
+    if (sqAlive[e] <= 0 || chased.has(e) || stImmobile[(1 - a.side) * TYPE_COUNT + sqType[e]] === 1) continue;
+    if (theatreDist(pic.cX[e], pic.cY[e], P0.x, P0.y) > R) continue;
+    let best = -1, bestD = Infinity;
+    for (let k = 0; k < free.length; k++) {
+      const dv = free[k]; if (!(dv.strength >= pic.cStrength[e])) continue;
+      const cc = divisionCentre(dv), d = theatreDist(cc.x, cc.y, pic.cX[e], pic.cY[e]);
+      if (d < bestD) { bestD = d; best = k; }
+    }
+    if (best < 0) continue;
+    const dv = free.splice(best, 1)[0];
+    dv.longIcpt = e; dv.longIcptAt = simTime; dv.lineAt = -1; chased.add(e); sent++;
+    longLineSendAt(a, dv, e);
+  }
+}
+// The intercept itself: the Division holds a spot on the enemy group, facing it, so it goes there TOGETHER in its formation behind its marker (15b hold_line);
+// once it is in contact its Commodore fights as anywhere.
+function longLineSendAt(a, dv, e) {
+  const c = divisionCentre(dv), u = cmdUnit(sqCenterX[e] - c.x, sqCenterY[e] - c.y, a.side);
+  dv.icptX = sqCenterX[e]; dv.icptY = sqCenterY[e]; dv.placeTask = 'intercept'; dv.place = -1;
+  admiralTask(a, dv, 'hold', { x: sqCenterX[e], y: sqCenterY[e], gx: u.x, gy: u.y, place: -1 }, 'intercept the enemy coming into our region, then back to the line');
 }
 // =====================================================================
 // 5y. THE AO SECURED, THE SIEGE NUMBERS, THE PERIODIC REPORTS AND THE WAR-ROOM VIEW  (v21 stop 4; on a places map only, section 5w)
@@ -34679,6 +34840,7 @@ function coreAssaultDivisions(a) {
 // The places to defend, in order: the AO's main place first, then by value x (1 + the council's markers on it) x the campaign's priority weight. Places we hold;
 // when we hold none, the places the enemy does not hold; when there are none, the main place. The lowest `dropped` are left off (never the first).
 function coreLineDefended(a, L) {
+  if (longLineOn(a.side)) return longLineDefended(a, L);                    // (v197.0) the long map: the region at the front (06c4)
   const side = a.side, specs = campaignFrontPlaces(), markers = councilLocationMarkers();
   let mainId = '';
   for (let k = 0; k < specs.length; k++) if (specs[k].main) { mainId = specs[k].id; break; }
@@ -34701,6 +34863,7 @@ function coreLineDefended(a, L) {
 // The threat: the strength-weighted centre of the enemy on the map; with none, the middle of the edge it comes in by (its fleets due at an edge, else the
 // lane edge toward its rear AO, else the east edge). { x, y, edge ('' when the enemy is on the map), strength }
 function coreLineThreat(a) {
+  if (longLineOn(a.side)) { const t = longLineThreat(a); if (t !== null) return t; }   // (v197.0) the long map: the enemy near the region at the front (06c4)
   const pic = a.picture, W = SETTINGS.worldWidth, H = SETTINGS.worldHeight;
   let sx = 0, sy = 0, w = 0;
   for (let c = 0; c < pic.contactCount; c++) { const e = pic.contacts[c]; if (sqAlive[e] <= 0) continue; const s = Math.max(pic.cStrength[e], 1e-6); sx += pic.cX[e] * s; sy += pic.cY[e] * s; w += s; }
@@ -34788,7 +34951,8 @@ function coreLineLayout(a, th, live, post, look) {
   let ux = T.x - P0.x, uy = T.y - P0.y, dist = Math.sqrt(ux * ux + uy * uy);
   if (dist < 1) { ux = side === BLUE ? 1 : -1; uy = 0; dist = 1; } else { ux /= dist; uy /= dist; }
   const nx = -uy, ny = ux;
-  const depthU = clampNumber(L.depth * dist, 1.3 * P0.radius, Math.max(1.3 * P0.radius, 0.85 * dist));
+  let depthU = clampNumber(L.depth * dist, 1.3 * P0.radius, Math.max(1.3 * P0.radius, 0.85 * dist));
+  if (longLineOn(side)) depthU = Math.min(depthU, longLineMaxDepth(P0));                         // (v197.0) never out of a Local ship's fuel (06c4)
   // the approach point of each defended place: `depthU` out from it toward the threat (less when the threat is nearer than that)
   const pts = [];
   for (const k of defended) {
@@ -35671,6 +35835,7 @@ function coreFleetArrival(a, squads, ev) {
 // on their places, and the attack must go on until those are taken (on the week-9 save Mars was "secured" 13 s into the battle with all 3 places theirs).
 function coreAoOurs() {
   if (!placesMapMode || battlePlaces.length === 0) return true;
+  if (longLineOn(0)) return !longLineRegionContested(0);                                         // (v197.0, 06c4) the long map: the line's phase while the region at the front is all ours
   const home = campaignOn() ? campaignHomeAo(0) : null, atHome = !!home && home.id === campaignFrontId();   // (Earth keeps the v85 reading: secured is ours)
   if (aoState.holder === 0 && (atHome || !battlePlaces.some(function (p) { return p.owner === 1; }))) return true;
   if (aoState.holder === 1 && campaignEnemyPresent(1)) return false;
@@ -54359,7 +54524,7 @@ function cmdOrderClosing(dv, o) {
   const c = cmdDv(dv);
   for (let k = 0; k < dv.squads.length; k++) { const sq = dv.squads[k]; if (cmdSqFire[sq] > 0 && cmdSqFire[sq] !== FIRE_FOCUS) cmdSqFire[sq] = 0; if (cmdSqShape[sq] !== SHAPE_SQUARE) cmdSqShape[sq] = 0; }
   c.standing.clear(); c.leash.clear(); c.spots.clear();
-  if (c.pace && !c.pace.legacy) cmdPaceLetGo(dv, c);                          // (v50, section 5mp) the march together is over with the order
+  if (c.pace && !c.pace.legacy && !longLineMarchOn()) cmdPaceLetGo(dv, c);    // (v50, section 5mp) the march together is over with the order; (v197.0, 06c4) on the long map the next order carries on from the marker
   o.state = 'done';
 }
 function cmdEndOrder(dv, a, why) {
@@ -54386,6 +54551,7 @@ function cmdOrderForTask(dv, task) {
   const role = dv.role, id = task.id, p = task.params || {};
   const L = function (x) { return { id: x, legacy: true }; }, N = function (x) { return { id: x, legacy: false }; };
   if (placesActive()) {                                                     // (places: the theatre step's handlers stay; the role order is named)
+    if (id === 'hold' && (dv.placeTask === 'line' || dv.placeTask === 'intercept') && isFinite(p.x) && longLineMarchOn()) return N('hold_line');   // (v197.0, 06c4) on the Admiral's line on the long map: every role holds its stretch in its formation
     if (id === 'hold') return L(role === 'battery' ? 'bombard' : (role === 'dragoons' && p.place >= 0 ? 'seize' : 'hold_line'));
     if (id === 'counter') return L(role === 'dragoons' ? 'plug' : (role === 'light' ? 'intercept' : 'engage'));
     if (id === 'advance') return L(role === 'line' ? 'line_advance' : 'engage');
@@ -55064,9 +55230,10 @@ cmdDivHandlers.hold_line = { owns: true, standing: true, run: function (dv, a, o
     cx = isFinite(o.params.x) ? o.params.x : (c.holdX !== undefined && c.holdFor === o ? c.holdX : dv.anchorX); cy = isFinite(o.params.y) ? o.params.y : (c.holdFor === o ? c.holdY : dv.anchorY);
     if (c.holdFor !== o) { c.holdFor = o; c.holdX = cx; c.holdY = cy; }
     u = f ? cmdUnit(f.x - cx, f.y - cy, dv.side) : cmdUnit(divisionAxis(a, dv).gx, divisionAxis(a, dv).gy, dv.side);
+    if (longLineMarchOn() && isFinite(o.params.gx) && isFinite(o.params.gy) && !cmdInContact(dv)) u = cmdUnit(o.params.gx, o.params.gy, dv.side);   // (v197.0, 06c4) the line's own facing until the enemy comes
   }
   cmdRotateRanks(dv, a, squads);
-  const at = cmdHoldRow(dv, a, squads, cx, cy, u.x, u.y, { abreast: abreast });
+  const at = cmdHoldRow(dv, a, squads, cx, cy, u.x, u.y, longLineMarchOn() ? { abreast: abreast, pace: 'hold' } : { abreast: abreast });   // (v197.0, 06c4) the long map: it marches to its spot together, in shape
   if (at === squads.length) c.arrivedAt = Math.max(c.arrivedAt, o.startedAt + 0.001);
   cmdClearShapes(squads, SHAPE_COLUMN);
 } };
@@ -55823,7 +55990,14 @@ function cmdPaceStep(dv, a, key, squads, tx, ty, opt) {
   const c = cmdDv(dv);
   if (!cmdPaceOn() || squads.length < 2 || cmdInContact(dv)) { if (c.pace) cmdPaceLetGo(dv, c); return null; }
   let P = c.pace || null;
-  if (P !== null && P.key !== key) { cmdPaceLetGo(dv, c); P = null; }
+  if (P !== null && P.key !== key) {
+    // (v197.0, 06c4) the long map: a new order to a Division already marching in shape carries on from its marker (before, the marker jumped back to the
+    // Division's middle and it formed up again, so a Division whose spot on the line shifted every minute never got anywhere in shape)
+    if (longLineMarchOn() && !P.off && P.phase !== 'form') {
+      P.key = key; P.legacy = false;
+      if (P.phase === 'arrive' && Math.hypot(tx - P.x, ty - P.y) > SETTINGS.cmdPaceMinMarch) { P.phase = 'move'; P.moveAt = simTime; }
+    } else { cmdPaceLetGo(dv, c); P = null; }
+  }
   if (P === null) {
     const from = opt.paceFrom || cmdPaceCentre(a, squads);
     if (!from) return null;
@@ -61837,7 +62011,7 @@ function chooseFormationShape(sq) {
       if (fits && d2 <= ring * ring * SETTINGS.shapeEnterFactor * SETTINGS.shapeEnterFactor) shape = SHAPE_LINE;
       else if (!(shape === SHAPE_LINE && fits && d2 <= ring * ring * SETTINGS.shapeExitFactor * SETTINGS.shapeExitFactor)) shape = SHAPE_COLUMN;
     } else shape = SHAPE_WEDGE;                                        // (no plan yet, with a target: closing in)
-  } else shape = moving ? SHAPE_COLUMN : SHAPE_BOX;                    // travelling, or idle / in reserve
+  } else shape = moving && !longLineMarching(sq) ? SHAPE_COLUMN : SHAPE_BOX;   // travelling, or idle / in reserve; (v197.0, 06c4) marching with its Division: its block
   if (doc === FORM_DOC_AUTO && rein > SETTINGS.looseRein && (shape === SHAPE_BOX || shape === SHAPE_RING)) shape = SHAPE_LOOSE;   // (a free-rein officer spreads out when idle)
   if (shape === SHAPE_COLUMN && orgSecs.size > 0 && orgSecs.has(sq)) shape = SHAPE_BOX;   // (v23, section 5z: a sectioned block marches as it stands; re-dealing hundreds of ships into a long column stalls it)
   if (swarm) shape = swarmShapeFor(sq, shape);                         // (v50) the Swarm: a cloud, a stream or a knot, never a human shape
