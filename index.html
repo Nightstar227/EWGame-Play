@@ -8755,18 +8755,27 @@ function htFixedGun(c, p, info, u) {
   else { c.fillStyle = '#0b0c0a'; c.fillRect(exit + stick - bw * .3, -bw * .28, bw * .3, bw * .56); c.fillStyle = 'rgba(255,240,200,.18)'; c.fillRect(exit, -bw / 2, stick, PX); }
   c.restore();
 }
-// missile hatches on the deck (the launcher's own squares)
+// missile ports on the deck (the launcher's own squares): rows of small round tube mouths, each in a square socket with a hatch rim,
+// sized to the SHIP (not the launcher), so a big launcher on a small craft is a field of small ports, never a few big boxes (Alex, v188.0)
 function htHatches(c, p, u) {
-  var s = Math.max(1, Math.min(2.2, Math.min(p.w, p.h) / 2)), nx = Math.max(1, Math.floor(p.w / s)), ny = Math.max(1, Math.floor(p.h / s));
-  var ox = p.x + (p.w - nx * s) / 2, oy = p.y + (p.h - ny * s) / 2;
-  c.fillStyle = 'rgba(14,15,12,.85)'; c.fillRect(ox - .15, oy - .15, nx * s + .3, ny * s + .3);
-  for (var i = 0; i < nx; i++) for (var j = 0; j < ny; j++) {
-    var x = ox + i * s + s * .1, y = oy + j * s + s * .1, w = s * .8;
-    var g = c.createLinearGradient(x, y, x + w, y + w); g.addColorStop(0, '#5d5e52'); g.addColorStop(1, '#2a2b25');
-    c.fillStyle = g; c.fillRect(x, y, w, w); c.strokeStyle = COL.line; c.lineWidth = PX; c.strokeRect(x, y, w, w);
-    c.strokeStyle = 'rgba(0,0,0,.5)'; c.beginPath(); c.moveTo(x + w / 2, y); c.lineTo(x + w / 2, y + w); c.stroke();
+  var s = Math.max(.55, Math.min(1.8, u * 1.5, Math.min(p.w, p.h))), nx = Math.max(1, Math.floor(p.w / s)), ny = Math.max(1, Math.floor(p.h / s));
+  var ox = p.x + (p.w - nx * s) / 2, oy = p.y + (p.h - ny * s) / 2, i, j;
+  // the recessed deck panel the ports sit in
+  c.fillStyle = 'rgba(16,17,14,.55)'; c.fillRect(ox - s * .08, oy - s * .08, nx * s + s * .16, ny * s + s * .16);
+  c.strokeStyle = 'rgba(0,0,0,.6)'; c.lineWidth = PX * 1.2; c.strokeRect(ox - s * .08, oy - s * .08, nx * s + s * .16, ny * s + s * .16);
+  for (i = 0; i < nx; i++) for (j = 0; j < ny; j++) {
+    var cx = ox + (i + .5) * s, cy = oy + (j + .5) * s, r = s * .34;
+    // the socket: a small bevelled square
+    var g = c.createLinearGradient(cx - s * .45, cy - s * .45, cx + s * .45, cy + s * .45); g.addColorStop(0, '#5a5b50'); g.addColorStop(1, '#25261f');
+    c.fillStyle = g; c.fillRect(cx - s * .44, cy - s * .44, s * .88, s * .88);
+    // the tube's mouth: dark, with a steel lip and a lit rim on the far side
+    c.fillStyle = '#07080a'; c.beginPath(); c.arc(cx, cy, r, 0, 7); c.fill();
+    c.strokeStyle = '#8f907f'; c.lineWidth = Math.max(PX, s * .07); c.beginPath(); c.arc(cx, cy, r, 0, 7); c.stroke();
+    c.strokeStyle = 'rgba(255,230,180,.35)'; c.lineWidth = Math.max(PX, s * .05); c.beginPath(); c.arc(cx, cy, r * .78, .3, 1.9); c.stroke();
   }
-  c.strokeStyle = COL.amber; c.lineWidth = PX * 1.4; c.strokeRect(ox - .15, oy - .15, nx * s + .3, ny * s + .3);
+  // a thin hazard line round the field (ports are dangerous ground)
+  c.strokeStyle = 'rgba(217,178,58,.7)'; c.lineWidth = Math.max(PX, s * .06); c.setLineDash([s * .3, s * .3]);
+  c.strokeRect(ox - s * .12, oy - s * .12, nx * s + s * .24, ny * s + s * .24); c.setLineDash([]);
 }
 function htPD(c, p, ang) {
   var cx = p.x + p.w / 2, cy = p.y + p.h / 2, r = Math.min(p.w, p.h) * .38;
@@ -69234,11 +69243,12 @@ function closeRegistry(rec) {
 // ---------------------------------------------------------------------
 // The picture of a design in one look: SVG text from ship-art.js, made into an image, copied into a canvas (and a quarter-size copy).
 // ---------------------------------------------------------------------
-function closeArtEntry(t, look, house) {
+// (v188.0) modules: true = always the module view (the Selected squadron panel's close-up, Alex: it should always show the modules)
+function closeArtEntry(t, look, house, modules) {
   const rec = SHIP_TYPES[t];
   if (!rec || !rec.design) return null;
   const info0 = closeInfoOf(t);
-  const hull = closeHullWanted(info0, house);                                    // (v180.0) our ship with its outer hull on (the look does not change it)
+  const hull = !modules && closeHullWanted(info0, house);                                    // (v180.0) our ship with its outer hull on (the look does not change it)
   const key = closeDesignKey(rec) + '|' + (hull ? 'hull' : look) + (house ? '|' + house : '');   // (v78.1) a Sylph ship has one picture per house colour
   let e = closeArt.get(key);
   if (e) return e;
@@ -74168,7 +74178,7 @@ function bsShipViewFrame() {
   const i = bsShip.slot;
   if (!bsShipHere()) { say(bsShipGone().replace('.', '').toUpperCase()); return; }   // lost or away: the view stops (a new pick starts it again)
   const t = shipType[i], side = shipSide[i], rec = SHIP_TYPES[t];
-  const e = typeof window.SHIP_ART !== 'undefined' ? closeArtEntry(t, closeLookKey(), closeHouseOf(i)) : null;   // (a Sylph in its house's colours, an Echo ship in its look)
+  const e = typeof window.SHIP_ART !== 'undefined' ? closeArtEntry(t, closeLookKey(), closeHouseOf(i), true) : null;   // (a Sylph in its house's colours, an Echo ship in its look; (v188.0) always the modules, never the hull art)
   if (!e || e.state === 'none') {                                           // no close-up drawing for this type: its icon, big
     const px = Math.min(W, H) * 0.7;
     g.setTransform(1, 0, 0, 1, W / 2 - px / 2, H / 2 - px / 2);
