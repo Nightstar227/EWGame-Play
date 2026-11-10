@@ -1352,6 +1352,8 @@ hr.rule { border:0; border-top:var(--line-w) solid var(--line); margin:var(--sp-
   .bs-layer:has(input:checked)::before { background: currentColor; }
   .bs-tool-btn::before { display: none; }
   .bs-tool-btn:hover { color: var(--map-text); border-color: var(--map-frame); }
+  .bs-follow-btn.none { opacity: .5; }   /* (v175.0) Follow: dimmed until a squadron is picked, lit while following */
+  .bs-follow-btn.on { color: var(--map-text); border-color: var(--map-frame); box-shadow: inset 0 0 0 1px var(--map-frame); }
   .bs-places-report { position: absolute; top: 40px; left: 0; max-width: 92%; max-height: 420px; overflow: auto; padding: 8px 10px; z-index: 6;
     background: rgba(6,10,16,.94); border: var(--line-w) solid #34465A; font: 500 11px var(--font-data); color: var(--map-text); }
   .bs-places-report table { border-collapse: collapse; }
@@ -3570,6 +3572,7 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
         <label class="bs-layer" title="Where the enemy's guns reach (shaded: the darker, the more fire). Needs squadrons to look after themselves. With the chain of command on: the enemy's fire by weapon range and damage type (kinetic amber, energy cyan, missile violet), or, with a squadron selected, the danger as its officer reads it."><input type="checkbox" id="bsLayerDanger">Danger</label>
         <label class="bs-layer bs-places-only" title="The AO plate and the minimap of the whole battlefield (bottom right). Click the minimap to look there." style="display:none"><input type="checkbox" id="bsLayerMinimap">Minimap</label>
       </div></div>
+      <button type="button" class="bs-layer bs-tool-btn bs-follow-btn none" id="bsFollowBtn" title="Pick a squadron first (click one of its ships), then the view can follow it (key F).">Follow</button>
       <button type="button" class="bs-layer bs-tool-btn bs-places-only" id="bsJumpFight" title="Move the view to the heaviest fighting now" style="display:none">Jump to the fighting</button>
       <button type="button" class="bs-layer bs-tool-btn bs-places-only" id="bsReportsToggle" title="The periodic reports: per place, who holds it, ships lost and arrived" style="display:none">Reports</button>
       <div class="bs-places-report hidden" id="bsPlacesReport"></div>
@@ -70290,7 +70293,7 @@ function battleMouseDown(e) {
 function battleMouseUp(e) {
   if (dragging && screenMode === 'battle' && Math.abs(e.clientX - pressX) < 4 && Math.abs(e.clientY - pressY) < 4) {
     const p = canvasPoint(e);
-    if (placesMinimapClick(p.x, p.y)) { dragging = false; return; }   // (v21, section 5y) a click on the minimap moves the view there
+    if (placesMinimapClick(p.x, p.y)) { camFollowStop(); dragging = false; return; }   // (v21, section 5y) a click on the minimap moves the view there
     inspectShipAt(p.x, p.y);
     bsSelectedSq = inspectSlot >= 0 ? shipSquad[inspectSlot] : 0;          // (v17) the battle screen's Selected squadron (section 7k)
     if (typeof bsShipPick === 'function') bsShipPick(inspectSlot);        // (v98.9) and that one ship, shown up close in the column (section 7k)
@@ -70300,6 +70303,7 @@ function battleMouseUp(e) {
 }
 function battleMouseMove(e) {
   if (!dragging) return;
+  if (camFollowOn && (Math.abs(e.clientX - pressX) >= 4 || Math.abs(e.clientY - pressY) >= 4)) camFollowStop();   // (v175.0, section 7i2) panning by hand stops the follow
   camera.x -= (e.clientX - lastMouseX) / camera.zoom;
   camera.y -= (e.clientY - lastMouseY) / camera.zoom;
   lastMouseX = e.clientX;
@@ -70308,7 +70312,7 @@ function battleMouseMove(e) {
 }
 function battleWheel(e) {
   e.preventDefault();
-  const w = canvas.width, h = canvas.height, p = canvasPoint(e);
+  const w = canvas.width, h = canvas.height, p = camFollowOn ? { x: canvas.width / 2, y: canvas.height / 2 } : canvasPoint(e);   // (v175.0) while following, zoom on the middle (the squadron)
   const worldX = (p.x - w / 2) / camera.zoom + camera.x;         // world point under the mouse
   const worldY = (p.y - h / 2) / camera.zoom + camera.y;
   let zoom = camera.zoom * Math.exp(-e.deltaY * 0.0015);
@@ -70326,7 +70330,7 @@ window.addEventListener('mousemove', battleMouseMove);
 canvas.addEventListener('wheel', battleWheel, { passive: false });
 // (v34) the same on a touch screen (section 0b): drag to pan, tap to pick a ship, pinch to zoom, two fingers to slide the view
 touchControls(canvas, { down: battleMouseDown, move: battleMouseMove, up: battleMouseUp, wheel: battleWheel,
-  pan: function (dx, dy) { camera.x -= dx / camera.zoom; camera.y -= dy / camera.zoom; keepCameraInWorld(); } });
+  pan: function (dx, dy) { camFollowStop(); camera.x -= dx / camera.zoom; camera.y -= dy / camera.zoom; keepCameraInWorld(); } });
 
 // How far the camera can zoom out and in. These are not fixed numbers: they come from the arena and the ship sizes.
 //   zoomed out: until the whole arena is a fraction (SETTINGS.zoomOutBeyondWorld) of the "fit the arena on screen" zoom
@@ -70790,6 +70794,7 @@ function bsRefreshDrawer() {
 function battleScreenStarted() {
   clockStopped = false;
   bsSelectedSq = 0;
+  camFollowStop();                               // (v175.0, section 7i2) a new battle starts without following
   bsSelectedUnit = null;                         // (v25, section 7p)
   bsEl.bsSquadBody.lastHtml = null;
   callSignsReset();
@@ -70914,7 +70919,7 @@ function refreshMapChrome() {
   const mini = document.getElementById('bsLayerMinimap');
   mini.checked = UI_SETTINGS.layerMinimap !== 0;
   mini.addEventListener('change', function () { saveUiSetting('layerMinimap', mini.checked ? 1 : 0); });
-  document.getElementById('bsJumpFight').addEventListener('click', function () { placesJumpToFighting(); });
+  document.getElementById('bsJumpFight').addEventListener('click', function () { camFollowStop(); placesJumpToFighting(); });
   const rep = document.getElementById('bsPlacesReport');
   document.getElementById('bsReportsToggle').addEventListener('click', function () { rep.classList.toggle('hidden'); placesReportPanelRefresh(); });
 })();
@@ -71774,6 +71779,63 @@ function bsFleetMoveRowsHtml(F) {
   if (o && o.until) html += row('Until', esc(cmdTriggerText(o.until)));
   return html;
 }
+// =====================================================================
+// 7i2. CAMERA FOLLOW  (v175.0, Alex 10 Nov: "a camera tracks selected squadron option for battles")
+//   The Follow button on the map (top left, next to Layers) or the F key: the view glides along with the selected squadron and keeps it in the
+//   middle of the screen, at whatever zoom you choose (the mouse wheel zooms on the squadron while following).
+//   It stops by itself when you drag the map by hand, click empty space (nothing selected), use the minimap or "Jump to the fighting", or
+//   when the squadron is wiped out. Picking another squadron while following switches the view to that one.
+//   Display only: it moves the camera and nothing else, so the battle is the same whether you follow or not.
+// =====================================================================
+let camFollowOn = false;                         // the view is following the selected squadron (bsSelectedSq)
+const CAM_FOLLOW_GLIDE = 8;                      // how quickly the view catches up (bigger = snappier); about 1/8 of a second to close most of the gap
+const camFollowBtn = document.getElementById('bsFollowBtn');
+
+// Where the squadron is now: the middle of its ships (measureSquad, section 7i), or, if its lead ship is gone, the middle of whoever is left.
+function camFollowPoint(sq) {
+  if (!(sq > 0) || typeof sqAlive === 'undefined' || !(sqAlive[sq] > 0)) return null;
+  if (measureSquad(sq)) return { x: squadBox.x, y: squadBox.y };
+  let n = 0, sx = 0, sy = 0;
+  const start = sqStart[sq], end = start + sqSize[sq];
+  for (let k = start; k < end; k++) {
+    const m = sqMembers[k];
+    if (shipAlive[m] !== 1 || shipSquad[m] !== sq) continue;
+    sx += shipX[m]; sy += shipY[m]; n++;
+  }
+  return n > 0 ? { x: sx / n, y: sy / n } : null;
+}
+function camFollowSetLook() {
+  if (!camFollowBtn) return;
+  camFollowBtn.classList.toggle('on', camFollowOn);
+  camFollowBtn.classList.toggle('none', !(bsSelectedSq > 0));
+  camFollowBtn.title = camFollowOn ? 'Following the selected squadron. Press again (or F), or drag the map, to stop.'
+    : (bsSelectedSq > 0 ? 'Keep the selected squadron in the middle of the view (key F). Dragging the map stops it.' : 'Pick a squadron first (click one of its ships), then the view can follow it (key F).');
+}
+function camFollowStop() { if (camFollowOn) { camFollowOn = false; camFollowSetLook(); } }
+function camFollowToggle() {
+  if (camFollowOn) { camFollowStop(); return; }
+  if (!(bsSelectedSq > 0) || camFollowPoint(bsSelectedSq) === null) { camFollowSetLook(); return; }   // nothing picked: nothing to follow
+  camFollowOn = true;
+  camFollowSetLook();
+}
+// Every frame, before the map is drawn (section 11): glide the view toward the squadron. Works while paused too (the ships stand still then).
+function camFollowFrame(frameSeconds) {
+  if (camFollowBtn && camFollowBtn.classList.contains('none') === (bsSelectedSq > 0)) camFollowSetLook();   // keep the button's look in step with the pick
+  if (!camFollowOn) return;
+  const pt = camFollowPoint(bsSelectedSq);
+  if (pt === null) { camFollowStop(); return; }  // nothing selected any more, or the squadron is gone
+  const t = 1 - Math.exp(-CAM_FOLLOW_GLIDE * Math.max(0, Math.min(frameSeconds, 0.25)));
+  camera.x += (pt.x - camera.x) * t;
+  camera.y += (pt.y - camera.y) * t;
+  keepCameraInWorld();
+}
+if (camFollowBtn) camFollowBtn.addEventListener('click', function () { camFollowToggle(); });
+window.addEventListener('keydown', function (e) {
+  if (screenMode !== 'battle' || e.ctrlKey || e.metaKey || e.altKey) return;
+  const tag = e.target && e.target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+  if (e.key === 'f' || e.key === 'F') { camFollowToggle(); e.preventDefault(); }
+});
 // =====================================================================
 // 7j. COMMS: THE RADIO, THE STAMPS AND THE SCREEN EFFECTS  (v17)
 //   The Comms panel under the map has two tabs. "Radio" turns each new line of the command log into a radio call: the time, a call sign (section 7i) and a short
@@ -76890,6 +76952,7 @@ function tutLookAt(what) {
   if (far) { x0 = Math.min(x0, far.x); y0 = Math.min(y0, far.y); x1 = Math.max(x1, far.x); y1 = Math.max(y1, far.y); }
   const span = Math.max(far ? 4000 : 2500, x1 - x0 + 1500, (y1 - y0 + 1500) * canvas.width / Math.max(1, canvas.height));
   const lim = zoomLimits();
+  camFollowStop();                               // (v175.0, section 7i2) the tutorial's own look wins over following
   camera.zoom = clampNumber(canvas.width / span, lim.min, lim.max);
   camera.x = (x0 + x1) / 2; camera.y = (y0 + y1) / 2;
   keepCameraInWorld();
@@ -99892,6 +99955,7 @@ function frame(now) {
 
   if (screenMode === 'battle') {
     if (battleRunning && !battlePaused && !clockStopped && !lsChoosing()) runSimulation(frameSeconds);   // (v100.1: a Last Stand level-up waits for its card)      // (a paused battle is still drawn, so it can be looked at and zoomed; v17: the Stop button stops the clock too)
+    camFollowFrame(frameSeconds);               // (v175.0, section 7i2) the view glides along with the followed squadron
     draw();
     if (debugView) drawDebugOverlay();          // the debug view (section 7b): costs nothing when switched off
     if (admiralView) drawAdmiralView();         // the Admiral view (section 7c): also costs nothing when switched off
