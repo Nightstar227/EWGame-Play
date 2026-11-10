@@ -3514,8 +3514,8 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
     </div>
     <div class="bs-clock"><span class="label" id="bsClockLabel">Battle time</span><span class="data-lg" id="bsClock">00:00</span></div>
     <div class="bs-speed" role="group" aria-label="Speed">
-      <button type="button" id="bsStop" title="Stop the clock (the map stays live: look around, click ships). Press again, or a speed, to go on."><svg viewBox="0 0 14 14"><path d="M3 2h3v10H3zM8 2h3v10H8z" fill="currentColor"/></svg></button>
-      <button type="button" id="bsSpeedQuarter" title="Slow motion: a quarter of normal speed">&frac14;&times;</button><button type="button" id="bsSpeedHalf" title="Slow motion: half of normal speed">&frac12;&times;</button><button type="button" id="bsSpeed1">1&times;</button><button type="button" id="bsSpeed4">4&times;</button><button type="button" id="bsSpeed16">16&times;</button><button type="button" id="bsSpeed64" title="64x: as fast as the computer allows in a big battle">64&times;</button><button type="button" id="bsSpeed256" title="256x: as fast as the computer allows in a big battle">256&times;</button>
+      <button type="button" id="bsStop" title="Stop the clock (the map stays live: look around, click ships). Press again, or a speed, to go on. Key: Space. In a war the strategic map shares this pause."><svg viewBox="0 0 14 14"><path d="M3 2h3v10H3zM8 2h3v10H8z" fill="currentColor"/></svg></button>
+      <button type="button" id="bsSpeedQuarter" title="Slow motion: a quarter of normal speed">&frac14;&times;</button><button type="button" id="bsSpeedHalf" title="Slow motion: half of normal speed">&frac12;&times;</button><button type="button" id="bsSpeed1" title="1x (key 1)">1&times;</button><button type="button" id="bsSpeed4" title="4x (key 2)">4&times;</button><button type="button" id="bsSpeed16" title="16x (key 3)">16&times;</button><button type="button" id="bsSpeed64" title="64x (key 4): as fast as the computer allows in a big battle">64&times;</button><button type="button" id="bsSpeed256" title="256x (key 5): as fast as the computer allows in a big battle">256&times;</button>
     </div>
     <button type="button" class="btn btn-primary" id="bsRedesign" title="Pauses the battle: change the production order, or open the ship designer to change a design (saved designs join the battle as a new version).">
       <svg class="icon icon-20" viewBox="0 0 24 24"><path d="M4 20 L4 15 L15 4 L20 9 L9 20 Z"/><path d="M12.5 6.5 L17.5 11.5"/></svg><span id="bsRedesignText">Pause &amp; redesign</span>
@@ -20969,8 +20969,37 @@ function leashLook() {
     if (shipLeash[i] === 1) {
       if (d <= reach * back) shipLeash[i] = 0; else { shipLeashX[i] = bx; shipLeashY[i] = by; shipLeashR[i] = reach * back; }
     } else if (d > reach) { shipLeash[i] = 1; shipLeashX[i] = bx; shipLeashY[i] = by; shipLeashR[i] = reach * back; }
+    // (v189.1) a held ship on escort duty: the ship it guards has gone where this one's fuel cannot follow, and the escort post pulled it back out
+    // over the line for good (about 30 of our pickets sat there all war). The squadron gives the escort up and goes back to its own orders.
+    if (shipLeash[i] === 1) {
+      const sq = shipSquad[i], g = sqEscort[sq];
+      if (g >= 0) { sqEscort[sq] = -1; sqEscortThreat[sq] = -1; if (shipAlive[g] === 1) shipProtectedBy[g] = Math.max(0, shipProtectedBy[g] - 1); sqNextThink[sq] = simTime; }
+      if (shipState[i] === STATE_ESCORT) { setShipState(i, STATE_NONE); shipNextThink[i] = simTime; }
+    }
   }
   if (moveStepCounter % 60 === 0) { let c = 0; for (let i = 0; i < highWater; i++) if (shipAlive[i] === 1 && shipLeash[i] === 1) c++; leashStats.now = c; }
+}
+
+// ---- (v196.0) HOME ON THE LONG MAP: A SHIP RUNNING HOME GOES TO ITS NEAREST STATION, NOT TO THE SUN ----
+// Alex, 10 Nov, week 12 of a long-map war: "a bunch of local human ships head to venus and sol somehow". A ship that breaks off to retreat (too
+// damaged, or routed), or goes for repairs with no repair point left, used to fly to "its own side": the left edge of the battlefield. On one battle
+// that is just behind the line; on the long map our left edge is past Venus, beside Mercury and the Sun, a whole region beyond a Local ship's fuel.
+// The fuel line (above) does not hold a running ship back, so Local ships flew there and sat there regrouping. Now, while the fuel line is on, such a
+// ship's home is the nearest standing station or peopled colony of its side (the place it refuels from): it flies there, regroups there, and a ship
+// that cannot come back (or has no repair point) leaves the battle there instead of at the map's edge. Off the long map nothing changes.
+let leashHomeX = 0, leashHomeY = 0, leashHomeR = 0;   // the home found by the last leashHome(i) call: where it is, and how close counts as there
+function leashHome(i) {
+  if (!leashActive) return false;
+  const side = shipSide[i], list = theatreAnchors(side);
+  if (list.length === 0) return false;
+  const fx = longMapFuelX(shipX[i], side);
+  let best = Infinity, bp = null;
+  for (let a = 0; a < list.length; a++) { const p = battlePlaces[list[a]]; const dx = longMapFuelX(p.x, side) - fx, dy = p.y - shipY[i], d2 = dx * dx + dy * dy; if (d2 < best) { best = d2; bp = p; } }
+  if (bp === null) return false;
+  const sq = shipSquad[i];
+  leashHomeX = bp.x; leashHomeY = bp.y;
+  leashHomeR = Math.max(bp.radius > 0 ? bp.radius : 0, 2 * typeSpacing[shipType[i]] + (sq > 0 ? sqRadius[sq] : 0));
+  return true;
 }
 // ---------------------------------------------------------------------
 // 4c. Moving
@@ -21166,6 +21195,7 @@ function updateMovementAndTargeting(dtStep) {
     if (retreating) {
       // A retreating ship turns straight away from the enemy side and flies back toward its own side (smart tactics: or to the safe place its squadron chose, stage 8).
       if (smart && shipGoalX[i] >= 0) desired = Math.atan2(shipGoalY[i] - shipY[i], shipGoalX[i] - shipX[i]);
+      else if (leashHome(i)) desired = Math.atan2(leashHomeY - shipY[i], leashHomeX - shipX[i]);   // (v196.0, 4b6) on the long map: home is its nearest station
       else desired = (side === BLUE) ? Math.PI : 0;
     } else if (regrouping) {
       // A regrouping ship waits at its own side, facing the enemy.
@@ -21180,6 +21210,7 @@ function updateMovementAndTargeting(dtStep) {
         repGoX = repAimX; repGoY = repAimY; repMatch = repAimMatch; repVX = repAimVX; repVY = repAimVY;
         desired = Math.atan2(repGoY - shipY[i], repGoX - shipX[i]);
       }
+      else if (leashHome(i)) desired = Math.atan2(leashHomeY - shipY[i], leashHomeX - shipX[i]);   // (v196.0, 4b6) on the long map: its nearest station, not the map's edge
       else desired = (side === BLUE) ? Math.PI : 0;
     } else {
       // --- Targeting: look for a new target on a timer, or right away if the old one is gone.
@@ -21345,6 +21376,9 @@ function updateMovementAndTargeting(dtStep) {
         if (smart && shipGoalX[i] >= 0) {                                       // smart tactics: to the safe place behind the squadron (an arrival: it stops there and regroups)
           const gx = shipGoalX[i] - shipX[i], gy = shipGoalY[i] - shipY[i], gd = Math.sqrt(gx * gx + gy * gy);
           arriveWant(gx, gy, gd, gd, vmax, stBrakePlan[st]); wvx = mvWX; wvy = mvWY;
+        } else if (leashHome(i)) {                                              // (v196.0, 4b6) on the long map: to its nearest station, stopping there
+          const gx = leashHomeX - shipX[i], gy = leashHomeY - shipY[i], gd = Math.sqrt(gx * gx + gy * gy);
+          arriveWant(gx, gy, gd, Math.max(0, gd - 0.5 * leashHomeR), vmax, stBrakePlan[st]); wvx = mvWX; wvy = mvWY;
         } else wvx = (side === BLUE ? -1 : 1) * stSpeed[st];                     // full speed back toward its own side (it leaves the ring behind)
       } else if (regrouping) {
         // (wants to stand still: the thrusters brake)
@@ -21361,6 +21395,9 @@ function updateMovementAndTargeting(dtStep) {
             const wv = Math.sqrt(wvx * wvx + wvy * wvy);
             if (wv > vmax && wv > 0) { wvx *= vmax / wv; wvy *= vmax / wv; }
           }
+        } else if (leashHome(i)) {                                              // (v196.0, 4b6) on the long map: to its nearest station
+          const gx = leashHomeX - shipX[i], gy = leashHomeY - shipY[i], gd = Math.sqrt(gx * gx + gy * gy);
+          arriveWant(gx, gy, gd, gd, vmax, stBrakePlan[st]); wvx = mvWX; wvy = mvWY;
         } else wvx = (side === BLUE ? -1 : 1) * stSpeed[st];
       } else if (fallingBack && !follower) {
         // Falling back (smart tactics, stage 8): hold a ring round the threat just beyond its reach (never cut back to our own range), leaning toward the squadron's
@@ -21849,13 +21886,16 @@ function updateMovementAndTargeting(dtStep) {
     //     One that can never come back (no shield, and not routed) keeps going and has left the battle when it reaches the edge of the map.
     if (retreating) {
       if (canComeBack(i, st)) {
-        let there = (side === BLUE && nx <= homeX[BLUE]) || (side === RED && nx >= homeX[RED]);
+        const longHome = !(smart && shipGoalX[i] >= 0) && leashHome(i);       // (v196.0, 4b6) on the long map home is its nearest station
+        let there = longHome ? (leashHomeX - nx) * (leashHomeX - nx) + (leashHomeY - ny) * (leashHomeY - ny) <= leashHomeR * leashHomeR
+                             : (side === BLUE && nx <= homeX[BLUE]) || (side === RED && nx >= homeX[RED]);
         if (!there && smart && shipGoalX[i] >= 0) {
           const gx = shipGoalX[i] - nx, gy = shipGoalY[i] - ny, reach = 2 * typeSpacing[type] + (sq > 0 ? sqRadius[sq] : 0);
           there = gx * gx + gy * gy <= reach * reach;
         }
         if (there) setShipState(i, STATE_REGROUP);
-      } else if ((side === BLUE && nx <= 0) || (side === RED && nx >= worldW)) {
+      } else if (leashHome(i) ? (leashHomeX - nx) * (leashHomeX - nx) + (leashHomeY - ny) * (leashHomeY - ny) <= leashHomeR * leashHomeR   // (v196.0: at its station)
+                              : (side === BLUE && nx <= 0) || (side === RED && nx >= worldW)) {
         leaveBattle(i);
         continue;
       }
@@ -21870,7 +21910,8 @@ function updateMovementAndTargeting(dtStep) {
         const rp = repairPoints[rpi];
         const rdx = rp.x - nx, rdy = rp.y - ny, reach = repReach > 0 ? repReach : rp.arrive + typeSize[type];   // (v191.0: over a moving moon counts)
         if (rdx * rdx + rdy * rdy <= reach * reach) { gridNoteMove(i, nx, ny); shipX[i] = nx; shipY[i] = ny; enterRepairPoint(i, rp); continue; }
-      } else if ((side === BLUE && nx <= 0) || (side === RED && nx >= worldW)) {
+      } else if (leashHome(i) ? (leashHomeX - nx) * (leashHomeX - nx) + (leashHomeY - ny) * (leashHomeY - ny) <= leashHomeR * leashHomeR   // (v196.0: at its station)
+                              : (side === BLUE && nx <= 0) || (side === RED && nx >= worldW)) {
         gridNoteMove(i, nx, ny); shipX[i] = nx; shipY[i] = ny;
         enterOffMap(i);
         continue;
@@ -32343,6 +32384,18 @@ function longFrontRegion() {
   for (let k = from; k < regs.length; k++) if (rows[regs[k].id] && rows[regs[k].id].securedBy !== 0) return regs[k];
   return regs[regs.length - 1];
 }
+// (v189.1) The region the front is NAMED after, for the paper and Command's notes: the front region when we hold a place in it, else the last region on
+// our side of it (with the Swarm holding all of Mars' region the front is "Earth", not "Mars").
+function longFrontNameRegion() {
+  const fr = longFrontRegion(), regs = longMapRegions();
+  if (!fr || !campaign || !campaign.ao) return fr;
+  const st = campaign.ao[campaignAos()[0].id], owner = {};
+  if (st && st.places) for (const p of st.places) owner[p.id] = p.owner;
+  const ours = function (r) { return r.locations.some(function (l) { return owner[l.id] === 0; }); };
+  if (ours(fr)) return fr;
+  for (let k = fr.col - 1; k >= 0; k--) { const r = regs.find(function (g) { return g.col === k; }); if (r && (ours(r) || r.home === 0)) return r; }
+  return fr;
+}
 function longMapRegionById(id) { const list = longMapRegions(); for (let k = 0; k < list.length; k++) if (list[k].id === id) return list[k]; return null; }
 // The region a point of the long map falls in (a gap counts with the region to its left).
 function longMapRegionOfX(x) { const list = longMapRegions(); if (!list.length) return null; return list[Math.min(list.length - 1, longMapSlotOf(x))]; }
@@ -38947,7 +39000,7 @@ function campaignExecutiveView() {
   const front = campaignFrontId(), st = campaignFrontSnap(), rear = campaignRearAo(0), target = campaignAttackTarget(0);
   const atTarget = target && target !== front ? campaignSideAtAo(target, 1) : null;   // (v27 B1) what an advance would meet
   const spare = campaignAdvanceSpare(0, SETTINGS.campaignAdvanceKeep, target);   // (v158.0: only ships that reach the target count)
-  return { week: campaign.week, battle: campaign.battle.state, front: front, frontName: campaignAoName(front), frontOwner: aoById(front) ? aoById(front).owner : -1,
+  return { week: campaign.week, battle: campaign.battle.state, front: front, frontName: (longMapOn() && longFrontNameRegion() ? longFrontNameRegion().name : campaignAoName(front)),   /* (v189.1) the long map: the front region's name, not "Sol" */ frontOwner: aoById(front) ? aoById(front).owner : -1,
            securedBy: st.securedBy, besieged: st.besieged, settled: campaignFrontSettled(), places: campaignAoPlacesView(front, ours, theirs),
            rear: rear, target: target, targetName: target ? campaignAoName(target) : '', marsOnly: campaign.ai.marsOnly === true,
            targetThreat: atTarget ? atTarget.worth : 0, targetShips: atTarget ? atTarget.ships : 0,
@@ -55558,6 +55611,10 @@ function cmdEscort(sq, of) {
   if (!(of > 0) || sqAlive[of] <= 0 || sqSide[of] !== sqSide[sq] || of === sq) return false;
   const p = largestShipOf([of]);
   if (p < 0) return false;
+  // (v189.1) the long map: no escort of a ship that is, or is going, where this squadron's fuel does not reach (06c3)
+  if (typeof longCmdOn === 'function' && longCmdOn()) {
+    if (longReachClass(sq) !== longReachClass(of) || !longRoadOk(sqSide[sq], longMapReachOf(sq, sqType[sq]), sqCenterX[sq], sqCenterY[sq], shipX[p], shipY[p])) return false;
+  }
   if (sqEscort[sq] >= 0 && sqEscort[sq] !== p && shipAlive[sqEscort[sq]] === 1) shipProtectedBy[sqEscort[sq]] = Math.max(0, shipProtectedBy[sqEscort[sq]] - 1);
   sqEscort[sq] = p; sqEscortThreat[sq] = -1; sqFlank[sq] = FLANK_OFF;
   shipProtectedBy[p]++;
@@ -72630,10 +72687,10 @@ function setSpeedButtonsLook() {
   for (let k = 0; k < bsSpeedButtons.length; k++) bsSpeedButtons[k].classList.toggle('active', !clockStopped && BATTLE_SCREEN_SPEEDS[k] === battleSpeed);
   bsEl.bsStop.classList.toggle('active', clockStopped);
 }
-bsEl.bsStop.addEventListener('click', function () { clockStopped = !clockStopped; setSpeedButtonsLook(); refreshTopBar(); refreshStoppedLook(); });
+bsEl.bsStop.addEventListener('click', function () { gamePauseSet(!clockStopped); });   // (v194.0, section 7i3) one pause for every screen: a war paused here is paused on the map too
 // The map cell changes size when a column folds or the window is resized: the canvas follows it.
 if (window.ResizeObserver) new ResizeObserver(function () { if (canvas.parentNode === bsMapEl) resizeCanvas(); }).observe(bsMapEl);
-for (let k = 0; k < bsSpeedButtons.length; k++) bsSpeedButtons[k].addEventListener('click', function () { clockStopped = false; setBattleSpeed(BATTLE_SCREEN_SPEEDS[k]); setSpeedButtonsLook(); refreshTopBar(); refreshStoppedLook(); });
+for (let k = 0; k < bsSpeedButtons.length; k++) bsSpeedButtons[k].addEventListener('click', function () { gameSpeedSet(BATTLE_SCREEN_SPEEDS[k]); });   // (v194.0, section 7i3) one speed for every screen
 bsEl.bsRedesign.addEventListener('click', function () {
   if (clickTooQuick('redesign')) return;                       // (v93.2) a double-click is one click
   if (bsCampaignRedesign(-1)) return;                          // (v93.2) in the campaign: the Design Bureau, not the test panel
@@ -72914,7 +72971,7 @@ function buildDisplayBox(into) {                // into: where to build it (the 
   segment('Close-up hulls', [['Hull art', 1], ['Modules', 0]], 'closeHull', closeHullChanged);   // (v180.0) our ships with their outer hull on, or every part showing (key H)
   segment('Close-up look', [['Workhorse', 'grit'], ['Hull paint', 'paint'], ['Blueprint', 'blue']], 'closeLook', closeArtWarm);   // (v33) worn paint, clean paint or the designer's drawings
   const note = document.createElement('div'); note.className = 'note';
-  note.textContent = 'Shapes tell the sides apart as well as colours: ours are solid and straight-edged, theirs striped and curved. These choices stay in this browser; they never go into an export. Keys: [ and ] fold the side columns; H swaps our close-up ships between hull art and modules.';
+  note.textContent = 'Shapes tell the sides apart as well as colours: ours are solid and straight-edged, theirs striped and curved. These choices stay in this browser; they never go into an export. Keys: [ and ] fold the side columns; H swaps our close-up ships between hull art and modules; Space pauses; 1 to 5 set the speed (1x to 256x); F1, F2 ... jump the view to our Fleets (Assault Fleet first).';
   body.appendChild(note);
 }
 bsEl.bsDisplayButton.addEventListener('click', function () { const box = bsEl.bsDisplayBox; box.classList.toggle('hidden'); if (!box.classList.contains('hidden')) buildDisplayBox(); });
@@ -73473,12 +73530,12 @@ function bsUnitListHtml() {
   let html = '';
   const done = new Set();
   if (cmdOn()) {
-    const live = cmdLiveFleets(BLUE);
+    const live = gameFleetsInKeyOrder();             // (v194.0) in the order of their F keys: the Assault Fleet first, then the Defence Fleet
     for (let k = 0; k < live.length; k++) {
       const F = live[k], sel = bsSelectedUnit !== null && bsSelectedUnit.kind === 'fleet' && bsSelectedUnit.id === F.id;
-      const divs = cmdFleetDivisions(F);
-      html += '<button type="button" class="bs-unit fleet' + (sel ? ' sel' : '') + '" data-unit="f:' + F.id + '" title="' + esc(cmdFleetLabel(F)) + ' - click to pick out its ships">' +
-        '<span class="sw" style="background:' + fleetShadeOf(F) + '"></span><span>' + esc(F.name + ' · ' + officerShortName(F.officer, 'VAdm.')) + '</span><span class="data">' + fmtWhole(cmdFleetShips(F)) + ' ships</span></button>';
+      const divs = cmdFleetDivisions(F), fkey = gameFleetKeyOf(F);   // (v194.0, section 7i3) its F key
+      html += '<button type="button" class="bs-unit fleet' + (sel ? ' sel' : '') + '" data-unit="f:' + F.id + '" title="' + esc(cmdFleetLabel(F)) + ' - click to pick out its ships' + (fkey ? ' (key ' + fkey + ' jumps the view to it)' : '') + '">' +
+        '<span class="sw" style="background:' + fleetShadeOf(F) + '"></span><span>' + esc(F.name + ' · ' + officerShortName(F.officer, 'VAdm.')) + '</span><span class="data">' + (fkey ? fkey + ' · ' : '') + fmtWhole(cmdFleetShips(F)) + ' ships</span></button>';
       for (let d = 0; d < divs.length; d++) { html += bsDivisionRowHtml(divs[d], true); done.add(divs[d].id); }
     }
   }
@@ -73932,52 +73989,95 @@ function bsFleetMoveRowsHtml(F) {
 }
 // =====================================================================
 // 7i2. CAMERA FOLLOW  (v175.0, Alex 10 Nov: "a camera tracks selected squadron option for battles")
-//   The Follow button on the map (top left, next to Layers) or the F key: the view glides along with the selected squadron and keeps it in the
+//   The Follow button on the map (top left, next to Layers) or the F key: the view follows the selected squadron and keeps it in the
 //   middle of the screen, at whatever zoom you choose (the mouse wheel zooms on the squadron while following).
 //   It stops by itself when you drag the map by hand, click empty space (nothing selected), use the minimap or "Jump to the fighting", or
 //   when the squadron is wiped out. Picking another squadron while following switches the view to that one.
 //   Display only: it moves the camera and nothing else, so the battle is the same whether you follow or not.
+//   (v195.0, Alex 10 Nov: "lock step with the ship being followed... stabilized in the middle of the screen") The view no longer glides after the
+//   squadron's middle (which lagged behind at high speed and wobbled as the ships shuffled). It now locks onto ONE ship: the ship you clicked, or
+//   the squadron's lead ship if that one is gone. Every frame the middle of the screen is put exactly on that ship, so it stands still in the
+//   centre at any game speed. If the followed ship dies, the view moves on to the squadron's lead ship (or whoever is left).
+//   "The middle" is the middle of the part of the map you can actually see: the Selected squadron column lies over the right of the map, so the
+//   ship is held in the middle of the open space left of it, not under the column's edge.
 // =====================================================================
 let camFollowOn = false;                         // the view is following the selected squadron (bsSelectedSq)
-const CAM_FOLLOW_GLIDE = 8;                      // how quickly the view catches up (bigger = snappier); about 1/8 of a second to close most of the gap
+let camFollowShip = -1;                          // (v195.0) the one ship the view is locked onto (-1 = pick one next frame)
+// (v194.0, section 7i3) ... or a whole Fleet of ours, after its F key (F1, F2 ...): locked onto one of its ships (the one nearest the Fleet's middle,
+// picked again if it dies). Clicking a ship of ours while following a Fleet follows that ship's squadron instead.
+let camFollowFleet = 0;                          // the Fleet's id while following a Fleet, else 0
+let camFollowFleetSq = 0;                        // the squadron that was selected when the Fleet's key was pressed
 const camFollowBtn = document.getElementById('bsFollowBtn');
 
-// Where the squadron is now: the middle of its ships (measureSquad, section 7i), or, if its lead ship is gone, the middle of whoever is left.
-function camFollowPoint(sq) {
-  if (!(sq > 0) || typeof sqAlive === 'undefined' || !(sqAlive[sq] > 0)) return null;
-  if (measureSquad(sq)) return { x: squadBox.x, y: squadBox.y };
-  let n = 0, sx = 0, sy = 0;
+// (v195.0) Is ship m still a live member of squadron sq? (a dead ship's slot can be given to a new ship later, so the squadron is checked too)
+function camFollowShipOk(m, sq) { return m >= 0 && shipAlive[m] === 1 && shipSquad[m] === sq; }
+// (v195.0) The ship to lock onto in squadron sq: the ship you clicked if it is in that squadron, else the lead ship, else the first one left.
+function camFollowPickShip(sq) {
+  if (!(sq > 0) || typeof sqAlive === 'undefined' || !(sqAlive[sq] > 0)) return -1;
+  if (typeof inspectSlot === 'number' && camFollowShipOk(inspectSlot, sq)) return inspectSlot;
+  if (camFollowShipOk(sqLeader[sq], sq)) return sqLeader[sq];
   const start = sqStart[sq], end = start + sqSize[sq];
-  for (let k = start; k < end; k++) {
-    const m = sqMembers[k];
-    if (shipAlive[m] !== 1 || shipSquad[m] !== sq) continue;
-    sx += shipX[m]; sy += shipY[m]; n++;
+  for (let k = start; k < end; k++) { const m = sqMembers[k]; if (camFollowShipOk(m, sq)) return m; }
+  return -1;
+}
+// (v195.0) How far the middle of the open map (the part not covered by a side column) is from the middle of the canvas, in canvas pixels.
+// Measured at most every 0.3 s (the columns only move when the window is resized or a column is opened or folded).
+const camFollowMid = { dx: 0, dy: 0, at: -1e9 };
+function camFollowMeasureMid() {
+  const now = performance.now();
+  if (now - camFollowMid.at < 300) return camFollowMid;
+  camFollowMid.at = now; camFollowMid.dx = 0;
+  const c = canvas.getBoundingClientRect();
+  if (!(c.width > 0)) return camFollowMid;
+  let left = c.left, right = c.right;
+  const mid = (c.left + c.right) / 2;
+  const cols = document.querySelectorAll('#battleScreen .bs-col');
+  for (let k = 0; k < cols.length; k++) {
+    const r = cols[k].getBoundingClientRect();
+    if (!(r.width > 0) || !(r.height > 0)) continue;                                                           // hidden (any height counts: its panels grow and shrink, the middle should not jump)
+    if (r.right <= c.left || r.left >= c.right) continue;                                                      // beside the map, not over it
+    if (r.left > mid) right = Math.min(right, r.left); else if (r.right < mid) left = Math.max(left, r.right);
   }
-  return n > 0 ? { x: sx / n, y: sy / n } : null;
+  if (right - left >= c.width * 0.3) camFollowMid.dx = ((left + right) / 2 - mid) * (canvas.width / c.width);   // too little open map left: just use the middle
+  return camFollowMid;
 }
 function camFollowSetLook() {
   if (!camFollowBtn) return;
   camFollowBtn.classList.toggle('on', camFollowOn);
-  camFollowBtn.classList.toggle('none', !(bsSelectedSq > 0));
-  camFollowBtn.title = camFollowOn ? 'Following the selected squadron. Press again (or F), or drag the map, to stop.'
-    : (bsSelectedSq > 0 ? 'Keep the selected squadron in the middle of the view (key F). Dragging the map stops it.' : 'Pick a squadron first (click one of its ships), then the view can follow it (key F).');
+  camFollowBtn.classList.toggle('none', !(bsSelectedSq > 0) && !(camFollowOn && camFollowFleet > 0));
+  camFollowBtn.title = camFollowOn && camFollowFleet > 0 ? 'Following the Fleet (its F key). Press again (or F), or drag the map, to stop.' : camFollowOn ? 'Following the selected ship. Press again (or F), or drag the map, to stop.'
+    : (bsSelectedSq > 0 ? 'Lock the view onto the selected ship, held still in the middle (key F). Dragging the map stops it.' : 'Pick a squadron first (click one of its ships), then the view can follow it (key F).');
 }
-function camFollowStop() { if (camFollowOn) { camFollowOn = false; camFollowSetLook(); } }
+function camFollowStop() { camFollowShip = -1; camFollowFleet = 0; if (camFollowOn) { camFollowOn = false; camFollowSetLook(); } }
 function camFollowToggle() {
   if (camFollowOn) { camFollowStop(); return; }
-  if (!(bsSelectedSq > 0) || camFollowPoint(bsSelectedSq) === null) { camFollowSetLook(); return; }   // nothing picked: nothing to follow
+  camFollowMid.at = -1e9;                        // measure the open map afresh
+  camFollowShip = camFollowPickShip(bsSelectedSq);
+  if (camFollowShip < 0) { camFollowSetLook(); return; }   // nothing picked: nothing to follow
   camFollowOn = true;
   camFollowSetLook();
 }
-// Every frame, before the map is drawn (section 11): glide the view toward the squadron. Works while paused too (the ships stand still then).
+// Every frame, after the battle steps and before the map is drawn (section 11): put the middle of the view exactly on the followed ship, so it
+// stands still in the centre however fast the battle runs. Works while paused too (the ships stand still then).
 function camFollowFrame(frameSeconds) {
-  if (camFollowBtn && camFollowBtn.classList.contains('none') === (bsSelectedSq > 0)) camFollowSetLook();   // keep the button's look in step with the pick
+  if (camFollowFleet > 0 && bsSelectedSq !== camFollowFleetSq) { camFollowFleet = 0; camFollowShip = -1; }   // (v194.0) a squadron clicked while following a Fleet: follow it instead
+  if (camFollowBtn && camFollowBtn.classList.contains('none') === (bsSelectedSq > 0 || (camFollowOn && camFollowFleet > 0))) camFollowSetLook();   // keep the button's look in step with the pick
   if (!camFollowOn) return;
-  const pt = camFollowPoint(bsSelectedSq);
-  if (pt === null) { camFollowStop(); return; }  // nothing selected any more, or the squadron is gone
-  const t = 1 - Math.exp(-CAM_FOLLOW_GLIDE * Math.max(0, Math.min(frameSeconds, 0.25)));
-  camera.x += (pt.x - camera.x) * t;
-  camera.y += (pt.y - camera.y) * t;
+  if (camFollowFleet > 0) {                      // (v194.0) following a Fleet: its ship, or the one nearest its middle again if that one is gone
+    if (!(camFollowShip >= 0 && shipAlive[camFollowShip] === 1 && cmdFleetOfSquadron(shipSquad[camFollowShip]) === cmdFleetById(camFollowFleet))) camFollowShip = gameFleetShip(cmdFleetById(camFollowFleet));
+    if (camFollowShip < 0) { camFollowStop(); return; }
+    const m = camFollowMeasureMid();
+    camera.x = shipX[camFollowShip] - m.dx / camera.zoom; camera.y = shipY[camFollowShip] - m.dy / camera.zoom;
+    keepCameraInWorld();
+    return;
+  }
+  // Click another ship (in this or another squadron) while following and the view locks onto that one instead.
+  if (typeof inspectSlot === 'number' && inspectSlot !== camFollowShip && camFollowShipOk(inspectSlot, bsSelectedSq)) camFollowShip = inspectSlot;
+  if (!camFollowShipOk(camFollowShip, bsSelectedSq)) camFollowShip = camFollowPickShip(bsSelectedSq);   // it died (or another squadron was picked)
+  if (camFollowShip < 0) { camFollowStop(); return; }  // nothing selected any more, or the squadron is gone
+  const mid = camFollowMeasureMid();
+  camera.x = shipX[camFollowShip] - mid.dx / camera.zoom;
+  camera.y = shipY[camFollowShip] - mid.dy / camera.zoom;
   keepCameraInWorld();
 }
 if (camFollowBtn) camFollowBtn.addEventListener('click', function () { camFollowToggle(); });
@@ -73986,6 +74086,176 @@ window.addEventListener('keydown', function (e) {
   const tag = e.target && e.target.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
   if (e.key === 'f' || e.key === 'F') { camFollowToggle(); e.preventDefault(); }
+});
+// =====================================================================
+// 7i3. ONE GAME SPEED FOR EVERY SCREEN, AND THE SPEED, PAUSE AND FLEET KEYS  (v194.0, Alex 10 Nov)
+//   Alex: "each menu's speed options are separate. You can have a battle paused, then go to the strategic map and it's set to 256.
+//   Let's make all the timers the same across menus."
+//   Before, the battle screen's pause button (clockStopped) was its own switch: the strategic map never heard of it. Now there is one speed and one
+//   pause for the whole war. Whichever screen sets them (a button or a key), the other screen shows and keeps the same setting:
+//     * the speed: one dial with five steps. On the battle screen they read 1x 4x 16x 64x 256x; on the war map with no battle running they are the
+//       map's own five steps (1x 2x 4x 16x 64x), paired button by button (24-7 SPEED_VALUES and MAP_SPEED_VALUES). Picking step 3 anywhere is step 3
+//       everywhere. (Slow motion is still a battle-screen button; the map shows no step lit while it is on.)
+//     * the pause: a war paused on the map is paused on the battle screen, and the other way round (campaign.speed 0 on the map, clockStopped on the
+//       battle screen; this file keeps the two in step).
+//   The keys (battle screen and strategic map; not while typing in a box):
+//     * Space: pause / carry on.
+//     * 1, 2, 3, 4, 5: the five speed steps (1x, 4x, 16x, 64x, 256x in a battle). No key for slow motion (Alex: "don't do slo-mo").
+//     * F1 to F12: jump the battle view to our Fleets, in a fixed order: the Assault Fleet(s) first, then the Defence Fleet(s), then any others.
+//       The Fleet is picked out too (as if clicked in the left column), and the view locks onto it (section 7i2: the ship nearest its middle) until the map is dragged.
+//       From the strategic map, the key opens the battle first. The left column lists our Fleets in this order, with their keys.
+//       The browser's own F-key jobs (help, reload, full screen, developer tools ...) are switched off inside the game; Ctrl+R still reloads.
+// =====================================================================
+
+// Is the war's clock the one being set? (a campaign is running, and we are on its map or watching its battle)
+function gameWarOn() {
+  if (typeof campaign === 'undefined' || !campaign || SETTINGS.campaignModel !== 1) return false;
+  if (screenMode === 'campaign') return true;
+  return screenMode === 'battle' && typeof campaignBattleActive !== 'undefined' && campaignBattleActive && cmState.watching && !campaignPeekActive();
+}
+// Where the dial is: 0 to 4 (from the battle's speed, which every screen now keeps in step).
+function gameSpeedStep() { return Math.max(0, MAP_SPEED_VALUES.indexOf(mapSpeedForBattleSpeed(battleSpeed))); }
+// The war map's speed that goes with the dial (what campaign.speed holds while the war runs).
+function gameMapSpeedNow() { return mapSpeedForBattleSpeed(battleSpeed); }
+// Is the game paused just now, on this screen?
+function gamePaused() {
+  if (screenMode === 'battle') return clockStopped || battlePaused;
+  if (gameWarOn()) return !(campaign.speed > 0);
+  return false;
+}
+// Redraw the speed buttons on whichever screen is showing.
+function gameSpeedLooks() {
+  if (screenMode === 'battle') { setSpeedButtonsLook(); refreshTopBar(); refreshStoppedLook(); }
+  else if (screenMode === 'campaign' && typeof cmRender === 'function') cmRender(true);
+}
+// Set the speed (a battle speed: 0.25, 0.5, 1, 4, 16, 64 or 256). It also takes the pause off, as the speed buttons always did.
+function gameSpeedSet(v) {
+  setBattleSpeed(v);
+  clockStopped = false;
+  if (gameWarOn()) { campaign.speed = mapSpeedForBattleSpeed(v); cmState.pausedBy = ''; }
+  gameSpeedLooks();
+}
+// Set a dial step (0 to 4) - the number keys and the war map's buttons.
+function gameSpeedSetStep(k) { gameSpeedSet(SPEED_VALUES[Math.max(0, Math.min(SPEED_VALUES.length - 1, k))]); }
+// Pause (true) or carry on (false), on every screen at once.
+function gamePauseSet(on) {
+  if (screenMode === 'battle') {
+    if (!on && battlePaused) resumeBattle();     // (the old pause panel, "Pause & redesign" outside a war)
+    clockStopped = on;
+  } else if (!on) clockStopped = false;
+  if (gameWarOn()) { campaign.speed = on ? 0 : gameMapSpeedNow(); if (!on) cmState.pausedBy = ''; }
+  gameSpeedLooks();
+}
+function gamePauseToggle() { gamePauseSet(!gamePaused()); }
+
+// The war's pause carried onto the battle screen as it opens (cmOpenBattle, 24f): a war paused on the map is a stopped battle clock, a running war runs.
+function gameSpeedOntoBattle() {
+  if (!gameWarOn() || tutorialActive() || campaign.over) return;
+  clockStopped = !(campaign.speed > 0);
+  gameSpeedLooks();
+}
+// ... and back onto the map as the battle screen is left for it (showCampaignScreen, 24f).
+function gameSpeedOntoMap() {
+  if (battlePaused) { clearPauseState(); campaign.speed = 0; }
+  else if (clockStopped) campaign.speed = 0;
+  else if (!(campaign.speed > 0) && !tutorialActive()) campaign.speed = gameMapSpeedNow();
+}
+
+// ---- F1 to F12: our Fleets ----
+// Our Fleets in key order: the Assault Fleet(s), then the Defence Fleet(s), then the rest; each kind by its number.
+function gameFleetsInKeyOrder() {
+  if (typeof cmdOn !== 'function' || !cmdOn() || typeof cmdLiveFleets !== 'function') return [];
+  const rank = function (F) { return F.purpose === 'assault' ? 0 : (F.purpose === 'defence' ? 1 : 2); };
+  return cmdLiveFleets(BLUE).slice().sort(function (a, b) { return rank(a) - rank(b) || a.no - b.no || a.id - b.id; });
+}
+// The key that jumps to Fleet F ('F1' ...), or '' when it has none.
+function gameFleetKeyOf(F) { const k = gameFleetsInKeyOrder().indexOf(F); return k >= 0 && k < 12 ? 'F' + (k + 1) : ''; }
+// Where Fleet F's ships are: the middle (the half-way ship along each axis, so a few far-off ships do not pull the view into empty space) and the box
+// round the middle 80% of them, weighted by ships; null with no ship of it on the map.
+function gameFleetMiddle(F) {
+  if (!F || F.attachedTo >= 0) return null;
+  const pts = [];
+  const divs = cmdFleetDivisions(F);
+  for (let d = 0; d < divs.length; d++) for (let j = 0; j < divs[d].squads.length; j++) {
+    const sq = divs[d].squads[j];
+    if (!(sqAlive[sq] > 0) || (typeof fogHidesSquad === 'function' && fogHidesSquad(sq))) continue;
+    if (measureSquad(sq)) pts.push({ x: squadBox.x, y: squadBox.y, w: sqAlive[sq] });
+  }
+  if (pts.length === 0) return null;
+  const along = function (key, share) {
+    const s = pts.slice().sort(function (a, b) { return a[key] - b[key]; });
+    let total = 0; for (const p of s) total += p.w;
+    let run = 0; for (const p of s) { run += p.w; if (run >= total * share) return p[key]; }
+    return s[s.length - 1][key];
+  };
+  return { x: along('x', 0.5), y: along('y', 0.5), x0: along('x', 0.1), x1: along('x', 0.9), y0: along('y', 0.1), y1: along('y', 0.9) };
+}
+// The ship of Fleet F nearest its middle (the one the view locks onto while following the Fleet), or -1 with none.
+function gameFleetShip(F) {
+  const m = gameFleetMiddle(F);
+  if (m === null) return -1;
+  let best = -1, bestD = Infinity;
+  const divs = cmdFleetDivisions(F);
+  for (let d = 0; d < divs.length; d++) for (let j = 0; j < divs[d].squads.length; j++) {
+    const sq = divs[d].squads[j], start = sqStart[sq], end = start + sqSize[sq];
+    for (let k = start; k < end; k++) {
+      const s = sqMembers[k];
+      if (shipAlive[s] !== 1 || shipSquad[s] !== sq) continue;
+      const dd = (shipX[s] - m.x) * (shipX[s] - m.x) + (shipY[s] - m.y) * (shipY[s] - m.y);
+      if (dd < bestD) { bestD = dd; best = s; }
+    }
+  }
+  return best;
+}
+// Jump the battle view to our n-th Fleet (1 = F1), zoomed so most of its ships show, pick it out, and follow it (the Follow button: dragging the map
+// stops it, as for a squadron). Returns true when there was such a Fleet.
+function gameJumpToFleet(n) {
+  const F = gameFleetsInKeyOrder()[n - 1];
+  if (!F) return false;
+  bsSelectedUnit = { kind: 'fleet', id: F.id };    // picked out, as if clicked in the left column (a second press does not clear it)
+  bsEl.bsAdmiralBody.lastHtml = null;
+  refreshAdmiralPanel(); refreshUnitCard();
+  const m = gameFleetMiddle(F);
+  camFollowStop();
+  if (m === null) return true;                     // (a Fleet with no ships on the map yet: picked, nothing to look at)
+  const lim = zoomLimits(), aspect = canvas.width / Math.max(1, canvas.height);
+  const span = Math.max(5000, (m.x1 - m.x0) * 1.3, (m.y1 - m.y0) * 1.3 * aspect);
+  camera.zoom = clampNumber(canvas.width / span, lim.min, lim.max);
+  camFollowMid.at = -1e9;                          // measure the open map afresh (section 7i2)
+  camFollowShip = gameFleetShip(F);
+  camFollowOn = true; camFollowFleet = F.id; camFollowFleetSq = bsSelectedSq;
+  camFollowSetLook();
+  camFollowFrame(0);                               // the view on it now, not next frame
+  return true;
+}
+
+// ---- The keys ----
+function gameKeyTyping(e) {
+  const t = e.target, tag = t && t.tagName;
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || !!(t && t.isContentEditable);
+}
+window.addEventListener('keydown', function (e) {
+  const fk = /^F([1-9]|1[0-2])$/.exec(e.key);
+  // F1-F12: never the browser's own job inside the game (Ctrl/Cmd with them still reaches the browser)
+  if (fk && !e.ctrlKey && !e.metaKey) e.preventDefault();
+  if (e.ctrlKey || e.metaKey || e.altKey || gameKeyTyping(e)) return;
+  const onBattle = screenMode === 'battle' && typeof hudIsNew === 'function' && hudIsNew();
+  const onMap = screenMode === 'campaign' && typeof campaign !== 'undefined' && campaign && !campaign.over && !cmState.sheet;
+  if (!onBattle && !onMap) return;
+  if (fk) {
+    if (onMap) { if (!cmBattleIsHome()) return; cmOpenBattle(); }
+    if (screenMode === 'battle') gameJumpToFleet(Number(fk[1]));
+    return;
+  }
+  if (typeof lsChoosing === 'function' && lsChoosing()) return;   // (a Last Stand level-up card: its own keys 1, 2, 3)
+  const digit = /^(Digit|Numpad)([1-5])$/.exec(e.code || '') || (/^[1-5]$/.test(e.key) ? [0, 0, e.key] : null);
+  if (digit) { gameSpeedSetStep(Number(digit[2]) - 1); e.preventDefault(); return; }
+  if (e.key === ' ' || e.code === 'Space') {
+    e.preventDefault();                             // (no page scroll, and no "click" on the last button pressed)
+    if (e.repeat) return;
+    if (document.activeElement && document.activeElement.tagName === 'BUTTON') document.activeElement.blur();
+    gamePauseToggle();
+  }
 });
 // =====================================================================
 // 7j. COMMS: THE RADIO, THE STAMPS AND THE SCREEN EFFECTS  (v17)
@@ -75239,7 +75509,7 @@ function cmBuild() {
       // (v60, Alex 29 Oct) no Proving grounds tab here any more: the Proving grounds are on the main menu (and the Menu's sheet)
       '<div class="clockbox"><div class="date"><span class="label" id="cmDateLabel">War week</span><b id="cmDate">WEEK 0 · DAY 1</b></div>' +
         '<span class="speed-cap" id="cmSpeedCap">Map</span><div class="speed" role="group" aria-label="War speed">' +
-          '<button type="button" data-cm="speed" data-id="0" title="Pause the war"><svg viewBox="0 0 14 14"><path d="M3 2h3v10H3zM8 2h3v10H8z" fill="currentColor"/></svg></button>' +
+          '<button type="button" data-cm="speed" data-id="0" title="Pause the war (Space)"><svg viewBox="0 0 14 14"><path d="M3 2h3v10H3zM8 2h3v10H8z" fill="currentColor"/></svg></button>' +
           '<button type="button" data-cm="speed" data-id="1" id="cmSp1">1&times;</button><button type="button" data-cm="speed" data-id="2" id="cmSp2">2&times;</button><button type="button" data-cm="speed" data-id="4" id="cmSp4">4&times;</button>' +
           '<button type="button" data-cm="speed" data-id="16" id="cmSp16">16&times;</button><button type="button" data-cm="speed" data-id="64" id="cmSp64">64&times;</button></div>' +
         '<button class="menu-btn" type="button" data-cm="menu" title="New, load, import, export, display (Esc)">Menu</button></div>' +
@@ -75291,8 +75561,7 @@ function showCampaignScreen() {
   cmBuild();
   // (v177.0) Leaving the battle for the map: one pause for both screens. A battle paused on its screen is a paused war on the map; a running one runs.
   if (screenMode === 'battle' && cmState.watching && campaign && !campaignPeekActive()) {
-    if (battlePaused) { clearPauseState(); campaign.speed = 0; }
-    else if (!(campaign.speed > 0) && !tutorialActive()) campaign.speed = 1;
+    gameSpeedOntoMap();                                          // (v194.0, section 7i3) the battle's Stop button too, and the speed it ran at
   }
   if (campaignPeekEnd()) cmState.battleWake = -1;               // (v27.1) back from looking at a quiet AO: that battlefield is dropped, the campaign is as it was
   SETTINGS.campaignModel = 1;                                    // the campaign's switch (section 5z): its clock and its battle hooks may run from now on
@@ -75430,7 +75699,7 @@ function cmOpenBattle() {
   setText(bsEl.bsOpLabel, campaignAoName(campaignFrontId()) + ' · ' + cmWhen(campaign.week));   // ("Mars · WEEK 12 · DAY 3")
   cmState.watching = true; cmState.toBattle = false;
   // (v177.0) one pause for both screens: a war paused on the map opens as a paused battle (the tutorial keeps its own clock)
-  if (!(campaign.speed > 0) && !tutorialActive() && !campaign.over && !battlePaused) { pauseBattle(); refreshTopBar(); }
+  gameSpeedOntoBattle();                                          // (v194.0, section 7i3) shown on the battle's own Stop button, so the same Space or button carries on
 }
 // (v85.3, Alex 30 Oct: "smooth out how the front AO, battle map camera, watch... works") In the core loop the battle never parks, so when the front moves
 // (the old battle parks and the new one wakes in the same moment) the battle screen stayed open on the new battlefield with the old one's camera, the old AO's
@@ -75537,7 +75806,7 @@ function cmClick(e) {
     else if (id === 'bureau') { cmOpenBureau(); return; }
     else if (id === 'setup') { cmLeaveToSetup(); return; }
   } else if (what === 'speed') { cmSetSpeed(+id); }
-  else if (what === 'resume') { if (campaign) campaign.speed = 1; cmState.pausedBy = ''; }
+  else if (what === 'resume') { if (campaign) gamePauseSet(false); cmState.pausedBy = ''; }   // (v194.0: at the dial's speed, not always 1x)
   else if (what === 'key') { cmState.keyOpen = !cmState.keyOpen; cmEl.classList.toggle('key-open', !!cmState.keyOpen); return; }   // (v105.2) the map's key on and off
   else if (what === 'menu') { cmOpenSheet(campaign ? 'menu' : 'start'); return; }
   else if (what === 'supply') { supOpen(); return; }                       // (v67) the supply return (section 7v)
@@ -75568,10 +75837,9 @@ function cmClick(e) {
 // (v133.0, Alex: testing an early war took hours) the 4th and 5th buttons are new: 16x/64x on the map, 64x/256x in the battle (24-7 MAP_SPEED_VALUES pairs them).
 function cmSetSpeed(v) {
   if (!campaign) return;
-  if (v === 0) { campaign.speed = 0; return; }
-  if (campaignBattleLive()) { setBattleSpeed(battleSpeedForMapSpeed(v)); campaign.speed = 1; }
-  else campaign.speed = v;
-  cmState.pausedBy = '';
+  // (v194.0, section 7i3) one speed and one pause for every screen: the dial step picked here is the battle screen's step too
+  if (v === 0) gamePauseSet(true);
+  else gameSpeedSet(battleSpeedForMapSpeed(v));
 }
 
 // (v97.3) Is there a fight at the front just now? Enemy ships in the battle (on the map, staging, away or still to enter), or ours there with an enemy station
@@ -75835,6 +76103,30 @@ function cmTransitMarkers(c) {
 // usual row, each with who holds it (from its places), the ships of each side inside it (the battle's ships by where they fly) and its places. The front
 // is the first region from the Sun that is not wholly ours: the hatching and the front line stand beyond it. No lanes: the regions are one battlefield.
 // A click on a region opens the AO page (the whole map), with that region's frame lit.
+// (v189.1) SENSORS ON THE LONG MAP (06t): the one AO is always "in sight", so the war map showed every Swarm ship in the system while the battle screen
+// hid them in fog. Now a region's alien ship count shows only when the region is within our fleet sight (06t campaignSight, counted in regions here
+// instead of lanes) of an EYE: a region where we hold a place or have ships, Earth's own, Sol Inner, or the front region. Who holds each place still
+// shows everywhere, as on the battle screen. SETTINGS.campaignSensors 0 shows everything.
+let cmLongEyesMemo = { key: '', eyes: null };
+function cmLongEyes() {
+  const regs = longMapRegions(), live = campaignBattleLive() && campaignBattleActive, key = campaign.week.toFixed(2) + '|' + (live ? Math.floor(simTime / 5) : 'p') + '|' + regs.length;
+  if (cmLongEyesMemo.eyes && cmLongEyesMemo.key === key) return cmLongEyesMemo.eyes;
+  const eyes = regs.map(function () { return false; }), aoId = campaignFrontId(), fr = typeof longFrontRegion === 'function' ? longFrontRegion() : null;
+  for (const r of regs) {
+    if (r.sanctuary === true || r.home === 0 || (fr && fr.id === r.id)) eyes[r.col] = true;
+    for (const loc of r.locations) if (cmViewPlaceOwner(aoId, loc.id) === 0) { eyes[r.col] = true; break; }
+  }
+  if (live) { for (let i = 0; i < highWater; i++) if (shipAlive[i] === 1 && shipSide[i] === 0 && stImmobile[shipType[i]] === 0) { const c = longMapSlotOf(shipX[i]); if (c < eyes.length) eyes[c] = true; } }
+  else for (const f of campaign.fleets) { if (f.side !== 0 || f.transit || fleetShipCount(f) <= 0) continue; for (const r of regs) if (r.locations.some(function (l) { return l.id === f.place; })) eyes[r.col] = true; }
+  cmLongEyesMemo = { key: key, eyes: eyes };
+  return eyes;
+}
+function cmLongSeesFleets(col) {
+  if (!campaignSensorsOn()) return true;
+  const eyes = cmLongEyes(), s = campaignSightNow(), range = Math.max(s.fleets, s.bases);
+  for (let k = 0; k < eyes.length; k++) if (eyes[k] && Math.abs(k - col) <= range) return true;
+  return false;
+}
 function cmLongRegionInfo(r, live, aoId) {
   let ours = 0, theirs = 0, open = 0;
   for (const loc of r.locations) { if (campaignLocationLocked(loc.id)) continue; open++; const o = cmViewPlaceOwner(aoId, loc.id); if (o === 0) ours++; else if (o === 1) theirs++; }
@@ -75843,7 +76135,9 @@ function cmLongRegionInfo(r, live, aoId) {
   const ships = [0, 0], x0 = longMapRegionLeft(r.col), x1 = r.col + 1 < longMapRegions().length ? longMapRegionLeft(r.col + 1) : campaignWorldWidth();   // (v179.0: a region and the gap after it)
   if (live && campaignBattleActive) { for (let i = 0; i < highWater; i++) if (shipAlive[i] === 1 && shipX[i] >= x0 && shipX[i] < x1 && stImmobile[shipSide[i] * TYPE_COUNT + shipType[i]] === 0) ships[shipSide[i]]++; }
   else for (const f of campaign.fleets) { if (f.transit) continue; const loc = r.locations.find(function (l) { return l.id === f.place; }); if (loc) ships[f.side] += fleetShipCount(f); }
-  return { owner: owner, status: status, ships: ships, ours: ours, theirs: theirs, open: open };
+  const seen = cmLongSeesFleets(r.col);                                  // (v189.1) their ships only within our sensors
+  if (!seen) ships[1] = 0;
+  return { owner: owner, status: status, ships: ships, ours: ours, theirs: theirs, open: open, seen: seen };
 }
 function cmLongRegionCounts() { const aoId = campaignFrontId(), live = campaignBattleLive(); let ours = 0, theirs = 0; for (const r of longMapRegions()) { const o = cmLongRegionInfo(r, live, aoId).owner; if (o === 0) ours++; else if (o === 1) theirs++; } return { ours: ours, theirs: theirs, all: longMapRegions().length }; }
 // (v27 C3) THE TUTORIAL'S EARTH-ONLY MAP: everything beyond Earth's AO is dimmed (and not clickable) until the tutorial hands the war over, with a contact
@@ -76118,7 +76412,7 @@ function cmRenderAo() {
         '<rect x="' + cmF(P.x0) + '" y="' + cmF(P.y0) + '" width="' + cmF(P.w) + '" height="' + cmF(P.h) + '" fill="none" stroke="' + (lit ? 'var(--warn)' : 'var(--map-frame)') + '" stroke-width="' + (lit ? 2 : 1) + '"/>' +
         (r.col < regs.length - 1 ? '<rect x="' + cmF(P.x0 + P.w) + '" y="' + cmF(P.y0) + '" width="' + cmF(P.gapW) + '" height="' + cmF(P.h) + '" fill="url(#cm-hz)" opacity=".35"/><text class="map-label dim" x="' + cmF(P.x0 + P.w + P.gapW / 2) + '" y="' + cmF(P.y0 + P.h / 2) + '" text-anchor="middle" transform="rotate(-90 ' + cmF(P.x0 + P.w + P.gapW / 2) + ' ' + cmF(P.y0 + P.h / 2) + ')" style="font-size:9px">' + Math.round(longMapGapAfter(r.col) * longMapSlotWidth() / 1000) + ',000 U OF NOTHING' + (longMapGapAfter(r.col) > longMapGap() ? ' &middot; 2 TRANSFERS' : '') + '</text>' : '') +
         '<text class="z-name" x="' + cmF(P.x0 + 4) + '" y="' + cmF(P.y0 - 8) + '" style="fill:var(--map-text);font-size:13px">' + esc(r.name.toUpperCase()) + '</text>' +
-        '<text class="m-st" x="' + cmF(P.x0 + P.w) + '" y="' + cmF(P.y0 - 8) + '" text-anchor="end" style="fill:' + CM_STC[x.status[1]] + '">' + x.status[0].toUpperCase() + ' &middot; <tspan class="us">' + x.ships[0] + '</tspan> V <tspan class="them">' + x.ships[1] + '</tspan></text>';
+        '<text class="m-st" x="' + cmF(P.x0 + P.w) + '" y="' + cmF(P.y0 - 8) + '" text-anchor="end" style="fill:' + CM_STC[x.status[1]] + '">' + x.status[0].toUpperCase() + ' &middot; <tspan class="us">' + x.ships[0] + '</tspan> V <tspan class="them">' + (x.seen ? x.ships[1] : '?') + '</tspan></text>';   // (v189.1) '?' = beyond our sensors
     });
   } else {
   for (let x = 0; x <= 9; x++) g += '<line x1="' + cmF(CM_FX + x * CM_FW / 9) + '" y1="' + CM_FY + '" x2="' + cmF(CM_FX + x * CM_FW / 9) + '" y2="' + (CM_FY + CM_FH) + '" stroke="var(--map-grid)" stroke-width=".6" opacity=".7"/>';
@@ -77960,6 +78254,8 @@ const GAZETTE_KEEP = 36;                           // the save keeps the newest 
 const GAZETTE_WIRE_MAX = 7;                        // log lines quoted in "From the wire"
 const GAZETTE_WIRE_KINDS = ['front', 'ao', 'place', 'aliens', 'council', 'research', 'officer', 'design', 'over', 'sighted', 'station', 'nest', 'sylph', 'fallout'];
 
+// (v189.1) An area's name for the paper: an AO, or on the long map one of its regions (the one AO there is the whole system, "Sol").
+function gazetteAreaName(id) { if (typeof longMapOn === 'function' && longMapOn()) { const g = longMapRegionById(id); if (g) return g.name; } return campaignAoName(id); }
 function gazetteStore() {
   if (typeof campaign === 'undefined' || !campaign) return null;
   if (!campaign.gazette || typeof campaign.gazette !== 'object' || Array.isArray(campaign.gazette)) campaign.gazette = { issues: [], snap: null, nextNo: 1 };
@@ -77983,6 +78279,11 @@ function gazetteSnapshot() {
     front: campaignFrontId(), aos: {}, producedTypes: {}, scars: {}, officers: {}, research: c.research && Array.isArray(c.research.done) ? c.research.done.length : 0 };
   const aos = campaignAos();
   for (let k = 0; k < aos.length; k++) { const a = c.ao[aos[k].id]; snap.aos[aos[k].id] = a ? a.securedBy : -1; }
+  // (v189.1) the long map is one AO: the Gazette reads its nine regions instead, so a region won or lost makes the headline and the front has a name
+  if (typeof longMapOn === 'function' && longMapOn() && typeof longRegionStates === 'function') {
+    const rows = longRegionStates(), regs = longMapRegions(), fr = longFrontNameRegion();
+    if (rows && regs.length) { snap.aos = {}; for (const g of regs) snap.aos[g.id] = rows[g.id] ? rows[g.id].securedBy : -1; if (fr) snap.front = fr.id; snap.long = true; }
+  }
   const made = s.producedTypes && s.producedTypes[0] ? s.producedTypes[0] : {};
   for (const id in made) if (made[id] > 0) snap.producedTypes[id] = made[id];
   if (c.scars) for (const id in c.scars) { const r = c.scars[id]; if (r) snap.scars[id] = [gazetteNum(r.ships), gazetteNum(r.lost), gazetteNum(r.battles)]; }
@@ -78004,7 +78305,7 @@ function gazetteWeek() {
   g.issues.push(issue);
   while (g.issues.length > GAZETTE_KEEP) g.issues.shift();
   g.snap = now;
-  if (typeof dispatchAdd === 'function') dispatchAdd('gazette.out', { no: issue.no, headline: issue.headline, front: campaignAoName(now.front) }, 'gazette:' + issue.no);
+  if (typeof dispatchAdd === 'function') dispatchAdd('gazette.out', { no: issue.no, headline: issue.headline, front: gazetteAreaName(now.front) }, 'gazette:' + issue.no);
 }
 
 // ---- Writing an issue ----
@@ -78013,14 +78314,23 @@ function gazetteWeek() {
 //   ledger: [[label, value]], roll: [{ name, lost }], rollTotal }.
 function gazetteWrite(prev, now) {
   const c = campaign, g = gazetteStore();
-  const from = prev.week, to = now.week, front = campaignAoName(now.front), enemyName = typeof ALIEN_FACTIONS !== 'undefined' && ALIEN_FACTIONS[alienFactionId()] ? ALIEN_FACTIONS[alienFactionId()].name : 'the aliens';
+  const from = prev.week, to = now.week, front = gazetteAreaName(now.front), enemyName = typeof ALIEN_FACTIONS !== 'undefined' && ALIEN_FACTIONS[alienFactionId()] ? ALIEN_FACTIONS[alienFactionId()].name : 'the aliens';
   const enemy = /^the /i.test(enemyName) ? enemyName.slice(4) : enemyName;   // ("The Swarm" is written "the Swarm" inside a sentence)
   const killed = Math.max(0, now.lost[1] - prev.lost[1]), ours = Math.max(0, now.lost[0] - prev.lost[0]);
   const built = gazetteDelta(prev, now, 'produced'), waves = gazetteDelta(prev, now, 'wavesBeaten'), assaults = gazetteDelta(prev, now, 'assaults');
   const alloysIn = gazetteDelta(prev, now, 'alloysIn'), spent = gazetteDelta(prev, now, 'alloysSpent'), projects = gazetteDelta(prev, now, 'research');
   // the map: what changed hands
   const won = [], lostAos = [];
-  for (const id in now.aos) { const was = prev.aos[id], is = now.aos[id]; if (was === is) continue; if (is === 0) won.push(campaignAoName(id)); else if (was === 0) lostAos.push(campaignAoName(id)); }
+  for (const id in now.aos) {
+    const was = prev.aos[id], is = now.aos[id];
+    if (was === is || was === undefined) continue;
+    if (now.long === true) {                                                                 // (v189.1) the long map's regions: only a region that is all ours or all theirs counts, and only
+      if (prev.long !== true) continue;                                                      // against an earlier look at the regions (an older save's look was of the one AO)
+      if (is === 0) won.push(gazetteAreaName(id)); else if (is === 1) lostAos.push(gazetteAreaName(id));
+      continue;
+    }
+    if (is === 0) won.push(gazetteAreaName(id)); else if (was === 0) lostAos.push(gazetteAreaName(id));
+  }
   const frontMoved = prev.front !== now.front;
   // the designs: the month's stretches (kills and losses per design), what was built, what fought
   const des = {};
@@ -78068,7 +78378,7 @@ function gazetteWrite(prev, now) {
   else if (killed > 0) { headline = front.toUpperCase() + ' HOLDS'; standfirst = gazetteCount(killed, 'enemy hull') + ' destroyed for ' + gazetteCount(ours, 'loss', 'losses') + '. ' + gazetteCount(waves, 'wave') + ' beaten.'; }
   else { headline = 'A QUIET MONTH ON THE ' + front.toUpperCase() + ' FRONT'; standfirst = 'No enemy hull was destroyed and none of ours lost. The yards posted ' + gazetteCount(built, 'hull') + '.'; }
   const lead = [];
-  lead.push('Between week ' + from + ' and week ' + to + ' the Fleet fought the ' + enemy + ' at ' + front + (frontMoved ? ', the front having moved from ' + campaignAoName(prev.front) : '') + '. ' +
+  lead.push('Between week ' + from + ' and week ' + to + ' the Fleet fought the ' + enemy + ' at ' + front + (frontMoved ? ', the front having moved from ' + gazetteAreaName(prev.front) : '') + '. ' +
     (ours + killed > 0 ? 'The month\'s count has ' + gazetteCount(killed, 'enemy hull') + ' destroyed and ' + gazetteCount(ours, 'ship') + ' of ours lost' + (killed > 0 && ours > 0 ? ', ' + (killed >= ours ? Math.round(killed / ours * 10) / 10 + ' of theirs for every one of ours' : 'one of theirs for every ' + Math.round(ours / killed * 10) / 10 + ' of ours') : '') + '.' : 'No ship was lost on either side.') +
     (waves > 0 ? ' ' + gazetteCount(waves, 'alien wave') + ' broke on the line.' : '') + (assaults > 0 ? ' Fleet Command launched ' + gazetteCount(assaults, 'assault') + '.' : ''));
   if (best) lead.push('The ' + best.name + ' is the ship of the month: ' + gazetteCount(best.kills, 'kill') + ' for ' + gazetteCount(best.lost, 'loss', 'losses') + ' across ' + gazetteCount(best.fought, 'ship') + ' that fought' + (best.rating === 'well' ? ', and the chain of command says it did well.' : (best.rating === 'badly' ? ', though the chain of command says it was miscast.' : '.')));
@@ -78078,7 +78388,7 @@ function gazetteWrite(prev, now) {
   home.push((alloysIn > 0 ? 'Earth and the colonies gave ' + Math.round(alloysIn / Math.max(1, to - from)).toLocaleString('en-GB') + ' Alloys a week' + (spent > 0 ? ', ' + Math.round(spent).toLocaleString('en-GB') + ' of it spent on ships' : '') + '.' : 'Earth\'s Alloys are not yet flowing.') +
     (done.length ? ' The laboratories finished ' + done.join(', ') + '.' : (projects > 0 ? ' The laboratories finished ' + gazetteCount(projects, 'project') + '.' : '')));
   if (typeof pulseGazetteLine === 'function') { const pl = pulseGazetteLine(from, to); if (pl) home.push(pl); }   // (v181.0, 05f-2d) the pulse drives' flashes over the colonies
-  const held = Object.keys(now.aos).filter(function (id) { return now.aos[id] === 0; }).map(campaignAoName);
+  const held = Object.keys(now.aos).filter(function (id) { return now.aos[id] === 0; }).map(gazetteAreaName);
   home.push('We hold ' + (held.length ? held.join(', ') : 'nothing but Earth') + '.' + (fallen.length ? ' The Roll carries ' + (fallen.length === 1 ? 'one name' : fallen.length + ' names') + ' from the Fleet\'s officers this month.' : ''));
   const ledger = [['Hulls posted by the yards', built], ['Ships lost', ours], ['Enemy hulls destroyed', killed], ['Waves beaten', waves], ['Assaults launched', assaults], ['Alloys received', Math.round(alloysIn)], ['Projects finished', done.length || projects]];
   const roll = designs.filter(function (d) { return d.lost > 0; }).sort(function (a, b) { return b.lost - a.lost; }).map(function (d) { return { name: d.name, lost: d.lost }; });
@@ -79008,9 +79318,16 @@ TUTORIAL_SCRIPTS.main = {
                                          : 'Name your ship in the box at the top left (Sentry is a good name), then press Save version.'; },
       waitText: 'Save the design to go on.' },
     // (v134.0) the "is Local intended?" card is gone with the question itself: saving goes straight on to approving
-    { id: 'sentryApprove', target: '#b2Approve', lock: false, wait: { event: 'designApproved', test: function (d, ctx) { if (d.frames.indexOf('sc_sentry') < 0) return false; ctx.data.sentryId = d.id; return true; } },
+    // (v192.0, Alex) any armed design of the player's but the Trainer passes this step, not only one on the Sentry frame: a player who opened another
+    // design and approved it used to loop here for ever (Approve for the yards, Ready for the yards, again and again)
+    { id: 'sentryApprove', target: '#b2Approve', lock: false, wait: { event: 'designApproved', test: function (d, ctx) { if (!tutSentryStandIn(d.id, d.frames)) return false; ctx.data.sentryId = d.id; return true; } },
       onStart: function (ctx) { tutApproveResume(ctx, '', 'sc_sentry', 'sentryId', 'sentryZones', tutSentryOpen); },
-      text: function () { const rec = tutLatestRec('sc_sentry'); return rec && rec.design && !tutDesignArmed(rec.design) ? 'Saved, but she has no weapon, and the yards won\'t build an unarmed warship. Put at least one Light Repeater in a gun bay, with a magazine touching it, then save again and approve.' : 'Saved. Now approve it for the yards.'; } },
+      text: function () {
+        const open = typeof b2 !== 'undefined' && b2.d && Array.isArray(b2.d.frames) ? b2.d.frames : [];
+        if (open.indexOf('sc_starship') >= 0) return 'This is the Trainer, which the yards already build. Open your new design from the Designs list (or any other armed design of yours) and approve that one for the yards.';
+        const rec = tutLatestRec('sc_sentry');
+        return rec && rec.design && !tutDesignArmed(rec.design) && open.indexOf('sc_sentry') >= 0 ? 'Saved, but she has no weapon, and the yards won\'t build an unarmed warship. Put at least one Light Repeater in a gun bay, with a magazine touching it, then save again and approve.'
+             : 'Saved. Now approve it for the yards. (Any armed design of yours will do, other than the Trainer.)'; } },
     { id: 'mothball', target: '#b2ApproveBox', place: 'center', button: 'Yes: mothball the Trainer',
       onEnd: function (ctx) { tutMothballTrainer(); campaignEconRampStart(); tutorialOpen('map'); },
       text: 'Approved. One question from the yards: stop building Trainers?\nMothballing a design stops new ones being built; the ships already flying carry on. Activating and mothballing designs is your main lever on the war.' },
@@ -79098,7 +79415,16 @@ function tutFindPart(id) { const el = tutPartRow(id); if (el && el.scrollIntoVie
 // The newest design of the player's that uses a frame (the saved Trainer or Sentry), or null.
 function tutLatestRec(frame) { let best = null; for (const t of SHIP_TYPES) if (t && t.design && t.design.v === 3 && !t.campaignStock && t.design.frames && t.design.frames.indexOf(frame) >= 0 && (!best || designVersion(t) >= designVersion(best))) best = t; return best; }
 // The approve step after a reload: a design already saved is put back on the sheet (or, if it was approved meanwhile, the step ends); else back to the start.
+// (v192.0) A design that may stand in for the Sentry at its approve step: the player's own (not stock), armed, and not the Trainer.
+function tutSentryStandIn(id, frames) {
+  const rec = SHIP_TYPES[typeIndexById(id)];
+  if (!rec || !rec.design || rec.design.v !== 3 || rec.campaignStock) return false;
+  const fr = frames || rec.design.frames || [];
+  return fr.indexOf('sc_starship') < 0 && tutDesignArmed(rec.design);
+}
 function tutApproveResume(ctx, name, frame, key, first, open) {
+  // (v192.0) a save stuck at the Sentry's approve step with another armed design already approved (the old loop) goes straight on with that design
+  if (key === 'sentryId') { const any = SHIP_TYPES.find(function (t) { return t && t.yardsReady && tutSentryStandIn(t.id); }); if (any && !(tutLatestRec(frame) || {}).yardsReady) { ctx.data[key] = any.id; tutorialNext(ctx.index); return; } }
   if (!ctx.resumed) return;
   const rec = tutLatestRec(frame);
   if (!rec) { tutResume(ctx, first, open); return; }
@@ -79818,7 +80144,7 @@ function tutGuardKey(e) {
   if (tg.el && t && tg.el.contains(t) && (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT')) return;   // typing inside the thing pointed at
   e.stopImmediatePropagation();                              // no shortcut reaches the game
   if (tut.layer && tut.layer.contains(t)) return;            // ... but Enter or Space still presses the hint's own button
-  if (e.ctrlKey || e.metaKey || /^F\d+$/.test(e.key)) return;   // (the browser's own keys: reload, zoom, the developer tools)
+  if (e.ctrlKey || e.metaKey) return;   // (the browser's own keys: reload, zoom; v194.0: F1-F12 stay off in the game, section 7i3)
   e.preventDefault();
 }
 ['pointerdown', 'mousedown', 'mouseup', 'click', 'dblclick', 'auxclick', 'contextmenu', 'wheel', 'touchstart', 'touchend'].forEach(function (type) {
@@ -95641,7 +95967,7 @@ function b2OpenRecord(id, refit) {
   if (!rec.design || rec.design.v !== 3) return;
   const base = { d: copyDesignV3(rec.design), label: rec.name };
   if (refit) b2Load(refitDesignV3(rec), designFamily(rec), rec.id, base, 'A refit of ' + rec.name + ': the same layout, ready to change. Upgrade parts in place, then Save version; Compare shows what changed.');
-  else b2Load(rec.design, designFamily(rec), rec.id, base, 'Opened ' + rec.name + '. Saving under the name "' + designFamily(rec) + '" makes a new version (the old one is kept).');
+  else b2Load(rec.design, designFamily(rec), rec.id, base, 'Opened ' + rec.name + '. A change to the blueprint saved under the name "' + designFamily(rec) + '" makes a new version (the old one is kept). Standing orders (Doctrine) save on this version, with no new version.');
 }
 
 // ---------------------------------------------------------------------
@@ -95761,6 +96087,10 @@ function b2RenderHead() {
   // (v27) a Local design (0 jumps) wears a LOCAL tag wherever the design shows
   const localTag = sm && sm.fuel && sm.fuel.local ? ' <span class="ltag" title="Local: never transfers">LOCAL</span>' : '';
   b2El('b2Vtag').innerHTML = (latest ? (same && svc ? esc(svc.name) + ' · saved' : '<b>v' + next + ' draft</b> · ' + (b2.d.refitOf ? 'refit of ' : 'after ') + esc(latest.name)) : 'new design · not saved') + localTag;
+  // (v193.0) on the Doctrine page, with the blueprint unchanged, the Save button saves the standing orders only (no new version: 10e b2Save)
+  const sv = b2El('b2Save');
+  if (sv) { const ordersOnly = b2.page === 'doc' && svc && same; sv.textContent = ordersOnly ? 'Save orders' : 'Save version';
+    sv.title = svc && same ? 'The blueprint is unchanged, so saving makes no new version: it keeps the standing orders on ' + svc.name : 'Save the blueprint on the sheet as a new version (the old one is kept)'; }
   const st = b2El('b2Stamp');
   const active = svc && svc.yardsReady && same;
   st.textContent = active ? 'Active' : (same && svc ? 'Saved' : 'Draft'); st.className = 'stamp ' + (active ? 'green' : (same && svc ? 'grey' : 'amber'));
@@ -96399,6 +96729,7 @@ function b2SetPage(p) {
   if (p === 'cmp') b2RenderCompare();
   if (p === 'test') b2RenderTest();
   if (p === 'bp') requestAnimationFrame(function () { b2Resize(); b2Draw(); });
+  if (typeof b2RenderHead === 'function' && b2.a) b2RenderHead();          // (v193.0) the Save button reads "Save orders" on the Doctrine page
 }
 // What the compare measures against: the version this design came from (a refit's original, or the saved version that was opened).
 function b2CompareBase() {
@@ -96457,6 +96788,15 @@ function b2Save() {
   for (let t = 0; t < SHIP_TYPES.length; t++) if (!SHIP_TYPES[t].design && (SHIP_TYPES[t].name.toLowerCase() === lower || SHIP_TYPES[t].id.toLowerCase() === lower)) { b2.msg = 'Cannot save: "' + name + '" is the name of a ship type in the table. Pick another name.'; b2RenderMsg(); return false; }
   const family = findDesignFamilyName(name);
   if (family !== '') name = family;
+  // (v193.0, Alex 10 Nov: "make doctrine changes savable without overwriting the design variant") When the blueprint on the sheet is exactly the
+  // saved version it was opened from, Save makes NO new version: nothing in the ship changed. Its standing orders (the Doctrine page) are saved on
+  // that version already, so this press only confirms them. The tutorial keeps the old way (its steps always change the ship before a save).
+  const svc = b2ServiceRec();
+  if (family !== '' && svc && svc.design && !svc.removed && designFamily(svc).toLowerCase() === family.toLowerCase() && b2SameAsSaved(svc) && !(typeof tutorialActive === 'function' && tutorialActive())) {
+    b2.msg = b2SaveOrdersOnly(svc); b2.msgBad = false;
+    b2RenderAll();
+    return true;
+  }
   const previous = family !== '' ? latestVersionIndex(family) : -1;
   const previousId = previous >= 0 ? SHIP_TYPES[previous].id : null;
   const inBattle = designJoinsLiveBattle();
@@ -100861,6 +101201,7 @@ if (typeof window !== 'undefined') {
 //   HOW A CHANGE GOES OUT. Each click changes the working copy (b2d.d) and, for a saved design, goes out at once (docSetFor: every version of the
 //   design unless "This version only" is picked; the live battle has it within seconds). A design not saved yet keeps its doctrine as a draft that
 //   the first Save puts on it. Undo puts back the orders as they were when the page was opened.
+//   (v193.0) Orders never make a new version: "Save orders" (and Save on an unchanged blueprint, 10e b2Save) keeps them on the design as it is.
 // =====================================================================
 const b2d = { key: '', d: null, base: null, draft: null, saving: false, add: false, spec: { enemy: '', key: 'move', value: 'standoff' }, tpl: '', msg: '', ab: null, abRunning: false, fold: false };
 
@@ -100897,6 +101238,21 @@ function b2DocCommit(msg) {
     b2d.msg = (msg ? msg + ' ' : '') + (recs.length > 1 ? 'Sent to all ' + recs.length + ' versions of ' + designFamily(rec) + '.' : 'Sent to ' + rec.name + '.') + (live ? ' The ships at the front have it now.' : '');
   } else { b2d.draft = docCopy(b2d.d); b2d.msg = (msg ? msg + ' ' : '') + 'Kept with the design: saving it puts these orders on it.'; }
   b2RenderDoc();
+}
+
+// (v193.0, Alex 10 Nov: "make doctrine changes savable without overwriting the design variant") Saves the standing orders of a saved design on
+// their own: no new version, the blueprint untouched. (Each click already sends the orders to the design; this makes sure, keeps them in the
+// design library's plan of it, and writes the campaign's autosave so they survive closing the game.) Returns the words for the message bar.
+function b2SaveOrdersOnly(rec) {
+  if (!rec || !rec.design) return '';
+  b2DocSync();
+  const changed = b2d.key === 'rec:' + rec.id && b2d.d && !docSame(b2d.d, docOf(rec) || docNew());
+  if (changed) docSetFor(rec, b2d.d);
+  const d = docOf(rec), n = d && d.all ? docFamilyRecs(rec).length : 1;
+  if (typeof campaign !== 'undefined' && campaign && SETTINGS.campaignAutosave === 1 && typeof campaignAutosave === 'function') campaignAutosave();
+  const words = 'No new version: the blueprint of ' + rec.name + ' is unchanged. ';
+  if (!d || docIsAuto(d)) return words + 'Its standing orders are all Auto.';
+  return words + 'Its standing orders are saved on ' + (n > 1 ? 'all ' + n + ' versions of ' + designFamily(rec) : rec.name) + '.';
 }
 
 // ---- The page ----
@@ -100959,7 +101315,7 @@ function b2RenderDoc() {
   if (rec && versions > 1) h += '<div class="opts" role="group" aria-label="Which versions"><button type="button" data-dall="1" aria-pressed="' + d.all + '" title="A change goes to every version, so ships of older versions follow it too">All ' + versions + ' versions</button><button type="button" data-dall="0" aria-pressed="' + !d.all + '" title="Only ' + esc(rec.name) + ' changes">This version only</button></div>';
   if (!rec) h += '<div class="inh">Not saved yet: these orders go on the design when you save it.</div>';
   else if (d.template) h += '<div class="inh">Filled from the template "' + esc(d.template) + '".</div>';
-  h += '</div><div class="acts"><button class="btn" type="button" data-dact="undo"' + (docSame(d, b2d.base) ? ' disabled' : '') + ' title="Put back the orders as they were when this page was opened">Undo</button><button class="btn" type="button" data-dact="reset"' + (docIsAuto(d) ? ' disabled' : '') + ' title="Every choice back to Auto">All Auto</button></div></div>';
+  h += '</div><div class="acts"><button class="btn" type="button" data-dact="undo"' + (docSame(d, b2d.base) ? ' disabled' : '') + ' title="Put back the orders as they were when this page was opened">Undo</button>' + (rec ? '<button class="btn" type="button" data-dact="save" title="Save these orders on the design. The blueprint is not touched and no new version is made">Save orders</button>' : '<button class="btn" type="button" data-dact="save" disabled title="Save the design first (Save version): these orders go on it then">Save orders</button>') + '<button class="btn" type="button" data-dact="reset"' + (docIsAuto(d) ? ' disabled' : '') + ' title="Every choice back to Auto">All Auto</button></div></div>';
   if (b2d.msg) h += '<div class="okline">' + esc(b2d.msg) + '</div>';
   if (!docOn()) h += '<div class="bberth warn">Doctrine is switched off in the settings (doctrineModel 0): these orders are kept but not used.</div>';
   // the Style tiles
@@ -101055,7 +101411,7 @@ function b2RenderDoc() {
   h += '<details class="para allb"' + (b2d.fold ? ' open' : '') + '><summary><b>All boxes</b> <small>every battle box by hand (for testing); a box set here wins over everything above</small></summary><div class="boxg">';
   for (const k of DOC_BOX_KEYS) h += '<label><span>' + esc(k) + '</span><input type="text" data-dbox="' + k + '" value="' + esc(d.boxes[k] !== undefined ? String(d.boxes[k]) : '') + '" placeholder="(not set)"></label>';
   h += '</div><p class="small">Leave a box empty to let the orders above set it. Numbers are read as numbers.</p></details>';
-  h += '<div class="small docfoot">Orders go out at once: a saved design\'s ships at the front have them within seconds. The blueprint is the slow lever, doctrine the fast one.</div>';
+  h += '<div class="small docfoot">Orders go out at once: a saved design\'s ships at the front have them within seconds. Changing orders never makes a new version of the design: only a change to the blueprint does. The blueprint is the slow lever, doctrine the fast one.</div>';
   el.innerHTML = h;
 }
 // The player's own design families (for "with each squadron").
@@ -101083,6 +101439,7 @@ function b2DocClick(e) {
     return;
   }
   if (ds.dall) { d.all = ds.dall === '1'; b2DocCommit(d.all ? 'Every version follows these orders.' : 'Only this version changes from now on.'); return; }
+  if (ds.dact === 'save') { const rec = b2DocRec(); if (!rec) return; b2d.msg = b2SaveOrdersOnly(rec); b2RenderDoc(); return; }   // (v193.0) orders only, no new version
   if (ds.dact === 'undo') { b2d.d = docCopy(b2d.base); b2DocCommit('Undone.'); return; }
   if (ds.dact === 'reset') { const all = d.all; b2d.d = docNew(); b2d.d.all = all; b2d.d.habits = d.habits; b2DocCommit('Every choice back to Auto.'); return; }
   if (ds.dtgt) {
