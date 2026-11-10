@@ -1438,6 +1438,8 @@ hr.rule { border:0; border-top:var(--line-w) solid var(--line); margin:var(--sp-
   /* (v28, section 8g) the main menu: the first screen */
   #mainMenu { position: fixed; inset: 0; z-index: 300; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--accent) 10%, var(--bg)) 0%, var(--bg) 70%); }
   #mainMenu.hidden { display: none; }
+  #mainMenu .mm-version { position: absolute; left: 0; right: 0; bottom: 10px; text-align: center; color: var(--dim); font-size: 11px; letter-spacing: .15em; opacity: .8; pointer-events: none; }   /* (v198.0) the version, filled in by the build */
+  #mainMenu.mm-open .mm-version { right: auto; left: 24px; text-align: left; }   /* (with a panel open it moves to the corner, clear of the panel) */
   #mainMenu .mm-box { width: min(520px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: 18px; }
   #mainMenu .mm-title { font: 800 46px var(--font-display); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); text-align: center; line-height: 1.05; }
   #mainMenu .mm-sub { text-align: center; color: var(--dim); font-size: 13px; letter-spacing: .2em; text-transform: uppercase; margin-top: -10px; }
@@ -3652,6 +3654,7 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
     <section class="panel hidden" id="mmPanel"><div class="panel-head" id="mmPanelHead"></div><div class="panel-body" id="mmPanelBody"></div></section>
     <input type="file" id="mmFile" accept=".json,application/json,text/plain" class="hidden">
   </div>
+  <div class="mm-version" title="The version of the game you are playing">Version v198.0</div>
 </div>
 
 <!-- (v31 A2, section 7l) the end of the war: the game-over screen (Earth's people are gone) or the victory screen (the aliens' home secured). It lies over
@@ -30169,6 +30172,9 @@ function theatreTake(a, th, v, pool, enough, k) {
 // Moves a Division in the theatre's books as well as on the map (so the later steps of the same look see it).
 function theatreMove(a, v, dv, k, why, label) {
   const from = dv.place;
+  // (v189.2) the long map, a last check for every move the Admiral makes: never to a place the Division's fuel does not reach (a fall back is let through:
+  // it goes home). One rule here instead of one in each of the steps that choose Divisions (the hold-clear step sent Local ships to clear Mars).
+  if (k >= 0 && k !== from && label !== 'fall back' && longCmdOn() && !theatreReachOk(a.side, dv, k)) return false;
   if (!placeAssign(a, dv, k, 'hold', why, label)) return false;
   if (from !== k) { a.lastDecision = dv.name + ': ' + (label || 'hold') + ' ' + battlePlaces[k].name; a.lastDecisionAt = simTime; }   // (the HUD's "last call")
   if (from !== k) {
@@ -31405,6 +31411,23 @@ function longPlanText(a, th, v) {
   else if (free.length > 0) s += ', with ' + longNames(free, 3) + ' unclaimed';
   s += ' · ' + plural(atFront, 'Division') + ' at the front' + (up > 0 ? ', ' + up + ' moving up' : '');
   return s;
+}
+
+// ---- (v189.2) THE ENEMY AT THE FRONT, for Fleet Command (06e part 6): the worth of the enemy's mobile ships near a place in play. ----
+let longEnemyNearMemo = { at: -1, v: [0, 0] };
+function longEnemyNear(side) {
+  if (longEnemyNearMemo.at !== simTime) {
+    const v = [0, 0];
+    for (let s = 0; s < 2; s++) {
+      const foe = 1 - s;
+      for (const sq of fleets[foe].squads) {
+        if (sqAlive[sq] <= 0 || SHIP_TYPES[sqType[sq]].immobile) continue;
+        if (longNear(s, sqCenterX[sq], sqCenterY[sq])) v[s] += shipValueOf(foe * TYPE_COUNT + sqType[sq]) * sqAlive[sq];
+      }
+    }
+    longEnemyNearMemo = { at: simTime, v: v };
+  }
+  return longEnemyNearMemo.v[side];
 }
 // =====================================================================
 // 5y. THE AO SECURED, THE SIEGE NUMBERS, THE PERIODIC REPORTS AND THE WAR-ROOM VIEW  (v21 stop 4; on a places map only, section 5w)
@@ -35060,7 +35083,7 @@ function coreAssaultFleetOf(side, make) {
   const row = coreFleetRow('assault', '') || coreFleetRowMake('assault', '', 'Assault Fleet');
   F = cmdMakeFleet(side, cmdNextFleetNo(side), row.name, cmdDrawViceAdmiral(side, row.viceAdmiral || ''), 'assault', row.no);
   coreFleetName(F, 'assault', row);
-  logEvent(side, 'The ' + cmdFleetLabel(F) + ' is formed: Fleet Command holds the squadrons that can transfer in it, in reserve for the next assault.');
+  // (v189.2) said when its first squadron joins (coreFleetMove, the arrival), not while it is still an empty name
   return F;
 }
 // Our Defence Fleet of the front AO (live): the one with that job; else the strongest other Fleet of ours (not the assault) takes the job and the name; else,
@@ -35157,6 +35180,17 @@ function coreFleetLateArrivals(a) {
   }
 }
 
+// (v189.2, Alex 10 Nov: "in a new game, with only local designs, the ai is forming an assault fleet of local ships. there should be no assault fleet ...
+// unless there are 1 transfer (or later on, for saturn +, 2 transfer) ships") THE LONG MAP. Its one area is never "ours", so Fleet Command stayed in its
+// attack phase for the whole war: every new ship reported to the Assault Fleet and nothing was ever moved out. On the long map the ordinary rules run
+// instead: a squadron is the assault's only when it carries the transfers the next gap takes (1; 2 from Jupiter's region outward, longAssaultJumps),
+// everything else is the Defence Fleet's, and the line's need is measured against the enemy at the front (06c3 longEnemyNear).
+function longFleetRules() { return typeof longCmdOn === 'function' && longCmdOn(); }
+function longAssaultJumps() {
+  const r = typeof longFrontNameRegion === 'function' ? longFrontNameRegion() : null;
+  if (!r) return 1;
+  return longMapGapAfter(r.col) > SETTINGS.longMapGap ? Math.max(1, SETTINGS.outerHopTransfers) : 1;
+}
 // ---- The assignment (from theatreAdmiralAssign and coreLineStep, 06c / 06e part 5; once a theatre step) ----
 function coreFleetCommand(a, th, live) {
   const side = a.side, S = SETTINGS, L = coreLineStateOf(th), pic = a.picture;
@@ -35185,16 +35219,16 @@ function coreFleetCommand(a, th, live) {
       if (SHIP_TYPES[t].immobile || fgGuardSq(sq)) continue;
       const strength = pic.pStrength[sq] > 0 ? pic.pStrength[sq] : shipValueOf(st) * sqAlive[sq], jumps = campaignJumpsOf(sq, t).jumps;
       const free = !contact && simTime - sqFightAt[sq] > S.idleSeconds && (assess || !(L.fcMoved[sq] >= 0 && simTime - L.fcMoved[sq] < hold));
-      sqs.push({ sq: sq, dv: dv, F: F, t: t, canGo: jumps >= 1 && coreSqCanGoOn(sq, t), jumps: jumps, speed: stSpeed[st] || 0, strength: strength, free: free,
+      sqs.push({ sq: sq, dv: dv, F: F, t: t, canGo: longFleetRules() ? jumps >= longAssaultJumps() : jumps >= 1 && coreSqCanGoOn(sq, t), jumps: jumps, speed: stSpeed[st] || 0, strength: strength, free: free,
                  armed: !R || coreSqArmed(st), kind: R ? coreSqKind(st) : 'heavy' });                              // (v85) its use to the assault (part 3 below)
       total += strength;
       if (F !== A) defence += strength;
     }
   }
-  const enemy = pic.enemyStrength > 0 ? pic.enemyStrength : 0, ratio = Math.max(0, S.coreLoopDefenceRatio);
+  const enemy = longFleetRules() ? longEnemyNear(side) : (pic.enemyStrength > 0 ? pic.enemyStrength : 0), ratio = Math.max(0, S.coreLoopDefenceRatio);   // (v189.2) the long map: the enemy at the front, not in the whole system
   const need = Math.min(total, Math.max(keep * total, ratio * enemy)), slack = 0.05 * total;
   L.fcNeed = need; L.fcDefence = defence;
-  if (attack) { L.fcDefence = defence; if (coreFleetDivsOn(side)) { if (D !== A) coreVaStep(a, L, live, D); coreVaStep(a, L, live, A); } return; }   // (v85) the attack: the Fleets stay as they are
+  if (attack && !longFleetRules()) { L.fcDefence = defence; if (coreFleetDivsOn(side)) { if (D !== A) coreVaStep(a, L, live, D); coreVaStep(a, L, live, A); } return; }   // (v85) the attack: the Fleets stay as they are
   const mix = R ? coreAssaultMix(sqs, A) : null;
   // 1. A Local squadron in the assault goes to the defence.
   for (const r of sqs) if (r.F === A && !r.canGo && r.free) { const to = coreDefenceNeediest(L, D); coreFleetMove(a, L, live, r, A, to, 'it has no transfer left'); r.F = to; defence += r.strength; if (mix) coreAssaultMixTake(mix, r); }
@@ -35202,7 +35236,12 @@ function coreFleetCommand(a, th, live) {
   if (mix && mix.armed <= 0) for (const r of sqs) if (r.F === A && !r.armed && r.free) { const to = coreDefenceNeediest(L, D); coreFleetMove(a, L, live, r, A, to, 'it is unarmed and the assault has no armed ships for it to go with'); r.F = to; defence += r.strength; }
   // 2. The defence is short: it borrows from the assault, the slowest first, then the least range left. (v85) The unarmed go first of all, and the assault
   //    keeps at least coreLoopAssaultMixShare of its armed strength in fast ships and in heavy hitters: those are borrowed last, only while the line is still short.
-  if (defence < need - slack) {
+  // (v189.2) The long map: the two Fleets are split by fuel alone. The defence never borrows the assault's ships (mixed, a Division had the short ships' fuel
+  // line and the long ships' orders), and every squadron that can cross the next gap is the assault's; the assault plugs the line when it is pressed (part 5).
+  if (longFleetRules()) {
+    for (const r of sqs) if (r.F !== A && r.canGo && r.free) { coreFleetMove(a, L, live, r, r.F, A, 'it carries the fuel for the next crossing'); r.F = A; defence -= r.strength; if (mix) coreAssaultMixAdd(mix, r); }
+  }
+  else if (defence < need - slack) {
     const cands = sqs.filter(function (r) { return r.F === A && r.canGo && r.free; }).sort(function (p, q) { return (p.armed ? 1 : 0) - (q.armed ? 1 : 0) || p.speed - q.speed || p.jumps - q.jumps || q.strength - p.strength || p.sq - q.sq; });
     const why = ratio * enemy > keep * total ? 'the line needs ' + Math.round(need) + ' against the enemy seen and has ' + Math.round(defence) : 'the line is short of its ' + Math.round(100 * keep) + '% share';
     const kept = [];
@@ -35211,7 +35250,7 @@ function coreFleetCommand(a, th, live) {
   }
   // 3. The defence has a surplus and the line is not pressed: the borrowed go back to the assault, the fastest and the longest-ranged first. (v85) The armed
   //    first, and of them the kind the assault is short of (fast ships or heavy hitters); an unarmed squadron only once the assault has armed ships.
-  else if (defence > need + slack && L.posture !== 'committed') {
+  else if (defence > need + slack && (L.posture !== 'committed' || longFleetRules())) {
     const short = mix ? coreAssaultMixShort(mix) : '';
     const cands = sqs.filter(function (r) { return r.F !== A && r.canGo && r.free && !coreDefencePressed(L, r.F); })   /* (v97.8) never from a hard-pressed Defence Fleet (part 7) */.sort(function (p, q) { return (q.armed ? 1 : 0) - (p.armed ? 1 : 0) || (q.kind === short ? 1 : 0) - (p.kind === short ? 1 : 0) || q.speed - p.speed || q.jumps - p.jumps || p.strength - q.strength || p.sq - q.sq; });
     for (const r of cands) {
@@ -35538,6 +35577,7 @@ function coreVaPick(F, sq) {
   let best = null, bestKey = Infinity;
   for (const dv of cmdFleetDivisions(F)) {
     if (dv.transfer !== null || sqDivision[sq] === dv.id) continue;
+    if (longFleetRules() && !longJoinOk(dv, sqCenterX[sq], sqCenterY[sq], sq)) continue;        // (v189.2) the long map: a Division near it and of its own fuel class (06c3)
     const ships = orgDivisionShips(dv);
     if (ships >= aim) continue;
     let key;
@@ -35572,15 +35612,15 @@ function coreFleetArrival(a, squads, ev) {
   const L = coreLineStateOf(theatreStateOf(a)), keep = clampNumber(SETTINGS.coreLoopLineKeep, 0, 1), live = liveDivisions(a), made = [];
   if (!L.fcMoved) L.fcMoved = {};
   let need = L.fcNeed >= 0 ? L.fcNeed : Infinity, defence = L.fcDefence >= 0 ? L.fcDefence : 0;   // (before Fleet Command's first step everything reports to the defence, as before)
-  const to = [[], []], ships = [0, 0], attack = coreRecomposeOn(side) && L.fcPhase === 'attack';   // (v85) in an AO not ours every arrival joins the attack
+  const to = [[], []], ships = [0, 0], attack = coreRecomposeOn(side) && L.fcPhase === 'attack' && !longFleetRules();   // (v85) in an AO not ours every arrival joins the attack ((v189.2) not on the long map: see longFleetRules)
   let why = '';
   for (const sq of squads) {
     const t = sqType[sq], st = side * TYPE_COUNT + t, strength = shipValueOf(st) * sqAlive[sq];
-    const canGo = coreSqCanGoOn(sq, t);                                                       // (v158.0: and its solar panels reach the next AO)
+    const canGo = longFleetRules() ? campaignJumpsOf(sq, t).jumps >= longAssaultJumps() : coreSqCanGoOn(sq, t);   // (v158.0: and its solar panels reach the next AO)
     let F = attack ? D : coreDefenceNeediest(L, D);                                              // (v97.8) to the Defence Fleet that needs it most (part 7)
     if (attack) { F = A; to[1].push(sq); ships[1] += sqAlive[sq]; }
     else if (!canGo) { to[0].push(sq); ships[0] += sqAlive[sq]; }
-    else if (defence < need) { to[0].push(sq); ships[0] += sqAlive[sq]; defence += strength; need += keep * strength; why = 'the line is short'; }
+    else if (defence < need && !longFleetRules()) { to[0].push(sq); ships[0] += sqAlive[sq]; defence += strength; need += keep * strength; why = 'the line is short'; }   // ((v189.2) the long map: by fuel alone)
     else { F = A; to[1].push(sq); ships[1] += sqAlive[sq]; need += keep * strength; }
     const r = coreVaPlace(a, L, F, sq, live);
     if (r.made) made.push(r.dv); else coreVaSettle(r.dv, live, null);
@@ -56762,6 +56802,7 @@ function cmdFleetBrain(F) {
   if (!cmdActive(F.side) || F.attachedTo >= 0) return;
   const a = admirals[F.side];
   if (a === null || a.picture.builtAt < 0) return;
+  if (F.purpose === 'assault' && cmdFleetDivisions(F).length === 0) return;   // (v189.2) an Assault Fleet with no ships yet: its Vice Admiral has nothing to think about (and wrote "finds no move" to the log every two minutes)
   const v = cmdFleetView(F), B = v.B;
   if (B.rep === null) cmdRepertoireInit(F, v);
   cmdFleetHelp(F, v);
@@ -73534,6 +73575,7 @@ function bsUnitListHtml() {
     for (let k = 0; k < live.length; k++) {
       const F = live[k], sel = bsSelectedUnit !== null && bsSelectedUnit.kind === 'fleet' && bsSelectedUnit.id === F.id;
       const divs = cmdFleetDivisions(F), fkey = gameFleetKeyOf(F);   // (v194.0, section 7i3) its F key
+      if (F.purpose === 'assault' && divs.length === 0) continue;                 // (v189.2) an Assault Fleet with no ships is not listed
       html += '<button type="button" class="bs-unit fleet' + (sel ? ' sel' : '') + '" data-unit="f:' + F.id + '" title="' + esc(cmdFleetLabel(F)) + ' - click to pick out its ships' + (fkey ? ' (key ' + fkey + ' jumps the view to it)' : '') + '">' +
         '<span class="sw" style="background:' + fleetShadeOf(F) + '"></span><span>' + esc(F.name + ' · ' + officerShortName(F.officer, 'VAdm.')) + '</span><span class="data">' + (fkey ? fkey + ' · ' : '') + fmtWhole(cmdFleetShips(F)) + ' ships</span></button>';
       for (let d = 0; d < divs.length; d++) { html += bsDivisionRowHtml(divs[d], true); done.add(divs[d].id); }
@@ -76641,6 +76683,7 @@ function cmCommandFleetsHtml(live) {
   const rows = [];
   if (live && campaignBattleActive && cmdOn() && cmdLiveFleets(0).length > 0) {
     for (const F of cmdLiveFleets(0)) {
+      if (F.purpose === 'assault' && cmdFleetDivisions(F).length === 0) continue;   // (v189.2, Alex: no Assault Fleet until there are ships with a transfer) an empty one is not listed
       let order;
       if (F.order) { const row = orderRow('admiral', F.order.id); order = (row ? row.name : F.order.id) + cmdTargetSuffix(F.order.target) + cmdOrderSuffix(F.order) + (F.move ? ' · ' + F.move.name + (F.move.phaseId ? ', ' + String(F.move.phaseId).replace(/_/g, ' ') : '') : ''); }   // (stop 5c: the target and the move under way too)
       else {
@@ -76659,6 +76702,7 @@ function cmCommandFleetsHtml(live) {
     for (const r of mine) {
       const recs = campaign.fleets.filter(function (f) { return f.side === 0 && f.fleetNo === r.no; });
       const ships = recs.reduce(function (n, f) { return n + fleetShipCount(f); }, 0);
+      if (r.purpose === 'assault' && ships === 0) continue;                    // (v189.2) an Assault Fleet with no ships is not listed
       const va = r.viceAdmiral ? rosterById(r.viceAdmiral) : null;
       const ordered = recs.find(function (f) { return f.order; }), moving = recs.find(function (f) { return f.transit; });
       const order = ordered ? 'launch order: ' + String(ordered.order).replace(/_/g, ' ') : (moving ? 'on the lane, arriving ' + cmWhen(moving.transit.arriveWeek) : cmFleetPurposeWords(r.purpose, r.ao));   // (v86) a Defence Fleet names its AO
@@ -100329,7 +100373,7 @@ BUREAU2_SCREEN_API.testRange = { run: testRangeRun, state: testRange, plan: func
 //   adopted habits come along in its copy code and into every new campaign. A doctrine changed in the Bureau after the save updates the plan's copy.
 //   DOCTRINE TEMPLATES (LIBRARY.templates: [{ name, doctrine, savedAt }]) live here too, so they carry over as well. A plan from before v37 has no doctrine: Auto.
 // =====================================================================
-const GAME_VERSION = 'v114.0';                           // the game version written on every saved plan (raise it with each new build)
+const GAME_VERSION = 'v198.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
 const LIBRARY_KEY = 'engineersWar.library';
 const LIBRARY_FORMAT = 1;
 const LIBRARY_CODE_SHIP = 'EW-SHIP-1:', LIBRARY_CODE_LIB = 'EW-LIB-1:';
