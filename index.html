@@ -31589,7 +31589,7 @@ function campaignBuildMap(enemyId, extra) {
 // edge. The war is won when we hold every place (the one AO secured by us), and lost as before, when Earth's people are gone.
 //   * campaignHomeAo(side) gives the one AO to BOTH sides (so the Admirals never abandon the field and the war-won rule reads it).
 //   * Only Earth is `big` (the main body: the line defends it first; campaignDevIsEarth reads it). Every other location keeps its size through `at`.
-//   * Who holds what at the start: the places of the AOs we owned (Earth, Luna, Mars, Phobos, Deimos) are ours, the rest are the enemy's, Sol Inner's
+//   * Who holds what at the start: Earth and Luna are ours (v185.0: Mars, Phobos and Deimos start nobody's), the rest are the enemy's, Sol Inner's
 //     development sites stay nobody's. The Swarm's opening spread is off (it never claims in Earth's AO, and this is Earth's AO).
 //   * FUEL AS REACH (06c theatreLongReach): a Division is only sent to a place within its reach of the nearest standing station or peopled colony its side
 //     holds: Local ships (0 transfers) longMapReachLocal slots, else longMapReachPerTransfer slots per transfer. Both sides alike. longMapReach 0 turns it off.
@@ -31631,6 +31631,7 @@ function campaignBuildLongMap(enemyId) {
       loc.big = loc.id === 'earth';                             // (the one main body: Earth)
       loc.region = ao.name; loc.regionId = ao.id; loc.col = col;   // (its old AO, for the words and the slot)
       if (typeof loc.startOwner !== 'number') loc.startOwner = ao.owner;   // (ours or theirs as its old AO was; a development site keeps its -1)
+      if (ao.owner === 0 && ao.home !== 0 && loc.startOwner === 0) loc.startOwner = -1;   // (v185.0, Alex: "the humans are starting with control of mars. remove that") only Earth's own region starts ours: Mars, Phobos and Deimos start nobody's, with no station
       one.locations.push(loc);
     }
   }
@@ -39460,7 +39461,7 @@ function campaignLongMapForces(g) {
   campaignDevRebase();
   const names = theirs.map(function (l) { return l.name; });
   campaignLog('start', 'THE LONG MAP TEST: the whole system is one battlefield, the Sun at the left edge and the Kuiper Belt at the right, ' + Math.round(campaignWorldWidth() / 1000) + ',000 units across, ' + longMapGap() + ' empty region-widths between one region and the next, ' + (campaign.map.outerGap > longMapGap() ? campaign.map.outerGap + ' from Jupiter outward (two transfers of fuel). ' : '') + ' ' +
-              'We hold Earth, Luna, Mars, Phobos and Deimos; the enemy holds everything from the Belt outward, with ' + plural(n, g.name.replace(/s$/, '')) + ' at each of its yards (' + (names.length ? names.join(', ') : 'none') + ')' +
+              'We hold Earth and Luna; Mars, Phobos and Deimos are nobody\'s yet; the enemy holds everything from the Belt outward, with ' + plural(n, g.name.replace(/s$/, '')) + ' at each of its yards (' + (names.length ? names.join(', ') : 'none') + ')' +
               (nearest && g.first > 0 ? ' and ' + g.first + ' more at ' + nearest.name + ' as the first wave' : '') + '. New ships enter the map at their own yard and go where the fighting is; ' +
               (SETTINGS.longMapReach === 1 ? 'a ship may be sent only as far from the nearest friendly station or colony as its transfers reach (Local ' + SETTINGS.longMapReachLocal + ' region width, so never out of its region; ' + SETTINGS.longMapReachPerTransfer + ' region further per transfer)' + (SETTINGS.longMapLeash === 1 ? ', and a ship that finds itself beyond that line turns back' : '') : 'ships may be sent anywhere') +
               '. The war is won when we hold every place, and lost at Earth.');
@@ -75890,7 +75891,7 @@ function cmRenderSheet() {
     const running = !!campaign, newOpen = !running || !!cmState.menuNew;
     const newWar = '<div class="row"><label>Seed <input type="number" id="cmSeed" step="1" value="' + (campaign ? campaign.rngSeed + 1 : SETTINGS.defaultSeed) + '"></label><button type="button" class="btn btn-primary" data-cm="sheet" data-id="new">' + (cmState.newArmed === 'new' ? 'Yes, end this war' : 'New campaign') + '</button>' +
         (running ? '' : '<button type="button" class="btn" data-cm="sheet" data-id="restore">Load the autosave</button>') + '</div>' +
-      '<div class="opt"><span class="label" title="Chosen once, when the campaign starts: On walks you through the first weeks step by step (lock-step, no replay); Off starts as after the tutorial, with everything it unlocks">Tutorial for a new campaign</span><span><span class="seg">' +   // (v27 C1, section 7t)
+      '<div class="opt"><span class="label" title="Chosen once, when the campaign starts: On walks you through the first weeks step by step (lock-step, no replay); Off starts as after the tutorial, with everything it unlocks. The tutorial plays on the normal map and economy, so On sets those back to Normal">Tutorial for a new campaign</span><span><span class="seg">' +   // (v27 C1, section 7t)
         [['On', 1], ['Off', 0]].map(function (o) { return '<button type="button" data-cm="sheet" data-id="tut" data-val="' + o[1] + '" class="' + (cmState.newTutorial === o[1] ? 'on' : '') + '">' + o[0] + '</button>'; }).join('') + '</span></span>' +
       // (v74) the enemy for a new campaign; one not ready yet is greyed out
       '<span class="label" title="Chosen once, when the campaign starts: the one alien enemy of the war. The tutorial tells the story of first contact with this enemy (v82: every enemy has its own).">Enemy for a new campaign</span><span><span class="seg">' +
@@ -75936,6 +75937,12 @@ function cmRenderSheet() {
 }
 // A new campaign from the Menu (or the tutorial demo, section 7t): 'newMars' is stop 4's Mars test campaign (brains on, nobody advances past Mars); 'new' the
 // full campaign on the whole map (v27 B1), with the tutorial on or off (v27 C1: opts { tutorial, script }; tutorialStartCampaign, section 7t).
+// (v184.0) The Tutorial choice for the next new campaign. The tutorial runs on the normal campaign map with the normal economy (its Earth-only start and
+// its scripted fights are built for those), so turning it On also sets Map and Economy back to Normal. Turning the long map or the docks on turns it Off.
+function cmTutorialChoice(on) {
+  cmState.newTutorial = on ? 1 : 0;
+  if (on) { cmState.newLongMap = 0; cmState.newDocks = 0; }
+}
 function cmStartNewCampaign(id, seed, opts) {
   cmBuild();
   if (campaign && campaignBattleActive) campaignParkBattle('a new campaign was started');
@@ -75971,7 +75978,7 @@ function cmSheetAction(id, btn) {
   if (id === 'setup') { cmCloseSheet(); pgOpenPanel(); return; }   // (v105.4) the Proving grounds panel on the main menu (section 8j; the war waits)
   if (id === 'main') { cmCloseSheet(); showMainMenu(); return; }   // (v28, section 8g)
   if (id === 'ui') { const key = btn.dataset.key, v = typeof UI_SETTINGS[key] === 'number' ? +btn.dataset.val : btn.dataset.val; saveUiSetting(key, v); if (key === 'effects') { applyEffectsClass(); cmEl.classList.toggle('fx-off', v === 'off'); cmEl.classList.toggle('fx-subtle', v === 'subtle'); } cmRenderSheet(); return; }
-  if (id === 'tut') { cmState.newTutorial = +btn.dataset.val === 1 ? 1 : 0; cmRenderSheet(); return; }   // (v27 C1) the tutorial on or off for the next new campaign
+  if (id === 'tut') { cmTutorialChoice(+btn.dataset.val === 1 ? 1 : 0); cmRenderSheet(); return; }   // (v27 C1) the tutorial on or off for the next new campaign
   if (id === 'enemy') { const f = ALIEN_FACTIONS[btn.dataset.val]; if (f && f.ready) cmState.newEnemy = f.id; cmRenderSheet(); return; }
   if (id === 'longmap') { cmState.newLongMap = +btn.dataset.val === 1 ? 1 : 0; if (cmState.newLongMap === 1) cmState.newTutorial = 0; cmRenderSheet(); return; }
   if (id === 'docks') { cmState.newDocks = +btn.dataset.val === 1 ? 1 : 0; if (cmState.newDocks === 1) cmState.newTutorial = 0; cmRenderSheet(); return; }   // (v170.0) the dock economy test; it skips the tutorial   // (v153.0) the long map test; it skips the tutorial   // (v74) the enemy for the next new campaign
@@ -83408,9 +83415,9 @@ function mmRender() {
     body.appendChild(en);
     const tut = el('div', 'mm-row'); tut.appendChild(el('span', 'label', 'Tutorial'));
     const seg = el('span', 'seg');
-    [['On', 1], ['Off', 0]].forEach(function (o) { const b = el('button', cmState.newTutorial === o[1] ? 'on' : '', o[0]); b.type = 'button'; if (o[1] === 1 && (cmState.newLongMap === 1 || cmState.newDocks === 1)) { b.disabled = true; b.title = cmState.newLongMap === 1 ? 'No tutorial on the long map' : 'No tutorial with the dock economy test'; } b.addEventListener('click', function () { cmState.newTutorial = o[1]; mmRender(); }); seg.appendChild(b); });
+    [['On', 1], ['Off', 0]].forEach(function (o) { const b = el('button', cmState.newTutorial === o[1] ? 'on' : '', o[0]); b.type = 'button'; if (o[1] === 1) b.title = 'The tutorial plays on the normal map and economy, so turning it on sets Map and Economy to Normal'; b.addEventListener('click', function () { cmTutorialChoice(o[1]); mmRender(); }); seg.appendChild(b); });   // (v184.0) never locked: On sets Map and Economy back to Normal
     tut.appendChild(seg);
-    tut.appendChild(el('span', 'mm-msg', cmState.newTutorial === 1 ? 'Walks you through the first weeks, step by step.' : 'Starts as after the tutorial, with everything it unlocks.'));
+    tut.appendChild(el('span', 'mm-msg', cmState.newTutorial === 1 ? 'Walks you through the first weeks, step by step, on the normal map and economy.' : 'Starts as after the tutorial, with everything it unlocks.'));
     body.appendChild(tut);
     // (v154.1) the map: the normal campaign of AOs, or the v153.0 long map test (one battlefield from the Sun to the Kuiper Belt, 06d2); the long map skips the tutorial
     const mp = el('div', 'mm-row'); mp.appendChild(el('span', 'label', 'Map'));
