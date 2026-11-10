@@ -3654,7 +3654,7 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
     <section class="panel hidden" id="mmPanel"><div class="panel-head" id="mmPanelHead"></div><div class="panel-body" id="mmPanelBody"></div></section>
     <input type="file" id="mmFile" accept=".json,application/json,text/plain" class="hidden">
   </div>
-  <div class="mm-version" title="The version of the game you are playing">Version v198.0</div>
+  <div class="mm-version" title="The version of the game you are playing">Version v200.0</div>
 </div>
 
 <!-- (v31 A2, section 7l) the end of the war: the game-over screen (Earth's people are gone) or the victory screen (the aliens' home secured). It lies over
@@ -9035,9 +9035,15 @@ function htCraft(c, info, opts, loops, u, seed) {
       c.restore();
     } else {
       htSteel(c, T, { seed: seed + k, ring: Math.max(.9, H * .2), shadow: 8 });
-      // a few round windows near the nose
-      var wb = bbox(T), wy = (wb[1] + mid) / 2;
-      for (var q = 0; q < 4; q++) { var wx = W * .58 + q * H * .16; c.fillStyle = q % 2 ? COL.win : '#bfe3ff'; c.beginPath(); c.arc(wx, wy, H * .025, 0, 7); c.fill(); c.strokeStyle = '#141618'; c.lineWidth = PX; c.stroke(); }
+      // a short row of small round windows along the spine (the hull's centre line), just behind the nose.
+      // (Alex 10 Nov 2026, v200.0: smaller, and along the spine, so they always sit on the hull whatever the frame's shape.)
+      // Each window sits halfway between the hull's two edges at that point, and is skipped if that spot is off the hull or too narrow.
+      var wr = .11, wgap = .5, wx0 = (info.tip ? info.tip.x - info.noseLen : W * .8) - .3;
+      for (var q = 0; q < 4; q++) {
+        var wx = wx0 - q * wgap, we = htEdgesAt(T, wx); if (!we || we[1] - we[0] < wr * 6) continue;
+        var wy = (we[0] + we[1]) / 2;
+        c.fillStyle = q % 2 ? COL.win : '#bfe3ff'; c.beginPath(); c.arc(wx, wy, wr, 0, 7); c.fill(); c.strokeStyle = '#141618'; c.lineWidth = PX * .8; c.stroke();
+      }
     }
   });
   htParts(c, info, parts, u, seed, opts.aim || 0, !!opts.game);
@@ -100373,7 +100379,7 @@ BUREAU2_SCREEN_API.testRange = { run: testRangeRun, state: testRange, plan: func
 //   adopted habits come along in its copy code and into every new campaign. A doctrine changed in the Bureau after the save updates the plan's copy.
 //   DOCTRINE TEMPLATES (LIBRARY.templates: [{ name, doctrine, savedAt }]) live here too, so they carry over as well. A plan from before v37 has no doctrine: Auto.
 // =====================================================================
-const GAME_VERSION = 'v198.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
+const GAME_VERSION = 'v200.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
 const LIBRARY_KEY = 'engineersWar.library';
 const LIBRARY_FORMAT = 1;
 const LIBRARY_CODE_SHIP = 'EW-SHIP-1:', LIBRARY_CODE_LIB = 'EW-LIB-1:';
@@ -100384,6 +100390,7 @@ const LIBRARY_RENAMES = { parts: {}, frames: {} };
 
 let LIBRARY = null;                                // { format, entries: [...], backupAt } once read from the browser
 const libCheckCache = new Map();                   // entry id -> its check (entries never change their design, only their name)
+let libCheckStamp = null;                          // (v199.0) the research the remembered checks were made under (see libCheck)
 
 // ---- The store ----
 function libStore() {
@@ -100437,7 +100444,13 @@ function libCheckDesign(raw) {
   if (!a.statBlock || a.problems.length > 0) return { ok: false, broken: true, design: d, a: a, problems: a.problems.length ? a.problems.slice(0, 6).map(function (p) { return p.text || String(p); }) : ['no hull'] };
   return { ok: true, broken: false, design: d, a: a, problems: [] };
 }
+// (v199.0, Alex 10 Nov) The checks are remembered, but research changes the numbers a plan is checked with (Better propellants makes a chemical
+// rocket burn less, so a Local ship needs a smaller reserve; crew research changes crew). So when that research is not what it was at the last
+// check (or a campaign was started, loaded or left), every remembered check is thrown away and made again: the Library and the Bureau agree.
+function libResearchStamp() { try { return JSON.stringify(typeof researchDesignMods === 'function' ? researchDesignMods() : null); } catch (e) { return ''; } }
 function libCheck(entry) {
+  const stamp = libResearchStamp();
+  if (stamp !== libCheckStamp) { libCheckCache.clear(); libCheckStamp = stamp; }
   if (!libCheckCache.has(entry.id)) libCheckCache.set(entry.id, libCheckDesign(entry.design));
   return libCheckCache.get(entry.id);
 }
