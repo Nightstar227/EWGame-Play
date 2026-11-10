@@ -3654,7 +3654,7 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
     <section class="panel hidden" id="mmPanel"><div class="panel-head" id="mmPanelHead"></div><div class="panel-body" id="mmPanelBody"></div></section>
     <input type="file" id="mmFile" accept=".json,application/json,text/plain" class="hidden">
   </div>
-  <div class="mm-version" title="The version of the game you are playing">Version v200.0</div>
+  <div class="mm-version" title="The version of the game you are playing">Version v201.0</div>
 </div>
 
 <!-- (v31 A2, section 7l) the end of the war: the game-over screen (Earth's people are gone) or the victory screen (the aliens' home secured). It lies over
@@ -11014,6 +11014,8 @@ const SETTINGS = {
                              //   Admiral defends, each Division in its formation; and a Division moving to its spot marches there together, in shape, behind its marker.
                              //   0 = v196: on the long map the line never formed (the whole system counted as "an AO not ours", so the Admiral stayed in attack mode)
   longMapLineDepthSlots: 0.25,   // ... how far out from the defended place the line may stand at most, in region widths (it must stay inside a Local ship's fuel)
+  longMapLineMeetOdds: 0.8,  // (v201.0) ... an enemy in the region the line defends: the whole line moves out to meet it when it is at least this many times the
+                             //   enemy's strength, else it pulls in close round our places there and waits for it
   longMapJoinSlots: 0.5,     // ... a squadron joins a Division only within this many region widths of it, and a Division spread wider is split by where its squadrons are
   longMapSwarmWaveSeconds: 1800,   // ... the Swarm's bar for an attack falls from placesSwarmAttackOdds to longMapSwarmWaveOdds as the front stands quiet this long (a week and a half)
   longMapSwarmWaveOdds: 0.1, // ... so after that it goes in with whatever has gathered
@@ -31054,11 +31056,9 @@ function theatreAdmiralAssign(a, live) {
   if (coreLineOn(a.side) && !coreLineAttacking(th)) {                                      // (v80) the Admiral's line in place of the place-based steps below (coreLoopLine);
     if (!(long && longLineOn(a.side))) { coreLineStep(a, th, live); return; }
     // (v197.0, 06c4) the long map: the Defence Fleets at the front stand on the line; every other Division follows the place steps below
-    const busy = longLineIntercepting(a, live);                                             // (out meeting an enemy that came into our region)
-    const onLine = longLineDivisions(a, th, live).filter(function (dv) { return busy.indexOf(dv) < 0; });
+    const onLine = longLineDivisions(a, th, live);
     coreLineStep(a, th, onLine);
-    longLineIntercept(a, onLine, busy);
-    live = live.filter(function (dv) { return onLine.indexOf(dv) < 0 && busy.indexOf(dv) < 0; });
+    live = live.filter(function (dv) { return onLine.indexOf(dv) < 0; });
   }
                                                                                              // (v85.3) but in an AO not ours the steps below take its places (06e part 6)
   if (coreHiveOn(a.side)) coreHiveCommand(a, th, live);                                    // (v86) the hive: the alien side's Pressing Swarm and Holding Swarm (06e part 6)
@@ -31471,7 +31471,8 @@ function longEnemyNear(side) {
 //     4. A Division going to its stretch of the line MARCHES THERE TOGETHER (15b hold_line, the v50 marker): it forms up, moves at one shared pace in its
 //        formation, and arrives in shape; a new order on the way carries on from the marker instead of forming up again. On the long map a squadron on
 //        the move keeps its block shape instead of stringing out into a column (20b).
-//     5. INTERCEPTING: an enemy group that comes into the region is met by the nearest line Division strong enough for it, which then returns (below).
+//     5. (v201.0) THE ENEMY IN OUR REGION is the line's threat, and the whole line answers it together: it moves out to meet it, or pulls in close when
+//        outnumbered (below).
 //   With longMapLine 0, or off the long map, nothing here runs.
 // =====================================================================
 
@@ -31514,6 +31515,8 @@ function longLineDefended(a, L) {
 function longLineThreat(a) {
   const side = a.side, top = longLineTop(side);
   if (top < 0) return null;
+  const RE = longLineRegionEnemy(a);                                                  // (v201.0) an enemy in our region comes first, whatever is massing further out
+  if (RE !== null) return { x: RE.x, y: RE.y, edge: '', strength: RE.strength };
   const P0 = battlePlaces[top], pic = a.picture, D = longFrontDist();
   let sx = 0, sy = 0, w = 0;
   for (let c = 0; c < pic.contactCount; c++) {
@@ -31543,58 +31546,50 @@ function longLineDivisions(a, th, live) {
 // marches with its Division behind the marker or goes somewhere on its own (Alex: "each squadron forms a column to move").
 function longLineMarching(sq) { return longLineMarchOn(); }
 
-// ---- INTERCEPTING (Alex's week 9 save: "they seem to have entirely given up trying to hold a line or intercept enemies") ----
-// An enemy group that comes into the region the line defends (within the line's depth and a quarter region past it, of the top place) is met by the nearest
-// Division of the line strong enough for it (not already fighting, at most half the line at once). It hunts that group (the Counter task), and once the group
-// is dead or has left the region it goes back to its stretch of the line. Returns the Divisions out intercepting (they are not on the line meanwhile).
+// ---- THE ENEMY IN OUR REGION (v201.0) ----
+// Alex's week 9 save on v200: "enemies entirely bypass the (unmoving) human fleet and attack luna. why is the allied fleet not moving?". On v197 the line
+// faced the enemy's whole strength within a transfer (most of it at Mars), so it stood off toward Mars while the Swarm landed on Luna behind its flank; and
+// the interceptors went one Division at a time, each against one enemy squadron, and were beaten in turn.
+// Now an enemy that comes into the region (within the line's reach of any of our places there) IS the threat, and the whole line answers it together:
+//   * when the line is at least longMapLineMeetOdds x as strong as the enemy in the region, the line MOVES OUT TO MEET IT: its depth goes out to the enemy, so
+//     the Fleets march onto it side by side, each Division in formation, and fight it there;
+//   * when the enemy is stronger, the line pulls in close round the places it covers (between them and the enemy) and waits for it there.
+// When the region is clear again the line goes back to facing the next region as before.
 function longLineReach(P0) { return longLineMaxDepth(P0) + 0.25 * longMapSlotWidth(); }
-function longLineIntercepting(a, live) {
-  const top = longLineTop(a.side), out = [];
-  if (top < 0) return out;
-  const P0 = battlePlaces[top], R = 1.5 * longLineReach(P0);
-  for (const dv of live) {
-    if (!(dv.longIcpt > 0)) continue;
-    const e = dv.longIcpt;
-    if (sqAlive[e] > 0 && theatreDist(sqCenterX[e], sqCenterY[e], P0.x, P0.y) <= R && simTime - dv.longIcptAt < 600) {
-      out.push(dv);
-      if (!divisionInContact(dv) && theatreDist(sqCenterX[e], sqCenterY[e], dv.icptX, dv.icptY) > 3000) longLineSendAt(a, dv, e);   // (it has moved: the Division turns after it)
-      continue;
-    }
-    dv.longIcpt = 0; if (dv.lineWhy) dv.lineAt = 0;                                     // (back to its stretch: the line gives it its spot again at once)
-  }
-  return out;
-}
-function longLineIntercept(a, onLine, busy) {
-  const top = longLineTop(a.side);
-  if (top < 0 || onLine.length === 0) return;
-  const P0 = battlePlaces[top], R = longLineReach(P0), pic = a.picture;
-  const most = Math.max(1, Math.floor((onLine.length + busy.length) / 2)) - busy.length;
-  if (most <= 0) return;
-  const chased = new Set(busy.map(function (dv) { return dv.longIcpt; }));
-  const free = onLine.filter(function (dv) { return !cmdInContact(dv); });
-  let sent = 0;
-  for (let c = 0; c < pic.contactCount && sent < most && free.length > 0; c++) {
+// The enemy in the region the line defends: { x, y, strength, near } (near: the distance from the top place to its middle), or null when there is none.
+function longLineRegionEnemy(a) {
+  const side = a.side, top = longLineTop(side);
+  if (top < 0) return null;
+  const P0 = battlePlaces[top], R = longLineReach(P0), pic = a.picture, mine = longLineDefended(a, { dropped: 0 }).map(function (k) { return battlePlaces[k]; });
+  let sx = 0, sy = 0, w = 0;
+  for (let c = 0; c < pic.contactCount; c++) {
     const e = pic.contacts[c];
-    if (sqAlive[e] <= 0 || chased.has(e) || stImmobile[(1 - a.side) * TYPE_COUNT + sqType[e]] === 1) continue;
-    if (theatreDist(pic.cX[e], pic.cY[e], P0.x, P0.y) > R) continue;
-    let best = -1, bestD = Infinity;
-    for (let k = 0; k < free.length; k++) {
-      const dv = free[k]; if (!(dv.strength >= pic.cStrength[e])) continue;
-      const cc = divisionCentre(dv), d = theatreDist(cc.x, cc.y, pic.cX[e], pic.cY[e]);
-      if (d < bestD) { bestD = d; best = k; }
-    }
-    if (best < 0) continue;
-    const dv = free.splice(best, 1)[0];
-    dv.longIcpt = e; dv.longIcptAt = simTime; dv.lineAt = -1; chased.add(e); sent++;
-    longLineSendAt(a, dv, e);
+    if (sqAlive[e] <= 0) continue;
+    let near = false;
+    for (const p of mine) if (theatreDist(pic.cX[e], pic.cY[e], p.x, p.y) <= R) { near = true; break; }
+    if (!near) continue;
+    const s = Math.max(pic.cStrength[e], 1e-6); sx += pic.cX[e] * s; sy += pic.cY[e] * s; w += s;
   }
+  if (!(w > 0)) return null;
+  const x = sx / w, y = sy / w;
+  return { x: x, y: y, strength: w, near: theatreDist(x, y, P0.x, P0.y) };
 }
-// The intercept itself: the Division holds a spot on the enemy group, facing it, so it goes there TOGETHER in its formation behind its marker (15b hold_line);
-// once it is in contact its Commodore fights as anywhere.
-function longLineSendAt(a, dv, e) {
-  const c = divisionCentre(dv), u = cmdUnit(sqCenterX[e] - c.x, sqCenterY[e] - c.y, a.side);
-  dv.icptX = sqCenterX[e]; dv.icptY = sqCenterY[e]; dv.placeTask = 'intercept'; dv.place = -1;
-  admiralTask(a, dv, 'hold', { x: sqCenterX[e], y: sqCenterY[e], gx: u.x, gy: u.y, place: -1 }, 'intercept the enemy coming into our region, then back to the line');
+// The line's depth with an enemy in the region (coreLineLayout): out to the enemy when we are strong enough, else close in. depthU: the depth it would have.
+function longLineDepthFor(a, L, P0, units, depthU) {
+  const RE = longLineRegionEnemy(a);
+  let mode = '';
+  if (RE !== null) {
+    let ours = 0; for (const u of units) ours += u.strength;
+    if (ours >= Math.max(0, SETTINGS.longMapLineMeetOdds) * RE.strength) { mode = 'meet'; depthU = Math.max(1.3 * P0.radius, Math.min(RE.near, longLineReach(P0))); }
+    else { mode = 'close'; depthU = 1.3 * P0.radius; }
+  }
+  if (mode !== (L.longMode || '')) {
+    if (mode === 'meet') logEvent(a.side, 'Admiral: the enemy is in our region (' + theatreSweepWhere(RE.x, RE.y) + '): the line moves out to meet it together.');
+    else if (mode === 'close') logEvent(a.side, 'Admiral: the enemy in our region outnumbers the line: it pulls in close round our places and waits for it there.');
+    else if (L.longMode) logEvent(a.side, 'Admiral: our region is clear again: the line goes back to facing the front.');
+    L.longMode = mode;
+  }
+  return depthU;
 }
 // =====================================================================
 // 5y. THE AO SECURED, THE SIEGE NUMBERS, THE PERIODIC REPORTS AND THE WAR-ROOM VIEW  (v21 stop 4; on a places map only, section 5w)
@@ -34952,7 +34947,22 @@ function coreLineLayout(a, th, live, post, look) {
   if (dist < 1) { ux = side === BLUE ? 1 : -1; uy = 0; dist = 1; } else { ux /= dist; uy /= dist; }
   const nx = -uy, ny = ux;
   let depthU = clampNumber(L.depth * dist, 1.3 * P0.radius, Math.max(1.3 * P0.radius, 0.85 * dist));
-  if (longLineOn(side)) depthU = Math.min(depthU, longLineMaxDepth(P0));                         // (v197.0) never out of a Local ship's fuel (06c4)
+  // the units on the line: the line Divisions (and the assault's when committed), by Fleet when the command model is on
+  const behind = coreFleetDivsOn(side);                                                          // (v84) the Defence Fleet's reserve Division (vaTag 'reserve', 06e part 6) stands behind the line, at the reserve spot
+  const onLine = live.filter(function (dv) { return (dv.coreRole === 'line' && !(behind && dv.vaTag === 'reserve')) || (dv.coreRole === 'assault' && L.posture === 'committed'); });
+  const latOf = function (dv) { const c = divisionCentre(dv); return (c.x - P0.x) * nx + (c.y - P0.y) * ny; };
+  let units = [];
+  if (cmdActive(side)) {
+    const byFleet = new Map();
+    for (const dv of onLine) { const F = cmdFleetOfDivision(dv), id = F ? F.id : 0; if (!byFleet.has(id)) byFleet.set(id, { id: id, F: F, divs: [], strength: 0, lat: 0, assault: !!(F && F.purpose === 'assault') }); const u = byFleet.get(id); u.divs.push(dv); u.strength += dv.strength; }
+    units = Array.from(byFleet.values());
+  } else {
+    const assault = onLine.filter(function (dv) { return dv.coreRole === 'assault'; }), line = onLine.filter(function (dv) { return dv.coreRole === 'line'; });
+    for (const dv of line) units.push({ id: dv.id, F: null, divs: [dv], strength: dv.strength, lat: 0, assault: false });
+    if (assault.length > 0) units.push({ id: -1, F: null, divs: assault, strength: assault.reduce(function (s, dv) { return s + dv.strength; }, 0), lat: 0, assault: true });
+  }
+  for (const u of units) { let s = 0, l = 0; for (const dv of u.divs) { s += dv.strength; l += latOf(dv) * dv.strength; } u.lat = s > 0 ? l / s : 0; }
+  if (longLineOn(side)) { depthU = longLineDepthFor(a, L, P0, units, Math.min(depthU, longLineMaxDepth(P0))); L.depthU = depthU; }   // (v197.0, v201.0, 06c4) never out of a Local ship's fuel; out to meet an enemy in our region, or close in
   // the approach point of each defended place: `depthU` out from it toward the threat (less when the threat is nearer than that)
   const pts = [];
   for (const k of defended) {
@@ -34970,21 +34980,6 @@ function coreLineLayout(a, th, live, post, look) {
   };
   const pointAt = function (lat) { const f = fwdAt(lat); return { x: clampNumber(P0.x + ux * f + nx * lat, 0, W), y: clampNumber(P0.y + uy * f + ny * lat, 0, H) }; };
   const faceAt = function (pt) { let gx = T.x - pt.x, gy = T.y - pt.y; const g = Math.sqrt(gx * gx + gy * gy); if (g < 1) return { gx: ux, gy: uy }; return { gx: gx / g, gy: gy / g }; };
-  // the units on the line: the line Divisions (and the assault's when committed), by Fleet when the command model is on
-  const behind = coreFleetDivsOn(side);                                                          // (v84) the Defence Fleet's reserve Division (vaTag 'reserve', 06e part 6) stands behind the line, at the reserve spot
-  const onLine = live.filter(function (dv) { return (dv.coreRole === 'line' && !(behind && dv.vaTag === 'reserve')) || (dv.coreRole === 'assault' && L.posture === 'committed'); });
-  const latOf = function (dv) { const c = divisionCentre(dv); return (c.x - P0.x) * nx + (c.y - P0.y) * ny; };
-  let units = [];
-  if (cmdActive(side)) {
-    const byFleet = new Map();
-    for (const dv of onLine) { const F = cmdFleetOfDivision(dv), id = F ? F.id : 0; if (!byFleet.has(id)) byFleet.set(id, { id: id, F: F, divs: [], strength: 0, lat: 0, assault: !!(F && F.purpose === 'assault') }); const u = byFleet.get(id); u.divs.push(dv); u.strength += dv.strength; }
-    units = Array.from(byFleet.values());
-  } else {
-    const assault = onLine.filter(function (dv) { return dv.coreRole === 'assault'; }), line = onLine.filter(function (dv) { return dv.coreRole === 'line'; });
-    for (const dv of line) units.push({ id: dv.id, F: null, divs: [dv], strength: dv.strength, lat: 0, assault: false });
-    if (assault.length > 0) units.push({ id: -1, F: null, divs: assault, strength: assault.reduce(function (s, dv) { return s + dv.strength; }, 0), lat: 0, assault: true });
-  }
-  for (const u of units) { let s = 0, l = 0; for (const dv of u.divs) { s += dv.strength; l += latOf(dv) * dv.strength; } u.lat = s > 0 ? l / s : 0; }
   // the width: every Division's frontage (x the tightening), at least the span of the approach points
   let frontage = 0;
   for (const u of units) for (const dv of u.divs) frontage += coreDivisionFrontage(dv);
@@ -54551,7 +54546,7 @@ function cmdOrderForTask(dv, task) {
   const role = dv.role, id = task.id, p = task.params || {};
   const L = function (x) { return { id: x, legacy: true }; }, N = function (x) { return { id: x, legacy: false }; };
   if (placesActive()) {                                                     // (places: the theatre step's handlers stay; the role order is named)
-    if (id === 'hold' && (dv.placeTask === 'line' || dv.placeTask === 'intercept') && isFinite(p.x) && longLineMarchOn()) return N('hold_line');   // (v197.0, 06c4) on the Admiral's line on the long map: every role holds its stretch in its formation
+    if (id === 'hold' && dv.placeTask === 'line' && isFinite(p.x) && longLineMarchOn()) return N('hold_line');   // (v197.0, 06c4) on the Admiral's line on the long map: every role holds its stretch in its formation
     if (id === 'hold') return L(role === 'battery' ? 'bombard' : (role === 'dragoons' && p.place >= 0 ? 'seize' : 'hold_line'));
     if (id === 'counter') return L(role === 'dragoons' ? 'plug' : (role === 'light' ? 'intercept' : 'engage'));
     if (id === 'advance') return L(role === 'line' ? 'line_advance' : 'engage');
@@ -100553,7 +100548,7 @@ BUREAU2_SCREEN_API.testRange = { run: testRangeRun, state: testRange, plan: func
 //   adopted habits come along in its copy code and into every new campaign. A doctrine changed in the Bureau after the save updates the plan's copy.
 //   DOCTRINE TEMPLATES (LIBRARY.templates: [{ name, doctrine, savedAt }]) live here too, so they carry over as well. A plan from before v37 has no doctrine: Auto.
 // =====================================================================
-const GAME_VERSION = 'v200.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
+const GAME_VERSION = 'v201.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
 const LIBRARY_KEY = 'engineersWar.library';
 const LIBRARY_FORMAT = 1;
 const LIBRARY_CODE_SHIP = 'EW-SHIP-1:', LIBRARY_CODE_LIB = 'EW-LIB-1:';
