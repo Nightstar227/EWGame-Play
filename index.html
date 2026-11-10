@@ -8755,27 +8755,144 @@ function htFixedGun(c, p, info, u) {
   else { c.fillStyle = '#0b0c0a'; c.fillRect(exit + stick - bw * .3, -bw * .28, bw * .3, bw * .56); c.fillStyle = 'rgba(255,240,200,.18)'; c.fillRect(exit, -bw / 2, stick, PX); }
   c.restore();
 }
-// missile ports on the deck (the launcher's own squares): rows of small round tube mouths, each in a square socket with a hatch rim,
-// sized to the SHIP (not the launcher), so a big launcher on a small craft is a field of small ports, never a few big boxes (Alex, v188.0)
-function htHatches(c, p, u) {
-  var s = Math.max(.55, Math.min(1.8, u * 1.5, Math.min(p.w, p.h))), nx = Math.max(1, Math.floor(p.w / s)), ny = Math.max(1, Math.floor(p.h / s));
-  var ox = p.x + (p.w - nx * s) / 2, oy = p.y + (p.h - ny * s) / 2, i, j;
-  // the recessed deck panel the ports sit in
-  c.fillStyle = 'rgba(16,17,14,.55)'; c.fillRect(ox - s * .08, oy - s * .08, nx * s + s * .16, ny * s + s * .16);
-  c.strokeStyle = 'rgba(0,0,0,.6)'; c.lineWidth = PX * 1.2; c.strokeRect(ox - s * .08, oy - s * .08, nx * s + s * .16, ny * s + s * .16);
-  for (i = 0; i < nx; i++) for (j = 0; j < ny; j++) {
-    var cx = ox + (i + .5) * s, cy = oy + (j + .5) * s, r = s * .34;
-    // the socket: a small bevelled square
-    var g = c.createLinearGradient(cx - s * .45, cy - s * .45, cx + s * .45, cy + s * .45); g.addColorStop(0, '#5a5b50'); g.addColorStop(1, '#25261f');
-    c.fillStyle = g; c.fillRect(cx - s * .44, cy - s * .44, s * .88, s * .88);
-    // the tube's mouth: dark, with a steel lip and a lit rim on the far side
-    c.fillStyle = '#07080a'; c.beginPath(); c.arc(cx, cy, r, 0, 7); c.fill();
-    c.strokeStyle = '#8f907f'; c.lineWidth = Math.max(PX, s * .07); c.beginPath(); c.arc(cx, cy, r, 0, 7); c.stroke();
-    c.strokeStyle = 'rgba(255,230,180,.35)'; c.lineWidth = Math.max(PX, s * .05); c.beginPath(); c.arc(cx, cy, r * .78, .3, 1.9); c.stroke();
+// ---- missile launchers (v188.2, Alex 10 Nov 2026) ----
+// The module art shows ONE big missile per launcher (a Rapid launcher: 2 or 3, like its module drawing), so the hull shows one port per
+// launcher (2 or 3 for a Rapid). What the port looks like depends on which way the launcher faces in the Bureau (Alex's five cases):
+//   facing down (the default): a short launch tube poking out of the hull's edge, like a gun muzzle;
+//   facing the bow (sideways): a long rectangular door in the hull's side, where the missile is pushed out sideways before it lights;
+//   facing up, or facing the stern: a hatch on the deck that opens upward (a vertical launch cell), the missile's nose showing inside;
+//   a Torpedo rack: the missile slung on the outside of the craft, or the empty metal rail once it has fired.
+// a missile seen from above, nose along +x, from x0 to x1, d across
+function htMissile(c, x0, x1, d, band) {
+  var L = x1 - x0, nose = Math.min(L * .28, d * 1.6), fin = d * .55;
+  c.save();
+  c.fillStyle = '#3a3b35'; c.beginPath(); c.moveTo(x0 + L * .02, -d / 2 - fin); c.lineTo(x0 + L * .16, -d / 2); c.lineTo(x0 + L * .16, d / 2); c.lineTo(x0 + L * .02, d / 2 + fin); c.lineTo(x0, d / 2 + fin * .8); c.lineTo(x0, -d / 2 - fin * .8); c.closePath(); c.fill();
+  var g = c.createLinearGradient(0, -d / 2, 0, d / 2); g.addColorStop(0, '#8d8f86'); g.addColorStop(.35, '#f1efe6'); g.addColorStop(1, '#6f716a');
+  c.fillStyle = g; c.beginPath(); c.moveTo(x0, -d / 2); c.lineTo(x1 - nose, -d / 2); c.quadraticCurveTo(x1 - nose * .25, -d / 2, x1, 0); c.quadraticCurveTo(x1 - nose * .25, d / 2, x1 - nose, d / 2); c.lineTo(x0, d / 2); c.closePath(); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.65)'; c.lineWidth = PX; c.stroke();
+  c.fillStyle = band || '#e07a22'; c.fillRect(x1 - nose - d * .55, -d / 2, d * .35, d);
+  c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(x0 + L * .3, -d / 2, PX, d);
+  c.restore();
+}
+// facing down: one short launch tube (or 2-3 for a Rapid) out of the hull's edge
+function htLaunchTube(c, p, info, n, td, u) {
+  var dx = Math.round(Math.cos(p.ang)), dy = Math.round(Math.sin(p.ang)), cx = p.x + p.w / 2, cy = p.y + p.h / 2, across = dx ? p.h : p.w;
+  var exit = htExit(info.outline, cx, cy, dx, dy); if (exit <= 0) return;
+  var stick = Math.max(.3, Math.min(td * .7, 1.2 + u * .3)), gap = across / n;
+  c.save(); c.translate(cx, cy); c.rotate(Math.atan2(dy, dx));
+  for (var i = 0; i < n; i++) {
+    var oy = -across / 2 + gap * (i + .5);
+    c.save(); c.translate(0, oy);
+    // the armoured collar set into the hull's edge
+    c.fillStyle = '#0b0c0a'; c.beginPath(); c.moveTo(exit - td * .35, -td * .78); c.lineTo(exit, -td * .66); c.lineTo(exit, td * .66); c.lineTo(exit - td * .35, td * .78); c.closePath(); c.fill();
+    // the tube, round in section, a lit band and a dark mouth at its end
+    var g = c.createLinearGradient(0, -td / 2, 0, td / 2); g.addColorStop(0, '#2a2b26'); g.addColorStop(.4, '#9a9b8a'); g.addColorStop(1, '#1b1c18');
+    c.fillStyle = g; c.fillRect(exit - .2, -td / 2, stick + .2, td); c.strokeStyle = COL.line; c.lineWidth = PX; c.strokeRect(exit - .2, -td / 2, stick + .2, td);
+    c.fillStyle = 'rgba(0,0,0,.45)'; c.fillRect(exit + stick * .45, -td / 2, Math.max(PX, td * .08), td);
+    c.fillStyle = '#5a5b50'; c.fillRect(exit + stick - td * .12, -td * .56, td * .12, td * 1.12);
+    c.fillStyle = '#07080a'; c.beginPath(); c.ellipse(exit + stick, 0, td * .14, td * .4, 0, 0, 7); c.fill();
+    c.restore();
   }
-  // a thin hazard line round the field (ports are dangerous ground)
-  c.strokeStyle = 'rgba(217,178,58,.7)'; c.lineWidth = Math.max(PX, s * .06); c.setLineDash([s * .3, s * .3]);
-  c.strokeRect(ox - s * .12, oy - s * .12, nx * s + s * .24, ny * s + s * .24); c.setLineDash([]);
+  c.restore();
+}
+// facing the bow: a long rectangular door in the nearer side of the hull (2-3 doors in a row for a Rapid), the missile lying ready inside
+function htLaunchSlot(c, p, info, n, td, u) {
+  var horiz = Math.abs(Math.cos(p.ang)) > .5, cx = p.x + p.w / 2, cy = p.y + p.h / 2;
+  var along = horiz ? p.w : p.h, side = horiz ? (cy < info.H / 2 ? -1 : 1) : (cx < info.W / 2 ? -1 : 1);
+  var exit = htExit(info.outline, cx, cy, horiz ? 0 : side, horiz ? side : 0); if (exit <= 0) return;
+  var len = Math.max(1, along * .82), each = (len - (n - 1) * .3) / n, deep = Math.max(.45, td * .75), fwd = Math.cos(p.ang) + Math.sin(p.ang) < 0 ? -1 : 1;
+  c.save(); c.translate(cx, cy);
+  if (!horiz) c.rotate(Math.PI / 2);   // draw as if the launcher lay along x with the door on the +y or -y side
+  var sy = horiz ? side : -side;
+  for (var i = 0; i < n; i++) {
+    var x0 = -len / 2 + i * (each + .3), x1 = x0 + each;
+    c.save(); c.translate(0, sy * exit); c.scale(fwd, sy);   // now the hull's edge is y = 0 and the hull lies toward -y
+    // (Alex) the door is in the SIDE of the hull, seen from above at a slant: only a thin dark slit shows along the hull's edge, the missile's
+    // flank just catching the light inside it, and the open door hinged at the bottom sticks out past the edge, foreshortened
+    var slit = Math.max(.14, deep * .32), door = Math.max(.22, deep * .5);
+    var wg = c.createLinearGradient(0, -slit * 2.2, 0, 0); wg.addColorStop(0, 'rgba(0,0,0,0)'); wg.addColorStop(1, 'rgba(0,0,0,.45)');
+    c.fillStyle = wg; c.fillRect(x0 - .2, -slit * 2.2, each + .4, slit * 2.2);   // the hull's side curving away
+    c.fillStyle = '#050607'; c.fillRect(x0, -slit, each, slit);
+    var mg = c.createLinearGradient(0, -slit, 0, 0); mg.addColorStop(0, 'rgba(240,238,228,0)'); mg.addColorStop(.6, 'rgba(240,238,228,.55)'); mg.addColorStop(1, 'rgba(240,238,228,.1)');
+    c.fillStyle = mg; c.fillRect(x0 + each * .08, -slit * .75, each * .78, slit * .6);
+    c.fillStyle = '#e07a22'; c.fillRect(x0 + each * .72, -slit * .75, each * .05, slit * .6);
+    c.fillStyle = 'rgba(255,230,180,.3)'; c.fillRect(x0, -slit, each, PX * 1.2);
+    // the door, swung down and out: a plate past the edge, darker at its far end, with a hinge arm at each end
+    var dg = c.createLinearGradient(0, 0, 0, door); dg.addColorStop(0, '#5d5e53'); dg.addColorStop(1, '#25261f');
+    c.beginPath(); c.moveTo(x0, 0); c.lineTo(x1, 0); c.lineTo(x1 - each * .03, door); c.lineTo(x0 + each * .03, door); c.closePath();
+    c.fillStyle = dg; c.fill(); c.strokeStyle = COL.line; c.lineWidth = PX; c.stroke();
+    c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(x0, 0, each, PX * 1.5);
+    c.fillStyle = '#8f907f'; c.fillRect(x0 + each * .04, -slit * .2, PX * 2, door * .8); c.fillRect(x1 - each * .04 - PX * 2, -slit * .2, PX * 2, door * .8);
+    c.fillStyle = COL.haz; c.fillRect(x0 - .12, -slit, .08, slit); c.fillRect(x1 + .04, -slit, .08, slit);
+    c.restore();
+  }
+  c.restore();
+}
+// facing up or to the stern: vertical launch cells on the deck: a raised steel coaming, each cell's lid swung open, the missile's nose cap inside
+function htLaunchCells(c, p, n, td, u, seed) {
+  var cx = p.x + p.w / 2, cy = p.y + p.h / 2, lng = Math.max(p.w, p.h), sh = Math.min(p.w, p.h), alongX = p.w >= p.h;
+  var cell = Math.max(.8, Math.min(td * 1.25, sh * .8, (lng * .85) / n / 1.6)), lidL = cell * .9, pitch = cell * 1.75;
+  var rowL = n * pitch - (pitch - cell), cw = rowL + cell * .5 + lidL * .0, ch = cell * 1.5;
+  c.save(); c.translate(cx, cy); if (!alongX) c.rotate(Math.PI / 2);
+  // the raised coaming round the cells
+  var pts = cut([[-cw / 2, -ch / 2], [cw / 2, -ch / 2], [cw / 2, ch / 2], [-cw / 2, ch / 2]], cell * .18);
+  c.save(); c.shadowColor = 'rgba(0,0,0,.7)'; c.shadowBlur = 4; c.shadowOffsetY = 1;
+  var g = c.createLinearGradient(0, -ch / 2, 0, ch / 2); g.addColorStop(0, '#8a8b7e'); g.addColorStop(1, '#4a4b42'); c.fillStyle = g; c.fill(poly(pts)); c.restore();
+  c.strokeStyle = COL.line; c.lineWidth = PX * 1.3; c.stroke(poly(pts));
+  for (var i = 0; i < n; i++) {
+    var x = -rowL / 2 + i * pitch + cell / 2;
+    // the cell: a dark square well with a bright lip
+    c.fillStyle = '#07080a'; c.fillRect(x - cell / 2, -cell / 2, cell, cell);
+    c.strokeStyle = '#b9baa9'; c.lineWidth = Math.max(PX, cell * .05); c.strokeRect(x - cell / 2, -cell / 2, cell, cell);
+    // the missile's nose cap, seen from straight above
+    var r = cell * .3, ng = c.createRadialGradient(x - r * .3, -r * .3, r * .1, x, 0, r);
+    ng.addColorStop(0, '#f6e7a8'); ng.addColorStop(.6, '#e0a832'); ng.addColorStop(1, '#6a4a14');
+    c.fillStyle = ng; c.beginPath(); c.arc(x, 0, r, 0, 7); c.fill();
+    c.strokeStyle = '#1a1406'; c.lineWidth = Math.max(PX, cell * .06); c.beginPath(); c.arc(x, 0, r * 1.15, 0, 7); c.stroke();
+    // the lid, swung open toward the stern and lying flat on the coaming
+    var lx = x - cell / 2 - lidL * .02;
+    c.save(); c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = 3;
+    var lg = c.createLinearGradient(lx - lidL * .55, 0, lx, 0); lg.addColorStop(0, '#77786b'); lg.addColorStop(1, '#a3a493');
+    c.fillStyle = lg; c.fillRect(lx - lidL * .55, -cell / 2, lidL * .55, cell); c.restore();
+    c.strokeStyle = COL.line; c.lineWidth = PX; c.strokeRect(lx - lidL * .55, -cell / 2, lidL * .55, cell);
+    c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(lx - PX * 1.5, -cell / 2, PX * 1.5, cell);
+  }
+  c.restore();
+}
+// a Torpedo rack: the metal rail on the outside of the craft, with its missile slung under it while it still has one
+function htRack(c, p, info, loaded, missileOnly) {   // missileOnly: just the missile (the battle draws it over the rail while the rack is full)
+  // the missile always lies fore and aft with its nose to the bow, along the hull's nearer side, however the rack is turned in the Bureau
+  var horiz = Math.abs(Math.cos(p.ang)) > .5, cx = p.x + p.w / 2, cy = p.y + p.h / 2, along = horiz ? p.w : p.h;
+  if (!horiz) cy = cy < info.H / 2 ? p.y + .5 : p.y + p.h - .5;
+  var out = cy < info.H / 2 ? -1 : 1;
+  p = { x: p.x, y: p.y, w: p.w, h: p.h, ang: 0 };
+  horiz = true;
+  c.save(); c.translate(cx, cy); c.rotate(p.ang);
+  var sy = (horiz ? out : -out) * (Math.cos(p.ang) + Math.sin(p.ang) < 0 ? -1 : 1);   // which way is outboard once turned
+  c.translate(0, sy * .42);
+  var L = along * .92, d = .5;
+  if (missileOnly) { htMissile(c, -L / 2 + .05, L / 2 + .3, d, '#d4483a'); c.restore(); return; }
+  // the rail and its two sway-brace clamps
+  c.fillStyle = '#55574f'; c.fillRect(-L / 2, -.09, L, .18); c.strokeStyle = COL.line; c.lineWidth = PX; c.strokeRect(-L / 2, -.09, L, .18);
+  [-.28, .22].forEach(function (k) { c.fillStyle = '#8b8d82'; c.fillRect(L * k - .1, -.3, .2, .6); c.strokeRect(L * k - .1, -.3, .2, .6); });
+  c.fillStyle = '#2b2c27'; c.fillRect(L / 2 - .12, -.14, .12, .28);
+  if (loaded) htMissile(c, -L / 2 + .05, L / 2 + .3, d, '#d4483a');
+  c.restore();
+}
+function htLauncher(c, p, info, u, seed) {
+  var horiz = Math.abs(Math.cos(p.ang)) > .5, across = horiz ? p.h : p.w;
+  if (p.kind === 'rack') { htRack(c, p, info, p.loaded !== false); return; }
+  var n = p.kind === 'rapid' ? (across >= 6 ? 3 : 2) : 1;
+  var td = p.kind === 'torpedo' ? across * .5 : Math.min(across * .42, across >= 4 ? 2.2 : across >= 3 ? 1.5 : 1.05);
+  if (n > 1) td = Math.min(td, across / n * .62);
+  // (Alex) the launch tubes poking out of the edge: about half the launcher's own tube width (a Rapid's a little smaller again)
+  var tube = td * .5; if (n > 1) tube = Math.min(tube, across / n * .26);
+  // (Alex) the deck hatches: a Rapid's two or three are just right; a Standard's one hatch is the same size as one of those, not bigger
+  var cellTd = n > 1 ? td : Math.min(td, across / 2 * .62);
+  var face = ((Math.round(p.ang / (Math.PI / 2)) % 4) + 4) % 4;   // 0 the bow, 1 down, 2 the stern, 3 up
+  if (face === 1) htLaunchTube(c, p, info, n, tube, u);
+  else if (face === 0) htLaunchSlot(c, p, info, n, td, u);
+  else htLaunchCells(c, p, n, cellTd, u, seed);
 }
 function htPD(c, p, ang) {
   var cx = p.x + p.w / 2, cy = p.y + p.h / 2, r = Math.min(p.w, p.h) * .38;
@@ -8823,14 +8940,14 @@ function htReactor(c, p, u) {
 function htParts(c, info, parts, u, seed, aim, game) {
   var H = info.H;
   parts.forEach(function (p) {
-    if (p.d === 'launcher' || p.d === 'mmag' && false) htHatches(c, p, u);
-    else if (p.d === 'port' || p.d === 'hangar' || p.d === 'dronebay') htBay(c, p, u);
+    if (p.d === 'port' || p.d === 'hangar' || p.d === 'dronebay') htBay(c, p, u);
     else if (p.d === 'reactor' && p.w >= 2 && p.h >= 2 && H >= 10) htReactor(c, p, u);
   });
   parts.forEach(function (p) {
     if (p.d === 'gun' || p.d === 'emitter') { if (p.turning) htTurret(c, p, aim, game); else htFixedGun(c, p, info, u); }
     else if (p.d === 'bridge' || p.d === 'flagbridge') htBridge(c, p, seed + 70, u);   // always faces the bow, however the part is turned (Alex)
     else if (p.d === 'cockpit') htCockpit(c, p, seed + 75, u);   // always faces the bow, however the part is turned (Alex)
+    else if (p.d === 'launcher') htLauncher(c, p, info, u, seed);
     else if (p.d === 'pd') htPD(c, p, aim * .7 + (p.y < H / 2 ? -.6 : .6));
     else if ((p.d === 'sensor' || p.d === 'longsensor') && p.w >= 1 && H >= 6) htDish(c, p);
   });
@@ -8997,9 +9114,11 @@ function hullTop(c, info, opts) {
 //     parts: [{ d (the art kind), id, x, y, w, h (grid squares), ang, turning, role }], reg (the registry painted on the deck) }; s = pixels a grid square.
 //     Returns { canvas, x0, y0 (the picture's top-left corner, in pixels, the grid's top-left being 0,0) }.
 //     The turning guns, the drive plumes and the radiator and solar panels are NOT in it: the battle draws those every frame.
+//   (v188.2) a launcher part also carries kind ('standard', 'rapid', 'torpedo' or 'rack'); a rack is drawn in the picture as its bare rail.
+//   HULL_ART.rackMissile(p, info, s): the rack's missile alone, for the battle to draw on top while the rack still holds it. Returns { canvas, x0, y0 } like picture.
 //   HULL_ART.turret(p, s): the turning part of a turret (its barrels), nose to the right, for the battle to turn. Returns { canvas, w, h, piv }.
 window.HULL_ART = {
-  version: '1.0',
+  version: '1.1',
   picture: function (info, s) {
     var mx = 4, x0 = -mx, x1 = info.W + Math.max(4, info.H * .9 + 2), y0 = -info.H * .6 - 1, y1 = info.H * 1.6 + 1;
     var cv = document.createElement('canvas'); cv.width = Math.ceil((x1 - x0) * s); cv.height = Math.ceil((y1 - y0) * s);
@@ -9008,6 +9127,16 @@ window.HULL_ART = {
     PX = 1 / s;
     c.setTransform(s, 0, 0, s, -x0 * s, -y0 * s);
     hullTop(c, info, { t: 0, aim: 0, game: true });
+    return { canvas: cv, x0: x0 * s, y0: y0 * s };
+  },
+  rackMissile: function (p, info, s) {
+    var x0 = p.x - 2, y0 = p.y - 2, w = p.w + 4, h = p.h + 4, cv = document.createElement('canvas');
+    cv.width = Math.ceil(w * s); cv.height = Math.ceil(h * s);
+    var c = cv.getContext('2d');
+    if (!c) return null;
+    PX = 1 / s;
+    c.setTransform(s, 0, 0, s, -x0 * s, -y0 * s);
+    htRack(c, p, info, true, true);
     return { canvas: cv, x0: x0 * s, y0: y0 * s };
   },
   turret: function (p, s) {
@@ -10869,6 +10998,12 @@ const SETTINGS = {
   longMapReach: 1,           // 1 = fuel as reach (06c theatreLongReach): a Division is only sent to a place within its reach of the nearest standing station or peopled colony its side holds; 0 = no limit
   longMapReachLocal: 1,      // the reach of a Local ship (0 transfers), in region widths (slots): anywhere in its own region, never the next (v155.0: was 0.5, which left a region's far places out of reach)
   longMapReachPerTransfer: 1,   // the reach of a ship with transfers, in PITCHES (region to region, slot x (1 + longMapGap)) per transfer, plus one region width so the whole next region is in reach: 1 transfer = the next region, 3 = three regions on
+  longMapCommand: 1,         // (v189.0) 1 = THE LONG MAP COMMAND (06c3): on the long map both Admirals plan only for the regions at the front (the places within one transfer of
+                             //   the other side's), the idle Divisions of the rear move up to it, a Division is never sent where its fuel cannot take it, Divisions stay
+                             //   together, and the plan is told in a sentence. 0 = v188: the whole system is one AO to the Admirals
+  longMapJoinSlots: 0.5,     // ... a squadron joins a Division only within this many region widths of it, and a Division spread wider is split by where its squadrons are
+  longMapSwarmWaveSeconds: 1800,   // ... the Swarm's bar for an attack falls from placesSwarmAttackOdds to longMapSwarmWaveOdds as the front stands quiet this long (a week and a half)
+  longMapSwarmWaveOdds: 0.1, // ... so after that it goes in with whatever has gathered
   longMapFog: 1,             // (v154.0) 1 = on the long map the battle screen draws an enemy ship only within longMapFogRange of our eyes (a ship of ours, a standing station or people of ours; 23i); 0 = show all
   longMapFogRange: 60000,    // ... that far, in units (about three quarters of a slot). The true range is between this and about 1.4 x it (a coarse grid)
   // (v159.0) THE MOONS TEST (06b3, section 5w3): moons go round their planets on the battle map, carrying their places and stations. Off by default.
@@ -10876,6 +11011,8 @@ const SETTINGS = {
   moonOrbitMinutes: 60,      // ... battle minutes for one trip round, for a moon moonOrbitRef units from its planet (further out takes longer: time grows with distance^1.5)
   moonOrbitRef: 20000,       // ... that distance, in units
   moonOrbitMaxSpeed: 60,     // ... no moon moves faster than this, in units a second (a slow big ship does about 100)
+  moonRepairLead: 1,        // (v191.0) 1 = a damaged ship going for repairs at a station on a moving moon heads for where the moon will be, and matches its speed close in (0 = flies at where it is now, as before)
+  moonRepairBodyShare: 1,   // (v191.0) ... and such a ship has reached the station once it is within this share of the moon's drawn body from the station
   longMapDrift: 1,           // (v178.0) on the long map the Belt's and the Kuiper Belt's rocks drift round tilted ovals and Mercury goes round the Sun (06b3); 0 = they stand still
   longMapDriftMinutes: 120,  // ... one trip round a Belt rock's oval, in battle minutes
   longMapDriftKuiperMinutes: 600,   // ... one trip round a Kuiper Belt rock's oval (very slow)
@@ -19488,6 +19625,7 @@ function ensureCapacity() {
 function startBattle(seed, setup, layout, command) {
   ensureCapacity();
   writeBackDone = false;                          // (stop 2) this battle's officers have not been written back to the roster yet
+  officerWrittenSoFar.clear();                    // (v190.0, section 5l) nor part-way through it
   loadFleetStats(setup);
   finishTypeStats();                              // (v18, section 5t) under weaponModel 1: effective ranges, and every type's practical range
   battleSetup = setup;                            // (design versions added during the battle add their rows here: section 5k)
@@ -20736,7 +20874,7 @@ let sleepActive = false;                    // this step: the rule is on and the
 function sleepShipsOn() {
   if (SETTINGS.movementModel !== MOVE_THRUST) return false;
   if (SETTINGS.sleepShips === 2) return true;
-  return SETTINGS.sleepShips === 1 && typeof longMapOn === 'function' && longMapOn();
+  return SETTINGS.sleepShips === 1 && typeof longBattleOn === 'function' && longBattleOn();   // (v189.0: only in the long map's own battle)
 }
 // Enemy ships in the blocks bx0..bx1, by0..by1 (clamped), from the running totals.
 function sleepEnemyIn(enemy, bx0, by0, bx1, by1) {
@@ -21023,6 +21161,7 @@ function updateMovementAndTargeting(dtStep) {
     let tdx = 0, tdy = 0;                           // the ordinary movement: the way to the target (or the far goal)
     let wantFace = 0;                               // thrusters: the direction to face (classic movement faces the way it wants to go: desired)
     let faceCombat = false;                         // smart tactics: true when wantFace is the fighting facing (the target kept at the chosen offset from the nose), not the way it is going
+    let repGoX = 0, repGoY = 0, repVX = 0, repVY = 0, repMatch = false, repReach = 0;   // (v191.0) going for repairs: where to fly, and the station's own velocity when it moves (repMatch: close in, keep pace with it)
 
     if (retreating) {
       // A retreating ship turns straight away from the enemy side and flies back toward its own side (smart tactics: or to the safe place its squadron chose, stage 8).
@@ -21033,7 +21172,14 @@ function updateMovementAndTargeting(dtStep) {
       desired = (side === BLUE) ? 0 : Math.PI;
     } else if (repairing) {
       // A ship on its way to be repaired (section 5j) flies straight to its repair point, or, if there is none, off the edge of the map at its own side.
-      if (shipRepairPoint[i] >= 0) { const rp = repairPoints[shipRepairPoint[i]]; desired = Math.atan2(rp.y - shipY[i], rp.x - shipX[i]); }
+      // (v191.0) A station on a moving moon: it heads for where the moon will be when it gets there, and matches the moon's speed close in (06b3 repairAim).
+      if (shipRepairPoint[i] >= 0) {
+        const rp = repairPoints[shipRepairPoint[i]];
+        repReach = repairReach(rp, typeSize[type]);
+        repairAim(rp, shipX[i], shipY[i], stSpeed[st] * (cplCtl[i] === CTL_TUG_TOW ? SETTINGS.towSpeedShare : 1) * 0.85, repReach);
+        repGoX = repAimX; repGoY = repAimY; repMatch = repAimMatch; repVX = repAimVX; repVY = repAimVY;
+        desired = Math.atan2(repGoY - shipY[i], repGoX - shipX[i]);
+      }
       else desired = (side === BLUE) ? Math.PI : 0;
     } else {
       // --- Targeting: look for a new target on a timer, or right away if the old one is gone.
@@ -21150,7 +21296,7 @@ function updateMovementAndTargeting(dtStep) {
         // (v155.0, 4b6) THE FUEL LINE: this ship is further from the nearest friendly station or colony than its fuel reaches. Whatever it was doing, it flies
         // back toward that station until it is well inside its reach (longMapLeashBack); it keeps its target and its guns while it turns.
         const hdx = shipLeashX[i] - shipX[i], hdy = shipLeashY[i] - shipY[i];
-        const d = Math.sqrt(hdx * hdx + hdy * hdy), want = shipLeashR[i];
+        const d = Math.sqrt(hdx * hdx + hdy * hdy), want = 0.9 * shipLeashR[i];   // (v189.0: a little inside the line that frees it; stopping exactly on that line it stayed held for good)
         desired = Math.atan2(hdy, hdx);
         if (d > want) { wantMove = true; goalGap = d - want; gdx = hdx; gdy = hdy; } else { wantMove = false; gdx = 0; gdy = 0; }
         goalMode = 2; ordinary = false;
@@ -21193,8 +21339,8 @@ function updateMovementAndTargeting(dtStep) {
       if (mdShip[i] === 1) vmax *= mdSpeedMul[i];             // (v20, section 5v) drives knocked out
       if (dvGravOn === 1) vmax *= dvSlowOf(i);                 // (v93, section 5vc) held by a Delver grav lance
       if (repairing && cplCtl[i] === CTL_TUG_TOW) vmax *= SETTINGS.towSpeedShare;   // (v66, section 5jc) a tug towing a crippled ship goes at half speed
-      if (sq > 0 && sqSpeedCap[sq] > 0 && !retreating && !fallingBack && !repairing && !follower && vmax > sqSpeedCap[sq]) vmax = sqSpeedCap[sq];   // (v19, section 5u: survivalModel 1 only) march speed, or holding short
-      if (sq > 0 && sqPaceUntil[sq] > simTime && sqPaceCap[sq] > 0 && !retreating && !fallingBack && !repairing && !follower && vmax > sqPaceCap[sq]) vmax = sqPaceCap[sq];   // (v50, section 5mp) its Division's shared pace on the march
+      if (sq > 0 && sqSpeedCap[sq] > 0 && !(leashActive && shipLeash[i] === 1) && !retreating && !fallingBack && !repairing && !follower && vmax > sqSpeedCap[sq]) vmax = sqSpeedCap[sq];   // (v19, section 5u: survivalModel 1 only) march speed, or holding short
+      if (sq > 0 && sqPaceUntil[sq] > simTime && sqPaceCap[sq] > 0 && !(leashActive && shipLeash[i] === 1) && !retreating && !fallingBack && !repairing && !follower && vmax > sqPaceCap[sq]) vmax = sqPaceCap[sq];   // (v50, section 5mp) its Division's shared pace on the march
       if (retreating) {
         if (smart && shipGoalX[i] >= 0) {                                       // smart tactics: to the safe place behind the squadron (an arrival: it stops there and regroups)
           const gx = shipGoalX[i] - shipX[i], gy = shipGoalY[i] - shipY[i], gd = Math.sqrt(gx * gx + gy * gy);
@@ -21205,10 +21351,16 @@ function updateMovementAndTargeting(dtStep) {
       } else if (repairing) {
         if (shipRepairPoint[i] >= 0) {
           const rp = repairPoints[shipRepairPoint[i]];
-          const rdx = rp.x - shipX[i], rdy = rp.y - shipY[i];
+          const rdx = repGoX - shipX[i], rdy = repGoY - shipY[i];
           const rd = Math.sqrt(rdx * rdx + rdy * rdy);
-          gap = rd - (rp.arrive + typeSize[type]) * 0.9;
+          gap = (repGoX === rp.x && repGoY === rp.y) ? rd - repReach * 0.9 : rd;   // (v191.0: a spot ahead on a moon's path is flown to exactly; the moon picks the ship up there)
           arriveWant(rdx, rdy, rd, gap, vmax, stBrakePlan[st]); wvx = mvWX; wvy = mvWY;
+          if (repMatch) {                                                      // (v191.0) alongside a moving station: keep pace with it as well as closing in
+            wvx += repVX; wvy += repVY; gap = -1;
+            if (wvx * wvx + wvy * wvy > 1) wantFace = Math.atan2(wvy, wvx);   // (it points the way it is going: the main engine does the work)
+            const wv = Math.sqrt(wvx * wvx + wvy * wvy);
+            if (wv > vmax && wv > 0) { wvx *= vmax / wv; wvy *= vmax / wv; }
+          }
         } else wvx = (side === BLUE ? -1 : 1) * stSpeed[st];
       } else if (fallingBack && !follower) {
         // Falling back (smart tactics, stage 8): hold a ring round the threat just beyond its reach (never cut back to our own range), leaning toward the squadron's
@@ -21571,9 +21723,10 @@ function updateMovementAndTargeting(dtStep) {
       let step = stSpeed[st] * dt;
       if (shipRepairPoint[i] >= 0) {                              // (never farther than the repair point: the ship stops at it)
         const rp = repairPoints[shipRepairPoint[i]];
-        const rdx = rp.x - shipX[i], rdy = rp.y - shipY[i];
-        const gap = Math.sqrt(rdx * rdx + rdy * rdy) - (rp.arrive + typeSize[type]) * 0.9;
-        if (step > gap) step = gap > 0 ? gap : 0;
+        const onPoint = repGoX === rp.x && repGoY === rp.y;
+        const rdx = repGoX - shipX[i], rdy = repGoY - shipY[i];
+        const gap = Math.sqrt(rdx * rdx + rdy * rdy) - (onPoint ? repReach * 0.9 : 0);   // (v191.0: a spot ahead on a moon's path, flown to exactly)
+        if (step > gap && !(repMatch && onPoint)) step = gap > 0 ? gap : 0;   // (alongside a moving station it keeps flying at it: the station moves on)
       }
       nx += c * step;
       ny += s * step;
@@ -21715,7 +21868,7 @@ function updateMovementAndTargeting(dtStep) {
       const rpi = shipRepairPoint[i];
       if (rpi >= 0) {
         const rp = repairPoints[rpi];
-        const rdx = rp.x - nx, rdy = rp.y - ny, reach = rp.arrive + typeSize[type];
+        const rdx = rp.x - nx, rdy = rp.y - ny, reach = repReach > 0 ? repReach : rp.arrive + typeSize[type];   // (v191.0: over a moving moon counts)
         if (rdx * rdx + rdy * rdy <= reach * reach) { gridNoteMove(i, nx, ny); shipX[i] = nx; shipY[i] = ny; enterRepairPoint(i, rp); continue; }
       } else if ((side === BLUE && nx <= 0) || (side === RED && nx >= worldW)) {
         gridNoteMove(i, nx, ny); shipX[i] = nx; shipY[i] = ny;
@@ -28790,18 +28943,20 @@ function theatreTakeIn(a) {
   const made = [];
   for (let k = 0; k < loose.length; k++) {
     const sq = loose[k];
-    let best = cmdJoinDivision(a, sq), bestD = join2;                                                    // (v25, section 5cc) a Division of its role first (null with the switch off)
+    let best = cmdJoinDivision(a, sq), bestD = join2;
+    if (best !== null && !longJoinOk(best, sqCenterX[sq], sqCenterY[sq], sq)) best = null;               // (v189.0) the long map: never a Division far away (06c3)                                                    // (v25, section 5cc) a Division of its role first (null with the switch off)
     const byRole = best !== null, live = liveDivisions(a);        // (v25: a Division of its role is taken as it is; otherwise the nearest, as before)
     for (let d = 0; !byRole && d < live.length; d++) {
       const dv = live[d];
       const cap = made.indexOf(dv) >= 0 ? orgDivisionTargetSize(side) : orgDivisionMaxSize(side);   // (v23, section 5z: bigger on a scaled side)
-      if (dv.squads.length >= cap) continue;
+      if (dv.squads.length >= cap || !longJoinOk(dv, sqCenterX[sq], sqCenterY[sq], sq)) continue;
       const c = divisionCentre(dv), dx = c.x - sqCenterX[sq], dy = c.y - sqCenterY[sq], d2 = dx * dx + dy * dy;
       if (d2 <= bestD || (orgScaled(side) && live.length >= SETTINGS.orgDivisionTarget && (best === null || d2 < bestD))) { bestD = d2; best = dv; }   // (v23: a scaled side with its Divisions joins the nearest, however far)
     }
     if (best === null && SETTINGS.divisionMergeSmall === 1 && live.length > 0) {   // (v72) none near: it joins a Division with room wherever it is, rather than making a Division of one squadron
       const F = cmdOn() ? cmdFleetNeedingMost(side, false) : null;
       best = divisionMergeTarget(a, null, 1, null, -1, F ? F.id : -1, sqCenterX[sq], sqCenterY[sq]);
+      if (best !== null && !longJoinOk(best, sqCenterX[sq], sqCenterY[sq], sq)) best = null;       // (v189.0) the long map: nor one whose ships carry other fuel (06c3)
     }
     if (best !== null) {
       divisionTake(best, sq);
@@ -29263,7 +29418,7 @@ const LONG_MAP_DRIFT = {
   pluto: { rx: 0.10, ry: 0.12, tilt: 14, slow: true }, haumea: { rx: 0.11, ry: 0.08, tilt: -28, slow: true }, makemake: { rx: 0.12, ry: 0.10, tilt: 22, slow: true }, arrokoth: { rx: 0.09, ry: 0.07, tilt: -16, slow: true }
 };
 // Are the long map's rocks (and Mercury) moving? On the long map unless longMapDrift is 0.
-function longMapDriftOn() { return typeof longMapOn === 'function' && longMapOn() && SETTINGS.longMapDrift !== 0; }
+function longMapDriftOn() { return typeof longBattleOn === 'function' && longBattleOn() && SETTINGS.longMapDrift !== 0; }   // (v189.0: only in the long map's own battle)
 // Does this path move now? A long-map path always; a moon's only with the test on.
 function moonPathLive(m) { return m.always === true || moonOrbitsOn(); }
 
@@ -29451,6 +29606,110 @@ function drawMoonOrbits(w, h, z, offX, offY) {
 function moonOrbitsReport() {
   return moonOrbits.map(function (m) { const p = battlePlaces[m.k]; return { id: p.id, parent: m.parent >= 0 ? battlePlaces[m.parent].id : 'drift', live: moonPathLive(m), x: Math.round(p.x), y: Math.round(p.y), rx: Math.round(m.rx), ry: Math.round(m.ry), speed: Math.round(Math.abs(m.w) * Math.max(m.rx, m.ry)), minutesRound: Math.round(2 * Math.PI / Math.abs(m.w) / 60) }; });
 }
+
+// =====================================================================
+// (v191.0) CATCHING A MOVING STATION FOR REPAIRS
+//
+//   Alex, 10 Nov: "a bunch of damaged ships trying to get to the moon to repair, but they cant catch up to it. this needs to be resolvable".
+//   What went wrong: a damaged ship flew at where the moon's station WAS, and braked to stop there as if it stood still. The moon kept going, so the
+//   ship always ended up trailing just behind it, and a tug towing a wreck (half speed) could be slower than the moon itself and never close at all.
+//   Now a ship heading for repairs at a station that moves:
+//     * far off: works out where the moon will be when it can get there (it reads the moon's path ahead), and flies to THAT spot on the path. If it gets
+//       there first it simply waits, and the moon comes round and picks it up. A ship too slow to catch the moon from behind still meets it this way.
+//     * close in: matches the moon's speed and drifts in alongside the station, so it docks instead of chasing.
+//     * and it has arrived once it is over the moon itself (inside the moon's drawn body), not only right at the station: the station's own boats
+//       meet it there. (A station that stands still keeps its old, small docking distance.)
+//   Stations that stand still are not touched. Check: tools/v191.0/moon-repair-check.js
+// =====================================================================
+
+// The moving path of place k (its own moon path, or the drifting rock it rides on), or null when it does not move now.
+function moonPathOf(k) {
+  for (let j = 0; j < moonOrbits.length; j++) if (moonOrbits[j].k === k && moonPathLive(moonOrbits[j])) return moonOrbits[j];
+  return null;
+}
+// The drifting rock (its path) that place k rides along with, or null.
+function moonRideParentOf(k) {
+  for (let j = 0; j < moonOrbits.length; j++) {
+    const m = moonOrbits[j];
+    if (!m.rides || !moonPathLive(m)) continue;
+    for (let r = 0; r < m.rides.length; r++) if (m.rides[r].k === k) return m;
+  }
+  return null;
+}
+// Does place k move at all right now?
+function placeMoves(k) { return k >= 0 && (moonPathOf(k) !== null || moonRideParentOf(k) !== null); }
+// Where a path m puts its place t seconds from now (the same sum as moonPut, without moving anything). shiftX/Y: how far its centre will have been carried.
+function moonPathSpot(m, p, t, shiftX, shiftY) {
+  const cx = m.px + shiftX, cy = m.py + shiftY, bx = moonOrbitBoundsX(cx), by = moonOrbitBoundsY(cx);
+  const a = m.ang + m.w * t, ex = m.rx * Math.cos(a), ey = m.ry * Math.sin(a), ct = Math.cos(m.tilt || 0), st = Math.sin(m.tilt || 0);
+  moonSpotX = clampNumber(cx + ex * ct - ey * st, bx[0] + p.radius, bx[1] - p.radius);
+  moonSpotY = clampNumber(cy + ex * st + ey * ct, by[0] + p.radius, by[1] - p.radius);
+}
+let moonSpotX = 0, moonSpotY = 0;
+// Where place k will be t seconds from now (into placeFutureX/Y).
+let placeFutureX = 0, placeFutureY = 0;
+function placeFuture(k, t) {
+  const p = battlePlaces[k];
+  let sx = 0, sy = 0;
+  const host = moonRideParentOf(k);                                    // a moon of a drifting rock: the rock carries it (and its path's centre)
+  if (host) { const hp = battlePlaces[host.k]; moonPathSpot(host, hp, t, 0, 0); sx = moonSpotX - hp.x; sy = moonSpotY - hp.y; }
+  const m = moonPathOf(k);
+  if (m) { moonPathSpot(m, p, t, sx, sy); placeFutureX = moonSpotX; placeFutureY = moonSpotY; }
+  else { placeFutureX = p.x + sx; placeFutureY = p.y + sy; }
+}
+// The place a repair point stands in (its index in battlePlaces), or -1 (a point not in a place, or one that rides on a ship: a carrier, tender or Wheel).
+function repairPointPlace(rp) {
+  if (!rp || rp.kind !== 'facility' || !(rp.objective >= 0)) return -1;
+  const ob = battleObjectives[rp.objective];
+  return ob && typeof ob.place === 'number' ? ob.place : -1;
+}
+
+// How close a ship of size `size` must come to repair point rp to dock: the point's own docking distance, or for a station on a moving moon the moon's
+// drawn body when that is bigger (moonRepairBodyShare of it).
+function repairReach(rp, size) {
+  const base = rp.arrive + size;
+  if (SETTINGS.moonRepairLead === 0) return base;
+  const k = repairPointPlace(rp);
+  if (k < 0 || !placeMoves(k)) return base;
+  const body = (battlePlaces[k].body || 0) * (SETTINGS.moonRepairBodyShare > 0 ? SETTINGS.moonRepairBodyShare : 1);
+  return body > base ? body : base;
+}
+// Where a ship at (sx, sy) flying at `speed` should head to reach repair point rp, written to repAimX/Y; repAimMatch = true when it is close enough to
+// simply match the station's motion (repAimVX/VY = the station's velocity then). A point that stands still: its own spot, and no match.
+let repAimX = 0, repAimY = 0, repAimVX = 0, repAimVY = 0, repAimMatch = false;
+function repairAim(rp, sx, sy, speed, reach) {
+  repAimX = rp.x; repAimY = rp.y; repAimVX = 0; repAimVY = 0; repAimMatch = false;
+  if (SETTINGS.moonRepairLead === 0) return;
+  const k = repairPointPlace(rp);
+  if (k < 0 || !placeMoves(k)) return;
+  const p = battlePlaces[k], offX = rp.x - p.x, offY = rp.y - p.y;   // (the station need not be at the very middle of its place)
+  // The station's own velocity, from a quarter-second look ahead.
+  placeFuture(k, 0.25); repAimVX = (placeFutureX - p.x) * 4; repAimVY = (placeFutureY - p.y) * 4;
+  const dx0 = rp.x - sx, dy0 = rp.y - sy, d0 = Math.sqrt(dx0 * dx0 + dy0 * dy0);
+  const v = speed > 1 ? speed : 1;
+  if (d0 <= reach * 3 || d0 - reach <= v * 2) { repAimMatch = true; return; }   // close in: match its motion and drift in
+  // Far off: the first time t at which the ship could be where the station will be. Searched over two trips round its path, then narrowed down.
+  const m = moonPathOf(k) || moonRideParentOf(k);
+  const period = 2 * Math.PI / Math.max(1e-6, Math.abs(m.w));
+  const steps = 96, dt = (2 * period) / steps;
+  let lo = 0, hi = -1, bestT = 0, bestD = Infinity;
+  for (let n = 1; n <= steps; n++) {
+    const t = n * dt;
+    placeFuture(k, t);
+    const fx = placeFutureX + offX - sx, fy = placeFutureY + offY - sy, d = Math.sqrt(fx * fx + fy * fy);
+    if (d - reach * 0.5 <= v * t) { hi = t; break; }
+    lo = t;
+    if (d < bestD) { bestD = d; bestT = t; }
+  }
+  if (hi < 0) { placeFuture(k, bestT); repAimX = placeFutureX + offX; repAimY = placeFutureY + offY; return; }   // never in time: wait on the path where it comes closest
+  for (let n = 0; n < 12; n++) {
+    const t = (lo + hi) / 2;
+    placeFuture(k, t);
+    const fx = placeFutureX + offX - sx, fy = placeFutureY + offY - sy;
+    if (Math.sqrt(fx * fx + fy * fy) - reach * 0.5 <= v * t) hi = t; else lo = t;
+  }
+  placeFuture(k, hi); repAimX = placeFutureX + offX; repAimY = placeFutureY + offY;
+}
 // =====================================================================
 // 5x. THE ADMIRAL'S THEATRE STEP  (v21, SETTINGS.placesTheatre 1: which Division goes to which place on a places map, and when)
 //
@@ -29538,7 +29797,7 @@ function theatreBoldness(a) { const o = a.officer; return o ? clampNumber(office
 // (v25 stop 7) with the chain of command on, x cmdTheatreBar: the Fleets now pin and probe the next place's defenders and the attack fights at the place under its
 // Fleets' moves, so the Admiral may go in at somewhat lower odds (places_5k seed 2 at stop 6: Blue at 1.2 to 1.6 x the enemy's strength never attacked).
 function theatreAttackBar(a) {
-  if (theatreSwarm(a)) return SETTINGS.placesSwarmAttackOdds;                                   // (v27.1) the Swarm goes in at long odds
+  if (theatreSwarm(a)) return longCmdOn() ? longSwarmBar(a) : SETTINGS.placesSwarmAttackOdds;   // (v27.1) the Swarm goes in at long odds; (v189.0) on the long map lower still the longer the front has stood quiet (06c3)
   return (cmdOn() ? SETTINGS.cmdTheatreBar : 1) * SETTINGS.placesAttackOdds * (1.3 - 0.6 * (theatreRetryOn() ? clampNumber(theatreBoldness(a) + theatreFreshBoldness(a) + theatreImpatience(a), 0, 1) : theatreBoldness(a)));
 }
 // The odds below which an attack or a sweep is called off: placesAbortOdds, or the Swarm's own (placesSwarmAbortOdds: it hardly ever gives up).
@@ -29550,6 +29809,7 @@ function theatreCrushOn(a) { return SETTINGS.placesDecisive === 1 && SETTINGS.pl
 // Our strength on the map against the enemy's: its ships on the map (the picture's contacts) and its fleets due at the edge within placesWarnSeconds.
 // (Facilities on neither side: a station cannot go out and fight, and a sweep does not take one.)
 function theatreCrushRatio(a) {
+  if (longCmdOn()) return longCrushRatio(a);                                                    // (v189.0) the long map: only the strength at the front counts (06c3)
   const pic = a.picture, foe = 1 - a.side;
   let enemy = pic.enemyStrength;
   const due = oobEvents[foe];
@@ -29570,8 +29830,8 @@ function theatreMassOn(a) { return SETTINGS.placesMassAttack === 1 && theatreCru
 function theatreMassJoin(a, th, v, op, sendTo) {
   if (!theatreMassOn(a) || simTime - (op.massedAt || op.goAt || op.at) < SETTINGS.placesGatherSeconds) return 0;
   op.massedAt = simTime;
-  const pool = liveDivisions(a).filter(function (dv) { return !theatreInOp(th, dv) && theatrePicketIdle(dv); });
-  const got = theatreTake(a, th, v, pool, function () { return false; });
+  const pool = liveDivisions(a).filter(function (dv) { return !theatreInOp(th, dv) && theatrePicketIdle(dv) && !(v.play && op.kind === 'sweep' && !longDivisionRoadOk(a.side, dv, op.x, op.y)); });   // (v189.0) the long map: only Divisions whose fuel reaches the sweep
+  const got = theatreTake(a, th, v, pool, function () { return false; }, op.kind === 'sweep' ? -1 : op.target);   // (v189.0: within reach of the target, as every other choice of Divisions)
   let n = 0;
   for (const dv of got.take) if (sendTo(dv)) { op.divs.push(dv); n++; }
   if (n > 0) logEvent(a.side, 'Admiral: ' + plural(n, 'idle Division') + ' join ' + theatreOpName(op) + ': we are ' + theatreStateOf(a).crushRatio.toFixed(1) + ' to 1 in the AO, so everything goes in together.');
@@ -29704,6 +29964,7 @@ function theatreView(a, live, th) {
     if (dv.place >= 0 && !theatreSweeping(th, dv)) { v.assigned[dv.place] += dv.strength; v.count[dv.place]++; }   // (a Division out on a sweep is not there to guard its place)
   }
   for (let k = 0; k < P; k++) v.threat[k] = v.enemyAt[k] + v.inbound[k];
+  if (longCmdOn()) longViewTrim(a, v);                                                          // (v189.0) the long map: only the front is in play (06c3)
   return v;
 }
 // The threat to a place we would attack, from Divisions about `dist` away: the enemy there, and the larger of the enemy heading there and the loose enemy closer to it than we are.
@@ -29769,6 +30030,7 @@ function theatreSpare(a, th, v, dv, assigned, count) {
     if (SETTINGS.placesClaimFirm === 1 && dv.placeTask === 'claim' && placeStrength(k, 1 - a.side, true) <= 0.25 * dv.strength) return false;
     return true;
   }
+  if (v.play && v.play[k] !== 1) return true;                                                 // (v189.0) the long map: a place of ours far behind the front needs no garrison (06c3)
   const asg = assigned || v.assigned, cnt = count || v.count;
   if (cnt[k] <= 1 && !theatreFacilityCovers(a, v, k) && !(crush && (theatreFacilityStanding(a, k) || coreLineAttacking(th)))) return false;   // a place we hold keeps one Division (placesDecisive: unless its facility will do; v27.1: crushing, a standing station of ours will do;
                                                                                                                                                    // v85.3: crushing while we take an AO not ours, the attack goes on: on the week-9 save all 57 ships were one Division, kept at Deimos for good)
@@ -29808,7 +30070,7 @@ function theatreDecisiveBar(a, v, there, bar) {
 // choice of Divisions for a place (an attack, a claim, a defence, a reinforcement, the Swarm's press) leaves out the Divisions whose reach does not cover it
 // (theatreTake's `k`). A side with no anchor at all can be sent nowhere: its Divisions hold and defend where they are. Off the long map nothing here applies.
 let theatreReachMemo = { at: -1, anchors: [null, null] };
-function theatreLongReachOn() { return typeof longMapOn === 'function' && longMapOn() && SETTINGS.longMapReach === 1; }
+function theatreLongReachOn() { return typeof longBattleOn === 'function' && longBattleOn() && SETTINGS.longMapReach === 1; }   // (v189.0: only in the long map's own battle)
 // The side's anchors this step: the indexes of its places with a standing station, or its people (memoised for the step).
 function theatreAnchors(side) {
   if (theatreReachMemo.at !== simTime) theatreReachMemo = { at: simTime, anchors: [null, null] };
@@ -29845,6 +30107,7 @@ function theatreDivisionReach(dv) {
 function theatreReachOk(side, dv, k) {
   if (!(k >= 0) || !theatreLongReachOn()) return true;
   const p = battlePlaces[k], reach = theatreDivisionReach(dv), anchors = theatreAnchors(side);
+  if (longCmdOn()) return longDivisionRoadOk(side, dv, p.x, p.y);                                // (v189.0) ... and it must be able to fly there without leaving its fuel line on the way (06c3)
   for (let i = 0; i < anchors.length; i++) { const q = battlePlaces[anchors[i]]; if (longMapFuelDist(side, p.x, p.y, q.x, q.y) <= reach) return true; }   // (v164.0: the outer gaps count longer, 06d2)
   return false;
 }
@@ -29933,6 +30196,13 @@ function theatreOperation(a, th, v) {
   // going: called off when the odds fall below the bar once we are there, or collapse on the way
   let arrived = false;
   for (const dv of op.divs) if (theatreNear(dv, op.target, 1)) arrived = true;
+  // (v189.0, long map) the march to the target can take a week or more: the two clocks below (no progress, gone in too long) only run once a Division is there,
+  // as long as the Divisions on the way are still getting nearer. Before, every attack across a gap was called off half way and turned for home.
+  if (!arrived && longCmdOn()) {
+    let moving = false;
+    for (const dv of op.divs) if (dv.place === op.target && dv.placeProgressAt > simTime - 300) moving = true;
+    if (moving || simTime - op.goAt < 300) { if (moving) op.goAt = simTime; op.stallAt = simTime; }
+  }
   if ((arrived && odds < abort) || odds < 0.5 * abort) { callOff('the odds are ' + odds.toFixed(2) + ' to 1'); return; }
   // (v24 stop 7, placesAttackStallSeconds) THE STALL WATCH: progress is a Division of the attack coming nearer the target (its march's progress, section 5w) or the
   // enemy there worn down by a tenth. With none for placesAttackStallSeconds the attack is called off like any other, and is tried again later from a fresh look.
@@ -30096,8 +30366,10 @@ function theatreLaunch(a, th, v, live) {
   for (let k = 0; k < P; k++) {
     const p = battlePlaces[k];
     if (p.owner === side || th.retryAt[k] > simTime || theatrePassBars(a, k)) continue;      // (v85.3) the station pass picks the station
+    if (v.play && v.play[k] !== 1) continue;                                                    // (v189.0) the long map: only the places at the front are targets (06c3)
     if (theatreLongReachOn() && p.owner < 0 && typeof campaignLocationLocked === 'function' && campaignLocationLocked(p.id)) continue;   // (v153.0) the long map: a development site still awaiting research (the Sun, Mercury, Venus) is nobody's to claim
-    const pool = spare.slice().sort(function (x, y) { return theatreEta(x, k) - theatreEta(y, k) || x.id - y.id; });
+    let pool = spare.slice().sort(function (x, y) { return theatreEta(x, k) - theatreEta(y, k) || x.id - y.id; });
+    if (v.play) { const far = longFrontDist() + longMapSlotWidth(); pool = pool.filter(function (dv) { const c = divisionCentre(dv); return theatreDist(c.x, c.y, p.x, p.y) <= far; }); if (pool.length === 0) continue; }   // (v189.0) the long map: only Divisions at the front go (the rear moves up first)
     if (pool.length === 0) break;
     const c0 = divisionCentre(pool[0]);
     if (theatreNoLeapfrog(a) && theatreRouteBlocked(side, c0.x, c0.y, k)) continue;              // (v158.0) never past a place the enemy holds: that one comes first
@@ -30220,7 +30492,7 @@ function theatreSweepLaunch(a, th, v, live) {
   if (c === null) return;
   const eta = new Map();
   for (const dv of live) { const q = divisionCentre(dv); eta.set(dv, theatreDist(q.x, q.y, c.x, c.y) / theatreSpeed(dv)); }
-  const pool = live.filter(function (dv) { return theatreSpare(a, th, v, dv); });
+  const pool = live.filter(function (dv) { return theatreSpare(a, th, v, dv) && (!v.play || longDivisionRoadOk(side, dv, c.x, c.y)); });   // (v189.0) the long map: only Divisions whose fuel reaches the enemy there (06c3)
   if (pool.length === 0) return;
   pool.sort(function (x, y) { return eta.get(x) - eta.get(y) || x.id - y.id; });
   const q0 = divisionCentre(pool[0]), d0 = theatreDist(q0.x, q0.y, c.x, c.y);
@@ -30398,12 +30670,13 @@ function theatreHoldClearEnd(a, dv) {
 // The most central place we hold (or have claimed), for a Division at (x, y): the least total distance to our other places, plus the way there (so of two places
 // equally central, the nearer; and a reserve does not cross the map past the enemy to reach the "middle" of two moons).
 // (placesDecisive: only a place it can reach without passing an enemy-held place; see theatreRouteBlocked.)
-function theatreCentralPlace(a, v, x, y) {
+function theatreCentralPlace(a, v, x, y, dv) {
   const side = a.side, P = battlePlaces.length;
-  const ours = function (k) { const p = battlePlaces[k]; return p.owner === side || (p.owner < 0 && v.count[k] > 0); };
+  const ours = function (k) { const p = battlePlaces[k]; if (v.play && v.play[k] !== 1) return false; /* (v189.0) the long map: a place at the front (06c3) */ return p.owner === side || (p.owner < 0 && v.count[k] > 0); };
   let best = -1, bestSum = Infinity;
   for (let k = 0; k < P; k++) {
     if (!ours(k) || (SETTINGS.placesDecisive === 1 && theatreRouteBlocked(side, x, y, k))) continue;
+    if (dv && longCmdOn() && !theatreReachOk(side, dv, k)) continue;                           // (v189.0) the long map: only a place this Division's fuel reaches
     const p = battlePlaces[k];
     let sum = theatreDist(p.x, p.y, x, y);
     for (let j = 0; j < P; j++) if (j !== k && ours(j)) sum += theatreDist(p.x, p.y, battlePlaces[j].x, battlePlaces[j].y);
@@ -30416,7 +30689,7 @@ function theatreReserve(a, th, v, live) {
   if (theatreSwarm(a)) { theatreSwarmPress(a, th, v, live); return; }                          // (v27.1) the Swarm keeps no reserve: it presses at the enemy
   for (const dv of live) {
     if (dv.place >= 0) continue;
-    const c = divisionCentre(dv), k = theatreCentralPlace(a, v, c.x, c.y);
+    const c = divisionCentre(dv), k = theatreCentralPlace(a, v, c.x, c.y, dv);
     if (k >= 0) theatreMove(a, v, dv, k, 'the reserve, at the most central place we hold', 'reserve');
     else if (SETTINGS.placesDecisive === 1) theatreAssemble(a, dv, c);
   }
@@ -30448,13 +30721,14 @@ function theatreEnemyNearest(side, k) {
 }
 // The picket station for a Division of place k in slot n: placesPicketShare of the way to the enemy's nearest place (at least our circle's edge, never inside the
 // enemy's near circle), slot 0 on the line between them and the others alternately right and left of it, placesPicketSpread apart. Null when the enemy holds no place.
-function theatrePicketSpot(side, k, slot) {
+function theatrePicketSpot(side, k, slot, maxOut) {
   const j = theatreEnemyNearest(side, k);
   if (j < 0) return null;
   const p = battlePlaces[k], q = battlePlaces[j], dx = q.x - p.x, dy = q.y - p.y, d = Math.sqrt(dx * dx + dy * dy);
   if (!(d > 1)) return null;
   const gx = dx / d, gy = dy / d;
-  const along = Math.max(p.radius, Math.min(SETTINGS.placesPicketShare * d, d - 1.2 * q.nearRadius));
+  let along = Math.max(p.radius, Math.min(SETTINGS.placesPicketShare * d, d - 1.2 * q.nearRadius));
+  if (maxOut > 0 && along > maxOut) along = maxOut;                                          // (v189.0, long map) never posted past the Division's fuel line
   const n = slot > 0 ? slot : 0, off = ((n + 1) >> 1) * (n % 2 === 1 ? 1 : -1) * SETTINGS.placesPicketSpread;
   return { x: clampNumber(p.x + gx * along - gy * off, 0, SETTINGS.worldWidth), y: clampNumber(p.y + gy * along + gx * off, 0, SETTINGS.worldHeight), gx: gx, gy: gy, place: k, enemy: j };
 }
@@ -30477,7 +30751,7 @@ function theatrePicket(a, th, v, live) {
   for (const dv of live) {
     if (dv.placeTask !== 'picket') continue;
     const k = dv.place;
-    const ok = k >= 0 && battlePlaces[k].owner === side && !theatreInOp(th, dv) && !theatreWorn(dv) && kept.length < cap && theatreEnemyNearest(side, k) >= 0 && theatrePicketMaySpare(a, v, dv, asg, cnt);
+    const ok = k >= 0 && battlePlaces[k].owner === side && !(v.play && v.play[k] !== 1) && !theatreInOp(th, dv) && !theatreWorn(dv) && kept.length < cap && theatreEnemyNearest(side, k) >= 0 && theatrePicketMaySpare(a, v, dv, asg, cnt);
     if (!ok) { theatrePicketEnd(a, v, dv, k >= 0 && battlePlaces[k].owner === side ? (theatreWorn(dv) ? 'worn: back to ' + battlePlaces[k].name : battlePlaces[k].name + ' needs its Divisions: back to it') : 'its place is lost'); continue; }
     kept.push(dv);
     if (!(dv.picketSlot >= 0)) dv.picketSlot = slotOf(k); else { const taken = used.get(k) || []; taken.push(dv.picketSlot); used.set(k, taken); }
@@ -30489,12 +30763,13 @@ function theatrePicket(a, th, v, live) {
       if (dv.placeTask === 'picket' || theatreInOp(th, dv) || theatreWorn(dv)) continue;
       const c = divisionCentre(dv);
       if (dv.place < 0) {
-        const home = theatreCentralPlace(a, v, c.x, c.y);
+        const home = theatreCentralPlace(a, v, c.x, c.y, dv);
         if (home < 0 || theatreEnemyNearest(side, home) < 0) continue;
         cands.push({ dv: dv, home: home, isNew: true, d: 0 });
         continue;
       }
       if (battlePlaces[dv.place].owner !== side || !theatrePicketIdle(dv)) continue;
+      if (v.play && v.play[dv.place] !== 1) continue;                                          // (v189.0) the long map: no picket from a place far behind the front
       const j = theatreEnemyNearest(side, dv.place);
       if (j < 0) continue;
       cands.push({ dv: dv, home: dv.place, isNew: false, d: theatreDist(c.x, c.y, battlePlaces[j].x, battlePlaces[j].y) });
@@ -30512,8 +30787,14 @@ function theatrePicket(a, th, v, live) {
   }
   // 3. every picket stands at its station: given on the first look, again when the station has moved (a place changed hands) or another order took the Division
   for (const dv of kept) {
-    const spot = theatrePicketSpot(side, dv.place, dv.picketSlot);
+    const spot = theatrePicketSpot(side, dv.place, dv.picketSlot, longCmdOn() ? 0.7 * theatreDivisionReach(dv) : 0);
     if (spot === null) continue;
+    if (longCmdOn()) {                                                                         // (v189.0) the long map: the station is kept well inside the fuel line, measured from
+      const reach = theatreDivisionReach(dv), anchors = theatreAnchors(side);                  // the nearest place the Division can refuel at (its own place may have nobody on it yet)
+      let near = -1, nd = Infinity;
+      for (const k of anchors) { const q = battlePlaces[k], d = theatreDist(q.x, q.y, spot.x, spot.y); if (d < nd) { nd = d; near = k; } }
+      if (near >= 0 && isFinite(reach) && nd > 0.5 * reach) { const q = battlePlaces[near], f = 0.5 * reach / nd; spot.x = q.x + (spot.x - q.x) * f; spot.y = q.y + (spot.y - q.y) * f; }
+    }
     const moved = !(dv.picketAt >= 0) || theatreDist(spot.x, spot.y, dv.picketX, dv.picketY) > S.placesPicketMove;
     const retasked = dv.picketAt >= 0 && dv.taskGiven && dv.taskGiven.at > dv.picketAt;
     if (!moved && !retasked) continue;
@@ -30565,14 +30846,14 @@ function theatreSwarmPress(a, th, v, live) {
     if (theatreInOp(th, dv) || (dv.place >= 0 && dv.placeTask !== 'press')) continue;      // (it has a job at a place: a garrison, a defence, an attack)
     const c = divisionCentre(dv);
     if (coreHiveHolds(dv)) {                                                                  // (v86) the Holding Swarm keeps the places the Swarm holds: its idle Divisions take the reserve at the most central one, not the press (06e part 6)
-      const h = theatreCentralPlace(a, v, c.x, c.y);
+      const h = theatreCentralPlace(a, v, c.x, c.y, dv);
       if (h >= 0) { if (dv.place !== h || dv.placeTask === 'press') theatreMove(a, v, dv, h, 'the ' + cmdFleetOfDivision(dv).name + ' keeps the places we hold: the reserve at ' + battlePlaces[h].name, 'reserve'); }
       else if (dv.place < 0) theatreAssemble(a, dv, c);
       continue;
     }
     let k = -1, bestT = Infinity;
     if (coreLoopOn() && dv.aimPlace >= 0 && battlePlaces[dv.aimPlace] && battlePlaces[dv.aimPlace].owner !== side) k = dv.aimPlace;   // (v81) the core loop: a group keeps the target it was sent for until it is theirs
-    else for (let j = 0; j < battlePlaces.length; j++) { if (battlePlaces[j].owner !== 1 - side || !theatreReachOk(side, dv, j)) continue; const t = theatreEta(dv, j); if (t < bestT) { bestT = t; k = j; } }   // (v153.0: within reach)
+    else for (let j = 0; j < battlePlaces.length; j++) { if (battlePlaces[j].owner !== 1 - side || (v.play && v.play[j] !== 1) || !theatreReachOk(side, dv, j)) continue; const t = theatreEta(dv, j); if (t < bestT) { bestT = t; k = j; } }   // (v153.0: within reach)
     let e = -1, ed = Infinity;
     for (let i = 0; i < pic.contactCount; i++) { const q = pic.contacts[i]; if (sqAlive[q] <= 0) continue; const d = theatreDist(pic.cX[q], pic.cY[q], c.x, c.y); if (d < ed) { ed = d; e = q; } }
     if (k < 0 && e >= 0) k = placeNearest(pic.cX[e], pic.cY[e], null);
@@ -30707,7 +30988,8 @@ function theatrePlanText(a, th, v) {
 // ---- The theatre step itself (placesTheatrePolicy, section 5w) ----
 function theatreAdmiralAssign(a, live) {
   if (battlePlaces.length === 0) return;
-  const th = theatreStateOf(a);
+  const th = theatreStateOf(a), long = longCmdOn();
+  if (long && longCohere(a, live)) live = liveDivisions(a);                                 // (v189.0) the long map: Divisions spread across the system are split by where they are (06c3)
   const v = theatreView(a, live, th);
   if (th.withdraw) { theatreWithdrawStep(a, th, v, live); th.plan = theatrePlanText(a, th, v); return; }   // (v31 D1) the withdrawal ordered from above: nothing else is planned
   if (coreFleetCmdOn(a.side)) coreFleetCommand(a, th, live);                               // (v83) Fleet Command: squadrons assigned to the Defence Fleet and the Assault Fleet (06e part 6)
@@ -30719,12 +31001,13 @@ function theatreAdmiralAssign(a, live) {
   if (SETTINGS.placesDecisive === 1) theatreRelease(a, th, v, live);
   theatrePullBack(a, th, v, live);
   theatreDefend(a, th, v, live);
+  if (long) longMoveUp(a, th, v, live);                                                      // (v189.0) the long map: the idle Divisions of the rear go to the front (06c3)
   theatreLaunch(a, th, v, live);
   if (theatreSweepOn()) theatreSweepLaunch(a, th, v, live);
   if (SETTINGS.placesDecisive === 1 && SETTINGS.placesHoldClear === 1) theatreHoldClear(a, th, v, live);   // (v24 stop 4) a garrison clears its own place
   theatreReserve(a, th, v, live);
   theatreAbandon(a, th, v);
-  th.plan = theatrePlanText(a, th, v);
+  th.plan = long ? longPlanText(a, th, v) : theatrePlanText(a, th, v);                         // (v189.0) the long map: the plan in a sentence or two, not a list of 34 places
 }
 placesTheatrePolicy = function (a, live) { if (SETTINGS.placesTheatre === 1) theatreAdmiralAssign(a, live); else theatrePlaceholderAssign(a, live); };
 
@@ -30767,6 +31050,320 @@ function placesWithdrawPlaces(a, squads) {
     a.placeX[sq] = clampNumber(p.x + Math.cos(ang) * r, 0, W); a.placeY[sq] = clampNumber(p.y + Math.sin(ang) * r, 0, H);
   }
   return true;
+}
+// =====================================================================
+// 5x3. THE LONG MAP COMMAND  (v189.0, SETTINGS.longMapCommand 1: the Admirals of both sides on the one long battlefield, 06d2)
+//
+//   Alex, 10 Nov 2026: "we need to do a pass to the ai so it handles the long map better", and from his own long-map war: "im 8 weeks in ... and the swarm
+//   has neither taken mars nor attacked earth. i see a few swarm ships try to come between mars and earth, but turn back". And of our own Admiral's Current
+//   plan, which listed all 34 places of the system: "the player doesnt need to see all this anyways".
+//
+//   WHY IT WENT WRONG. The Admiral's theatre step (06c) was written for one AO: five places, a few Divisions standing close together. On the long map it got
+//   the whole system as one "AO": 34 places and Divisions whose squadrons were hatched at six nests two million units apart. So:
+//     * a place we hold keeps one Division (06c theatreSpare). The Swarm held 26 places and had four big Divisions, so every one of them was pinned to
+//       "holding" Saturn, Iapetus, Ceres or Vesta for the whole war and nothing was ever spare to take Mars or go for Earth;
+//     * a Division's middle was the average of squadrons at Ceres, Saturn and Pluto: a point in empty space, so "nearest", "near its place" and "arrived"
+//       meant nothing;
+//     * the few ships that did go were turned back by the fuel line (04-1f) in the gap, because a target's reach was measured from the nearest friendly
+//       station with no look at the road there;
+//     * our Admiral counted every ship in the system to decide it could "crush them", and launched sweeps at enemy ships near Io with ships that cannot
+//       leave Earth's region.
+//
+//   WHAT THIS DOES. Nothing here is a new brain: it gives the old one the small, local picture it was built for.
+//     1. THE FRONT (longPlayOf). For each side, the places IN PLAY are the enemy's (or free) places within one transfer of a place it holds, and the places
+//        it holds within one transfer of those (and any place of its own with enemy ships near it). Everything else is the REAR: a rear place needs no
+//        garrison, is never a target, and its threat is not counted. So the theatre step sees two or three regions, as it did in one AO.
+//     2. MOVING UP (longMoveUp). A Division standing idle in the rear is sent to the place its side holds at the front that it can fly to (below). The
+//        Swarm's hatchlings stream to the front on their own; our new ships go to the front from the yards behind it.
+//     3. THE ROAD (theatreReachOk, longReachGroups). A Division may be sent to a place only when it can fly there without ever being beyond its fuel from a
+//        friendly station or colony: the stations it can hop between are worked out for its reach, so nothing is ordered into a gap it must turn back from.
+//     4. DIVISIONS STAY TOGETHER (longCohere, and the joins in 06b, 08b and 20d ask longJoinOk). A squadron joins or merges into a Division only within
+//        longMapJoinSlots region widths of it, and a Division found spread wider than that is split by where its squadrons are.
+//     5. NEARBY STRENGTH ONLY. The odds for an attack, the "crush them" ratio and the sweeps count only what is at the front (longCrushRatio, longNear).
+//     6. THE SWARM'S WAVES (longSwarmBar). The Swarm attacks at long odds as before; when the front has stood quiet for longMapSwarmWaveSeconds it goes in
+//        with whatever has gathered. It does not wait for ever.
+//     7. THE PLAN IN PLAIN WORDS (longPlanText): one or two short sentences about the front, not a list of every place.
+//   With longMapCommand 0, or off the long map, nothing here runs and the theatre step is v188's exactly.
+// =====================================================================
+
+function longCmdOn() { return SETTINGS.longMapCommand === 1 && typeof longBattleOn === 'function' && longBattleOn() && placesActive(); }
+// One transfer of reach, in units (06c longMapReachOf for one jump): a pitch and a region's width. The front is what lies within this of our places.
+function longFrontDist() { return SETTINGS.longMapReachPerTransfer * longMapPitch() + longMapSlotWidth(); }
+// May a place be claimed at all? (A development site still waiting for its research is nobody's to take: the Sun, Mercury, Venus.)
+function longPlaceOpen(p) { return !(p.owner < 0 && typeof campaignLocationLocked === 'function' && campaignLocationLocked(p.id)); }
+
+// ---- 1. THE FRONT: which places are in play for a side (memoised for the step) ----
+let longPlayMemo = { at: -1, sides: [null, null] };
+function longPlayOf(side) {
+  if (longPlayMemo.at !== simTime) longPlayMemo = { at: simTime, sides: [null, null] };
+  let M = longPlayMemo.sides[side];
+  if (M) return M;
+  const P = battlePlaces.length, D = longFrontDist(), slot = longMapSlotWidth(), foe = 1 - side;
+  M = { play: new Uint8Array(P), own: [], other: [], front: -1, target: -1, any: false };
+  for (let k = 0; k < P; k++) { const p = battlePlaces[k]; if (p.owner === side) M.own.push(k); else if (longPlaceOpen(p)) M.other.push(k); }
+  const dist = function (i, j) { const p = battlePlaces[i], q = battlePlaces[j]; return longMapFuelDist(side, p.x, p.y, q.x, q.y); };
+  // the enemy's and the free places within one transfer of a place of ours; with none, the nearest one and its neighbours (the next region out)
+  let nearest = -1, nearestD = Infinity;
+  for (const j of M.other) {
+    let d = Infinity;
+    for (const k of M.own) { const dd = dist(k, j); if (dd < d) d = dd; }
+    if (d <= D) M.play[j] = 1;
+    if (d < nearestD) { nearestD = d; nearest = j; }
+  }
+  if (nearest >= 0 && nearestD > D) { for (const j of M.other) if (j === nearest || dist(j, nearest) <= slot) M.play[j] = 1; }
+  M.target = nearest;
+  // our places within one transfer of those, and our places with enemy ships near them
+  for (const k of M.own) { for (const j of M.other) if (M.play[j] === 1 && dist(k, j) <= Math.max(D, nearestD + slot)) { M.play[k] = 1; break; } }
+  const fs = fleets[foe] ? fleets[foe].squads : [];
+  for (let i = 0; i < fs.length; i++) {
+    const e = fs[i];
+    if (sqAlive[e] <= 0 || stImmobile[foe * TYPE_COUNT + sqType[e]] === 1) continue;
+    for (const k of M.own) { if (M.play[k] === 1) continue; const p = battlePlaces[k]; if (theatreDist(sqCenterX[e], sqCenterY[e], p.x, p.y) <= slot) M.play[k] = 1; }
+  }
+  // the place of ours nearest the front (where the rear moves up to), and whether anything is in play at all
+  let bestD = Infinity;
+  for (const k of M.own) {
+    if (M.play[k] !== 1) continue;
+    M.any = true;
+    let d = Infinity;
+    for (const j of M.other) if (M.play[j] === 1) { const dd = dist(k, j); if (dd < d) d = dd; }
+    if (d < bestD) { bestD = d; M.front = k; }
+  }
+  if (!M.any) for (const k of M.own) M.play[k] = 1;                    // (we hold everything, or nothing is near: every place of ours counts, as before)
+  longPlayMemo.sides[side] = M;
+  return M;
+}
+// Is place k in play for this side? (Always yes when the long map command is off.)
+function longInPlay(side, k) { return !longCmdOn() || longPlayOf(side).play[k] === 1; }
+// Is a point at the front: within a region's width and a half of a place in play?
+function longNear(side, x, y) {
+  const M = longPlayOf(side), R = 1.5 * longMapSlotWidth();
+  for (let k = 0; k < battlePlaces.length; k++) { if (M.play[k] !== 1) continue; const p = battlePlaces[k]; if (theatreDist(x, y, p.x, p.y) <= R) return true; }
+  return false;
+}
+
+// ---- 3. THE ROAD: the stations a ship of a given reach can hop between ----
+// Two anchors (06c theatreAnchors) are joined when they are no more than twice the reach apart: halfway between them a ship is still within its fuel of one.
+// group[i] = the number of anchor i's group. Memoised for the step, per side and reach.
+let longGroupMemo = { at: -1, map: new Map() };
+function longReachGroups(side, reach) {
+  if (longGroupMemo.at !== simTime) longGroupMemo = { at: simTime, map: new Map() };
+  const key = side + ':' + Math.round(reach);
+  let G = longGroupMemo.map.get(key);
+  if (G) return G;
+  const anchors = theatreAnchors(side), n = anchors.length, group = new Int32Array(n).fill(-1);
+  let groups = 0;
+  for (let i = 0; i < n; i++) {
+    if (group[i] >= 0) continue;
+    group[i] = groups;
+    const stack = [i];
+    while (stack.length > 0) {
+      const u = stack.pop(), p = battlePlaces[anchors[u]];
+      for (let w = 0; w < n; w++) {
+        if (group[w] >= 0) continue;
+        const q = battlePlaces[anchors[w]];
+        if (longMapFuelDist(side, p.x, p.y, q.x, q.y) <= 2 * reach) { group[w] = groups; stack.push(w); }
+      }
+    }
+    groups++;
+  }
+  G = { anchors: anchors, group: group };
+  longGroupMemo.map.set(key, G);
+  return G;
+}
+// May a Division at (x, y) with this reach fly to the point (tx, ty)? The point must be within its reach of an anchor in the same group as the anchor
+// nearest the Division. A side with no anchor at all has no fuel line (04-1f): it may go anywhere, as before.
+function longRoadOk(side, reach, x, y, tx, ty) {
+  if (!isFinite(reach)) return true;
+  const G = longReachGroups(side, reach), n = G.anchors.length;
+  if (n === 0) return true;
+  let home = -1, homeD = Infinity;
+  for (let i = 0; i < n; i++) { const p = battlePlaces[G.anchors[i]], d = longMapFuelDist(side, p.x, p.y, x, y); if (d < homeD) { homeD = d; home = i; } }
+  for (let i = 0; i < n; i++) {
+    if (G.group[i] !== G.group[home]) continue;
+    const p = battlePlaces[G.anchors[i]];
+    if (longMapFuelDist(side, p.x, p.y, tx, ty) <= reach) return true;
+  }
+  return false;
+}
+function longDivisionRoadOk(side, dv, tx, ty) { const c = divisionCentre(dv); return longRoadOk(side, theatreDivisionReach(dv), c.x, c.y, tx, ty); }
+
+// ---- 4. DIVISIONS STAY TOGETHER ----
+function longJoinDist() { return Math.max(0.1, SETTINGS.longMapJoinSlots) * longMapSlotWidth(); }
+// May something at (x, y) join a Division? Only within longMapJoinSlots region widths of its middle. (Always yes when the long map command is off.)
+// `sq` (when given): the squadron that would join. It must also carry the same number of transfers as the Division's ships (longReachClass): a Division
+// flies only as far as its shortest-legged squadron, so one Local squadron in it kept a whole Division of transfer ships at home.
+function longJoinOk(dv, x, y, sq) {
+  if (!longCmdOn()) return true;
+  const c = divisionCentre(dv);
+  if (theatreDist(c.x, c.y, x, y) > longJoinDist()) return false;
+  return !(sq > 0) || longDivisionClass(dv) < 0 || longDivisionClass(dv) === longReachClass(sq);
+}
+// A squadron's transfers, as a class: 0 Local, 1, 2, 3 or more. A Division's class is its first living mobile squadron's (-1 with none).
+function longReachClass(sq) { return Math.min(3, Math.max(0, campaignJumpsOf(sq, sqType[sq]).jumps | 0)); }
+function longDivisionClass(dv) {
+  for (const sq of dv.squads) { if (sqAlive[sq] > 0 && !SHIP_TYPES[sqType[sq]].immobile) return longReachClass(sq); }
+  return -1;
+}
+// A Division spread wider than the join distance is split by where its squadrons are: the biggest group keeps the Division, each other group becomes a
+// Division of the same Fleet (or joins one of that Fleet standing where it is). Run once a theatre step, before the look. Squadrons in a fight are left.
+function longCohere(a, live) {
+  const side = a.side, J = longJoinDist();
+  let changed = false;
+  for (const dv of live.slice()) {
+    if (dv.dissolved || dv.transfer !== null || divisionInContact(dv)) continue;
+    const sqs = divisionAliveSquads(dv);
+    if (sqs.length < 2) continue;
+    // group the squadrons: each joins the first group whose first squadron is within the join distance
+    const groups = [];
+    for (const sq of sqs) {
+      let g = null;
+      const cls = SHIP_TYPES[sqType[sq]].immobile ? -1 : longReachClass(sq);
+      for (const o of groups) if ((cls < 0 || o.cls < 0 || o.cls === cls) && theatreDist(sqCenterX[sq], sqCenterY[sq], sqCenterX[o.sqs[0]], sqCenterY[o.sqs[0]]) <= J) { g = o; if (o.cls < 0) o.cls = cls; break; }
+      if (g === null) { g = { sqs: [], ships: 0, cls: cls }; groups.push(g); }
+      g.sqs.push(sq); g.ships += sqAlive[sq];
+    }
+    if (groups.length < 2) continue;
+    groups.sort(function (p, q) { return q.ships - p.ships; });
+    const F = typeof cmdFleetOfDivision === 'function' ? cmdFleetOfDivision(dv) : null;
+    for (let g = 1; g < groups.length; g++) {
+      const first = groups[g].sqs[0], x = sqCenterX[first], y = sqCenterY[first];
+      let into = null, intoD = J;
+      for (const o of liveDivisions(a)) {
+        if (o === dv || o.dissolved || o.transfer !== null || o.fleet !== dv.fleet || divisionLiveSquadCount(o) + groups[g].sqs.length > orgDivisionMaxSize(side)) continue;
+        if (groups[g].cls >= 0 && longDivisionClass(o) >= 0 && longDivisionClass(o) !== groups[g].cls) continue;
+        const c = divisionCentre(o), d = theatreDist(c.x, c.y, x, y);
+        if (d <= intoD) { intoD = d; into = o; }
+      }
+      if (into === null) {
+        const was = typeof cmdArrivalFleet !== 'undefined' ? cmdArrivalFleet : null;
+        if (F !== null) cmdArrivalFleet = F;
+        into = makeDivision(side, [first]);
+        if (F !== null) cmdArrivalFleet = was;
+        into.place = -1; into.task = { id: 'reserve', params: {}, since: simTime, serial: 0, started: true }; into.taskLog.push({ t: simTime, id: 'reserve' });
+        if (dv.coreRole) { into.coreRole = dv.coreRole; into.coreRoleAt = simTime; }
+        if (dv.hiveAt !== undefined) into.hiveAt = dv.hiveAt;
+      }
+      for (const sq of groups[g].sqs) divisionTake(into, sq);
+      refreshDivisionView(into);
+      into.startStrength = into.strength; into.fastStart = into.fast; into.sizeStart = into.squads.length;
+      if (into.place >= 0) into.placeRetaskDue = true;
+      const one = groups[g].sqs.length === 1, apart = theatreDist(x, y, sqCenterX[groups[0].sqs[0]], sqCenterY[groups[0].sqs[0]]) > J;
+      logEvent(side, 'Admiral: ' + plural(groups[g].sqs.length, 'squadron') + ' of the ' + dv.name + ' ' + (apart ? (one ? 'is' : 'are') + ' far from the rest of it (' + theatreSweepWhere(x, y) + ')' : (one ? 'carries' : 'carry') + ' ' + (groups[g].cls === 0 ? 'no fuel for a transfer' : 'more fuel than the rest of it')) + ': ' + (one ? 'it now sails' : 'they now sail') + ' with the ' + into.name + '.');
+      changed = true;
+    }
+    if (!dv.dissolved) { refreshDivisionView(dv); dv.startStrength = dv.strength; }
+  }
+  return changed;
+}
+
+// ---- 2. MOVING UP: the idle Divisions of the rear go to the front ----
+// The place of ours at the front for a Division: in play, on its road, the nearest to the enemy (and of those about as near, the nearest to the Division).
+function longFrontPlaceFor(a, dv) {
+  const side = a.side, M = longPlayOf(side), c = divisionCentre(dv), reach = theatreDivisionReach(dv);
+  let best = -1, bestKey = Infinity;
+  for (const k of M.own) {
+    if (M.play[k] !== 1) continue;
+    const p = battlePlaces[k];
+    if (!longRoadOk(side, reach, c.x, c.y, p.x, p.y)) continue;
+    let d = Infinity;
+    for (const j of M.other) if (M.play[j] === 1) { const q = battlePlaces[j], dd = theatreDist(p.x, p.y, q.x, q.y); if (dd < d) d = dd; }
+    if (!isFinite(d)) d = 0;
+    const key = d + 0.25 * theatreDist(p.x, p.y, c.x, c.y);
+    if (key < bestKey) { bestKey = key; best = k; }
+  }
+  return best;
+}
+// A Division is in the rear when it has no job at a place in play: it stands at a rear place of ours, or has no place and is not at the front.
+function longMoveUp(a, th, v, live) {
+  const side = a.side, M = longPlayOf(side);
+  if (!M.any) return;
+  let n = 0;
+  for (const dv of live) {
+    if (theatreInOp(th, dv) || theatreWorn(dv) || dv.placeTask === 'fall back') continue;
+    const k = dv.place;
+    if (k >= 0 && M.play[k] === 1) {                                                            // (it has a place in play: the theatre's own steps have it)
+      if (dv.placeTask === 'move up' && theatreNear(dv, k, 1)) dv.placeTask = 'reserve';       // (arrived: it stands in reserve there, free for the picket line or an attack)
+      continue;
+    }
+    if (k >= 0 && battlePlaces[k].owner !== side && dv.placeTask === 'claim') continue;          // (on its way to claim a free place)
+    const c = divisionCentre(dv);
+    if (k < 0 && longNear(side, c.x, c.y) && !theatreSwarm(a)) continue;                         // (at the front with no place: the reserve step gives it one)
+    const f = longFrontPlaceFor(a, dv);
+    if (f < 0 || f === k) continue;                                                             // (nowhere at the front it can fly to: it keeps the rear, as a garrison)
+    if (theatreMove(a, v, dv, f, 'move up to the front at ' + battlePlaces[f].name + (k >= 0 ? ' (' + battlePlaces[k].name + ' is far behind it)' : ''), 'move up')) { dv.longUpAt = simTime; n++; }
+  }
+  if (n > 0 && (th.longUpLogAt === undefined || simTime - th.longUpLogAt >= 600)) { th.longUpLogAt = simTime; logEvent(side, 'Admiral: ' + plural(n, 'Division') + ' from the rear ' + (n === 1 ? 'moves' : 'move') + ' up to the front.'); }
+}
+
+// ---- 5. NEARBY STRENGTH ONLY ----
+// Our mobile strength at the front against the enemy's: the Divisions and the enemy squadrons within a region and a half of a place in play.
+function longCrushRatio(a) {
+  const side = a.side, pic = a.picture;
+  let ours = 0, theirs = 0;
+  for (const dv of liveDivisions(a)) { const c = divisionCentre(dv); if (longNear(side, c.x, c.y)) ours += dv.strength; }
+  for (let i = 0; i < pic.contactCount; i++) { const e = pic.contacts[i]; if (sqAlive[e] > 0 && longNear(side, pic.cX[e], pic.cY[e])) theirs += pic.cStrength[e]; }
+  return theirs > 0 ? ours / theirs : (ours > 0 ? Infinity : 0);
+}
+// The view's sums for the long map (from 06c theatreView, at its end): the mask, no threat counted at a rear place, and the loose enemy marked near or far.
+function longViewTrim(a, v) {
+  const side = a.side, M = longPlayOf(side);
+  v.play = M.play;
+  for (let k = 0; k < battlePlaces.length; k++) {
+    if (M.play[k] === 1) continue;
+    v.inbound[k] = 0; if (v.inboundW) v.inboundW[k] = 0;
+    v.threat[k] = v.enemyAt[k];
+  }
+  v.looseAll = v.loose;
+  v.loose = v.loose.filter(function (e) { return longNear(side, e.x, e.y); });
+}
+
+// ---- 6. THE SWARM'S WAVES ----
+// The Swarm's bar for an attack on the long map: placesSwarmAttackOdds, falling to longMapSwarmWaveOdds as the front stands quiet for longMapSwarmWaveSeconds.
+function longSwarmBar(a) {
+  const th = theatreStateOf(a), S = SETTINGS;
+  if (th.op !== null) return S.placesSwarmAttackOdds;
+  const since = Math.max(0, th.lastLaunchAt, th.lastEndAt !== undefined ? th.lastEndAt : -Infinity, th.longFrontAt !== undefined ? th.longFrontAt : -Infinity);
+  const t = clampNumber((simTime - since) / Math.max(1, S.longMapSwarmWaveSeconds), 0, 1);
+  return S.placesSwarmAttackOdds + (S.longMapSwarmWaveOdds - S.placesSwarmAttackOdds) * t;
+}
+
+// ---- 7. THE PLAN IN PLAIN WORDS ----
+function longNames(list, max) {
+  const names = list.slice(0, max).map(function (k) { return battlePlaces[k].name; });
+  let s = names.length <= 1 ? names.join('') : names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1];
+  if (list.length > max) s += ' and ' + (list.length - max) + ' more';
+  return s;
+}
+function longPlanText(a, th, v) {
+  const side = a.side, M = longPlayOf(side), live = liveDivisions(a);
+  const ours = [], theirs = [], free = [];
+  for (let k = 0; k < battlePlaces.length; k++) {
+    if (M.play[k] !== 1) continue;
+    const p = battlePlaces[k];
+    if (p.owner === side) ours.push(k); else if (p.owner === 1 - side) theirs.push(k); else free.push(k);
+  }
+  let atFront = 0, up = 0, threat = 0;
+  for (const dv of live) { if (dv.placeTask === 'move up' && dv.placeArrivedAt < 0) up++; else { const c = divisionCentre(dv); if (longNear(side, c.x, c.y)) atFront++; } }
+  for (const k of ours) threat += v.threat[k];
+  const op = th.op;
+  let lead;
+  if (th.withdraw) lead = 'Withdrawing';
+  else if (op !== null && op.kind === 'sweep') lead = (op.phase === 'gather' ? 'Gathering at ' + battlePlaces[op.stage].name + ' to drive off' : 'Driving off') + ' the enemy ships ' + theatreSweepWhere(op.x, op.y);
+  else if (op !== null) lead = (op.phase === 'gather' ? 'Gathering at ' + battlePlaces[op.stage].name + ' to attack ' : 'Attacking ') + battlePlaces[op.target].name;
+  else {
+    const claims = [];
+    for (const dv of live) if (dv.place >= 0 && dv.placeTask === 'claim' && claims.indexOf(dv.place) < 0) claims.push(dv.place);
+    if (claims.length > 0) lead = 'Taking ' + longNames(claims, 3);
+    else if (threat > 0) lead = 'Defending ' + longNames(ours.filter(function (k) { return v.threat[k] > 0; }), 3);
+    else if (theirs.length + free.length === 0) lead = 'Holding everything in reach';
+    else lead = 'Holding the front' + (th.crush ? ' and hunting enemy ships near it' : '');
+  }
+  let s = lead + ' · the front: ' + (ours.length > 0 ? longNames(ours, 3) : 'no place of ours');
+  if (theirs.length > 0) s += ' against ' + longNames(theirs, 3);
+  else if (free.length > 0) s += ', with ' + longNames(free, 3) + ' unclaimed';
+  s += ' · ' + plural(atFront, 'Division') + ' at the front' + (up > 0 ? ', ' + up + ' moving up' : '');
+  return s;
 }
 // =====================================================================
 // 5y. THE AO SECURED, THE SIEGE NUMBERS, THE PERIODIC REPORTS AND THE WAR-ROOM VIEW  (v21 stop 4; on a places map only, section 5w)
@@ -31605,6 +32202,9 @@ function campaignBuildMap(enemyId, extra) {
 // Nothing here runs unless the campaign was started with the long map: a normal campaign is exactly as before.
 function longMapOn() { return !!campaign && campaign.longMap === true && !!campaign.map && campaign.map.long === true; }
 // The long map's battlefield size in units (the normal Places battlefield when the long map is off).
+// (v189.0) Is the battle that is running the long map's own? The battle's rules ask this, not longMapOn(): a Last Stand run or a Proving grounds battle
+// started while a long-map war sits in memory must not get its sleeping ships, drifting rocks or fuel reach.
+function longBattleOn() { return longMapOn() && campaignBattleActive; }
 function campaignWorldWidth() { return longMapOn() && campaign.map.world && campaign.map.world.w > 0 ? campaign.map.world.w : PLACES_SETTINGS.worldWidth; }
 function campaignWorldHeight() { return longMapOn() && campaign.map.world && campaign.map.world.h > 0 ? campaign.map.world.h : PLACES_SETTINGS.worldHeight; }
 // One slot's width (one old AO's width) on the long map, in units.
@@ -31675,6 +32275,73 @@ function longMapRegions() {
   aos.forEach(function (a) { a.col = a.pos - minPos; a.region = true; a.locations = locs.filter(function (l) { return l.regionId === a.id; }); });
   longMapRegionsCache = { campaign: campaign, list: aos };
   return aos;
+}
+// (v189.0) THE STATE OF A PLACE'S REGION ON THE LONG MAP. Off the long map every place belongs to an AO, and the campaign's rules ask the AO's state
+// (campaign.ao[id]: securedBy, besieged, securedSince) before they build a colony, grow a station, count a lab, send settlers and so on. On the long map
+// there is ONE AO, the whole system, which is never secured by anybody and always "besieged" while the war lasts: so Earth's orbit read as lost from the
+// first day, every building job was "under siege", no colony was ever started and no settlers ever left Earth. Now those rules ask for the state of the
+// place's REGION (the old AO it sat in): SECURED BY the side that holds every place of it that can be held (-1 while they are shared or free), and
+// BESIEGED while the other side has ships in it (with nobody holding it: while both sides have). A ship counts in a region from half a region's width
+// before its left edge to half a width past its right edge; the gaps between are nobody's. Worked out from the live battle at most every two battle
+// seconds and kept in the save (campaign.longRegions), so a loaded war knows it before its battle wakes.
+// campaignStateAt(locId) gives the state to ask: off the long map the AO's own; on it a copy of the AO's with the region's three answers in place.
+function longRegionStates() {
+  if (!longMapOn()) return null;
+  const c = campaign, live = campaign.battle.state === 'live' && typeof highWater === 'number' && typeof battlePlaces !== 'undefined' && battlePlaces.length > 0 && campaignBattleActive;
+  const stamp = live ? Math.floor(simTime / 2) : -1;
+  if (c.longRegions && c.longRegions.rows && (!live || c.longRegions.stamp === stamp)) return c.longRegions.rows;
+  const regs = longMapRegions(), slot = longMapSlotWidth(), before = c.longRegions && c.longRegions.rows ? c.longRegions.rows : {}, rows = {};
+  const ships = regs.map(function () { return [0, 0]; });
+  if (live) {
+    const lefts = regs.map(function (r) { return longMapRegionLeft(r.col); });
+    for (let i = 0; i < highWater; i++) {
+      if (shipAlive[i] !== 1 || stImmobile[shipSide[i] * TYPE_COUNT + shipType[i]] === 1) continue;
+      const x = shipX[i];
+      for (let k = 0; k < lefts.length; k++) if (x >= lefts[k] - 0.5 * slot && x <= lefts[k] + 1.5 * slot) { ships[k][shipSide[i]]++; break; }
+    }
+  }
+  const st = c.ao[c.map.aos[0].id];
+  for (let k = 0; k < regs.length; k++) {
+    const r = regs[k], was = before[r.id];
+    let holder = -2;
+    for (const loc of r.locations) {
+      const row = st ? st.places.find(function (p) { return p.id === loc.id; }) : null;
+      if (!row || (row.owner < 0 && typeof campaignLocationLocked === 'function' && campaignLocationLocked(loc.id))) continue;   // (a site still waiting for its research is nobody's to hold)
+      holder = holder === -2 ? row.owner : (holder === row.owner ? holder : -1);
+    }
+    if (holder === -2) holder = -1;
+    const n = live ? ships[k] : (was ? was.ships : [0, 0]);
+    const besieged = holder >= 0 ? n[1 - holder] > 0 : (n[0] > 0 && n[1] > 0);
+    rows[r.id] = { securedBy: holder, besieged: besieged, ships: n, securedSince: was && was.securedBy === holder && typeof was.securedSince === 'number' ? was.securedSince : (holder >= 0 ? Math.round(c.week * 1000) / 1000 : null) };
+  }
+  c.longRegions = { stamp: stamp, rows: rows };
+  return rows;
+}
+// The region's state for a place of the long map (null off it, or for a place with no region).
+function longRegionStateAt(locId) {
+  const rows = longRegionStates();
+  if (!rows) return null;
+  const hit = campaignLocationById(locId), id = hit && hit.loc ? hit.loc.regionId : null;
+  return id && rows[id] ? rows[id] : null;
+}
+// The state the campaign's rules ask about a place: its AO's, or on the long map its region's (see above). Never changed by the callers.
+function campaignStateAt(locId) {
+  if (!campaign) return null;
+  const st = campaign.ao[campaignAoOf(locId)] || null, r = st ? longRegionStateAt(locId) : null;
+  if (!r) return st;
+  const view = Object.create(st);
+  view.securedBy = r.securedBy; view.besieged = r.besieged; view.securedSince = r.securedSince;
+  return view;
+}
+// The long map's front, as a region: the first region from Earth outward where we do not hold every place (Earth's own while the enemy holds a place of
+// it); with everything ours, the last. The rules that ask "how long has the front stood here" ask this on the long map (06f2 the Swarm's stalemate).
+function longFrontRegion() {
+  const rows = longRegionStates(), regs = longMapRegions();
+  if (!rows || !regs.length) return null;
+  let from = 0;
+  for (let k = 0; k < regs.length; k++) if (regs[k].home === 0) { from = k; break; }
+  for (let k = from; k < regs.length; k++) if (rows[regs[k].id] && rows[regs[k].id].securedBy !== 0) return regs[k];
+  return regs[regs.length - 1];
 }
 function longMapRegionById(id) { const list = longMapRegions(); for (let k = 0; k < list.length; k++) if (list[k].id === id) return list[k]; return null; }
 // The region a point of the long map falls in (a gap counts with the region to its left).
@@ -32072,6 +32739,9 @@ function campaignCheckOver() {
   if (!campaign || campaign.over) return;
   const theirs = campaignHomeAo(1);
   let over = null;
+  // (v187.0) On the long map the one AO is both sides' home, so "secured" alone is not a win (the tutorial's first fight secured it): the long map's war
+  // is won, as its start says, when we hold every place. Nothing is won while the tutorial holds the war at Earth.
+  if (longMapOn() && (campaign.earthOnly || !campaign.ao[theirs.id].places.every(function (r) { return r.owner === 0; }))) return;
   if (theirs && campaign.ao[theirs.id] && campaign.ao[theirs.id].securedBy === 0) over = { winner: 0, week: Math.round(campaign.week * 1000) / 1000, why: 'we have secured ' + theirs.name + ', the aliens\' home' };
   if (!over) return;
   campaign.over = over;
@@ -32120,6 +32790,7 @@ function campaignTickPart(from, to, dtWeeks) {
     researchWeek();                                           // (v30 C1) the week's research points into the projects (06m; nothing until research starts)
     if (typeof pulseCampaignWeek === 'function') pulseCampaignWeek();   // (v181.0, 05f-2d) our pulse drives burned over our people: the colonists notice
     if (typeof gazetteWeek === 'function') gazetteWeek();     // (v122.0, section 7m2) press day once a war month: the Defence Gazette
+    campaignOfficersPart('week');                             // (v190.0, 06e part 3) a war week of a battle that goes on: the officers' battles, experience and medals onto their records
     if (typeof olCarryWar === 'function') olCarryWar('week');   // (v167.0, section 10j) library officers carry their progress into the library
     if (SETTINGS.campaignAutosave === 1) campaignAutosave();
   } else if (campaignV3() && campaignDayIndex(to) > campaign.econ.lastDay) campaignYardsDay(false);   // (v39) a new building day inside the week: the yards build (06f)
@@ -32793,7 +33464,7 @@ function campaignLinkStep() {
   }
   const present = [campaignEnemyPresent(0), campaignEnemyPresent(1)];
   const besieged = present[0] && present[1];
-  if (besieged !== ao.besieged) { ao.besieged = besieged; campaignLog('ao', besieged ? name + ' is besieged: both sides are in the AO.' : 'The siege of ' + name + ' is over: only ' + (present[0] ? 'Blue' : (present[1] ? 'Red' : 'nobody')) + ' is in the AO.'); }
+  if (besieged !== ao.besieged) { ao.besieged = besieged; if (!longMapOn()) campaignLog('ao', besieged ? name + ' is besieged: both sides are in the AO.' : 'The siege of ' + name + ' is over: only ' + (present[0] ? 'Blue' : (present[1] ? 'Red' : 'nobody')) + ' is in the AO.'); }
   // The places' owners.
   for (let k = 0; k < battlePlaces.length; k++) {
     const p = battlePlaces[k], row = ao.places.find(function (r) { return r.id === p.id; });
@@ -33156,7 +33827,7 @@ function campaignParkBattle(why, stragglers, standoff) {
     const events = writeBackOfficers() || [];
     if (typeof olCarryWar === 'function') olCarryWar('park');   // (v167.0, section 10j) library officers carry this battle's progress into the library
     campaignTrimRoster();                                       // (stop 4) the roster's oldest fallen records past campaignFallenMax are dropped (06g)
-    for (let k = 0; k < events.length; k++) { const e = events[k]; if (e.kind === 'promoted') { c.stats.promoted++; campaignLog('officer', e.text); campaign.log[campaign.log.length - 1].off = { kind: 'promoted', side: e.side, name: e.name, to: e.to, level: e.toTier }; } else if (e.kind === 'wounded' || e.kind === 'recovered' || e.kind === 'medal' || e.kind === 'scuttled') campaignLog('officer', e.text); }
+    campaignLogOfficerEvents(events);
     const snap = campaignTakeSnapshot(c.nextFleetId);
     c.nextFleetId = snap.nextFleetId;
     c.fleets = c.fleets.filter(function (f) { return !f.inBattle; }).concat(snap.fleets);
@@ -33174,6 +33845,21 @@ function campaignParkBattle(why, stragglers, standoff) {
   c.battle.standoffSince = standoff ? c.week : -1;
   campaignCheckOver();
   return true;
+}
+// The officer news of a write-back (promotions, wounds, recoveries, medals, scuttles) into the campaign's log.
+function campaignLogOfficerEvents(events) {
+  const c = campaign;
+  for (let k = 0; k < events.length; k++) { const e = events[k]; if (e.kind === 'promoted') { c.stats.promoted++; campaignLog('officer', e.text); campaign.log[campaign.log.length - 1].off = { kind: 'promoted', side: e.side, name: e.name, to: e.to, level: e.toTier }; } else if (e.kind === 'wounded' || e.kind === 'recovered' || e.kind === 'medal' || e.kind === 'scuttled') campaignLog('officer', e.text); }
+}
+// (v190.0, Alex 10 Nov: "all the officers in my game show 0 battles and 0 xp") The officers written back while the battle goes on (section 5l officerWriteBackPart):
+// once a war week ('week': each week of fighting is one battle on the record) and before a save ('save': adds to this week's battle). On the long map the battle
+// never ends, so before this nobody's record ever moved. Nothing happens during a look at a quiet AO or with no live battle.
+function campaignOfficersPart(why) {
+  if (!campaign || !campaignBattleLive() || campaignPeekState || typeof officerWriteBackPart !== 'function') return;
+  const events = officerWriteBackPart(why);
+  if (why === 'week') campaign.battle.officerPart = (campaign.battle.officerPart || 0) + 1;
+  campaignTrimRoster();
+  campaignLogOfficerEvents(events);
 }
 // Stops the campaign's battle without writing anything (after a park has read it, or when a save is loaded over it): the setup screen's scenario and settings come back.
 function campaignDropBattle() {
@@ -33297,6 +33983,7 @@ function campaignConservation() {
 // campaign with both sides at the front, which wakes again at the next tick. The roster copy marks the officers who have fallen in the battle so far.
 function campaignSaveObject() {
   if (!campaign) return null;
+  campaignOfficersPart('save');                                 // (v190.0) the officers' records so far go into the save (the battle goes on)
   if (typeof olCarryWar === 'function') olCarryWar('save');     // (v167.0, section 10j) a save also carries library officers' progress into the library
   const pk = campaignPeekState;                                 // (v27.3) during a look at a quiet AO, save the campaign as it will be put back (the look changes nothing)
   const c = pk ? campaignPeekRestored(pk) : copyJson(campaign), roster = copyJson(pk ? pk.roster : OFFICER_ROSTER);
@@ -35719,11 +36406,11 @@ function campaignEconRampStart() {
 // (v27 B1) A node is any location with an Alloys value (06d2: a yard, a resource node, a fortress ...) in an AO the side has secured, whose place the side
 // holds. The values are ours alone: the aliens' economy is their own (income-curves s7), so the list is empty for them.
 function campaignNodesHeld(side) {
-  const out = [], S = SETTINGS, aos = campaignAos();
+  const out = [], S = SETTINGS, aos = campaignAos(), long = longMapOn();   // (v189.0) the long map: each place by its own region's state (06d2 campaignStateAt), not the one AO's
   if (side !== 0) return out;
   for (let k = 0; k < aos.length; k++) {
     const ao = aos[k], a = campaign.ao[ao.id];
-    if (!a || !campaignAoPays(ao.id, 0)) continue;              // (v31 B1) secured by us, or besieged with us as the defender (then at siegeResourceFactor)
+    if (!a || (!long && !campaignAoPays(ao.id, 0))) continue;   // (v31 B1) secured by us, or besieged with us as the defender (then at siegeResourceFactor)
     if (campaign.earthOnly && ao.home !== 0) continue;           // (v27 C3) the tutorial's Earth-only war: only Earth's AO pays (so Earth brings in its 100 a week)
     const cut = campaignAoCutOff(ao.id, 0);
     for (let j = 0; j < ao.locations.length; j++) {
@@ -35731,7 +36418,9 @@ function campaignNodesHeld(side) {
       if (!(value > 0) || (row && row.owner !== 0)) continue;
       // (v61) x the share that reaches us (siege a half, cut off from Earth a quarter) x the place's own multiplier (06n campaignDevResMul: its tier's
       // Alloys step, how full its people are, +0.5% a week since the PLACE settled with us, the AO's council markers)
-      out.push({ id: loc.id, name: loc.name, ao: ao.id, alloys: value * campaignAoPayShare(ao.id, 0) * campaignDevResMul(ao.id, loc.id, 0, 'alloys'), besieged: !!a.besieged, cutOff: cut });
+      const rs = long ? campaignStateAt(loc.id) : null, sieged = long ? !!rs && (rs.besieged || rs.securedBy !== 0) : !!a.besieged;
+      if (long && !row) continue;
+      out.push({ id: loc.id, name: loc.name, ao: ao.id, alloys: value * (long ? (sieged ? S.siegeResourceFactor : 1) : campaignAoPayShare(ao.id, 0)) * campaignDevResMul(ao.id, loc.id, 0, 'alloys'), besieged: sieged, cutOff: cut });
     }
   }
   return out;
@@ -35778,6 +36467,7 @@ function campaignAlloysIncome(side) {
   let lost = 0;
   const aos = campaignAos();
   for (let k = 0; k < aos.length; k++) if (aos[k].owner === 1 && campaign.ao[aos[k].id] && campaign.ao[aos[k].id].securedBy === 0) lost++;   // (every AO they held at the start that we have since secured)
+  if (longMapOn()) { const rows = longRegionStates(); for (const r of longMapRegions()) if (r.owner === 1 && rows[r.id] && rows[r.id].securedBy === 0) lost++; }   // (v189.0) the long map: every region they held at the start that is ours now (06d2)
   const core = S.alienAlloysStart * e.growth[1] * Math.max(0, 1 - S.alienNodeLossShare * lost);
   return Math.max(0, (core + S.alienAlloysPerStep * Math.max(0, Math.floor(campaign.waveStep))) * campaignAlienIncomeMul() * campaignDebugMul('aliens'));   // (v31 C2) x the director's income bonus (06g alienIncomeBonus; 1 when none) (v78.2: x the debug menu's Alien ships, 7w)
 }
@@ -35895,6 +36585,11 @@ function campaignResourceGateOn(side) { return side === 0 && SETTINGS.campaignRe
 // ('alloys' reads the tier's lower Alloys step; anything else, or nothing, the rest).
 function campaignResourceShare(aoId, locId, side, resId) {
   if (resId === 'antimatter') { const am = campaignAntimatterMul(locId, side); if (!(am > 0)) return 0; return am * campaignResourceShare(aoId, locId, side, 'rare'); }   // (v91) collected, not mined: read below
+  if (longMapOn()) {                                           // (v189.0) the long map: a place we hold pays; at siegeResourceFactor while its REGION is fought over or shared (06d2 campaignStateAt)
+    const rowL = campaignPlaceRow(aoId, locId), rs = campaignStateAt(locId);
+    if (!rowL || rowL.owner !== side) return 0;
+    return (rs && (rs.besieged || rs.securedBy !== side) ? SETTINGS.siegeResourceFactor : 1) * campaignDevResMul(aoId, locId, side, resId || '');
+  }
   if (!campaignAoPays(aoId, side)) {
     // (v59) our homeworld's own yields (Earth's Volatiles, Rare earths and Fissiles) reach us while we hold Earth itself, even with its AO contested:
     // like Earth's base Alloys, they never wait on the fight for Luna, or the Tier 0 parts that use them could never be built
@@ -37513,13 +38208,13 @@ function campaignSwarmDockFloor() {
 // Each dawn (06f campaignDawn, through campaignDockDawn): the front has stood in one AO for swarmDockStallWeeks -> the stalemate factor grows by
 // swarmDockStallGrowth this week. It never falls.
 function campaignSwarmDockStall() {
-  const d = campaign.docks.swarm, S = SETTINGS, front = campaignFrontId(), week = Math.floor(campaign.week + 1e-9);
+  const d = campaign.docks.swarm, S = SETTINGS, lr = longMapOn() ? longFrontRegion() : null, front = lr ? lr.id : campaignFrontId(), week = Math.floor(campaign.week + 1e-9);   // (v189.0) on the long map the front is a region (06d2 longFrontRegion): before, the one AO never changed, so the stalemate bonus grew for the whole war
   if (d.frontAo !== front) { d.frontAo = front; d.frontSince = week; return; }
   if (d.frontSince < 0) { d.frontSince = week; return; }
   if (week - d.frontSince >= Math.max(1, S.swarmDockStallWeeks || 1) && S.swarmDockStallGrowth > 0) {
     const was = d.stall;
     d.stall = Math.round(d.stall * (1 + S.swarmDockStallGrowth) * 10000) / 10000;
-    if (Math.floor(was * 10) !== Math.floor(d.stall * 10)) campaignLog('dock', 'The front has stood at ' + campaignAoName(front) + ' for ' + plural(week - d.frontSince, 'week') + ': the Swarm\'s strength grows to ' + Math.round(d.stall * 100) + '% of ours, with bigger hulls.');
+    if (Math.floor(was * 10) !== Math.floor(d.stall * 10)) campaignLog('dock', 'The front has stood at ' + (lr ? lr.name : campaignAoName(front)) + ' for ' + plural(week - d.frontSince, 'week') + ': the Swarm\'s strength grows to ' + Math.round(d.stall * 100) + '% of ours, with bigger hulls.');
   }
 }
 // The Swarm's grant: what it is short of its floor is given as new hatcheries at its nests, free. Each picks a design of the roster mix online
@@ -38571,22 +39266,33 @@ function campaignAssaultPlan(view, advance) {
 // of Earth to work. (v27 B1) A front on the aliens' own ground (the Belt and beyond) never counts as "behind" by its places: we are the attacker there.
 // The other half of the valve is on the aliens' side (campaignAliensWeek): they send no wave into the front while they hold it with a full garrison.
 function campaignComeback(view) {
-  const ai = campaign.ai, S = SETTINGS, ourGround = view.frontOwner === 0;
-  const yard = view.places.find(function (p) { return p.yard; });
-  const lost = ourGround && view.places.some(function (p) { return p.owner !== 0; });
+  const ai = campaign.ai, S = SETTINGS, long = longMapOn(), ourGround = long || view.frontOwner === 0;
+  // (v189.0) THE LONG MAP: the "front" is the whole system, so the view's threat was every alien ship from here to Pluto and Earth went on a war footing
+  // for nothing. Here the ground is Earth's own region (its yard and its places), and the threat is the share of the alien ships that stand in our
+  // regions or in the first region beyond them (06d2 longRegionStates, longFrontRegion).
+  let places = view.places, nearShare = 1;
+  if (long) {
+    const rows = longRegionStates(), regs = longMapRegions(), fr = longFrontRegion(), home = regs.find(function (r) { return r.home === 0; });
+    if (home) places = view.places.filter(function (p) { return home.locations.some(function (l) { return l.id === p.id; }); });
+    let near = 0, all = 0;
+    for (const r of regs) { const n = rows[r.id] ? rows[r.id].ships[1] : 0; all += n; if (fr && r.col <= fr.col) near += n; }
+    nearShare = all > 0 ? near / all : 0;
+  }
+  const yard = places.find(function (p) { return p.yard; });
+  const lost = ourGround && places.some(function (p) { return p.owner !== 0; });
   let behind = 0;
   if (ourGround && yard && yard.owner === 1) behind = 1;
   else {
     // (v95.3, Alex) the debug menu's Alien ships slider (24l) makes the aliens that many times stronger, but must not put Earth on a war footing (which
     // raised OUR Alloys up to x4): their strength here is counted as it would be at x1, so the slider changes only the aliens.
-    const threat = view.threat / (typeof campaignDebugMul === 'function' ? campaignDebugMul('aliens') : 1);
+    const threat = nearShare * view.threat / (typeof campaignDebugMul === 'function' ? campaignDebugMul('aliens') : 1);
     const ratio = threat / Math.max(1, view.ours), top = Math.max(1.01, S.comebackScrewedRatio);
     behind = clampNumber((ratio - 1) / (top - 1), 0, 1);
   }
   let footing = 1 + Math.max(0, S.comebackScrewedMult - 1) * behind;
   if (lost || behind > 0) footing = Math.max(footing, S.comebackBehindMult);
   footing = Math.max(1, Math.round(footing * 100) / 100);
-  if (footing !== ai.footing) campaignLog('priority', footing > 1 ? 'Earth goes on a war footing: ' + (boostRetired() ? 'Alloys x' : 'Alloys and boost x') + footing + (behind >= 1 ? ' (the aliens hold ' + (yard ? yard.name : view.frontName) + ')' : (behind > 0 ? ' (the aliens at ' + view.frontName + ' are ' + roundTo(view.threat / Math.max(1, view.ours), 1) + ' x our strength)' : ' (we have lost a place)')) + '.'
+  if (footing !== ai.footing) campaignLog('priority', footing > 1 ? 'Earth goes on a war footing: ' + (boostRetired() ? 'Alloys x' : 'Alloys and boost x') + footing + (behind >= 1 ? ' (the aliens hold ' + (yard ? yard.name : view.frontName) + ')' : (behind > 0 ? ' (the aliens ' + (long ? 'at the front' : 'at ' + view.frontName) + ' are ' + roundTo(nearShare * view.threat / Math.max(1, view.ours), 1) + ' x our strength)' : ' (we have lost a place)')) + '.'
                                                            : 'Earth stands down from its war footing.');
   ai.footing = footing; ai.behind = Math.round(behind * 1000) / 1000;
   if (footing > 1) campaign.stats.footingWeeks++;
@@ -39485,6 +40191,7 @@ function campaignLongMapForces(g) {
 function campaignStartTutorial(opts) {
   opts = Object.assign({}, opts || {}, { front: 'earth', tutorial: true, earthOnly: true });
   campaignStart(opts);
+  if (longMapOn()) campaignLongTutorialHold();                // (v187.0) the tutorial on the long map: only Earth's region is anybody's until the hand-over
   campaign.ai.on = false; campaign.ai.marsOnly = false;
   for (const rec of SHIP_TYPES) if (rec && rec.design && rec.design.v === 3 && !campaignV3IsAlien(rec)) rec.yardsReady = false;   // (nothing is built until the Trainer is approved)
   if (campaignV3()) {
@@ -39503,8 +40210,9 @@ function campaignStartTutorial(opts) {
 // 0 the front moves to Mars here as v27 did. Does nothing unless the campaign is Earth-only.
 function campaignTutorialFullStart() {
   if (!campaign || !campaign.earthOnly) return false;
-  if (campaignBattleLive()) campaignParkBattle('the tutorial hands the war over');
+  if (campaignBattleLive() && !longMapOn()) campaignParkBattle('the tutorial hands the war over');   // (v187.0) the long map's one battle runs on: its places come back below
   campaign.earthOnly = false;
+  campaignLongTutorialRelease();                             // (v187.0) the long map: every place beyond Earth's region back to who held it at the start
   const S = SETTINGS;
   if (campaignV3()) {
     const home = campaignHomeYard(0), b = home ? campaign.v3.berths[home] : null, want = S.berthsEarth || {};
@@ -39525,6 +40233,32 @@ function campaignTutorialFullStart() {
   campaignEconWeek();
   researchBegin();                                           // (v30 C1, Alex 23 Oct) research starts at the hand-over (06m): nothing accrued during the tutorial
   return true;
+}
+
+// (v187.0) THE TUTORIAL ON THE LONG MAP. The long map is one battlefield, so the tutorial's Earth-only war cannot leave the rest of the system in other AOs
+// the way the normal map does. Instead, while the tutorial runs, every place outside Earth's region (the Earth-Luna region) is held back: nobody's, with no
+// station, so it pays nothing, builds nothing, does not count as ours or theirs, and has nothing on it for the scripted fights to meet. What each place was
+// is kept in campaign.longTutorialHeld { placeId: its row at the start }, and the hand-over puts every one back (campaignLongTutorialRelease) before the
+// long map's own start places the alien garrisons and the first wave (campaignLongMapForces).
+function campaignLongTutorialHold() {
+  if (!campaign || !longMapOn()) return;
+  const ao = campaignAos()[0], st = campaign.ao[ao.id], held = {};
+  for (const l of ao.locations) {
+    if (l.regionId === 'earth') continue;
+    const row = st.places.find(function (r) { return r.id === l.id; });
+    if (!row || (row.owner < 0 && row.facility === 'none')) continue;
+    held[l.id] = copyJson(row);
+    row.owner = -1; row.facility = 'none';
+  }
+  campaign.longTutorialHeld = held;
+  campaignDevRebase();                                       // (the people and tiers of the places held back: settled quietly, as at the start)
+}
+function campaignLongTutorialRelease() {
+  if (!campaign || !campaign.longTutorialHeld) return;
+  const st = campaign.ao[campaignAos()[0].id], held = campaign.longTutorialHeld;
+  for (const id in held) { const row = st.places.find(function (r) { return r.id === id; }); if (row) Object.assign(row, held[id]); }
+  delete campaign.longTutorialHeld;
+  campaignDevRebase();
 }
 
 // ---- The debug API's calls for the brains (added to window.EW.campaign) ----
@@ -40791,7 +41525,7 @@ function campaignV3YardSide(yardId) {
   const now = campaignYardSide(yardId);
   if (now >= 0) return now;
   if (campaign.yards[yardId] && campaign.yards[yardId].side >= 0) return campaign.yards[yardId].side;
-  const st = campaign.ao[campaignAoOf(yardId)];
+  const st = campaignStateAt(yardId);                             // (v189.0: on the long map, the yard's region, 06d2)
   return st ? st.securedBy : -1;
 }
 // A yard's v2 build list [{ id, weight }]: our home yard (Earth) the active designs, an alien yard the step's Swarm designs, any other yard the holding side's
@@ -41814,7 +42548,7 @@ function researchLabs() {
       const row = campaignPlaceRow(ao.id, loc.id), ours = row ? row.owner === 0 : st.securedBy === 0;
       if (!ours) continue;
       const boost = campaign.boost[ao.id] ? campaign.boost[ao.id][0].perWeek : 0;
-      const rp = (RESEARCH_RULES.labTrickle + RESEARCH_RULES.labPerBoost * Math.max(0, boost)) * (st.besieged ? RESEARCH_RULES.labSiegeMul : 1);
+      const rp = (RESEARCH_RULES.labTrickle + RESEARCH_RULES.labPerBoost * Math.max(0, boost)) * ((longMapOn() ? campaignStateAt(loc.id) : st).besieged ? RESEARCH_RULES.labSiegeMul : 1);   // (v189.0: on the long map, its region's siege)
       out.push({ id: loc.id, name: loc.name, ao: ao.id, rp: Math.round(rp * 100) / 100 });
     }
   }
@@ -41872,9 +42606,10 @@ function researchOurResources() {
   const out = [];
   if (!campaign) return out;
   for (const ao of campaignAos()) {
-    const st = campaign.ao[ao.id]; if (!st || st.securedBy !== 0 || (campaign.earthOnly && ao.home !== 0)) continue;
+    const st = campaign.ao[ao.id]; if (!st || (st.securedBy !== 0 && !longMapOn()) || (campaign.earthOnly && ao.home !== 0)) continue;
     for (const loc of ao.locations) {
       const row = campaignPlaceRow(ao.id, loc.id); if (row && row.owner !== 0) continue;
+      if (longMapOn() && campaignStateAt(loc.id).securedBy !== 0) continue;                        // (v189.0) the long map: its region must be ours, as its AO had to be
       if (loc.resource === 'Alloys' && out.indexOf('Alloys') < 0) out.push('Alloys');
       for (const m of cmLocationResources(loc)) if (out.indexOf(m.res.name) < 0) out.push(m.res.name);   // (v96) what the place yields: its shares of our Alloys
     }
@@ -42727,7 +43462,7 @@ function campaignDevHeldWeeks(id) {
   if (!campaign) return 0;
   const r = campaignDevRow(id);
   if (typeof r.heldSince !== 'number') {
-    const a = campaign.ao[campaignAoOf(id)];
+    const a = campaignStateAt(id);                                  // (v189.0: on the long map, the state of the place's region, 06d2)
     r.heldSince = r.side === 0 ? (a && a.securedBy === 0 && typeof a.securedSince === 'number' ? a.securedSince : campaign.week) : -1;
   }
   if (r.side === 0 && !(r.heldSince >= 0)) r.heldSince = campaign.week;    // (a place that became ours by a path that set no clock starts it now)
@@ -42828,7 +43563,7 @@ function campaignDevYardPace(yardId) {
 function campaignDevSurfaceOnly(yardId) {
   if (!campaign || !campaignDevIsEarth(yardId) || !(campaignPopulation(yardId) > 0)) return false;
   if (!(Object.keys(campaignDevSurfaceBerths()).length > 0)) return false;
-  const aoId = campaignAoOf(yardId), row = campaignPlaceRow(aoId, yardId), st = campaign.ao[aoId];
+  const aoId = campaignAoOf(yardId), row = campaignPlaceRow(aoId, yardId), st = campaignStateAt(yardId);   // (v189.0: on the long map Earth's own region, not the whole system: its orbit read as lost from the first day)
   return !!st && !(st.securedBy === 0 && row && row.owner === 0 && row.facility === 'standing');
 }
 
@@ -42964,7 +43699,7 @@ function campaignDevPay(pot) {
   if (!campaign || !campaign.dev) return;
   const d = campaign.dev, side = 0;
   const work = function (b, locId) {
-    if (locId) { const st = campaign.ao[campaignAoOf(locId)]; if (st && st.besieged) { b.paused = 'under siege'; return; } }
+    if (locId) { const st = campaignStateAt(locId); if (st && st.besieged) { b.paused = 'under siege'; return; } }
     b.paused = '';
     b.paid = Math.min(b.cost, b.paid + devMarkerSpeed(locId ? campaignDevMarkersOn(locId) : 0));
   };
@@ -43079,7 +43814,7 @@ function campaignDevExecutive() {
   const held = [];
   for (const ao of campaignAos()) {
     const st = campaign.ao[ao.id]; if (!st) continue;   // (Sol Inner, the sanctuary, counts too: Mercury and Venus are settled by their development hooks, 06d2)
-    for (const loc of ao.locations) { const r = campaignDevRow(loc.id); if (r.side === 0 && !campaignLocationLocked(loc.id)) held.push({ id: loc.id, ao: ao, st: st, r: r, loc: loc }); }
+    for (const loc of ao.locations) { const r = campaignDevRow(loc.id); if (r.side === 0 && !campaignLocationLocked(loc.id)) held.push({ id: loc.id, ao: ao, st: longMapOn() ? campaignStateAt(loc.id) : st, r: r, loc: loc }); }   // (v189.0: on the long map, its region's state)
   }
   const tryStart = function (h, kind, why) { return campaignDevBuildsRunning(0) < most && campaignDevStartBuild(h.id, kind, why) === ''; };
   // 1. markers: a marker on a node starts its colony or its next tier
@@ -43164,7 +43899,7 @@ function campaignDevForceOver(why) {
   return true;
 }
 function campaignDevLastStandTick(to, dtWeeks) {
-  const home = campaignHomeAo(0), st = home ? campaign.ao[home.id] : null, d = campaign.dev;
+  const home = campaignHomeAo(0), st = home ? (longMapOn() ? campaignStateAt((home.locations.find(function (l) { return l.big === true; }) || home.locations[0]).id) : campaign.ao[home.id]) : null, d = campaign.dev;   // (v189.0: on the long map, Earth's region)
   if (!st) return;
   // the grace window applies here too: a live battle's hold of the AO flips many times in an hour, so the last stand starts (and ends) only once the
   // AO has stayed theirs (or not theirs) for devGraceWeeks
@@ -43358,7 +44093,7 @@ function campaignDevEarthWeek(quiet) {
     for (const row of st.places) {
       if (row.id === earthId) continue;
       const r = campaignDevRow(row.id), e = popRow(row.id);
-      if (r.side !== 0 || row.owner !== 0 || st.besieged || (e.n > 0 && e.side !== 0)) continue;
+      if (r.side !== 0 || row.owner !== 0 || (longMapOn() ? campaignStateAt(row.id) : st).besieged || (e.n > 0 && e.side !== 0)) continue;   // (v189.0: on the long map, its region's siege)
       if (!r.colony && row.facility !== 'standing') continue;
       const t = campaignDevPopTarget(row.id, 0), gap = t - (e.side === 0 ? e.n : 0);
       if (!(gap > 0)) continue;
@@ -49755,6 +50490,20 @@ function squadronReport(sq, kindId, order, reason, number, code) {
 // ---- Receiving an order ----
 LEVEL_HANDLERS.squadron = { onOrder: squadronReceiveOrder, onReport: function (node, report) {} };
 
+// (v189.0) A standing "hold this spot" order from a Commodore does not outrank a new order from the squadron's Commodore of today when
+//   - the squadron has since moved to another Division (the old Commodore no longer commands it), or
+//   - on the long map, the new order sends it far away (to another place): the hold was for the old place, and without this the ships of a Division
+//     sent to attack or move up stayed at home, refusing every order as "busy".
+function orderStandingStale(sq, current, order) {
+  if (!current.issuer || current.issuer.level !== 'division' || !order.issuer || order.issuer.level !== 'division') return false;
+  if (ORDER_TYPES[current.type].id !== 'holdline') return false;
+  const dv = divisionOf(sq);
+  if (dv === null || order.issuer !== dv.node) return false;
+  if (current.issuer !== dv.node) return true;
+  if (typeof longCmdOn !== 'function' || !longCmdOn() || !isFinite(order.params.x) || !isFinite(current.params.x)) return false;
+  const dx = order.params.x - current.params.x, dy = order.params.y - current.params.y, far = longJoinDist();
+  return dx * dx + dy * dy > far * far;
+}
 function squadronReceiveOrder(node, order) {
   const sq = node.ref;
   if (sqAlive[sq] <= 0) { order.status = 'lost'; return; }
@@ -49764,7 +50513,7 @@ function squadronReceiveOrder(node, order) {
   const current = sqOrder[sq];
   let refuse = '', code = '';                                 // (the code is for the Admiral's logic; the words are for the log)
   if (sqEscort[sq] >= 0) { refuse = 'it is on escort duty'; code = 'escort'; }
-  else if (current !== null && current.status === 'active' && current.priority > order.priority) { refuse = 'it is busy with a more urgent order'; code = 'busy'; }
+  else if (current !== null && current.status === 'active' && current.priority > order.priority && !orderStandingStale(sq, current, order)) { refuse = 'it is busy with a more urgent order'; code = 'busy'; }
   else if (row.needsFight && squadronLoss(sq) >= officerRefuseLosses(o)) { refuse = 'it has lost ' + Math.round(squadronLoss(sq) * 100) + '% of its ships'; code = 'losses'; }
   else if (rIgnore < officerIgnoreChance(o)) { refuse = 'its officer ignored it'; code = 'ignored'; }
   if (refuse !== '') {
@@ -53261,7 +54010,8 @@ DIVISION_RULES.push({
         if (sqType[q] !== sqType[p] || !mergeCandidate(dv, q)) continue;
         const dx = sqCenterX[p] - sqCenterX[q], dy = sqCenterY[p] - sqCenterY[q], reach = SETTINGS.mergeDistance * Math.max(squadronWidth(p), squadronWidth(q));
         if (dx * dx + dy * dy > reach * reach && !(SETTINGS.mergeFarOutOfContact === 1 && outOfContact(p) && outOfContact(q))) continue;   // (v72: out of contact, any distance in the Division)
-        const keep = betterOfficer(p, q) ? p : q, other = keep === p ? q : p;
+        let keep = betterOfficer(p, q) ? p : q, other = keep === p ? q : p;
+        if (squadronRoom(keep) < sqAlive[other]) { const sw = keep; keep = other; other = sw; if (squadronRoom(keep) < sqAlive[other]) continue; }   // (v189.0) no room either way: no merge
         add({
           kind: 'neutral', raw: SETTINGS.ruleScores.merge, squads: [other], minSquads: 1, short: 'merge ' + squadronLabel(other) + ' into ' + squadronLabel(keep), keep: keep, other: other,
           text: 'merge Squadron ' + squadronLabel(other) + ' (' + plural(sqAlive[other], 'ship') + ') into Squadron ' + squadronLabel(keep) + ' (' + plural(sqAlive[keep], 'ship') + '): ' + officerTitle(sqOfficer[keep]) + ' keeps command',
@@ -53471,6 +54221,14 @@ function cmdMakeOrder(dv, id, params, when, until, fire, opts) {
 // Gives a Division a role order: at once, or (with a "when" not yet met) as the next order, while the one in force carries on.
 function cmdGiveDivisionOrder(dv, a, o) {
   const c = cmdDv(dv);
+  // (v189.0) the long map: an order to go for the enemy is not given when the enemy is past the Division's fuel line (06c3). Before, a Vice Admiral's
+  // "line advance" sent short-range Divisions at an enemy a whole region away, and they spent the war pressing against the line.
+  if (typeof longCmdOn === 'function' && longCmdOn() && (o.id === 'line_advance' || o.id === 'engage' || o.id === 'pursue' || o.id === 'sweep') && o.params) {
+    let tx = NaN, ty = NaN;
+    if (isFinite(o.params.x) && isFinite(o.params.y)) { tx = o.params.x; ty = o.params.y; }
+    else if (o.params.enemy >= 0 && sqAlive[o.params.enemy] > 0) { tx = sqCenterX[o.params.enemy]; ty = sqCenterY[o.params.enemy]; }
+    if (isFinite(tx) && !longDivisionRoadOk(dv.side, dv, tx, ty)) { cmdLogOnce(dv, 'longFar', 600, 'stays: the enemy it was sent at is past its fuel line'); return o; }
+  }
   if (o.when && !cmdTriggerMet(dv, a, o.when, o)) {
     o.state = 'waiting'; c.next = o;
     logEvent(dv.side, divisionLabel(dv) + ' has the order ' + cmdOrderName(o.id) + cmdOrderSuffix(o) + ': it waits for its cue.');
@@ -59008,7 +59766,7 @@ function cplAtStation(i, nx, ny) {
   if (cplCtl[i] !== CTL_TUG_TOW) return false;
   const rpi = shipRepairPoint[i];
   if (rpi < 0) return false;
-  const rp = repairPoints[rpi], rdx = rp.x - nx, rdy = rp.y - ny, reach = rp.arrive + typeSize[shipType[i]];
+  const rp = repairPoints[rpi], rdx = rp.x - nx, rdy = rp.y - ny, reach = repairReach(rp, typeSize[shipType[i]]);   // (v191.0: over a moving moon counts)
   if (rdx * rdx + rdy * rdy > reach * reach) return false;
   shipX[i] = nx; shipY[i] = ny;
   const c = cplPartner[i];
@@ -60519,6 +61277,14 @@ function mergeSquadrons(keep, other, how) {
            (how === 'merged' && sqOfficer[other] && sqOfficer[other].rosterId ? '; ' + officerTitle(sqOfficer[other]) + ' goes back to the roster' : '') + '.');
   if (sqAlive[other] === 0 && sqAway[other] === 0) retireSquadron(other, 'its ships were ' + how + ' into Squadron ' + squadronLabel(keep), true);
   return moved;
+}
+// (v189.0) How many more ships a squadron has room for (its empty places, plus the places its block can still grow by). A merge into a squadron with no
+// room moved nobody and was proposed again every few seconds, filling the log.
+function squadronRoom(sq) {
+  const start = sqStart[sq];
+  let room = Math.max(0, sqBlock[sq] - sqSize[sq]);
+  for (let j = 0; j < sqSize[sq]; j++) { const mem = sqMembers[start + j]; if (sqMemberAway[start + j] === 0 && (mem < 0 || shipAlive[mem] !== 1 || shipSquad[mem] !== sq)) room++; }
+  return room;
 }
 function mergeCandidate(dv, sq) {
   if (sqAlive[sq] <= 0 || sqDraftFor[sq] > 0 || sqDraftIncoming[sq] > 0 || sqEscort[sq] >= 0 || sqAway[sq] > 0 || fgGuardSq(sq)) return false;
@@ -63429,6 +64195,7 @@ function divisionMergeTarget(a, own, n, role, place, fleetId, x, y) {
   let best = null, bestKey = Infinity;
   for (const o of live) {
     if (o === own || o.transfer !== null || divisionLiveSquadCount(o) + n > maxSize) continue;
+    if (!longJoinOk(o, x, y) || (own && longCmdOn() && longDivisionClass(o) >= 0 && longDivisionClass(own) >= 0 && longDivisionClass(o) !== longDivisionClass(own))) continue;   // (v189.0) the long map: never into a Division far away, or one whose ships carry other fuel (06c3)
     if (fc && o.fleet !== fleetId) continue;                                                     // (v83) under Fleet Command a Fleet tidies only its own Divisions (06e part 6)
     const c = divisionCentre(o), dx = c.x - x, dy = c.y - y;
     // the most fitting first: same Fleet, then same role, then same place; the nearest of those
@@ -65247,14 +66014,31 @@ function applyCareer(rec, o, info, events) {
   // New moves of the repertoire.
   if (o.newMoves) o.newMoves.forEach(function (text) { events.push({ kind: 'move', side: side, who: who, text: who + ' ' + text }); });
 }
-function writeBackOfficers() {
-  scarsFlush();                                                               // (v118.0, section 5vd) the battle scars go into the store (twice is harmless: the second time there is nothing)
-  if (cmdOn()) cmdRecordsBattleEnd();                                         // (v25 stop 5c, section 7r) the last summary and the designs' results (once a battle)
+// (v190.0, Alex 10 Nov: "all the officers in my game show 0 battles and 0 xp") WRITING BACK PART-WAY THROUGH A BATTLE. The records above were only written when a
+// battle ended (parked). On the long map, and in the core loop when the front stays put, the battle never ends, so no officer ever got a battle, experience or a medal
+// on the record (and a save, which does not end the battle, kept nothing either). Now the campaign also writes the officers back once a war week and when the war is
+// saved (officerWriteBackPart, from 06e). Each write takes only what happened since the last one (officerWrittenSoFar keeps what was already counted, per officer),
+// so nothing is counted twice; an officer whose command did not fight since the last write gets nothing (no battle for squadrons sitting far from the fighting).
+// A war week of fighting counts as one battle; a save part-way through a week adds to that week's battle, it is not a battle of its own.
+const officerWrittenSoFar = new Map();                     // roster id -> the totals already written in this battle: { kills, lost, killValue, lostValue, judged, repaired, towed, scuttled, routs, bigKill }
+const OFFICER_PART_KEYS = ['kills', 'lost', 'judged', 'repaired', 'towed', 'scuttled', 'routs', 'bigKill'];
+// The campaign's write part-way through a live battle. why: 'week' (a new war week: the next write is a new battle) or 'save'. Returns the events (promotions, medals ...).
+function officerWriteBackPart(why) {
+  if (SETTINGS.officerModel !== 1 || writeBackDone || batchMode) return [];
+  const events = writeBackOfficers(why === 'week' ? 'week' : 'save') || [];
+  return events;
+}
+function writeBackOfficers(part) {
+  const midway = part === 'week' || part === 'save';                          // (v190.0) written part-way: the battle goes on
+  if (!midway) {
+    scarsFlush();                                                             // (v118.0, section 5vd) the battle scars go into the store (twice is harmless: the second time there is nothing)
+    if (cmdOn()) cmdRecordsBattleEnd();                                       // (v25 stop 5c, section 7r) the last summary and the designs' results (once a battle)
+  }
   if (SETTINGS.officerModel !== 1 || writeBackDone) return;
-  writeBackDone = true;
-  const res = battleResult || { winner: -1, reason: '' };
-  const seen = {}, events = successionEvents.slice();                          // (stop 6) what happened to commanders during the battle comes first
-  for (let k = 0; k < OFFICER_ROSTER.length; k++) {                            // (stop 6) a wounded officer who sat this battle out is a battle nearer to coming back
+  if (!midway) writeBackDone = true;
+  const res = midway ? { winner: -1, reason: 'going on' } : (battleResult || { winner: -1, reason: '' });
+  const seen = {}, events = midway ? [] : successionEvents.slice();          // (stop 6) what happened to commanders during the battle comes first (part-way, the campaign has logged it already)
+  for (let k = 0; k < OFFICER_ROSTER.length && part !== 'save'; k++) {        // (stop 6) a wounded officer who sat this battle out is a battle nearer to coming back (v190.0: a war week of a long battle counts; a save does not)
     const r = OFFICER_ROSTER[k];
     if (r.status !== 'wounded' || rosterInBattle[r.id]) continue;
     r.woundedUntil = Math.max(0, num(r.woundedUntil, 0) - 1);
@@ -65265,12 +66049,26 @@ function writeBackOfficers() {
     seen[o.rosterId] = true;
     const rec = rosterById(o.rosterId);
     if (rec === null) return;
+    // (v190.0) only what happened since this battle's last write counts (the battle's counters keep growing while it goes on)
+    const before = officerWrittenSoFar.get(o.rosterId), now = { killValue: killValue || 0, lostValue: lostValue || 0 };
+    for (const key of OFFICER_PART_KEYS) now[key] = +info[key] || 0;
+    officerWrittenSoFar.set(o.rosterId, now);
+    if (before) {
+      info = Object.assign({}, info);
+      for (const key of OFFICER_PART_KEYS) info[key] = Math.max(0, now[key] - (before[key] || 0));
+      killValue = Math.max(0, now.killValue - before.killValue); lostValue = Math.max(0, now.lostValue - before.lostValue);
+    }
+    const newFate = (o.fallen === 1 && rec.status !== 'fallen') || (o.wounded === 1 && !o.woundWritten);
+    // written before in this battle, or written part-way: an officer whose command has not fought since gets nothing new
+    if ((before || midway) && !newFate && !(info.kills > 0 || info.lost > 0 || info.judged > 0 || info.repaired > 0 || info.towed > 0 || info.scuttled > 0)) return;
     const kills = info.kills, lost = info.lost;
     const s = rec.service;
-    const result = res.winner === side ? 'won' : (res.winner === BLUE || res.winner === RED ? 'lost' : 'draw');
+    const result = res.winner === side ? 'won' : (res.winner === BLUE || res.winner === RED ? 'lost' : (midway ? 'fighting' : 'draw'));
     // (v93.1) the same campaign fight carried on after the player stepped away: its numbers go into that fight's entry, not a new battle
-    const fight = typeof campaignFightId === 'function' ? campaignFightId() : 0, last = s.history.length > 0 ? s.history[s.history.length - 1] : null;
-    if (fight > 0 && last && last.fight === fight) {
+    // (v190.0) in a campaign the fight's entry is per war week ('<fight>:<part>'): a long battle gives a battle on the record for each week of fighting
+    const fightNo = typeof campaignFightId === 'function' ? campaignFightId() : 0, last = s.history.length > 0 ? s.history[s.history.length - 1] : null;
+    const fight = fightNo > 0 ? fightNo + ':' + (campaign.battle.officerPart || 0) : 0;
+    if (fightNo > 0 && last && last.fight === fight) {
       s.kills += kills; s.lost += lost; s.killValue += killValue; s.lostValue += lostValue; s.seconds = officerServiceSeconds(o);
       last.result = result; last.unit = unit; last.kills += kills; last.lost += lost; last.judged = (last.judged || 0) + (info.judged || 0); last.good = o.rec ? o.rec.good : last.good;
       last.fate = o.fallen === 1 ? 'fallen' : (o.wounded === 1 ? 'wounded' : ''); if (o.actingFrom || o.acted === 1) last.acting = 1;
@@ -65278,7 +66076,7 @@ function writeBackOfficers() {
       s.battles++; s.kills += kills; s.lost += lost; s.killValue += killValue; s.lostValue += lostValue; s.seconds = officerServiceSeconds(o);
       s.history.push({ seed: battleSeed, result: result, unit: unit, kills: kills, lost: lost, judged: info.judged, good: o.rec ? o.rec.good : 0,
                        fate: o.fallen === 1 ? 'fallen' : (o.wounded === 1 ? 'wounded' : ''), acting: o.actingFrom || o.acted === 1 ? 1 : 0 });   // (stop 6)
-      if (fight > 0) s.history[s.history.length - 1].fight = fight;
+      if (fightNo > 0) s.history[s.history.length - 1].fight = fight;
     }
     const keep = Math.max(1, Math.floor(SETTINGS.rosterHistoryKeep));
     while (s.history.length > keep) s.history.shift();
@@ -65292,9 +66090,11 @@ function writeBackOfficers() {
     rec.learned = { tw: Array.from(o.tw) };
     if (o.rep) rec.repertoire = copyJson(o.rep);
     if (o.fallen === 1) {                                                                           // (stop 6) killed with the flagship: the record stays, the officer is gone
+      if (rec.status === 'fallen') return;                                                          // (v190.0) already written part-way through this battle
       rec.status = 'fallen'; rec.posting.role = ''; rec.fellSerial = ++fallenSerial;   // (fellSerial: stop 8, the order of the memorials)
       events.push({ kind: 'fallen', side: side, text: officerTitle(o) + ' fell with ' + unit + ' (flagship destroyed).' });
-    } else if (o.wounded === 1 && Math.round(SETTINGS.woundedBattles) > 0) {
+    } else if (o.wounded === 1 && !o.woundWritten && Math.round(SETTINGS.woundedBattles) > 0) {
+      o.woundWritten = 1;                                                                           // (v190.0) once, even when written again part-way
       rec.status = 'wounded'; rec.woundedUntil = Math.round(SETTINGS.woundedBattles);
       events.push({ kind: 'wounded', side: side, text: officerTitle(o) + ' was wounded commanding ' + unit + ' and sits out ' + plural(rec.woundedUntil, 'battle') + '.' });
     }
@@ -69367,7 +70167,12 @@ function closeHullWanted(info, house) {
 function closeHullInfo(info) {
   const rec = info.rec, a = bbAnalysisOf(rec), L = a.layout, cells = [];
   for (let y = 0; y < info.H; y++) { let row = ''; for (let x = 0; x < info.W; x++) row += L.cellFrame[(L.y0 + y) * L.W + L.x0 + x] >= 0 ? '#' : '.'; cells.push(row); }
-  const parts = info.parts.map(function (p) { return { d: p.spec.d, id: L.parts[p.k].m.id, x: p.x, y: p.y, w: p.w, h: p.h, ang: p.ang, turning: p.turning || '', role: p.spec.role || '' }; });
+  // (v188.2) a launcher also says its type (standard, rapid, torpedo or rack): the hull art draws its port by type and by the way it faces.
+  // A Torpedo rack is drawn in the picture as its bare rail; its missile is drawn on top by the battle while the rack still holds it.
+  const parts = info.parts.map(function (p) {
+    const kind = p.spec.d === 'launcher' ? ((L.parts[p.k].rec.opt || {}).type || '') : '';
+    return { d: p.spec.d, id: L.parts[p.k].m.id, x: p.x, y: p.y, w: p.w, h: p.h, ang: p.ang, turning: p.turning || '', role: p.spec.role || '', kind: kind, loaded: kind === 'rack' ? false : undefined };
+  });
   return { name: rec.name || String(rec.id || ''), cls: rec.design.hull || info.cls, W: info.W, H: info.H, cells: cells, parts: parts, reg: info.frame.reg };
 }
 function closeHullBuild(e, done) {
@@ -69383,6 +70188,13 @@ function closeHullBuild(e, done) {
     const tu = info.turrets[k], p = hi.parts[tu.k];
     if (e.guns[tu.key]) continue;
     try { const g = window.HULL_ART.turret(p, s); if (g) e.guns[tu.key] = { canvas: pmWatch(g.canvas), w: g.w, h: g.h, piv: g.piv }; } catch (err) { /* that gun stays as the still picture's mount */ }
+  }
+  // (v188.2) each Torpedo rack's missile, one small picture each, drawn on top while the rack still holds it
+  e.racks = [];
+  for (let k = 0; k < hi.parts.length; k++) {
+    const p = hi.parts[k];
+    if (p.kind !== 'rack' || typeof window.HULL_ART.rackMissile !== 'function') continue;
+    try { const m = window.HULL_ART.rackMissile(p, hi, s); if (m) e.racks.push({ k: info.parts[k].k, canvas: pmWatch(m.canvas), x0: m.x0, y0: m.y0 }); } catch (err) { /* that rack shows its rail only */ }
   }
   const finish = function () {
     try {
@@ -69712,6 +70524,22 @@ function closeDrawShip(i, e, sx, sy, z, paintColour, dtSim, view) {
   }
   finally { closeG = null; }
 }
+// (v188.2) the hull art's Torpedo rack missiles: drawn while the ship's store of that missile size is not empty and the rack itself still works
+function closeDrawRacks(i, e, ox, oy, view) {
+  const ctx = closeCtx(), own = mdShip.length > i && mdShip[i] === 1 ? mdState[i] : null, out = own && own.out ? own.out : null;
+  let bt = null;
+  try { bt = typeof bbTypeInfo === 'function' ? bbTypeInfo(shipType[i]) : null; } catch (err) { bt = null; }
+  for (let r = 0; r < e.racks.length; r++) {
+    const rk = e.racks[r];
+    if (out && out[rk.k]) continue;
+    let full = true;
+    if (!view && bt && bt.gOfUnit && SETTINGS.weaponModel === 1) {
+      const g = rk.k < bt.gOfUnit.length ? bt.gOfUnit[rk.k] : -1, grp = g >= 0 ? bt.groups[g] : null;
+      if (grp && bbStore.length > i * BB_SK + grp.store) full = bbStore[i * BB_SK + grp.store] > 0;
+    }
+    if (full) ctx.drawImage(rk.canvas, ox + rk.x0, oy + rk.y0);
+  }
+}
 function closeDrawShipOn(i, e, sx, sy, z, paintColour, dtSim, view) {
   const ctx = closeCtx();
   const info = e.info, rc = shipCos[i], rs = shipSin[i];                             // the ship's real heading (the guns aim by it)
@@ -69733,6 +70561,8 @@ function closeDrawShipOn(i, e, sx, sy, z, paintColour, dtSim, view) {
   if (k < CLOSE_LOOK.smallBelow && e.small) ctx.drawImage(e.small, -e.pivX, -e.pivY, e.w, e.h);
   else ctx.drawImage(e.canvas, -e.pivX, -e.pivY);
   const S = e.s, ox = -e.pivX - e.x0, oy = -e.pivY - e.y0;   // grid square (gx, gy) is at picture pixel (ox + gx * S, oy + gy * S)
+  // (v188.2) a Torpedo rack's missile, while the rack still holds it (its missile store not spent, the rack not shot away)
+  if (e.racks && e.racks.length) closeDrawRacks(i, e, ox, oy, view);
   // engine glow: brighter the faster the ship goes, with a flicker
   const spd = Math.sqrt(shipVX[i] * shipVX[i] + shipVY[i] * shipVY[i]), top = Math.max(1e-6, stSpeed && stSpeed.length > 0 ? stSpeed[shipSide[i] * TYPE_COUNT + shipType[i]] : 1);
   const thrust = mdFuelOut.length > i && mdFuelOut[i] === 1 ? 0 : Math.min(1, 0.25 + 0.75 * spd / top);
@@ -71959,7 +72789,7 @@ function admiralPlanSentence(a) {
   const L = a.line;
   let s;
   if (a.fleetWithdrawn) s = 'Pulling the whole fleet back to the rally point.';
-  else if (placesActive() && a.theatre) s = 'Theatre plan: ' + admiralPlanPlain(a.theatre.plan) + '.';   // (v105.3) plain words; the full plan is the tooltip     // (v21) on a places map the Admiral thinks in places (section 5x)
+  else if (placesActive() && a.theatre) s = (typeof longCmdOn === 'function' && longCmdOn() ? '' : 'Theatre plan: ') + admiralPlanPlain(a.theatre.plan) + '.';   // (v105.3) plain words; the full plan is the tooltip     // (v21) on a places map the Admiral thinks in places (section 5x)
   else if (L.state === LINE_NONE) s = 'Looking for the enemy before planning a battle line.';
   else if (L.state === LINE_FORMING) s = (L.reforms > 0 ? 'Re-forming' : 'Forming') + ' a battle line ' + fmtWhole(L.distance) + ' u out: ' + L.inPlace + ' of ' + L.lineCount + ' squadrons in place' + (L.reserveCount > 0 ? ', ' + L.reserveCount + ' held in reserve' : '') + '.';
   else if (L.state === LINE_FORMED) s = 'Holding a battle line ' + fmtWhole(L.distance) + ' u out: ' + L.inPlace + ' of ' + L.lineCount + ' squadrons in place' + (L.reserveCount > 0 ? ', ' + L.reserveCount + ' held in reserve' : '') + '.';
@@ -74252,7 +75082,7 @@ function bsShipViewFrame() {
 const cmEl = document.getElementById('campaignScreen');
 const cmState = { built: false, view: 'map', sel: null, openDispatch: '', feedFilter: 'all', nextRender: 0, nextWatch: 0, pausedBy: '', watching: false, inBureau: false, bureauPause: null,   // (Bureau pause fix) bureauPause: the speed to put back on leaving the Bureau
                   battleWake: -1, sheet: '', sheetMsg: '', aoId: '',     // (v27 B3) aoId: the AO the AO view shows ('' = the front)
-                  newTutorial: 0,     // (v182.0) off by default now, because the long map and the docks (both on by default) skip the tutorial
+                  newTutorial: 1,     // (v187.0) on by default again, now that it plays with the long map and the docks (v182.0 had turned it off while they skipped it)
                   newEnemy: 'swarm',
                   newLongMap: 1,     // (v153.0) (v182.0) on by default; Normal on the New campaign panel turns it off
                   newDocks: 1 };     // (v182.0) on by default; Normal on the New campaign panel turns it off. (v170.0) 1 = the next new campaign runs the dock economy test (06f2); it skips the tutorial, like the long map   // 1 = the next new campaign is the long map test (one battlefield from the Sun to the Kuiper Belt, 06d2)   // (v74) the enemy for the next new campaign (ALIEN_FACTIONS, 06d2): a Delver or Sylph war starts with the tutorial off   // (v27 C1) the Menu's Tutorial choice for the next new campaign: 1 on, 0 off (v27 C3: on by default, now that the 10 steps are written)
@@ -75016,6 +75846,25 @@ function cmLongRegionInfo(r, live, aoId) {
   return { owner: owner, status: status, ships: ships, ours: ours, theirs: theirs, open: open };
 }
 function cmLongRegionCounts() { const aoId = campaignFrontId(), live = campaignBattleLive(); let ours = 0, theirs = 0; for (const r of longMapRegions()) { const o = cmLongRegionInfo(r, live, aoId).owner; if (o === 0) ours++; else if (o === 1) theirs++; } return { ours: ours, theirs: theirs, all: longMapRegions().length }; }
+// (v27 C3) THE TUTORIAL'S EARTH-ONLY MAP: everything beyond Earth's AO is dimmed (and not clickable) until the tutorial hands the war over, with a contact
+// marker far out (the tutorial moves it in when the large contact heads for Luna: campaign.tutorial.data.contact 'far' or 'luna'). (v187.0) The long map's
+// war map draws it too, over its regions (cmRenderLongSol).
+function cmEarthOnlyDark(c, L) {
+  let s = '';
+  if (c.earthOnly && L.order.length > 1) {
+    const X1 = CM_SL0 + L.slw * ((L.map.earth ? L.map.earth.i : 0) + 1), dimD = cmPolyD(cmArcPts(X1)) + ' L1360 720 L1360 -40 Z';
+    s += '<path class="cm-dark" d="' + dimD + '" fill="#05080c" opacity=".78"><title>Beyond Earth\'s watch: our telescopes only cover Earth\'s AO for now</title></path>';
+    s += '<text class="m-st" x="' + cmF(X1 + 40) + '" y="40" style="fill:var(--map-dim)">BEYOND EARTH\'S WATCH</text>';
+    const where = c.tutorial && c.tutorial.data ? c.tutorial.data.contact : '';
+    if (where === 'far' || where === 'luna') {
+      const m0 = L.map.earth || L.pts[0], far = L.pts[L.pts.length - 1];
+      const cx = where === 'luna' ? m0.x + 120 : far.x, cy = where === 'luna' ? CM_PY - 70 : CM_PY - 150, lab = where === 'luna' ? 'LARGE CONTACT \u25B8 LUNA' : 'UNKNOWN CONTACT';
+      s += '<g id="cmContact" transform="translate(' + cmF(cx) + ' ' + cmF(cy) + ')"><title>' + esc(lab) + '</title><circle class="pulse" r="16" fill="none" stroke="var(--alien)" stroke-width="2"/>' +
+        '<path d="M0 -9L9 0L0 9L-9 0Z" fill="var(--alien)" stroke="#140B0A" stroke-width="1.2"/><text class="n-fleet" y="30" text-anchor="middle" style="fill:color-mix(in srgb,var(--alien) 50%,#fff)">' + lab + '</text></g>';
+    }
+  }
+  return s;
+}
 function cmRenderLongSol() {
   const c = campaign, live = campaignBattleLive(), L = cmLayout(), aoId = campaignFrontId(), regions = longMapRegions();
   let s = '';
@@ -75025,11 +75874,13 @@ function cmRenderLongSol() {
   const info = regions.map(function (r) { return cmLongRegionInfo(r, live, aoId); });
   let fi = -1; for (let i = 0; i < info.length; i++) if (info[i].owner !== 0 && info[i].owner !== -1) { fi = i; break; }   // (the first region from the Sun that is not ours: unclaimed Sol Inner does not count)
   if (fi < 0) fi = regions.length;
+  const earthI = regions.findIndex(function (r) { return r.id === 'earth'; });
+  if (c.earthOnly && earthI >= 0) fi = earthI + 1;                  // (v187.0) the tutorial on the long map: our hold ends at Earth's region, and the rest is unknown
   const FX = CM_SL0 + L.slw * fi, FP = cmArcPts(FX), fpath = cmPolyD(FP);
   s += '<path d="' + fpath + ' L1360 720 L1360 -40 Z" fill="color-mix(in srgb,var(--alien) 6%,transparent)"/><path d="' + fpath + ' L1360 720 L1360 -40 Z" fill="url(#cm-hatch)" opacity=".16"/>';
   cut('hatch');
   regions.forEach(function (r, i) {
-    const x = info[i], m = L.map[r.id], st = x.status, isFront = i === fi, sel = cmState.longRegion === r.id && cmState.view === 'ao';
+    const x = info[i], m = L.map[r.id], st = c.earthOnly && earthI >= 0 && i > earthI ? ['Unknown', 'unknown'] : x.status, isFront = i === (c.earthOnly && earthI >= 0 ? earthI : fi), sel = cmState.longRegion === r.id && cmState.view === 'ao';
     const sw = st[0].length * 7.6 + 14;
     s += '<g class="pl hit' + (sel ? ' on' : '') + '" data-cm="ao" data-id="' + aoId + '" data-region="' + r.id + '"><title>' + esc(r.name) + (isFront ? ': the front' : '') + '. One region of the long map. Click to open the whole map, with this region framed</title><path class="slb" d="' + cmSliceD(i) + '"/>';
     if (r.sanctuary === true) s += '<circle cx="-240" cy="345" r="216" fill="transparent"/>';
@@ -75072,6 +75923,8 @@ function cmRenderLongSol() {
   s += '<path d="' + fpath + '" fill="none" stroke="var(--friendly)" stroke-width="2.2" opacity=".85" stroke-dasharray="10 5"/><path d="' + teeth + '" fill="var(--friendly)" opacity=".85"/>';
   s += '<text class="n-sub" x="' + cmF(cmEdgeX(FX, 640) + 12) + '" y="640" style="fill:color-mix(in srgb,var(--friendly) 55%,#fff)">FRONT &#9656; ' + esc(fi < regions.length ? 'our hold ends before ' + regions[fi].name : 'the whole system is ours') + '</text>';
   cut('lines');
+  s += cmEarthOnlyDark(c, L);                                        // (v187.0) the tutorial's Earth-only map, as on the normal map
+  cut('dark');
   s += cmTransitMarkers(c);
   cut('transit');
   cmSetParts(document.getElementById('cmFg'), parts);
@@ -75165,20 +76018,7 @@ function cmRenderSol() {
     if (ia >= 0 && ib >= 0 && Math.abs(ia - ib) > 1) s += cmLaneChip(0, lane, cmBowPoint(ia, ib, 0.5));
   }
   cut('lines');
-  // (v27 C3) THE TUTORIAL'S EARTH-ONLY MAP: everything beyond Earth's AO is dimmed (and not clickable) until the tutorial hands the war over, with a contact
-  // marker far out (the tutorial moves it in when the large contact heads for Luna: campaign.tutorial.data.contact 'far' or 'luna')
-  if (c.earthOnly && L.order.length > 1) {
-    const X1 = CM_SL0 + L.slw * ((L.map.earth ? L.map.earth.i : 0) + 1), dimD = cmPolyD(cmArcPts(X1)) + ' L1360 720 L1360 -40 Z';
-    s += '<path class="cm-dark" d="' + dimD + '" fill="#05080c" opacity=".78"><title>Beyond Earth\'s watch: our telescopes only cover Earth\'s AO for now</title></path>';
-    s += '<text class="m-st" x="' + cmF(X1 + 40) + '" y="40" style="fill:var(--map-dim)">BEYOND EARTH\'S WATCH</text>';
-    const where = c.tutorial && c.tutorial.data ? c.tutorial.data.contact : '';
-    if (where === 'far' || where === 'luna') {
-      const m0 = L.map.earth || L.pts[0], far = L.pts[L.pts.length - 1];
-      const cx = where === 'luna' ? m0.x + 120 : far.x, cy = where === 'luna' ? CM_PY - 70 : CM_PY - 150, lab = where === 'luna' ? 'LARGE CONTACT \u25B8 LUNA' : 'UNKNOWN CONTACT';
-      s += '<g id="cmContact" transform="translate(' + cmF(cx) + ' ' + cmF(cy) + ')"><title>' + esc(lab) + '</title><circle class="pulse" r="16" fill="none" stroke="var(--alien)" stroke-width="2"/>' +
-        '<path d="M0 -9L9 0L0 9L-9 0Z" fill="var(--alien)" stroke="#140B0A" stroke-width="1.2"/><text class="n-fleet" y="30" text-anchor="middle" style="fill:color-mix(in srgb,var(--alien) 50%,#fff)">' + lab + '</text></g>';
-    }
-  }
+  s += cmEarthOnlyDark(c, L);
   cut('dark');
   // fleets in transit (v99.3, redrawn): see cmTransitMarkers below
   s += cmTransitMarkers(c);
@@ -75625,7 +76465,8 @@ function cmRenderSide() {
   const ours = campaignAos().filter(function (a) { return c.ao[a.id] && c.ao[a.id].securedBy === 0; }).length, theirs = campaignAos().filter(function (a) { return c.ao[a.id] && cmSeenHolder(a.id) === 1 && (campaignSeeBases(a.id) || campaignSightMemory(a.id)); }).length;   // (v85.5) theirs as far as we know
   let h = '<div class="ao-sub"><span class="status ' + fst[1] + '">' + esc(fname) + ' ' + fst[0] + '</span>' + (live && cmFrontFighting() ? '<span class="status battle">Battle live</span>' : '') + '</div>' +
     (c.over ? '<div class="siegebar">The war is over: ' + (c.over.winner === 0 ? 'we won' : 'Earth has fallen') + ' in week ' + Math.floor(c.over.week) + (c.over.why ? ' (' + esc(c.over.why) + ')' : '') + '.</div>' : '') +
-    (c.earthOnly ? '<p class="note-ai">Our telescopes only cover Earth\'s AO for now: what lies beyond it is unknown. Click Earth for its AO.</p>'   // (v27 C4) the tutorial's Earth-only war: only Earth is talked about until the hand-over
+    (c.earthOnly ? (longMapOn() ? '<p class="note-ai">Our telescopes only cover Earth\'s region for now: what lies beyond it is unknown. Click Earth to see its places.</p>'   // (v187.0) the tutorial on the long map
+                                : '<p class="note-ai">Our telescopes only cover Earth\'s AO for now: what lies beyond it is unknown. Click Earth for its AO.</p>')   // (v27 C4) the tutorial's Earth-only war: only Earth is talked about until the hand-over
       : longMapOn() ? (function () { const rc = cmLongRegionCounts(); return '<p class="note-ai">The long map: the whole system is one battlefield and one battle. We hold ' + rc.ours + ' of its ' + rc.all + ' regions outright, the aliens ' + rc.theirs + '. Click a region for the map of every place, or a fleet.</p>'; })()   // (v176.0)
       : '<p class="note-ai">The front is at ' + esc(fname) + ': all the fighting is its one battle. We hold ' + plural(ours, 'AO') + ', the aliens ' + plural(theirs, 'AO') + (campaignSensorsOn() ? ' that we know of' : '') + '. Click an AO, a lane or a fleet. Click ' + esc(fname) + ' for the battle\'s AO.</p>') +
     '<div class="sides"><div class="side-n"><small>Ours at ' + esc(fname) + '</small><span class="data-lg us">' + cmShipsAtFront(0) + '</span></div><span class="vs">VS</span><div class="side-n r"><small>Theirs</small><span class="data-lg them">' + cmShipsAtFront(1) + '</span></div></div>' +
@@ -75901,16 +76742,16 @@ function cmRenderSheet() {
     const running = !!campaign, newOpen = !running || !!cmState.menuNew;
     const newWar = '<div class="row"><label>Seed <input type="number" id="cmSeed" step="1" value="' + (campaign ? campaign.rngSeed + 1 : SETTINGS.defaultSeed) + '"></label><button type="button" class="btn btn-primary" data-cm="sheet" data-id="new">' + (cmState.newArmed === 'new' ? 'Yes, end this war' : 'New campaign') + '</button>' +
         (running ? '' : '<button type="button" class="btn" data-cm="sheet" data-id="restore">Load the autosave</button>') + '</div>' +
-      '<div class="opt"><span class="label" title="Chosen once, when the campaign starts: On walks you through the first weeks step by step (lock-step, no replay); Off starts as after the tutorial, with everything it unlocks. The tutorial plays on the normal map and economy, so On sets those back to Normal">Tutorial for a new campaign</span><span><span class="seg">' +   // (v27 C1, section 7t)
+      '<div class="opt"><span class="label" title="Chosen once, when the campaign starts: On walks you through the first weeks step by step (lock-step, no replay); Off starts as after the tutorial, with everything it unlocks. It plays on the long map or the normal map; with Docks on, the docks start when the tutorial hands the war over">Tutorial for a new campaign</span><span><span class="seg">' +   // (v27 C1, section 7t)
         [['On', 1], ['Off', 0]].map(function (o) { return '<button type="button" data-cm="sheet" data-id="tut" data-val="' + o[1] + '" class="' + (cmState.newTutorial === o[1] ? 'on' : '') + '">' + o[0] + '</button>'; }).join('') + '</span></span>' +
       // (v74) the enemy for a new campaign; one not ready yet is greyed out
       '<span class="label" title="Chosen once, when the campaign starts: the one alien enemy of the war. The tutorial tells the story of first contact with this enemy (v82: every enemy has its own).">Enemy for a new campaign</span><span><span class="seg">' +
         Object.keys(ALIEN_FACTIONS).map(function (id) { const f = ALIEN_FACTIONS[id]; return '<button type="button" data-cm="sheet" data-id="enemy" data-val="' + id + '" class="' + (cmState.newEnemy === id ? 'on' : '') + '"' + (f.ready ? '' : ' disabled title="Not ready yet"') + '>' + esc(f.adj === 'Swarm' ? 'Swarm' : f.adj + 's') + '</button>'; }).join('') + '</span></span>' +
       // (v153.0) the long map test (06d2 campaignBuildLongMap): one battlefield from the Sun to the Kuiper Belt; no tutorial on it
-      '<span class="label" title="Chosen once, when the campaign starts. One long map (a test): the whole system is ONE battlefield, the Sun on the left and the Kuiper Belt on the right; new ships enter the map at their own yard and go where the fighting is; a ship may be sent only as far from the nearest friendly station as its transfers reach. The tutorial is skipped on the long map.">Map for a new campaign</span><span><span class="seg">' +
+      '<span class="label" title="Chosen once, when the campaign starts. One long map (a test): the whole system is ONE battlefield, the Sun on the left and the Kuiper Belt on the right; new ships enter the map at their own yard and go where the fighting is; a ship may be sent only as far from the nearest friendly station as its transfers reach. With the tutorial on, the rest of the system waits until the tutorial hands the war over.">Map for a new campaign</span><span><span class="seg">' +
         [['Normal', 0], ['One long map (test)', 1]].map(function (o) { return '<button type="button" data-cm="sheet" data-id="longmap" data-val="' + o[1] + '" class="' + ((cmState.newLongMap || 0) === o[1] ? 'on' : '') + '">' + o[0] + '</button>'; }).join('') + '</span></span>' +
       // (v170.0) the dock economy test (06f2): Alloys build docks, each keeping one ship in service; no tutorial with it
-      '<span class="label" title="Chosen once, when the campaign starts. Docks (a test): our Alloys build DOCKS instead of ships; a dock costs what its ship costs, its ship appears at once, and when that ship is lost the dock replaces it free at the place the dock was built, so the fleet is always about as big as the docks. Local designs get docks behind the front, 1-transfer designs out to Jupiter, bigger transfers anywhere. Upkeep is paid per dock. The aliens build as before. No tutorial.">Economy for a new campaign</span><span><span class="seg">' +
+      '<span class="label" title="Chosen once, when the campaign starts. Docks (a test): our Alloys build DOCKS instead of ships; a dock costs what its ship costs, its ship appears at once, and when that ship is lost the dock replaces it free at the place the dock was built, so the fleet is always about as big as the docks. Local designs get docks behind the front, 1-transfer designs out to Jupiter, bigger transfers anywhere. Upkeep is paid per dock. The aliens build as before. With the tutorial on, the docks start when the tutorial hands the war over.">Economy for a new campaign</span><span><span class="seg">' +
         [['Normal', 0], ['Docks (test)', 1]].map(function (o) { return '<button type="button" data-cm="sheet" data-id="docks" data-val="' + o[1] + '" class="' + ((cmState.newDocks || 0) === o[1] ? 'on' : '') + '">' + o[0] + '</button>'; }).join('') + '</span></span></div>';
     const files = '<div class="row">' + (running ? '<button type="button" class="btn" data-cm="sheet" data-id="restore">Load the autosave</button><button type="button" class="btn" data-cm="sheet" data-id="export">Export</button>' : '') +
         '<button type="button" class="btn" data-cm="sheet" data-id="importFile">Import a file</button><button type="button" class="btn btn-ghost" data-cm="sheet" data-id="importText">Import the text below</button>' +
@@ -75947,11 +76788,10 @@ function cmRenderSheet() {
 }
 // A new campaign from the Menu (or the tutorial demo, section 7t): 'newMars' is stop 4's Mars test campaign (brains on, nobody advances past Mars); 'new' the
 // full campaign on the whole map (v27 B1), with the tutorial on or off (v27 C1: opts { tutorial, script }; tutorialStartCampaign, section 7t).
-// (v184.0) The Tutorial choice for the next new campaign. The tutorial runs on the normal campaign map with the normal economy (its Earth-only start and
-// its scripted fights are built for those), so turning it On also sets Map and Economy back to Normal. Turning the long map or the docks on turns it Off.
+// (v184.0) The Tutorial choice for the next new campaign. (v186.0) The docks may stay on: they switch on at the tutorial's hand-over. (v187.0) So may the
+// long map: the tutorial holds back every place beyond Earth's region until it hands the war over (06g campaignLongTutorialHold).
 function cmTutorialChoice(on) {
   cmState.newTutorial = on ? 1 : 0;
-  if (on) { cmState.newLongMap = 0; cmState.newDocks = 0; }
 }
 function cmStartNewCampaign(id, seed, opts) {
   cmBuild();
@@ -75965,7 +76805,7 @@ function cmStartNewCampaign(id, seed, opts) {
   // (v74) the enemy picked (ALIEN_FACTIONS, 06d2; not ready = the Swarm); (v82) the tutorial runs for every enemy, each with its own first contact (24i part 3)
   const enemy = opts && typeof opts.enemy === 'string' && ALIEN_FACTIONS[opts.enemy] && ALIEN_FACTIONS[opts.enemy].ready ? opts.enemy : 'swarm';
   if (id === 'newMars') campaignStartMars({ seed: seed, enemy: enemy });
-  else tutorialStartCampaign({ seed: seed, tutorial: !!(opts && opts.tutorial) && !(opts && opts.longMap === true) && !(opts && opts.docks === true), script: opts && opts.script, enemy: enemy, longMap: !!(opts && opts.longMap === true), docks: !!(opts && opts.docks === true) });   // (v153.0) the long map test skips the tutorial; (v170.0) so does the dock economy test
+  else tutorialStartCampaign({ seed: seed, tutorial: !!(opts && opts.tutorial), script: opts && opts.script, enemy: enemy, longMap: !!(opts && opts.longMap === true), docks: !!(opts && opts.docks === true) });   // (v153.0) the long map test skips the tutorial; (v170.0) so does the dock economy test
   officerNameSeedNext = null;
   if (campaign && campaign.v3) campaign.v3.noLibrary = !!(opts && opts.library === false);   // (v32) "Bring my design library" off: the Bureau's Library tab stays shut in this campaign (section 10h)
   dispatchNewCampaign(campaign, true);
@@ -75990,8 +76830,8 @@ function cmSheetAction(id, btn) {
   if (id === 'ui') { const key = btn.dataset.key, v = typeof UI_SETTINGS[key] === 'number' ? +btn.dataset.val : btn.dataset.val; saveUiSetting(key, v); if (key === 'effects') { applyEffectsClass(); cmEl.classList.toggle('fx-off', v === 'off'); cmEl.classList.toggle('fx-subtle', v === 'subtle'); } cmRenderSheet(); return; }
   if (id === 'tut') { cmTutorialChoice(+btn.dataset.val === 1 ? 1 : 0); cmRenderSheet(); return; }   // (v27 C1) the tutorial on or off for the next new campaign
   if (id === 'enemy') { const f = ALIEN_FACTIONS[btn.dataset.val]; if (f && f.ready) cmState.newEnemy = f.id; cmRenderSheet(); return; }
-  if (id === 'longmap') { cmState.newLongMap = +btn.dataset.val === 1 ? 1 : 0; if (cmState.newLongMap === 1) cmState.newTutorial = 0; cmRenderSheet(); return; }
-  if (id === 'docks') { cmState.newDocks = +btn.dataset.val === 1 ? 1 : 0; if (cmState.newDocks === 1) cmState.newTutorial = 0; cmRenderSheet(); return; }   // (v170.0) the dock economy test; it skips the tutorial   // (v153.0) the long map test; it skips the tutorial   // (v74) the enemy for the next new campaign
+  if (id === 'longmap') { cmState.newLongMap = +btn.dataset.val === 1 ? 1 : 0; cmRenderSheet(); return; }
+  if (id === 'docks') { cmState.newDocks = +btn.dataset.val === 1 ? 1 : 0; cmRenderSheet(); return; }   // (v170.0) the dock economy test; it skips the tutorial   // (v153.0) the long map test; it skips the tutorial   // (v74) the enemy for the next new campaign
   if (id === 'new' || id === 'newMars') {
     // (v93.1, AI tester Bug) with a war running, the first press only asks: "New campaign" ends the war you are in, so it must be pressed twice
     if (id === 'new' && campaign && !campaign.over && cmState.newArmed !== id) {   // (the Mars-only test war, from the testing tools, starts at once)
@@ -76002,7 +76842,7 @@ function cmSheetAction(id, btn) {
     cmState.newArmed = '';
     cmState.sheetPause = null;                                   // (the new war starts paused, as always)
     const seed = Math.floor(+document.getElementById('cmSeed').value);
-    cmStartNewCampaign(id, isFinite(seed) ? seed : SETTINGS.defaultSeed, { tutorial: cmState.newTutorial === 1 && cmState.newLongMap !== 1 && cmState.newDocks !== 1, enemy: cmState.newEnemy, longMap: cmState.newLongMap === 1, docks: cmState.newDocks === 1 });   // (v153.0) the long map skips the tutorial; (v170.0) so does the dock economy test
+    cmStartNewCampaign(id, isFinite(seed) ? seed : SETTINGS.defaultSeed, { tutorial: cmState.newTutorial === 1, enemy: cmState.newEnemy, longMap: cmState.newLongMap === 1, docks: cmState.newDocks === 1 });   // (v153.0) the long map skips the tutorial; (v170.0) so does the dock economy test
     return;
   }
   if (id === 'restore') { SETTINGS.campaignModel = 1; const res = campaignRestoreAutosave(); if (res.ok) { cmCloseSheet(); cmState.view = 'map'; cmRender(true); cmHeadForBattle(); return; } cmState.sheetMsg = res.messages.map(function (m) { return m.text; }).join('\n'); cmRenderSheet(); return; }
@@ -76736,6 +77576,7 @@ const dw = { c: null, front: '', over: false, bombard: {}, aos: {}, locs: {}, si
 function dispatchFrontBaseline(c) {
   const st = campaignFrontSnap();
   dw.front = c.battle.ao; dw.secured = st.securedBy; dw.besieged = st.besieged; dw.live = c.battle.state === 'live';
+  dw.regs = null;                                                // (v189.0) the long map's regions: taken afresh at the next look
   if (!dw.siegeOpen) dw.siegeOpen = {};
   if (st.besieged) dw.siegeOpen[c.battle.ao] = true;              // (v93.1) a siege already on (a load, a new front) may still be reported lifted
   dw.owners = {}; for (const p of st.places) dw.owners[p.id] = p.owner;
@@ -76922,6 +77763,29 @@ function dispatchWatch() {
       for (const f of c.fleets) if (campaignAtFront(f)) counts[f.side] += fleetShipCount(f);
       dispatchAdd('brief.perf.battleParked', { time: plural(Math.max(0.1, Math.round((ao.lastWakeSeconds || 0) / 3600 * 10) / 10), 'battle hour'), blue: counts[0], red: counts[1] }, 'ao');
     }
+  }
+  // (v189.0) THE LONG MAP: the one AO (the whole system) is never secured and always fought over, so its own lines below would say "Sol besieged" once
+  // and nothing after. The news is told region by region instead (06d2 longRegionStates): a region of ours with alien ships in it, the siege lifted,
+  // a region secured, a region of ours lost.
+  const longDw = typeof longMapOn === 'function' && longMapOn();
+  if (longDw) {
+    const rows = longRegionStates();
+    if (!dw.regs) { dw.regs = {}; for (const id in rows) dw.regs[id] = { sec: rows[id].securedBy, bes: rows[id].securedBy === 0 && rows[id].besieged }; }
+    if (!dw.siegeOpen) dw.siegeOpen = {};
+    for (const r of longMapRegions()) {
+      const now = rows[r.id]; if (!now) continue;
+      const was = dw.regs[r.id] || { sec: now.securedBy, bes: false }, bes = now.securedBy === 0 && now.besieged, key = 'region:' + r.id;
+      if (bes !== was.bes) {
+        if (bes && dispatchSiegeNew(key) && (dw.siegeOpen[key] = true)) dispatchAdd('brief.enemy.aoBesieged', { ao: r.name, trickle: Math.round(SETTINGS.siegeBoostTrickle * 100), yard: Math.round(SETTINGS.siegeResourceFactor * 100), foothold: Math.round((SETTINGS.boostFootholdShare || 0) * 100) }, 'ao');
+        else if (!bes && now.securedBy === 0 && dw.siegeOpen[key]) { dw.siegeOpen[key] = false; dispatchAdd('brief.perf.siegeLifted', { ao: r.name, side: 'our' }, 'ao'); }
+      }
+      if (now.securedBy !== was.sec) {
+        if (now.securedBy === 0) dispatchAdd('brief.perf.aoSecured', { ao: r.name }, 'ao');
+        else if (now.securedBy === 1 && was.sec === 0) dispatchAdd('brief.enemy.aoLost', { ao: r.name }, 'ao');
+      }
+      dw.regs[r.id] = { sec: now.securedBy, bes: bes };
+    }
+    dw.besieged = ao.besieged; dw.secured = ao.securedBy;        // (the one AO's own lines stay quiet)
   }
   // The front besieged or the siege lifted.
   if (ao.besieged !== dw.besieged) {
@@ -78072,13 +78936,16 @@ TUTORIAL_SCRIPTS.main = {
       aide: 'Congratulations, Chief. I\'ve asked to stay on as your aide. They said yes before I finished asking.', button: 'To the war room' },
 
     // ---- 5. The Earth-only map ----
-    { id: 'mapEarth', target: '#campaignScreen [data-cm="ao"][data-id="earth"]', clock: 'pause',
+    { id: 'mapEarth', target: tutEarthOnMap, clock: 'pause',
       onStart: function (ctx) { tutorialOpen('map'); tutSet(ctx, 'contact', 'far'); },
       title: 'The war room',
-      text: 'This is the war map. Space is split into AOs, areas of operations, one for each planet and its moons. Earth\'s AO holds Earth itself, with its station and launch site, and Luna.\n' +
-            'Ships move between the zones inside an AO in hours. But going from one AO to another is a transfer: it takes a week or more, and enough fuel for the transfer.' },
+      text: function () { return longMapOn()   // (v187.0) the long map: one battlefield in regions
+        ? 'This is the war map. The whole system is one battlefield, split into regions: one for each planet and its moons. Earth\'s region holds Earth itself, with its station and launch site, and Luna.\n' +
+          'Ships cross a region in hours. Between two regions lies empty space: crossing it takes much longer, and the fuel of a transfer. A ship can only go as far from our stations as its transfers reach.'
+        : 'This is the war map. Space is split into AOs, areas of operations, one for each planet and its moons. Earth\'s AO holds Earth itself, with its station and launch site, and Luna.\n' +
+          'Ships move between the zones inside an AO in hours. But going from one AO to another is a transfer: it takes a week or more, and enough fuel for the transfer.'; } },
     { id: 'mapContact', target: '#cmContact', clock: 'pause',
-      text: 'The rest of the system is dark to us: our telescopes only watch Earth\'s AO for now. Far out, there is a contact.', aide: function () { return tutFace().contactAide; } },
+      text: function () { return 'The rest of the system is dark to us: our telescopes only watch Earth\'s ' + (longMapOn() ? 'region' : 'AO') + ' for now. Far out, there is a contact.'; }, aide: function () { return tutFace().contactAide; } },
     { id: 'mapAlloys', target: '#cmRates', clock: 'pause',
       text: 'The top bar shows Earth\'s output as rates: Alloys 100 a week. There are no stockpiles. Each week the yards spend that week\'s Alloys on ships, and what they can\'t use goes unused.',
       aide: 'Earth can spare about one CargoX Rocket a week. Let\'s see how they do.' },
@@ -78153,7 +79020,7 @@ TUTORIAL_SCRIPTS.main = {
       aide: 'First Sentries off the line in a week or so, Chief.' },
 
     // ---- 8. The Luna fight (scripted win) ----
-    { id: 'sentries', target: '#campaignScreen [data-cm="ao"][data-id="earth"]', lock: false, clock: 'run', speed: 2,
+    { id: 'sentries', target: tutEarthOnMap, lock: false, clock: 'run', speed: 2,
       wait: { until: function (ctx) { return tutCount(ctx.data.sentryId) >= 2 || campaign.week >= ctx.startWeek + TUT_SENTRY_WAIT_WEEKS; } },
       onStart: function (ctx) { tutorialOpen('map'); },
       onEnd: function (ctx) { tutTopUp(ctx.data.sentryId, 2); },
@@ -78195,13 +79062,16 @@ TUTORIAL_SCRIPTS.main = {
             tutFace().end() +   // (v82) each enemy's own hand-over (24i part 3)
             'The corvette is unlocked in the Bureau: the first hull big enough to carry fuel for a transfer. Design, approve, watch, and design again.\n' +
             'For now it runs on batteries: join 4 squares of solar panels to them and it can transfer as far as Mars. Fission reactors come later, with research.\n' +   // (v59: fission left the start kit)
-            'Research starts now too. The councillors pick their projects; mark your own priority on the Research tab.'; },
+            'Research starts now too. The councillors pick their projects; mark your own priority on the Research tab.' +
+            (campaign && campaign.docks && campaign.docks.atHandOver ? '\nFrom now on Alloys build DOCKS, not single ships. Each dock keeps one ship of its design in service and replaces it free when it is lost. Every ship you built gets a dock of its own.' : ''); },   // (v186.0) the dock economy, when it was chosen with the tutorial
       aide: 'I\'ll be at the council table if you need me.', button: 'Take command of the Bureau' }
   ],
   onEnd: function () { tutRedesignLock(false); tutorialHandOver(); tutorialOpen('map'); tutorialClock('run', 1); }
 };
 
 // ---- The main script's helpers ----
+// (v187.0) Earth on the war map: its AO, or on the long map its region (every region there opens the one AO, so the region tells them apart).
+function tutEarthOnMap() { return document.querySelector(longMapOn() ? '#campaignScreen [data-cm="ao"][data-region="earth"]' : '#campaignScreen [data-cm="ao"][data-id="earth"]'); }
 function tutSet(ctx, key, v) { if (ctx && ctx.data) ctx.data[key] = v; }
 function tutOnce(ctx, key, fn) { if (!ctx || !ctx.data || ctx.data['once_' + key]) return; ctx.data['once_' + key] = true; fn(ctx); tutSave(); }
 // After a reload a Bureau or battle sub-step goes back to the first sub-step of its stretch (the half-made design is not saved). Returns true when it moved.
@@ -78692,8 +79562,9 @@ function tutorialWorldRect(x, y, r) {
 function tutorialStartCampaign(opts) {
   opts = opts || {};
   const on = opts.tutorial === true;
-  if (on) campaignStartTutorial({ seed: opts.seed, enemy: opts.enemy });   // (v27 C3) the Earth-only start: the war held at Earth until step 10 hands it over (06g); (v82) against the enemy picked
+  if (on) campaignStartTutorial({ seed: opts.seed, enemy: opts.enemy, longMap: opts.longMap === true });   // (v187.0) the long map too   // (v27 C3) the Earth-only start: the war held at Earth until step 10 hands it over (06g); (v82) against the enemy picked
   else campaignStartFull({ seed: opts.seed, tutorial: false, enemy: opts.enemy, longMap: opts.longMap === true, docks: opts.docks === true });   // (v74) the enemy picked on the New Campaign screen; (v153.0) the long map test; (v170.0) the dock economy test
+  if (on && opts.docks === true) campaign.docks.atHandOver = true;   // (v186.0) the dock economy waits for the hand-over: the tutorial teaches building ships first
   if (on) tutorialBegin(opts.script || 'main', true);
   else {
     tutorialHandOver();
@@ -78714,6 +79585,7 @@ function tutorialHandOver() {
   const cs = campaignCrashSiteRow(), at = cs ? campaignAoOf(cs.id) : '', row = at ? campaignPlaceRow(at, cs.id) : null;
   if (row && row.owner < 0 && campaign.ao[at] && campaign.ao[at].securedBy === 0) { row.owner = 0; row.facility = 'standing'; row.facilityHull = 1; row.facilityShield = 1; }   // Luna ours, if the Luna fight has not taken it
   campaignV3UnlockCorvette();                                // the corvette in the Bureau (A2's kit: until the Mars-assault beat exists it opens here)
+  if (campaign.docks && campaign.docks.atHandOver) { delete campaign.docks.atHandOver; campaignDockSet(true); }   // (v186.0) the dock economy chosen with the tutorial: on now, every ship the player built gets its own dock
   campaignEconWeek();                                        // this week's Alloys a week, at once
   // (v93.3, AI tester Ada) the full map's start is not news: Mars and its places were the aliens' all along in the story (the last card says so), so the
   // Dispatches take the map as it now stands instead of reporting MARS LOST, PHOBOS LOST and DEIMOS LOST as if they had just fallen
@@ -83425,23 +84297,23 @@ function mmRender() {
     body.appendChild(en);
     const tut = el('div', 'mm-row'); tut.appendChild(el('span', 'label', 'Tutorial'));
     const seg = el('span', 'seg');
-    [['On', 1], ['Off', 0]].forEach(function (o) { const b = el('button', cmState.newTutorial === o[1] ? 'on' : '', o[0]); b.type = 'button'; if (o[1] === 1) b.title = 'The tutorial plays on the normal map and economy, so turning it on sets Map and Economy to Normal'; b.addEventListener('click', function () { cmTutorialChoice(o[1]); mmRender(); }); seg.appendChild(b); });   // (v184.0) never locked: On sets Map and Economy back to Normal
+    [['On', 1], ['Off', 0]].forEach(function (o) { const b = el('button', cmState.newTutorial === o[1] ? 'on' : '', o[0]); b.type = 'button'; b.addEventListener('click', function () { cmTutorialChoice(o[1]); mmRender(); }); seg.appendChild(b); });   // (v184.0) never locked (v186.0: the docks may stay on; v187.0: so may the long map)
     tut.appendChild(seg);
-    tut.appendChild(el('span', 'mm-msg', cmState.newTutorial === 1 ? 'Walks you through the first weeks, step by step, on the normal map and economy.' : 'Starts as after the tutorial, with everything it unlocks.'));
+    tut.appendChild(el('span', 'mm-msg', cmState.newTutorial === 1 ? 'Walks you through the first weeks, step by step' + (cmState.newLongMap === 1 ? ', on the long map' : '') + (cmState.newDocks === 1 ? '; the docks start when it hands the war over.' : '.') : 'Starts as after the tutorial, with everything it unlocks.'));
     body.appendChild(tut);
     // (v154.1) the map: the normal campaign of AOs, or the v153.0 long map test (one battlefield from the Sun to the Kuiper Belt, 06d2); the long map skips the tutorial
     const mp = el('div', 'mm-row'); mp.appendChild(el('span', 'label', 'Map'));
     const segM = el('span', 'seg');
-    [['Normal', 0], ['Long map', 1]].forEach(function (o) { const b = el('button', cmState.newLongMap === o[1] ? 'on' : '', o[0]); b.type = 'button'; b.addEventListener('click', function () { cmState.newLongMap = o[1]; if (o[1] === 1) cmState.newTutorial = 0; mmRender(); }); segM.appendChild(b); });
+    [['Normal', 0], ['Long map', 1]].forEach(function (o) { const b = el('button', cmState.newLongMap === o[1] ? 'on' : '', o[0]); b.type = 'button'; b.addEventListener('click', function () { cmState.newLongMap = o[1]; mmRender(); }); segM.appendChild(b); });
     mp.appendChild(segM);
-    mp.appendChild(el('span', 'mm-msg', cmState.newLongMap === 1 ? 'Test: one battlefield from the Sun on the left to the Kuiper Belt on the right. Ships enter at their own yards and stream to the front; no tutorial.' : 'The campaign map of AOs, one battle at the front.'));
+    mp.appendChild(el('span', 'mm-msg', cmState.newLongMap === 1 ? 'Test: one battlefield from the Sun on the left to the Kuiper Belt on the right. Ships enter at their own yards and stream to the front.' : 'The campaign map of AOs, one battle at the front.'));
     body.appendChild(mp);
     // (v170.0) the economy: as it is, or the dock economy test (06f2: the yards build docks, each keeping one ship in service); it skips the tutorial too
     const ec = el('div', 'mm-row'); ec.appendChild(el('span', 'label', 'Economy'));
     const segD = el('span', 'seg');
-    [['Normal', 0], ['Docks (test)', 1]].forEach(function (o) { const b = el('button', cmState.newDocks === o[1] ? 'on' : '', o[0]); b.type = 'button'; b.addEventListener('click', function () { cmState.newDocks = o[1]; if (o[1] === 1) cmState.newTutorial = 0; mmRender(); }); segD.appendChild(b); });
+    [['Normal', 0], ['Docks (test)', 1]].forEach(function (o) { const b = el('button', cmState.newDocks === o[1] ? 'on' : '', o[0]); b.type = 'button'; b.addEventListener('click', function () { cmState.newDocks = o[1]; mmRender(); }); segD.appendChild(b); });
     ec.appendChild(segD);
-    ec.appendChild(el('span', 'mm-msg', cmState.newDocks === 1 ? 'Test: Alloys build docks instead of ships. Each dock keeps one ship of its design in service, replacing it free at the dock when it is lost. The Swarm gets hatcheries the same way and always matches our numbers, growing in a long stalemate; no tutorial.' : 'Alloys build ships, as before.'));
+    ec.appendChild(el('span', 'mm-msg', cmState.newDocks === 1 ? 'Test: Alloys build docks instead of ships. Each dock keeps one ship of its design in service, replacing it free at the dock when it is lost. The Swarm gets hatcheries the same way and always matches our numbers, growing in a long stalemate. With the tutorial on, the docks start when it hands the war over.' : 'Alloys build ships, as before.'));
     body.appendChild(ec);
     // (v32) the design library: your saved plans can be brought into the new war (section 10h)
     const lib = el('div', 'mm-row'); lib.appendChild(el('span', 'label', 'Design library'));
@@ -83460,7 +84332,7 @@ function mmRender() {
     body.appendChild(ofr);
     const row = el('div', 'mm-row');
     // (v64) every new war gets a fresh random seed, so the Luna deposit and the war's other random numbers differ from game to game (before, it was always 12345)
-    button(row, 'Start the war', true, function () { hideMainMenu(); cmStartNewCampaign('new', newOfficerNameSeed(), { tutorial: cmState.newTutorial === 1 && cmState.newLongMap !== 1 && cmState.newDocks !== 1, library: mmNewLibrary === 1, officers: mmNewOfficers === 1, enemy: cmState.newEnemy, longMap: cmState.newLongMap === 1, docks: cmState.newDocks === 1 }); });   // (v170.0) docks: the dock economy test
+    button(row, 'Start the war', true, function () { hideMainMenu(); cmStartNewCampaign('new', newOfficerNameSeed(), { tutorial: cmState.newTutorial === 1, library: mmNewLibrary === 1, officers: mmNewOfficers === 1, enemy: cmState.newEnemy, longMap: cmState.newLongMap === 1, docks: cmState.newDocks === 1 }); });   // (v170.0) docks: the dock economy test
     body.appendChild(row);
   } else if (mmPanelOpen === 'load') {
     head.textContent = 'Load';
