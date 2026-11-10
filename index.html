@@ -3474,7 +3474,7 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
   <div class="red oldOnly">Red: <b id="redCount">0</b></div>
   <div>Ships drawn on screen: <b id="onScreen">0</b></div>
   <div class="oldOnly">Battle time: <b id="battleTimeText">0.0</b> s</div>
-  <div class="oldOnly">Speed: <button id="speed1">1x</button><button id="speed4">4x</button><button id="speed16">16x</button><button id="speed64">64x</button><button id="speed256">256x</button></div>
+  <div class="oldOnly">Speed: <button id="speedQuarter">0.25x</button><button id="speedHalf">0.5x</button><button id="speed1">1x</button><button id="speed4">4x</button><button id="speed16">16x</button><button id="speed64">64x</button><button id="speed256">256x</button></div>
   <div class="oldOnly"><button id="pauseButton">Pause (or change a design)</button></div>
   <div id="reinforceStatus" class="oldOnly"></div>
   <div><label><input type="checkbox" id="debugCheck"> Debug view</label> <label><input type="checkbox" id="dangerCheck"> Danger map</label></div>
@@ -3513,7 +3513,7 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
     <div class="bs-clock"><span class="label" id="bsClockLabel">Battle time</span><span class="data-lg" id="bsClock">00:00</span></div>
     <div class="bs-speed" role="group" aria-label="Speed">
       <button type="button" id="bsStop" title="Stop the clock (the map stays live: look around, click ships). Press again, or a speed, to go on."><svg viewBox="0 0 14 14"><path d="M3 2h3v10H3zM8 2h3v10H8z" fill="currentColor"/></svg></button>
-      <button type="button" id="bsSpeed1">1&times;</button><button type="button" id="bsSpeed4">4&times;</button><button type="button" id="bsSpeed16">16&times;</button><button type="button" id="bsSpeed64" title="64x: as fast as the computer allows in a big battle">64&times;</button><button type="button" id="bsSpeed256" title="256x: as fast as the computer allows in a big battle">256&times;</button>
+      <button type="button" id="bsSpeedQuarter" title="Slow motion: a quarter of normal speed">&frac14;&times;</button><button type="button" id="bsSpeedHalf" title="Slow motion: half of normal speed">&frac12;&times;</button><button type="button" id="bsSpeed1">1&times;</button><button type="button" id="bsSpeed4">4&times;</button><button type="button" id="bsSpeed16">16&times;</button><button type="button" id="bsSpeed64" title="64x: as fast as the computer allows in a big battle">64&times;</button><button type="button" id="bsSpeed256" title="256x: as fast as the computer allows in a big battle">256&times;</button>
     </div>
     <button type="button" class="btn btn-primary" id="bsRedesign" title="Pauses the battle: change the production order, or open the ship designer to change a design (saved designs join the battle as a new version).">
       <svg class="icon icon-20" viewBox="0 0 24 24"><path d="M4 20 L4 15 L15 4 L20 9 L9 20 Z"/><path d="M12.5 6.5 L17.5 11.5"/></svg><span id="bsRedesignText">Pause &amp; redesign</span>
@@ -10291,6 +10291,47 @@ const SETTINGS = {
   shipUpkeepPerClass: { tiny: 1, small: 2, corvette: 3, frigate: 4, destroyer: 6, cruiser: 8, capital: 12, titan: 20 },   // Alloys a week per living ship of each size class (Alex's numbers, chosen 1 Nov)
   shipUpkeepMaxShare: 0.75,  // upkeep never takes more than this share of a side's income: the yards always keep at least a quarter, so ships keep coming
   capitalBuildShare: 0.1667, // capital hulls are at most this share of all the hulls a side has built (1 in 6)
+  // (v170.0) THE DOCK ECONOMY, A TEST (Alex 9 Nov; notes/plans/campaign/dock-economy.md; 06f2). Switched on per war (the New campaign screen's Economy
+  //  choice, or the debug menu's tick: campaign.docks.on), our side only. The yards' Alloys build DOCKS instead of ships: a dock costs what its ship costs
+  //  and its ship appears at once; from then on the dock keeps one ship of its design alive, replacing a lost one free at the dock's place. Upkeep is paid
+  //  per dock (shipUpkeepPerClass), and each dock takes a share of its design's advanced resources off the week's rates too.
+  dockModel: 0,               // 1 = every new campaign uses docks; 0 = the economy as before (a war can still switch docks on by itself: campaign.docks.on)
+  dockResUpkeepShare: 0.02,   // each dock takes this share of what one of its ships needs of every advanced resource off the week's rate (a corvette with 50 Fissiles: 1 a week)
+  dockResUpkeepMaxShare: 0.75,   // ... never more than this share of a resource's rate in all (the yards always keep a quarter, as with Alloys)
+  dockOneTransferMaxPos: 3,   // a 1-transfer design's docks go no farther out than this map column (3 = Jupiter); a Local design's docks stay behind the front; 2 or more transfers: anywhere
+  dockScoreGap: 1,            // where a dock goes (06f2 campaignDockScore): minus this per AO between the yard and the front ...
+  dockScoreTier: 0.5,         //   ... plus this per development tier of the place ...
+  dockScoreHeld: 1,           //   ... plus up to this for how long we have held the place (full at dockHeldFullWeeks) ...
+  dockHeldFullWeeks: 20,      //   ... (weeks held for the full score)
+  dockScoreBerth: 0.5,        //   ... plus this when the yard already has a berth that fits (no new berth to lay)
+  dockScoreSpread: 0.75,      // a design's docks are built at every allowed yard scoring within this much of the best one (so several yards share the work)
+  dockUpgradeWeeks: 1,        // a dock going up a size class takes this many weeks once its difference is paid (its ship stays in service meanwhile)
+  dockRefitMaxShare: 0.5,     // refits and upgrades take at most this share of a week's Alloys, so new docks keep coming
+  swarmDockModel: 1,          // (v171.0) 1 = in a docks war the Swarm's nests get HATCHERIES too (06f2 campaignSwarmDockMatch): one per living ship, replaced free, and at least as many as we have docks or ships; 0 = the Swarm hatches as before
+  swarmDockMatch: 1,          // the Swarm's hatcheries are at least this many times our docks or living ships (whichever is more)
+  swarmDockStallWeeks: 4,     // once the front has stood still this many weeks the Swarm's economy starts growing on its own
+  swarmDockStallGrowth: 0.03, // ... by this share each further week (the floor factor never falls back)
+  swarmDockBigShift: 0.5,     // how strongly the stalemate growth leans the new hatcheries to the larger hulls in the Swarm's mix
+  dockEvoModel: 1,            // (v172.0) 1 = in a docks war the docks EVOLVE (06f3): poor designs are benched and their docks refit, docks go up a class when a bigger design does better, the Swarm combines small hatcheries into bigger ones or splits them back; 0 = off
+  dockEvoDecay: 0.85,         // each dawn a design's kills and losses ledger keeps this share (what it did lately counts most)
+  dockEvoMinSample: 8,        // kills + losses a design needs (after decay) before its score counts
+  dockEvoSwapRatio: 0.5,      // our design is benched when its score is below this share of the best design of its class
+  dockEvoKeepRatio: 0.8,      // ... and comes back when it reaches this share again
+  dockEvoUpRatio: 1.3,        // our docks go up a class when a bigger design's score is at least this many times the design's own
+  dockEvoUpShare: 0.1,        // ... this share of the design's docks a dawn (at least one), and no more waiting to be paid than this share of all our docks
+  dockEvoSwarmRatio: 1.3,     // the Swarm combines (or splits) when one class scores this many times another
+  dockEvoSwarmShare: 0.1,     // ... this share of the class's hatcheries a dawn
+  dockEvoSwarmSplit: 1,       // 1 = combined hatcheries split back when the small class does better again; 0 = they never split
+  // (v173.0) REPAIR OVER SCUTTLE (Alex 10 Nov: with free replacements, scuttling a crippled ship was nearly always best). Three answers:
+  dockSpareModel: 1,          // 1 = each of our docks keeps ONE SPARE ready: a lost ship is replaced at once from it, and the dock then builds the next spare
+                              //   while the new ship serves (dockSpareDays). Only a dock that loses its ship again before that spare is ready has to wait.
+                              //   0 = replaced every building day with no wait (v172.0)
+  dockSpareDays: { tiny: 1, small: 2, corvette: 3, frigate: 5, destroyer: 7, cruiser: 10, capital: 14, titan: 21 },   // days a dock takes to build its next spare, by size class
+  dockSpareSwarm: 0,          // 1 = the Swarm's hatcheries wait for spares too; 0 = they replace at once (its match floor works as before)
+  scuttleOnLedger: 1,         // 1 = a scuttled ship counts as a loss of its design on the docks' ledger (06f3), as a ship the enemy destroyed does; 0 = not counted (v172.0)
+  scuttleKillShare: 0.5,      // a scuttled flagship's officers now roll for their fate like any lost flagship, with this share of the usual chance of being killed
+                              //   (the crew had time to get off). 0 = they always survive (v66 to v172.0)
+  scuttleXpCost: 60,          // experience an officer loses for each ship of its command scuttled (a level is xpPerLevel 400), so scuttling slows promotion
   assaultSendAll: 1,          // (v148.0, Alex 8 Nov: "there are idle ships") 1 = an assault to retake the front sends EVERY ship in Earth's pool that can transfer, once the pool
                               //   is worth what the assault needs (before, it sent just enough to reach executiveAssaultRatio x the threat, about 5 to 36 ships a week, while
                               //   300 waited at Earth on Alex's week-82 save, and the Swarm's 87-ship waves beat them one batch at a time). While the pool is short it masses
@@ -11365,7 +11406,7 @@ const SETTING_MUST_BE_POSITIVE = ['moonOrbitMinutes', 'moonOrbitRef', 'moonOrbit
   'serviceLastMax', 'serviceHistoryMax', 'serviceEventsMax', 'recentChangeSeconds', 'dossierLastActions', 'reportOfficerRows', 'dossierChartMinSpan',
   'orbitRateHeadroom', 'orbitMinRate', 'facingLeadFactor', 'interceptMaxLead', 'orbitRangeFraction', 'orbitTurnMargin', 'tightOrbitSizeRatio', 'tightOrbitHulls', 'tightOrbitStraySeconds', 'tightOrbitSpacings', 'tacticMinSeconds', 'chaseGiveUpSeconds', 'noChaseSeconds',
   'shapeEnterFactor', 'shapeExitFactor', 'axisTurnRate'];
-const SETTING_MUST_BE_NON_NEGATIVE = ['campaignTidySeconds', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftPressed', 'coreLoopShiftQuiet', 'coreLoopShiftMax', 'coreLoopHiveHoldShare', 'coreLoopAssessSeconds', 'coreLoopAssaultMixShare', 'coreLoopReinSwing', 'coreLoopReserveShare', 'coreLoopStrikeShare', 'coreLoopBoldAbove', 'coreLoopVaSeconds', 'coreLoopVaSlack', 'coreLoopVaWornShare', 'coreLoopDefenceRatio', 'coreLoopFleetHoldSeconds', 'coreLoopDivisionMinShips', 'coreLoopAssaultRatio', 'coreLoopAssaultFloor', 'coreLoopPlaceDefenceWorth', 'placesHomeEdgeBias', 'placesBrokenBonus', 'coreLoopStreamWeeks', 'coreLoopStreamMinShips', 'coreLoopLineKeep', 'coreLoopLineSeconds', 'coreLoopLineLooks', 'coreLoopLineDepth', 'coreLoopLineStep', 'coreLoopLineWindow', 'coreLoopTipRatio', 'coreLoopClearSeconds', 'coreLoopBackSeconds', 'coreLoopHoldSeconds', 'coreLoopBerths', 'divisionMergeSlack', 'swarmNestRetakeKeep', 'swarmGrowWindowWeeks', 'swarmGrowLowLoss', 'swarmGrowHighLoss', 'swarmGrowFromShare', 'swarmGrowStep', 'swarmGrowSmallCut', 'swarmGrowBigGain', 'swarmSpreadWeeks', 'hangarRefillWeeks', 'fighterTurnaroundSeconds', 'fighterLaunchSeconds', 'fighterLaunchRange', 'fighterTickSeconds', 'stationFighterGuardRadius', 'droneJamReach', 'droneJamScatterMul', 'droneJamLoseChance', 'dcNoRoomSeconds', 'cmdPaceFormSeconds', 'cmdPaceMinShare', 'cmdPaceLeadSeconds', 'cmdPaceMinMarch', 'divisionSpeedSort', 'divisionSlowBelow', 'divisionFastAbove', 'swarmPaceFormSeconds', 'swarmDrift', 'swarmDivDrift', 'wreckHitShare', 'repairPartsWeeks', 'repairAutoBelow', 'dockQueueWarnSeconds', 'crippledCheckSeconds', 'towSpeedShare', 'towMaxShare', 'towHealthyHull', 'feedHullBelow', 'feedSeconds', 'feedSquadSeconds', 'feedHullShare', 'feedAmmoShare', 'feedGrabRange', 'feedHungryHull', 'feedHungryAmmo', 'feedHatchlingRange', 'swarmInfestTierGain', 'swarmInfestGrowShare', 'swarmInfestStartShare', 'swarmSurfaceInfest', 'swarmBurnPerDps', 'swarmBurnHotMul', 'swarmBurnPerKill', 'swarmRegrowSeconds', 'swarmSporeEvery', 'swarmSporeShotsPer', 'swarmSporeDpsPerInf', 'swarmBileEvery', 'swarmBileFrom', 'swarmBileDpsPerInf', 'swarmConvertCap', 'swarmConvertAimShare', 'swarmConvertFromWeek', 'swarmConvertFullWeek', 'swarmConvertDepthShare', 'swarmConvertWaste', 'facingTwoSidedAngle', 'freshSideHoldSeconds', 'crossTEdge', 'crossTCreepFraction', 'crossTWidth', 'crossTTurnEdge', 'placesPicketSpread', 'placesPicketMove', 'placesPicketMax', 'placesWithdrawGatherSeconds', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerTargetShare', 'ledgerLineMin', 'ledgerLossMargin', 'ledgerSaveFloor', 'ledgerMinLoss', 'ledgerSurplusShare', 'withdrawRatio', 'withdrawHoldWeeks', 'ledgerAssaultWeeks', 'indDevShareSave', 'indDevShareIdle', 'dirPriorityMul', 'resourceHeldShare', 'devGraceWeeks', 'devCapStart', 'devCapAlien', 'devPotShare', 'devIdleWeeks', 'devMaxBuilds', 'bbAcidSeconds', 'bbAcidMaxPatches', 'bbRegrowQuiet', 'bbRegrowHull', 'bbRegrowPlate', 'bbRegrowHeatStop', 'bbBurstTouch', 'bbBurstDeathReach', 'bbBurstSeek', 'bbVolleySpread', 'bbMissileRetries', 'bbPdRoundsPerShot', 'bbPdFlakRounds', 'bbPdReadyRounds', 'bbPdLaserHeat', 'bbRadiatorFoldSeconds', 'bbSideWeight', 'deflectRatio', 'deflectCallSeconds', 'readyRoundsPerGun', 'boostFuEarth', 'boostFuOther', 'boostGrowth', 'alloysEarthStart', 'alloysEarthRampTo', 'alloysEarthRampWeeks', 'alloysGrowth', 'fissilesGrowth', 'alienAlloysStart', 'alienAlloysGrowth', 'alienAlloysPerStep', 'alienBoostPerStep', 'alienNodeLossShare', 'shipUpkeepMaxShare', 'berthIdleWeeks', 'berthBoostWeeks', 'berthMaxGrowth', 'campaignBuildDays', 'campaignLiveEnterShips', 'civilianNoteWeeks', 'leaderNewsCooldown', 'leaderNewsCombatGap', 'stationRebuildYardBonus', 'stationRebuildSecuredBonus', 'stationRebuildNearShare', 'stationRebuildAlloys', 'cmdAttackMaxSeconds', 'cmdPaceGap', 'radioQuietSeconds', 'cmdSummaryMinutes', 'designRemarkSeconds', 'cmdReviewBattles', 'huntMaxShips', 'huntGraceSeconds', 'pursuitFleeingBonus', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'dangerConeSeconds', 'placesAttackStallSeconds', 'campaignAttackStallSeconds', 'campaignStragglerShips', 'campaignStragglerShare', 'campaignStragglerSeconds', 'campaignStandoffSeconds', 'campaignStandoffWeeks', 'campaignRetakeWeeks', 'comebackMassWeeks', 'alienGarrisonCap', 'campaignFallenMax', 'campaignPoolCap', 'campaignGarrisonCap', 'campaignStartOwnShips', 'campaignAlienGarrison', 'campaignAdvanceKeep', 'campaignAdvanceRatio', 'campaignAdvanceTake', 'campaignAdvanceAfterWaves', 'campaignAdvanceHoldWeeks', 'campaignRearKeep', 'campaignFrontMoveMinShips', 'campaignFrontMoveShare', 'executiveMassRatio', 'executiveAssaultRatio', 'executiveAssaultMin', 'campaignPriorityWeight', 'alienShoveWeeks', 'alienGatherRatio', 'alienGatherTarget', 'alienGatherMinShips', 'alienGatherMaxWeeks', 'alienPullBackRatio', 'alienStateHoldWeeks', 'alienFirstPool', 'alienWaveJitter', 'alienWarnWeeks', 'alienWaveBoostWeeks', 'alienTargetWeakest', 'alienTargetMain', 'alienFirstWaveWeek', 'minLaunchShips', 'placesHoldClearOdds', 'campaignYardEvery', 'boostPerMarker', 'campaignRefuelShare', 'capitalBuildShare', 'assaultMaxWaitWeeks', 'repairPerWeek', 'campaignDesignBoostPerMass', 'campaignDesignBuildPerCost', 'campaignDesignAlloysShare', 'campaignDesignWeight', 'placesReachShare', 'placesFailRaise', 'placesContestShare', 'aoSecureShare', 'aoLoseShare', 'siegeBoostTrickle', 'boostFootholdShare', 'siegeGrowthFactor', 'siegeResourceFactor', 'placesReportMinutes', 'placesHysteresis', 'placesMaxOpposite', 'internalChance', 'internalFresh', 'externalCover', 'deepBelowHull', 'dcSeconds', 'blastToHull', 'blastToParts', 'profileNudgeMax', 'profileNudgeTurn', 'profileNudgeFiring', 'reactorWallShare', 'trackSquareCut', 'pressDryValue', 'pressFleetRatio', 'pressOdds', 'pressHealthEdge', 'pressOddsHealthy', 'pressDangerShare', 'pressHitChance', 'pressAfter', 'pressProgress', 'pressHold', 'pressStep', 'pressRingMin', 'lockFormShare', 'looseJitter', 'looseRein', 'lockSettleSeconds', 'lockRein', 'lockBreakHull', 'lockMinShare', 'closeRanksDelay', 'mergeBelow', 'mergeMaxOdds', 'disbandAt', 'stragglerSeconds', 'divisionLeash', 'pursuitBase', 'formBeforeAttack', 'gatherSeconds', 'fallenKeep', 'topUpBelow', 'stagingContactSeconds', 'stagingMaxWait', 'minNewSquadron', 'entryDangerRatio', 'entryCheckFactor', 'entryRetrySeconds', 'rallyInset', 'joinWornBelow', 'survivorEdgeMargin', 'flagKilled', 'flagWounded', 'flagSurviveSwing', 'woundedSkillPenalty', 'woundedBattles', 'replacementDelay', 'handoverSeconds', 'standInSkill', 'pinRenewSeconds', 'divisionTaskMinSeconds', 'rotateWornShare', 'divisionRefuseOdds', 'divisionRallyOdds', 'divisionCounterPressure', 'mainEffortMinOdds', 'mainEffortFreeRein', 'pinRenewFactor', 'supportSeconds', 'supportMaxTravelSeconds', 'divisionTargetBonus', 'localAttackOdds', 'memberCompactShare', 'recruitAxisSpread', 'recruitSkillLow', 'recruitSkillHigh', 'skillPerLevel', 'readinessXpPerRepair', 'medalSkillAdd', 'scarShakenBoldness', 'repertoirePull', 'spawnEdgeMargin', 'doctrinePull', 'matchupPull', 'experimentMinSeconds', 'experimentCooldown', 'tacticLearnStep', 'tacticWeightMax', 'exploreLearnBoost', 'spawnBandWidth', 'spawnVerticalMargin', 'shieldRechargeDelay', 'minArmorPassFraction', 'separationStrength',
+const SETTING_MUST_BE_NON_NEGATIVE = ['scuttleKillShare', 'scuttleXpCost', 'campaignTidySeconds', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftPressed', 'coreLoopShiftQuiet', 'coreLoopShiftMax', 'coreLoopHiveHoldShare', 'coreLoopAssessSeconds', 'coreLoopAssaultMixShare', 'coreLoopReinSwing', 'coreLoopReserveShare', 'coreLoopStrikeShare', 'coreLoopBoldAbove', 'coreLoopVaSeconds', 'coreLoopVaSlack', 'coreLoopVaWornShare', 'coreLoopDefenceRatio', 'coreLoopFleetHoldSeconds', 'coreLoopDivisionMinShips', 'coreLoopAssaultRatio', 'coreLoopAssaultFloor', 'coreLoopPlaceDefenceWorth', 'placesHomeEdgeBias', 'placesBrokenBonus', 'coreLoopStreamWeeks', 'coreLoopStreamMinShips', 'coreLoopLineKeep', 'coreLoopLineSeconds', 'coreLoopLineLooks', 'coreLoopLineDepth', 'coreLoopLineStep', 'coreLoopLineWindow', 'coreLoopTipRatio', 'coreLoopClearSeconds', 'coreLoopBackSeconds', 'coreLoopHoldSeconds', 'coreLoopBerths', 'divisionMergeSlack', 'swarmNestRetakeKeep', 'swarmGrowWindowWeeks', 'swarmGrowLowLoss', 'swarmGrowHighLoss', 'swarmGrowFromShare', 'swarmGrowStep', 'swarmGrowSmallCut', 'swarmGrowBigGain', 'swarmSpreadWeeks', 'hangarRefillWeeks', 'fighterTurnaroundSeconds', 'fighterLaunchSeconds', 'fighterLaunchRange', 'fighterTickSeconds', 'stationFighterGuardRadius', 'droneJamReach', 'droneJamScatterMul', 'droneJamLoseChance', 'dcNoRoomSeconds', 'cmdPaceFormSeconds', 'cmdPaceMinShare', 'cmdPaceLeadSeconds', 'cmdPaceMinMarch', 'divisionSpeedSort', 'divisionSlowBelow', 'divisionFastAbove', 'swarmPaceFormSeconds', 'swarmDrift', 'swarmDivDrift', 'wreckHitShare', 'repairPartsWeeks', 'repairAutoBelow', 'dockQueueWarnSeconds', 'crippledCheckSeconds', 'towSpeedShare', 'towMaxShare', 'towHealthyHull', 'feedHullBelow', 'feedSeconds', 'feedSquadSeconds', 'feedHullShare', 'feedAmmoShare', 'feedGrabRange', 'feedHungryHull', 'feedHungryAmmo', 'feedHatchlingRange', 'swarmInfestTierGain', 'swarmInfestGrowShare', 'swarmInfestStartShare', 'swarmSurfaceInfest', 'swarmBurnPerDps', 'swarmBurnHotMul', 'swarmBurnPerKill', 'swarmRegrowSeconds', 'swarmSporeEvery', 'swarmSporeShotsPer', 'swarmSporeDpsPerInf', 'swarmBileEvery', 'swarmBileFrom', 'swarmBileDpsPerInf', 'swarmConvertCap', 'swarmConvertAimShare', 'swarmConvertFromWeek', 'swarmConvertFullWeek', 'swarmConvertDepthShare', 'swarmConvertWaste', 'facingTwoSidedAngle', 'freshSideHoldSeconds', 'crossTEdge', 'crossTCreepFraction', 'crossTWidth', 'crossTTurnEdge', 'placesPicketSpread', 'placesPicketMove', 'placesPicketMax', 'placesWithdrawGatherSeconds', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerTargetShare', 'ledgerLineMin', 'ledgerLossMargin', 'ledgerSaveFloor', 'ledgerMinLoss', 'ledgerSurplusShare', 'withdrawRatio', 'withdrawHoldWeeks', 'ledgerAssaultWeeks', 'indDevShareSave', 'indDevShareIdle', 'dirPriorityMul', 'resourceHeldShare', 'devGraceWeeks', 'devCapStart', 'devCapAlien', 'devPotShare', 'devIdleWeeks', 'devMaxBuilds', 'bbAcidSeconds', 'bbAcidMaxPatches', 'bbRegrowQuiet', 'bbRegrowHull', 'bbRegrowPlate', 'bbRegrowHeatStop', 'bbBurstTouch', 'bbBurstDeathReach', 'bbBurstSeek', 'bbVolleySpread', 'bbMissileRetries', 'bbPdRoundsPerShot', 'bbPdFlakRounds', 'bbPdReadyRounds', 'bbPdLaserHeat', 'bbRadiatorFoldSeconds', 'bbSideWeight', 'deflectRatio', 'deflectCallSeconds', 'readyRoundsPerGun', 'boostFuEarth', 'boostFuOther', 'boostGrowth', 'alloysEarthStart', 'alloysEarthRampTo', 'alloysEarthRampWeeks', 'alloysGrowth', 'fissilesGrowth', 'alienAlloysStart', 'alienAlloysGrowth', 'alienAlloysPerStep', 'alienBoostPerStep', 'alienNodeLossShare', 'shipUpkeepMaxShare', 'berthIdleWeeks', 'berthBoostWeeks', 'berthMaxGrowth', 'campaignBuildDays', 'campaignLiveEnterShips', 'civilianNoteWeeks', 'leaderNewsCooldown', 'leaderNewsCombatGap', 'stationRebuildYardBonus', 'stationRebuildSecuredBonus', 'stationRebuildNearShare', 'stationRebuildAlloys', 'cmdAttackMaxSeconds', 'cmdPaceGap', 'radioQuietSeconds', 'cmdSummaryMinutes', 'designRemarkSeconds', 'cmdReviewBattles', 'huntMaxShips', 'huntGraceSeconds', 'pursuitFleeingBonus', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'dangerConeSeconds', 'placesAttackStallSeconds', 'campaignAttackStallSeconds', 'campaignStragglerShips', 'campaignStragglerShare', 'campaignStragglerSeconds', 'campaignStandoffSeconds', 'campaignStandoffWeeks', 'campaignRetakeWeeks', 'comebackMassWeeks', 'alienGarrisonCap', 'campaignFallenMax', 'campaignPoolCap', 'campaignGarrisonCap', 'campaignStartOwnShips', 'campaignAlienGarrison', 'campaignAdvanceKeep', 'campaignAdvanceRatio', 'campaignAdvanceTake', 'campaignAdvanceAfterWaves', 'campaignAdvanceHoldWeeks', 'campaignRearKeep', 'campaignFrontMoveMinShips', 'campaignFrontMoveShare', 'executiveMassRatio', 'executiveAssaultRatio', 'executiveAssaultMin', 'campaignPriorityWeight', 'alienShoveWeeks', 'alienGatherRatio', 'alienGatherTarget', 'alienGatherMinShips', 'alienGatherMaxWeeks', 'alienPullBackRatio', 'alienStateHoldWeeks', 'alienFirstPool', 'alienWaveJitter', 'alienWarnWeeks', 'alienWaveBoostWeeks', 'alienTargetWeakest', 'alienTargetMain', 'alienFirstWaveWeek', 'minLaunchShips', 'placesHoldClearOdds', 'campaignYardEvery', 'boostPerMarker', 'campaignRefuelShare', 'capitalBuildShare', 'assaultMaxWaitWeeks', 'repairPerWeek', 'campaignDesignBoostPerMass', 'campaignDesignBuildPerCost', 'campaignDesignAlloysShare', 'campaignDesignWeight', 'placesReachShare', 'placesFailRaise', 'placesContestShare', 'aoSecureShare', 'aoLoseShare', 'siegeBoostTrickle', 'boostFootholdShare', 'siegeGrowthFactor', 'siegeResourceFactor', 'placesReportMinutes', 'placesHysteresis', 'placesMaxOpposite', 'internalChance', 'internalFresh', 'externalCover', 'deepBelowHull', 'dcSeconds', 'blastToHull', 'blastToParts', 'profileNudgeMax', 'profileNudgeTurn', 'profileNudgeFiring', 'reactorWallShare', 'trackSquareCut', 'pressDryValue', 'pressFleetRatio', 'pressOdds', 'pressHealthEdge', 'pressOddsHealthy', 'pressDangerShare', 'pressHitChance', 'pressAfter', 'pressProgress', 'pressHold', 'pressStep', 'pressRingMin', 'lockFormShare', 'looseJitter', 'looseRein', 'lockSettleSeconds', 'lockRein', 'lockBreakHull', 'lockMinShare', 'closeRanksDelay', 'mergeBelow', 'mergeMaxOdds', 'disbandAt', 'stragglerSeconds', 'divisionLeash', 'pursuitBase', 'formBeforeAttack', 'gatherSeconds', 'fallenKeep', 'topUpBelow', 'stagingContactSeconds', 'stagingMaxWait', 'minNewSquadron', 'entryDangerRatio', 'entryCheckFactor', 'entryRetrySeconds', 'rallyInset', 'joinWornBelow', 'survivorEdgeMargin', 'flagKilled', 'flagWounded', 'flagSurviveSwing', 'woundedSkillPenalty', 'woundedBattles', 'replacementDelay', 'handoverSeconds', 'standInSkill', 'pinRenewSeconds', 'divisionTaskMinSeconds', 'rotateWornShare', 'divisionRefuseOdds', 'divisionRallyOdds', 'divisionCounterPressure', 'mainEffortMinOdds', 'mainEffortFreeRein', 'pinRenewFactor', 'supportSeconds', 'supportMaxTravelSeconds', 'divisionTargetBonus', 'localAttackOdds', 'memberCompactShare', 'recruitAxisSpread', 'recruitSkillLow', 'recruitSkillHigh', 'skillPerLevel', 'readinessXpPerRepair', 'medalSkillAdd', 'scarShakenBoldness', 'repertoirePull', 'spawnEdgeMargin', 'doctrinePull', 'matchupPull', 'experimentMinSeconds', 'experimentCooldown', 'tacticLearnStep', 'tacticWeightMax', 'exploreLearnBoost', 'spawnBandWidth', 'spawnVerticalMargin', 'shieldRechargeDelay', 'minArmorPassFraction', 'separationStrength',
   'separationMaxStepFraction', 'reengageMinGap', 'kiteEnterFactor', 'kiteExitFactor', 'kiteBackSpeed', 'debugMaxLines', 'formationHoldFraction', 'formationPaceMin',
   'formationBreakAngle', 'formationBreakSeconds', 'formationPassBend', 'leaderCloserMin', 'escortHoldFraction', 'escortStandOff', 'flankMarginFactor', 'flankAlong', 'flankContactFactor', 'flankArriveFactor', 'flankMapMarginFactor',
   'shotLengthSizes', 'minShipScreenPixels', 'maxTriangleShips', 'defaultReengage', 'defaultSeed',
@@ -11387,7 +11428,7 @@ const SETTING_WHOLE_NUMBERS = ['matchupsInPlay', 'calmShips', 'calmLookEvery', '
   'reportSquadronRows', 'reportPacketRows', 'reinforceMaxSquadrons', 'flankMaxSquadrons', 'counterMaxSquadrons', 'withdrawSamples', 'versionLogMax', 'serviceLastMax', 'serviceHistoryMax', 'serviceEventsMax', 'dossierLastActions', 'reportOfficerRows',
   'movementModel', 'hitModel', 'tacticsModel', 'flightAssist', 'retreatFiring', 'simultaneousFire', 'officerModel', 'strengthMapSteps', 'oddsCellsPerRadius', 'oddsMaxCells', 'maxRouts', 'maxBreakOffs', 'overheatFallback', 'smartTargetCandidates'];
 // The switches (section 1b, "The rules in force"): the values each may have, and the names the code uses for them.
-const SETTING_CHOICES = { moonOrbits: [0, 1], matchupsInPlay: [0, 1], calmShips: [0, 1], cmRenderParts: [0, 1], simBudgetModel: [0, 1], closeWarmAll: [0, 1], closeKeepPictures: [0, 1], allyShoveOff: [0, 1], allyNudge: [0, 1], divisionSpots: [0, 1], divisionSpotsInFight: [0, 1], campaignSensors: [0, 1], showBoost: [0, 1], coreLoop: [0, 1], coreLoopLine: [0, 1], coreLoopFleetCommand: [0, 1], coreLoopFleetDivisions: [0, 1], coreLoopRecompose: [0, 1], coreLoopAlienCommand: [0, 1], divisionMergeSmall: [0, 1], mergeFarOutOfContact: [0, 1], berthPairingModel: [0, 1], swarmNestModel: [0, 1], swarmGrowUpModel: [0, 1], swarmOpeningSpread: [0, 1], swarmLifeModel: [0, 1], swarmSurfaceModel: [0, 1], swarmEatsEnemies: [0, 1], swarmEatsHatchlings: [0, 1], fighterHangarModel: [0, 1], fighterLaunchModel: [0, 1], hangarRefillFromFleet: [0, 1], hangarOrphansStay: [0, 1], tenderDocking: [0, 1], supplyRuns: [0, 1], cargoKept: [0, 1], ferryRuns: [0, 1], stationFighterGuard: [0, 1], stationNoSquadron: [0, 1], stationCrewSquad: [0, 1], stationPass: [0, 1], droneJamModel: [0, 1], divisionPaceModel: [0, 1], swarmFormations: [0, 1], facingVsTarget: [0, 1], facingTwoSided: [0, 1], freshSide: [0, 1], crossT: [0, 1], facingDodge: [0, 1], placesPicket: [0, 1], placesPicketSwarm: [0, 1], campaignStandoffPark: [0, 1], placesWithdrawOrder: [0, 1], placesWithdrawGuardDry: [0, 1], campaignLiveYardDawn: [0, 1], longMapReach: [0, 1], longMapLeash: [0, 1], longMapFog: [0, 1], sleepShips: [0, 1, 2], campaignResourceGate: [0, 1], bbAcid: [0, 1], bbRegrow: [0, 1], bbBurst: [0, 1], bbMissileStoreBySize: [0, 1], bbBeams: [0, 1], bbHeatModel: [0, 1], bbMissiles: [0, 1], bbPointDefence: [0, 1], bbLineOfFire: [0, 1], tightOrbit: [0, 1], campaignStartAtEarth: [0, 1], placesCrush: [0, 1], placesMassAttack: [0, 1], assaultSendAll: [0, 1], assaultReachOnly: [0, 1], frontReachOnly: [0, 1], placesNoLeapfrog: [0, 1], placesClaimKeeps: [0, 1], enemyWaitTurnBack: [0, 1], placesClaimFirm: [0, 1], placesSwarmPress: [0, 1], campaignSupplyLine: [0, 1], commandModel: [0, 1], stationRebuild: [0, 1], cmdHelpMarches: [0, 1], cmdOpCommit: [0, 1, 2], cmdPassThrough: [0, 1, 2], orgScale: [0, 1], campaignLateAdmiral: [0, 1], campaignStartKit: [0, 1], placesFacilityApart: [0, 1], campaignFacilityApart: [0, 1], placesHoldClear: [0, 1], campaignHoldClear: [0, 1], campaignModel: [0, 1], officerCarryOver: [0, 1], campaignAutosave: [0, 1], placesRetry: [0, 1], placesSweep: [0, 1], placesDecisive: [0, 1], siegeYardSlowdown: [0, 1], placesModel: [0, 1], placesAllowAbandon: [0, 1], placesTheatre: [0, 1], designModel: [0, 1, 2], bureauBattle: [0, 1], moduleDamage: [0, 1], pressModel: [0, 1], partLossCall: [0, 1], survivalModel: [0, 1], allowAbandon: [0, 1], weaponModel: [0, 1], formationModel: [0, 1], lockStep: [0, 1], reorgModel: [0, 1], movementModel: [0, 1], hitModel: [0, 1, 2], tacticsModel: [0, 1], flightAssist: [0, 1], retreatFiring: [0, 1], overheatFallback: [0, 1], newSetupDefaults: [0, 1], unmannedRearGuard: [0, 1], simultaneousFire: [0, 1], officerModel: [0, 1], promoteNeedsVacancy: [0, 1], divisionTier: [0, 1], successionMode: [0, 1, 2], stagingModel: [0, 1] };
+const SETTING_CHOICES = { moonOrbits: [0, 1], dockModel: [0, 1], dockSpareModel: [0, 1], dockSpareSwarm: [0, 1], scuttleOnLedger: [0, 1], swarmDockModel: [0, 1], dockEvoModel: [0, 1], dockEvoSwarmSplit: [0, 1], matchupsInPlay: [0, 1], calmShips: [0, 1], cmRenderParts: [0, 1], simBudgetModel: [0, 1], closeWarmAll: [0, 1], closeKeepPictures: [0, 1], allyShoveOff: [0, 1], allyNudge: [0, 1], divisionSpots: [0, 1], divisionSpotsInFight: [0, 1], campaignSensors: [0, 1], showBoost: [0, 1], coreLoop: [0, 1], coreLoopLine: [0, 1], coreLoopFleetCommand: [0, 1], coreLoopFleetDivisions: [0, 1], coreLoopRecompose: [0, 1], coreLoopAlienCommand: [0, 1], divisionMergeSmall: [0, 1], mergeFarOutOfContact: [0, 1], berthPairingModel: [0, 1], swarmNestModel: [0, 1], swarmGrowUpModel: [0, 1], swarmOpeningSpread: [0, 1], swarmLifeModel: [0, 1], swarmSurfaceModel: [0, 1], swarmEatsEnemies: [0, 1], swarmEatsHatchlings: [0, 1], fighterHangarModel: [0, 1], fighterLaunchModel: [0, 1], hangarRefillFromFleet: [0, 1], hangarOrphansStay: [0, 1], tenderDocking: [0, 1], supplyRuns: [0, 1], cargoKept: [0, 1], ferryRuns: [0, 1], stationFighterGuard: [0, 1], stationNoSquadron: [0, 1], stationCrewSquad: [0, 1], stationPass: [0, 1], droneJamModel: [0, 1], divisionPaceModel: [0, 1], swarmFormations: [0, 1], facingVsTarget: [0, 1], facingTwoSided: [0, 1], freshSide: [0, 1], crossT: [0, 1], facingDodge: [0, 1], placesPicket: [0, 1], placesPicketSwarm: [0, 1], campaignStandoffPark: [0, 1], placesWithdrawOrder: [0, 1], placesWithdrawGuardDry: [0, 1], campaignLiveYardDawn: [0, 1], longMapReach: [0, 1], longMapLeash: [0, 1], longMapFog: [0, 1], sleepShips: [0, 1, 2], campaignResourceGate: [0, 1], bbAcid: [0, 1], bbRegrow: [0, 1], bbBurst: [0, 1], bbMissileStoreBySize: [0, 1], bbBeams: [0, 1], bbHeatModel: [0, 1], bbMissiles: [0, 1], bbPointDefence: [0, 1], bbLineOfFire: [0, 1], tightOrbit: [0, 1], campaignStartAtEarth: [0, 1], placesCrush: [0, 1], placesMassAttack: [0, 1], assaultSendAll: [0, 1], assaultReachOnly: [0, 1], frontReachOnly: [0, 1], placesNoLeapfrog: [0, 1], placesClaimKeeps: [0, 1], enemyWaitTurnBack: [0, 1], placesClaimFirm: [0, 1], placesSwarmPress: [0, 1], campaignSupplyLine: [0, 1], commandModel: [0, 1], stationRebuild: [0, 1], cmdHelpMarches: [0, 1], cmdOpCommit: [0, 1, 2], cmdPassThrough: [0, 1, 2], orgScale: [0, 1], campaignLateAdmiral: [0, 1], campaignStartKit: [0, 1], placesFacilityApart: [0, 1], campaignFacilityApart: [0, 1], placesHoldClear: [0, 1], campaignHoldClear: [0, 1], campaignModel: [0, 1], officerCarryOver: [0, 1], campaignAutosave: [0, 1], placesRetry: [0, 1], placesSweep: [0, 1], placesDecisive: [0, 1], siegeYardSlowdown: [0, 1], placesModel: [0, 1], placesAllowAbandon: [0, 1], placesTheatre: [0, 1], designModel: [0, 1, 2], bureauBattle: [0, 1], moduleDamage: [0, 1], pressModel: [0, 1], partLossCall: [0, 1], survivalModel: [0, 1], allowAbandon: [0, 1], weaponModel: [0, 1], formationModel: [0, 1], lockStep: [0, 1], reorgModel: [0, 1], movementModel: [0, 1], hitModel: [0, 1, 2], tacticsModel: [0, 1], flightAssist: [0, 1], retreatFiring: [0, 1], overheatFallback: [0, 1], newSetupDefaults: [0, 1], unmannedRearGuard: [0, 1], simultaneousFire: [0, 1], officerModel: [0, 1], promoteNeedsVacancy: [0, 1], divisionTier: [0, 1], successionMode: [0, 1, 2], stagingModel: [0, 1] };
 // Rule switches that an imported file may lack: a missing one is read as 0 (the file was made before the rule existed), not as this version's default (stage 12).
 const SETTING_SWITCHES_OLD_FILES = ['commandModel', 'orgScale', 'movementModel', 'hitModel', 'tacticsModel', 'newSetupDefaults', 'simultaneousFire', 'officerModel', 'divisionTier', 'stagingModel', 'reorgModel', 'formationModel', 'lockStep', 'weaponModel', 'survivalModel', 'designModel', 'moduleDamage', 'pressModel', 'placesModel'];
 const MOVE_CLASSIC = 0, MOVE_THRUST = 1;
@@ -13017,7 +13058,11 @@ const MEDALS = [
   { id: 'ace', name: 'Ace', deed: 'many ships destroyed in one battle by a squadron of the lightest class (aceKills)', perk: 'Strike',
     test: function (info) { return info.sq > 0 && info.sizeClass === 0 && info.kills >= SETTINGS.aceKills; }, effect: { skill: 'strike' } },
   { id: 'last_home', name: 'Last Home', deed: 'brought a crippled ship back from the docks and lost none', perk: 'Readiness',
-    test: function (info) { return info.sq > 0 && info.repaired >= 1 && info.lost === 0; }, effect: { skill: 'readiness' } }
+    test: function (info) { return info.sq > 0 && info.repaired >= 1 && info.lost === 0; }, effect: { skill: 'readiness' } },
+  // (v173.0, Alex 10 Nov) for towing a crippled ship home rather than scuttling it: a squadron officer whose ships towed one into a dock, or a Commodore whose
+  // Division towed two. Carried with the officer between wars like every medal (the officer library, 10j).
+  { id: 'brought_home', name: 'Brought Her Home', deed: 'towed a crippled ship home to a dock instead of scuttling her', perk: 'Maneuver',
+    test: function (info) { return (info.sq > 0 && (info.towed || 0) >= 1) || (info.sq === 0 && info.sizeClass === -1 && (info.towed || 0) >= 2); }, effect: { skill: 'maneuver' } }
 ];
 function medalGood(info, rowId) { const ba = info.byAction[rowId]; return ba ? ba.good : 0; }
 function medalBest(info, rowId) { const ba = info.byAction[rowId]; return ba && ba.best !== undefined ? ba.best : -Infinity; }
@@ -21158,6 +21203,7 @@ function killShip(i, killerST) {
   statLost[st]++;
   statKills[killerST]++;
   docNoteKill(killerST, st);                    // (v37, section 5kd) kills and losses per design and enemy type, for the doctrine's notes
+  evoNoteKill(killerST, st);                    // (v172.0, 06f3) in a docks war: the two designs' ledgers, for the docks' evolution
   fgShipGone(i);                                // (v52, section 5jf) a fighter lost knocks out its bay; a carrier lost takes the fighters in its bays with it
   freeSlots[freeCount++] = i;                   // this slot can be reused by a new ship
   addFlash(shipX[i], shipY[i], typeSize[shipType[i]], 1, i);
@@ -30642,6 +30688,7 @@ function makeCampaign(seed, opts) {
   }
   campaignLogisticsFields(c);                                 // (stop 3) orders, yards, markers, propulsion, the logistics scoreboard (06f)
   campaignEconFields(c);                                      // (v27 stop A1) the weekly economy: Alloys a week, growth, the civilian sector, the tutorial ramp (06f)
+  campaignDockFields(c, opts);                                // (v170.0) the dock economy test's fields; on when the new war asked for it (06f2)
   campaignAiFields(c);                                        // (stop 4) the two brains' state (off until startFull, startMars or setAi: 06g)
   campaignCouncilFields(c, true);                             // (stop 8) the War Council's state (it sits once the brains are on: 06h)
   campaignCommandFields(c);                                   // (v25) the numbered Fleets' identities (06i)
@@ -31889,7 +31936,7 @@ function campaignParkBattle(why, stragglers, standoff) {
     const events = writeBackOfficers() || [];
     if (typeof olCarryWar === 'function') olCarryWar('park');   // (v167.0, section 10j) library officers carry this battle's progress into the library
     campaignTrimRoster();                                       // (stop 4) the roster's oldest fallen records past campaignFallenMax are dropped (06g)
-    for (let k = 0; k < events.length; k++) { const e = events[k]; if (e.kind === 'promoted') { c.stats.promoted++; campaignLog('officer', e.text); campaign.log[campaign.log.length - 1].off = { kind: 'promoted', side: e.side, name: e.name, to: e.to, level: e.toTier }; } else if (e.kind === 'wounded' || e.kind === 'recovered' || e.kind === 'medal') campaignLog('officer', e.text); }
+    for (let k = 0; k < events.length; k++) { const e = events[k]; if (e.kind === 'promoted') { c.stats.promoted++; campaignLog('officer', e.text); campaign.log[campaign.log.length - 1].off = { kind: 'promoted', side: e.side, name: e.name, to: e.to, level: e.toTier }; } else if (e.kind === 'wounded' || e.kind === 'recovered' || e.kind === 'medal' || e.kind === 'scuttled') campaignLog('officer', e.text); }
     const snap = campaignTakeSnapshot(c.nextFleetId);
     c.nextFleetId = snap.nextFleetId;
     c.fleets = c.fleets.filter(function (f) { return !f.inBattle; }).concat(snap.fleets);
@@ -32183,6 +32230,7 @@ function campaignCheckObject(data) {
   campaignCheckCouncil(c, messages);                         // (stop 8) the council's state
   campaignCheckCommand(c, messages);                         // (v25) the Fleets' identities
   campaignCheckV3(data, messages);                           // (Bureau v2 stop 5) a v2 campaign needs designModel 2
+  campaignCheckDocks(c, messages);                           // (v170.0) the dock economy test's fields (06f2)
   return messages;
 }
 // Makes a checked save the running campaign (and its roster the roster). Returns { ok, messages } like the setup screen's import.
@@ -32220,6 +32268,7 @@ function campaignImportObject(data) {
       if (!Array.isArray(g.kit) || (g.kit.length !== 0 && g.kit.length !== g.count)) g.kit = []; } }   // (v49) a save from before v49 remembers nothing of its battle   // (v46) a save from before v46 has no broken parts: all whole
   campaignLogisticsFields(campaign);                           // (stop 3) the logistics fields, any missing one at its starting value
   campaignEconFields(campaign);                                // (v27) the economy's fields
+  campaignDockFields(campaign);                                // (v170.0) the dock economy test's fields (06f2)
   campaignAiFields(campaign);                                  // (stop 4) the brains' fields
   campaignCouncilFields(campaign, false);                      // (stop 8) the council's fields
   campaignCommandFields(campaign);                             // (v25) the Fleets' fields
@@ -34576,6 +34625,7 @@ function campaignUpkeepCount() {
       for (let j = 0; j < offMapShips[side].length; j++) add(side, offMapShips[side][j].type, 1);
     }
   }
+  for (let side = 0; side < 2; side++) if (typeof campaignDockSideOn === 'function' && campaignDockSideOn(side)) { const dk = campaignDockUpkeepCount(side); out.alloys[side] = dk.alloys; out.ships[side] = dk.ships; }   // (v170.0/v171.0) with docks (hatcheries for the Swarm), a side's upkeep is per dock, not per living ship (06f2)
   return out;
 }
 // At dawn: takes each side's upkeep off the week's pot (at most shipUpkeepMaxShare of it) and keeps what was taken for the map (econ.upkeep, econ.upkeepShips).
@@ -34654,6 +34704,7 @@ function campaignResourceRates(side) {
     }
   }
   if (side === 0) { const dm = campaignDebugMul('resources'); if (dm !== 1) for (const id in out) out[id] *= dm; }   // (v86.1) x the debug menu's Resources (7w); (v96) its Shipbuilding is already in our Alloys, which the shares follow
+  if (side === 0 && typeof dockModelOn === 'function' && dockModelOn()) campaignDockResApply(0, out);   // (v170.0) the docks' share comes off the week's rates (06f2)
   return out;
 }
 // (v59, fuels-engines-resources.md s8) The research spin-offs on our Fissiles (Fission Mk II +25%, Large reactor +25%, Breeder reactors +50%: 06m
@@ -35772,6 +35823,7 @@ function campaignYardsDay(atDawn) {
         if (!(amount > 1e-9)) continue;
         const r = campaignProduceWeek(id, side, amount, room);          // (stop 4: a full pool, or a full garrison at the front, starts no new ship)
         left -= r.spent;
+        if (Object.keys(r.built).length > 0 && typeof campaignDockOnBuilt === 'function') campaignDockOnBuilt(id, side, r.built);   // (v170.0) with docks on, each finished ship is a new dock here (06f2)
         if (Object.keys(r.built).length > 0) campaignDeliver(id, side, r.built);
       }
     }
@@ -35791,6 +35843,7 @@ function campaignYardsDay(atDawn) {
       }
     } else e.idleWeeks[side] = 0;
   }
+  if (typeof campaignDockReplace === 'function') campaignDockReplace();   // (v170.0) with docks on, lost ships are replaced at their docks' places (06f2)
   if (atDawn) campaignLiveYardRelease();                                 // (v39) last week's few new ships still waiting at the front's yard go into the battle
   if (lastDay) campaignResourceWeekEnd();                                 // (v31 B1) unused rates to the civilian sector; designs held up by a resource
   if (lastDay) campaignSupplyWeekEnd();                                   // (v67) the week's supply return is kept for the screens, and its Dispatch decided (06r)
@@ -35807,7 +35860,8 @@ function campaignDawn() {
   campaignEconWeek(true);                                                 // the economy grows; this week's Alloys a week
   const pot = [e.alloys[0], e.alloys[1]];
   for (let side = 0; side < 2; side++) { campaign.stats.alloysIn[side] += pot[side]; e.spent[side] = 0; }
-  campaignUpkeepDawn(pot);                                                // (v97.5) every living ship's upkeep comes off the week's Alloys first (06f part 1): the soft fleet cap
+  campaignUpkeepDawn(pot);                                                // (v97.5) every living ship's upkeep comes off the week's Alloys first (06f part 1): the soft fleet cap (v170.0: per dock with docks on)
+  if (typeof campaignDockDawn === 'function') campaignDockDawn(pot);       // (v170.0) docks whose design left the yards refit or go up a size, paid from the pot (06f2)
   campaignStationsPay(pot);                                               // (v25.1) a station waiting for its Alloys is paid before the yards build ships
   const v3 = campaignV3();                                                // (Bureau v2 stop 5) a v2 campaign: berths open, logistics lays new ones (paid from the pot), the active list is kept
   if (v3) campaignV3BerthsDawn(pot);
@@ -35878,6 +35932,850 @@ Object.assign(CAMPAIGN_API, {
   },
   setMarkers: function (side, n) { if (campaign && (side === 0 || side === 1) && typeof n === 'number') { campaign.markers[side] = Math.max(0, n); campaignUpdateBoost(); } return campaign ? campaign.markers.slice() : null; }   // (stop 3, for tests; stop 8's council sets them)
 });
+// =====================================================================
+// 5z (continued). (v170.0) THE DOCK ECONOMY, A TEST  (Alex 9 Nov; notes/plans/campaign/dock-economy.md)
+//
+//   WHAT THIS IS. An experiment in how ships are built and what the economy pays for, switched on per war (campaign.docks.on: the New campaign
+//   screen's "Economy" choice, the setup sheet's, or the debug menu's tick; SETTINGS.dockModel 1 switches it on for every new war). With it OFF
+//   nothing in this file runs and the game is exactly v168.
+//
+//   THE IDEA. The yards' Alloys no longer buy ships: they buy DOCKS. A dock is built in a berth exactly as a ship is today (the same Alloys, the same
+//   advanced resources, the same berth time), and the moment it is paid its ship appears. From then on the dock KEEPS ONE SHIP of its design alive:
+//   every building day the living ships of each design are counted against its docks, and any shortfall is replaced free at the docks' places
+//   (campaignDockReplace). Each living ship has its own dock (2,000 ships means 2,000 docks); the ships carry no dock number, so which of a design's
+//   docks does the replacing is bookkeeping. A side's fleet is always about as big as its docks, a lost ship costs nothing but the journey back to
+//   the front, and the number of docks is the fleet cap. Nothing is stored; a dock is a record { id, side, place, cls, design, week }.
+//
+//   (v173.0) THE SPARE (Alex 10 Nov; dockSpareModel). Each of our docks keeps one spare ship ready: a lost ship is replaced from it at once, and the dock
+//   then builds the next spare (dockSpareDays for its class: 2 days for small craft up to 2 weeks for a capital ship) while the new ship serves. Only a
+//   dock that loses its ship again before then waits. So a single loss costs only the journey, back-to-back losses cost time, and a crippled ship towed
+//   home keeps the spare for the next loss (campaignDockReplace, campaignDockReadyByDesign). The Swarm's hatcheries do not wait (dockSpareSwarm 0).
+//
+//   WHERE A DOCK GOES (campaignDockYardsFor). The AI picks the yard for each of our designs each building day from the yards we build at now:
+//     - a LOCAL design (0 transfers) only at a yard BEHIND the front (never in the front AO; the home yard when nothing is behind);
+//     - a 1-TRANSFER design no farther out than dockOneTransferMaxPos (Jupiter);
+//     - 2 or more transfers anywhere;
+//     - the place's tier must have a berth slot of the design's class or bigger (the same size limits as the berths: 06n campaignDevBerthSlots);
+//   and scores each allowed yard (campaignDockScore): nearer the front is better, a higher tier and a place held longer are better, a yard that already
+//   has a fitting berth a little better. The design is built at every allowed yard within dockScoreSpread of the best score (06k campaignV3BuildList
+//   asks campaignDockBuildsAt). Logistics lays berths at every yard that is asked to build (06k campaignV3BerthsDawn).
+//
+//   A DOCK CHANGES ITS SHIP (campaignDockDawn). A dock whose design is no longer on the yards takes an active design of its class or smaller for the
+//   Alloys difference, paid once from the week's pot before the yards (a cheaper design costs nothing); when none fits it goes UP to the smallest class
+//   with an active design the place's tier allows, for the difference and dockUpgradeWeeks (its ship serves meanwhile). Refits take at most
+//   dockRefitMaxShare of the week's Alloys. The old ships are not scrapped: they fight on until lost, and are then not replaced.
+//
+//   A DOCK AT A PLACE WE LOSE sleeps (campaignDockActive: our standing station, or Earth's surface): it replaces nothing and pays nothing until we take
+//   the place back. Its record stays.
+//
+//   WHAT IT COSTS EACH WEEK. Ship upkeep (06f campaignUpkeepCount, v97.5) counts the awake docks instead of the living ships, at the same numbers per
+//   class (shipUpkeepPerClass, with the craft in a design's hangars). And each of our awake docks takes dockResUpkeepShare of what one of its ships
+//   needs of every advanced resource off that resource's rate a week (06f campaignResourceRates, at most dockResUpkeepMaxShare of the rate): a resource
+//   many docks lean on shows as a shrinking rate in the top strip, a resource nothing uses stays whole (the signal Alex asked for).
+//
+//   (v171.0) THE SWARM'S HATCHERIES (Alex 9 Nov: "the swarm needs its own infinite replacing ships system ... at least the same amount of ships the
+//   humans do ... in a long stalemate the swarm's own econ slowly keeps growing, more ships of larger sizes"). In a Swarm war with the test on, the
+//   Swarm's side works the same way: every ship its nests hatch is a hatchery (a dock of side 1) that keeps that ship alive, replaced free at the nest
+//   when lost. On top of that, THE MATCH (campaignSwarmDockMatch, each building day): the Swarm always has at least swarmDockMatch x our awake docks
+//   (never fewer than our living ships) x the stalemate factor; what it is short is granted free as new hatcheries at its nests nearest the front
+//   (behind it, by the same scores), each for a design of the roster mix online that the nest can hatch (06q campaignNestMayHatch), and the ships
+//   appear at the next replacement. THE STALEMATE (campaignSwarmDockStall, each dawn): once the front has stood in one AO for swarmDockStallWeeks,
+//   the factor grows by swarmDockStallGrowth a week, and the grants lean to bigger hulls as it grows (a roster weight x (1 + swarmDockBigShift x
+//   class rank x (factor - 1))). The factor never falls (a ratchet): the pressure stays once earned. The Swarm's hatcheries pay upkeep like ours, so
+//   its own income builds fewer hatcheries as the grants mount: the match and the stalemate are what carry it, as Alex wants. Not for the Delvers
+//   or the Sylphs (swarmDockModel 1 and alienIsSwarm()).
+//
+//   SWITCHING ON MID-WAR (campaignDockSet): every living ship of ours (and the Swarm's) gets a dock at the best yard for its design, so a saved
+//   war carries on with the fleets it has.
+//
+//   WHAT STAYS THE SAME. The berths, their slots and laying, the resource gate, the pool at the rear AO and the launch orders, the front yard's ships
+//   entering the battle, the pool and garrison caps, the Swarm's waves from its pool: a replacement ship goes where a new ship of that yard goes
+//   today (06f campaignDeliver). Check: tools/v170.0/dock-economy-check.js and tools/v171.0/swarm-hatcheries-check.js.
+// =====================================================================
+
+// Is the dock economy on in this war?
+function dockModelOn() { return !!campaign && !!campaign.docks && campaign.docks.on === true && typeof campaignV3 === 'function' && campaignV3(); }
+// (v171.0) ... and the Swarm's hatcheries with it: a Swarm war, swarmDockModel 1.
+function swarmDocksOn() { return dockModelOn() && SETTINGS.swarmDockModel === 1 && typeof alienIsSwarm === 'function' && alienIsSwarm() && !campaign.earthOnly; }
+// Does a side run docks now?
+function campaignDockSideOn(side) { return side === 0 ? dockModelOn() : (side === 1 && swarmDocksOn()); }
+// The campaign's dock fields, any missing one at its starting value (a new war: makeCampaign; a loaded one: campaignImportObject).
+function campaignDockFields(c, opts) {
+  if (!c.docks || typeof c.docks !== 'object' || Array.isArray(c.docks)) c.docks = { on: false, list: [], seeded: false, nextId: 1 };
+  const d = c.docks;
+  if (typeof d.on !== 'boolean') d.on = false;
+  if (!Array.isArray(d.list)) d.list = [];
+  if (typeof d.seeded !== 'boolean') d.seeded = false;
+  if (typeof d.nextId !== 'number') d.nextId = 1;
+  if (!d.stats || typeof d.stats !== 'object') d.stats = {};
+  for (const key of ['built', 'replaced', 'refits', 'upgrades', 'seeded', 'granted', 'waited']) if (!Array.isArray(d.stats[key]) || d.stats[key].length !== 2) d.stats[key] = typeof d.stats[key] === 'number' ? [d.stats[key], 0] : [0, 0];   // (per side; a v170.0 save's single numbers were ours)
+  if (!d.resTaken || typeof d.resTaken !== 'object') d.resTaken = {};
+  if (!Array.isArray(d.short) || d.short.length !== 2) d.short = [0, 0];   // (v173.0) ships lost whose docks are still building their spares, per side
+  // (v171.0) the Swarm's match: the stalemate factor and the AO the front has stood in since when
+  if (!d.swarm || typeof d.swarm !== 'object') d.swarm = { stall: 1, frontAo: '', frontSince: -1, floor: 0 };
+  if (!(d.swarm.stall >= 1)) d.swarm.stall = 1;
+  if (typeof d.swarm.frontAo !== 'string') d.swarm.frontAo = '';
+  if (typeof d.swarm.frontSince !== 'number') d.swarm.frontSince = -1;
+  if (typeof d.swarm.floor !== 'number') d.swarm.floor = 0;
+  campaignEvoFields(d);                                       // (v172.0) the evolution's ledgers and bench (06f3)
+  for (let k = d.list.length - 1; k >= 0; k--) {
+    const r = d.list[k];
+    if (!r || typeof r !== 'object' || typeof r.place !== 'string' || typeof r.cls !== 'string' || typeof r.design !== 'string') { d.list.splice(k, 1); continue; }
+    if (typeof r.id !== 'number') r.id = d.nextId++;
+    if (r.side !== 0 && r.side !== 1) r.side = 0;
+    if (typeof r.week !== 'number') r.week = 0;
+    if (r.worth !== undefined && !(typeof r.worth === 'number' && r.worth >= 1)) delete r.worth;
+    if (r.spare !== undefined && !(typeof r.spare === 'number' && isFinite(r.spare))) delete r.spare;   // (v173.0) the week its next spare is ready   // (v172.0) a combined Swarm hatchery counts for this many ships
+    if (r.refit !== undefined && r.refit !== null && (typeof r.refit !== 'object' || typeof r.refit.to !== 'string')) r.refit = null;
+    if (r.upgrade !== undefined && r.upgrade !== null && (typeof r.upgrade !== 'object' || typeof r.upgrade.to !== 'string')) r.upgrade = null;
+  }
+  if (opts && opts.docks === true) d.on = true;
+  else if (opts && d.list.length === 0 && SETTINGS.dockModel === 1) d.on = true;   // (a new war with the setting on)
+}
+// The import's checks of the dock fields (a save from before v170.0 has none: campaignDockFields fills them in).
+function campaignCheckDocks(c, messages) {
+  if (!c || c.docks === undefined) return;
+  const d = c.docks;
+  if (d === null || typeof d !== 'object' || Array.isArray(d)) { messages.push({ level: 'error', text: '"campaign.docks" must be an object.' }); return; }
+  if (d.list !== undefined && !Array.isArray(d.list)) messages.push({ level: 'error', text: '"campaign.docks.list" must be a list of docks.' });
+}
+// Switches the docks on or off in the running war. Switching on gives every living ship a dock (once), so the fleets carry on as they are.
+function campaignDockSet(on) {
+  if (!campaign) return false;
+  campaignDockFields(campaign);
+  campaign.docks.on = !!on;
+  if (on && !campaign.docks.seeded && campaignV3()) campaignDockSeed();
+  campaignLog('dock', on ? 'The dock economy is on: the yards build docks, and every dock keeps one ship in service.' + (swarmDocksOn() ? ' The Swarm\'s nests work the same way, and it always matches our numbers.' : '') : 'The dock economy is off: the yards build ships as before.');
+  return true;
+}
+// Every living ship gets a dock at the best yard for its design now (the home yard when no yard is allowed). Only once a war. Ours, and the Swarm's
+// when its hatcheries run.
+function campaignDockSeed() {
+  const d = campaign.docks;
+  for (let side = 0; side < 2; side++) {
+    if (!campaignDockSideOn(side)) continue;
+    const alive = campaignShipsAliveByDesign(side), home = side === 0 ? campaignHomeYard(0) : campaignV3AlienMainYard();
+    let n = 0;
+    for (const id in alive) {
+      const info = campaignShipInfo(id);
+      if (!info || !(alive[id] > 0)) continue;
+      const yards = campaignDockYardsFor(side, id), at = yards.length ? yards[0].id : home;
+      if (!at) continue;
+      for (let k = 0; k < alive[id]; k++) campaignDockAdd(side, at, id, info);
+      n += alive[id];
+    }
+    d.stats.seeded[side] += n;
+    if (n > 0) campaignLog('dock', pluralV3(n, side === 0 ? 'dock' : 'hatchery', side === 0 ? 'docks' : 'hatcheries') + ' opened for the ships ' + (side === 0 ? 'we already have' : 'the Swarm already has') + '.');
+  }
+  d.seeded = true;
+}
+// One new dock of a design at a place. `info` is the design's campaign numbers (06k campaignV3Info).
+function campaignDockAdd(side, place, id, info) {
+  const d = campaign.docks, cls = info && info.berth ? info.berth : (info && info.sizeClass ? info.sizeClass : 'small');
+  const r = { id: d.nextId++, side: side, place: place, cls: cls, design: id, week: Math.floor(campaign.week + 1e-9), refit: null, upgrade: null };
+  d.list.push(r);
+  return r;
+}
+// (06f campaignYardsDay) The ships a yard finished today become docks there (their ships are delivered as before).
+function campaignDockOnBuilt(yardId, side, built) {
+  if (!campaignDockSideOn(side)) return;
+  let n = 0;
+  for (const id in built) { const info = campaignShipInfo(id); for (let k = 0; k < built[id]; k++) { campaignDockAdd(side, yardId, id, info); n++; } }
+  if (n > 0) campaign.docks.stats.built[side] += n;
+}
+
+// ---- Counting ----
+// The living ships of a side by design id (ships only: not stations, not the craft in hangars): the pools, the fleets off the battle, and while the battle
+// is live its own ships (on the map, at the staging point, away in repair, off the map) plus the fleets still waiting to come in. The same count as the
+// upkeep's (06f campaignUpkeepCount), by design.
+function campaignShipsAliveByDesign(side) {
+  const out = {};
+  if (!campaign) return out;
+  const add = function (id, n) { if (!(n > 0) || !id) return; out[id] = (out[id] || 0) + n; };
+  for (const id in campaign.pools[side]) add(id, campaign.pools[side][id]);
+  const live = typeof campaignBattleLive === 'function' && campaignBattleLive();
+  const waiting = {};
+  if (live) for (let k = 0; k < oobEvents[side].length; k++) { const ev = oobEvents[side][k]; if (ev.kind === 'fleet' && ev.campaign && ev.campaign.fleetId) waiting[ev.campaign.fleetId] = true; }
+  for (let k = 0; k < campaign.fleets.length; k++) {
+    const f = campaign.fleets[k];
+    if (f.side !== side) continue;
+    if (f.inBattle && live && !waiting[f.id]) continue;          // (its ships are counted in the battle below)
+    for (let j = 0; j < f.groups.length; j++) add(f.groups[j].design || f.groups[j].type, f.groups[j].count);
+  }
+  if (live) {
+    for (let i = 0; i < highWater; i++) {
+      if (shipAlive[i] !== 1 || shipSide[i] !== side) continue;
+      const t = shipType[i];
+      if (stImmobile[side * TYPE_COUNT + t] === 1) continue;     // (a station, not a ship)
+      if (SHIP_TYPES[t].fighter === true || (typeof shipBay !== 'undefined' && shipBay.length > i && shipBay[i] >= 0)) continue;   // (carried craft are the carrier's)
+      add(SHIP_TYPES[t].id, 1);
+    }
+    const s = staging[side].ships;
+    for (const key in s) if (SHIP_TYPES[+key]) add(SHIP_TYPES[+key].id, s[key]);
+    for (let k = 0; k < repairPoints.length; k++) {
+      const p = repairPoints[k];
+      if (p.side !== side || p.kind === 'carrier') continue;
+      const all = p.docks.concat(p.queue);
+      for (let j = 0; j < all.length; j++) if (SHIP_TYPES[all[j].type]) add(SHIP_TYPES[all[j].type].id, 1);
+    }
+    for (let j = 0; j < offMapShips[side].length; j++) if (SHIP_TYPES[offMapShips[side][j].type]) add(SHIP_TYPES[offMapShips[side][j].type].id, 1);
+  }
+  return out;
+}
+function campaignShipsAliveCount(side) { const a = campaignShipsAliveByDesign(side); let n = 0; for (const id in a) n += a[id]; return n; }
+// Is a dock awake: its place is its side's with the station (or the Swarm's infestation) standing: 06f campaignYardSide says who builds there now.
+function campaignDockActive(r) {
+  if (typeIndexById(r.design) < 0 || !campaignDockSideOn(r.side)) return false;
+  return campaignYardSide(r.place) === r.side;
+}
+// A side's awake docks grouped by design: { designId: { n, places: { placeId: n } } }.
+function campaignDocksByDesign(side) {
+  const out = {}, list = campaign.docks.list, awake = {};
+  for (let k = 0; k < list.length; k++) {
+    const r = list[k];
+    if (r.side !== side) continue;
+    if (awake[r.place] === undefined) awake[r.place] = campaignYardSide(r.place) === side;
+    if (!awake[r.place] || typeIndexById(r.design) < 0) continue;
+    const e = out[r.design] || (out[r.design] = { n: 0, places: {} });
+    e.n++; e.places[r.place] = (e.places[r.place] || 0) + 1;
+  }
+  return out;
+}
+// A side's awake docks, counted.
+function campaignDocksAwake(side) { const by = campaignDocksByDesign(side); let n = 0; for (const id in by) n += by[id].n; return n; }
+// (v172.0) the same in ships' worth: a combined Swarm hatchery (r.worth) counts for the hatcheries it was made from, so the match floor is not fooled by combining.
+function campaignDocksWorth(side) { let n = 0; const awake = {}; for (const r of campaign.docks.list) { if (r.side !== side) continue; if (awake[r.place] === undefined) awake[r.place] = campaignYardSide(r.place) === side; if (awake[r.place]) n += r.worth > 0 ? r.worth : 1; } return n; }
+
+// ---- Where a dock goes ----
+const campaignDockYardCache = { key: '', per: {} };
+// May a dock of this class be at this yard: ours when the place's tier has a berth slot of the class or bigger (06n), or a berth that fits stands
+// there already; the Swarm's when the nest is old enough and the body light enough to hatch it (06q campaignNestMayHatch).
+function campaignDockSlotOk(side, yardId, cls) {
+  if (side === 1) return typeof campaignNestMayHatch !== 'function' || campaignNestMayHatch(yardId, cls);
+  const r = berthRank(cls), slots = campaignDevBerthSlots(yardId);
+  for (const c in slots) if (slots[c] > 0 && berthRank(c) >= r) return true;
+  return campaignV3BerthsFor(yardId, cls).have > 0;
+}
+// The score of a yard for a dock: nearness to the front, the place's tier, how long we have held it, a fitting berth already there.
+function campaignDockScore(side, yardId, cls) {
+  const S = SETTINGS, fa = aoById(campaignFrontId()), a = aoById(campaignAoOf(yardId));
+  const gap = fa && a && typeof fa.pos === 'number' && typeof a.pos === 'number' ? Math.abs(fa.pos - a.pos) : 0;
+  const held = side === 0 ? Math.min(1, campaignDevHeldWeeks(yardId) / Math.max(1, S.dockHeldFullWeeks || 1)) : 0;
+  return -gap * (S.dockScoreGap || 0) + campaignDevTier(yardId) * (S.dockScoreTier || 0) + held * (S.dockScoreHeld || 0) + (campaignV3BerthsFor(yardId, cls).have > 0 ? (S.dockScoreBerth || 0) : 0);
+}
+// The yards a design's docks may be built at now, best first: [{ id, score }]. Empty when no yard of the side is allowed (then nothing is built).
+// For the Swarm (side 1) "behind the front" is the enemy's way: the AOs farther out than the front.
+function campaignDockYardsFor(side, id) {
+  if (!campaign || !campaignDockSideOn(side)) return [];
+  const day = typeof campaignDayIndex === 'function' ? campaignDayIndex(campaign.week) : Math.floor(campaign.week), front = campaignFrontId();
+  const key = day + '|' + front + '|' + campaign.battle.state;
+  if (campaignDockYardCache.key !== key) { campaignDockYardCache.key = key; campaignDockYardCache.per = {}; }
+  const ck = side + ':' + id, hit = campaignDockYardCache.per[ck];
+  if (hit) return hit;
+  const info = campaignShipInfo(id), S = SETTINGS, fa = aoById(front), yards = campaignYardsOf(side), home = side === 0 ? campaignHomeYard(0) : campaignV3AlienMainYard();
+  const cls = info && info.berth ? info.berth : (info ? info.sizeClass : 'small'), local = !!(info && info.local), jumps = info ? info.jumps : 1;
+  const long = typeof longMapOn === 'function' && longMapOn();
+  let rows = [];
+  for (const y of yards) {
+    const a = aoById(campaignAoOf(y));
+    if (!a) continue;
+    if (!campaignDockSlotOk(side, y, cls)) continue;
+    if (!long && fa && typeof a.pos === 'number' && typeof fa.pos === 'number') {
+      const behind = side === 0 ? a.pos < fa.pos : a.pos > fa.pos;
+      if (local && !behind) continue;                                                            // Local: behind the front only
+      if (side === 0 && !local && jumps === 1 && a.pos > Math.max(0, S.dockOneTransferMaxPos || 0)) continue;   // ours with 1 transfer: out to Jupiter
+    }
+    rows.push({ id: y, score: campaignDockScore(side, y, cls) });
+  }
+  // a Local design with nothing behind the front (the war's first weeks: the front is Earth) is built at home
+  if (rows.length === 0 && local && home && yards.indexOf(home) >= 0 && campaignDockSlotOk(side, home, cls)) rows.push({ id: home, score: 0 });
+  rows.sort(function (p, q) { return q.score - p.score; });
+  campaignDockYardCache.per[ck] = rows;
+  return rows;
+}
+// (06k campaignV3BuildList) Does this yard build one of our designs' docks today: it is within dockScoreSpread of the best allowed yard.
+function campaignDockBuildsAt(yardId, id) {
+  if (campaignEvoBenched(id)) return false;                    // (v172.0) a benched design gets no new docks (06f3)
+  const rows = campaignDockYardsFor(0, id);
+  if (!rows.length) return false;
+  const best = rows[0].score, spread = Math.max(0, SETTINGS.dockScoreSpread || 0);
+  for (let k = 0; k < rows.length; k++) if (rows[k].id === yardId) return rows[k].score >= best - spread - 1e-9;
+  return false;
+}
+
+// ---- Replacing lost ships ----
+// (06f campaignYardsDay, after the yards) Each side's designs: the living ships against the awake docks; the shortfall appears at the docks' places,
+// spread over them by how many docks each has, and goes where a new ship of that yard goes (06f campaignDeliver: the battle at the front, the pool
+// behind it, a Local ship stays). The Swarm's match (campaignSwarmDockMatch) runs first, so its new hatcheries fill the same day.
+function campaignDockReplace() {
+  if (!dockModelOn()) return 0;
+  if (swarmDocksOn()) campaignSwarmDockMatch();
+  let total = 0;
+  const now = campaign.week;
+  for (let side = 0; side < 2; side++) {
+    if (!campaignDockSideOn(side)) continue;
+    const spare = campaignDockSpareOn(side);
+    const by = spare ? campaignDockReadyByDesign(side, now) : campaignDocksByDesign(side), alive = campaignShipsAliveByDesign(side), perPlace = {};
+    let n = 0, short = 0;
+    for (const id in by) {
+      const e = by[id], lost = (spare ? e.all : e.n) - (alive[id] || 0);
+      if (!(lost > 0)) continue;
+      const want = spare ? Math.min(lost, e.n) : lost;            // (v173.0) only docks with a spare ready can replace now; the rest wait for theirs
+      short += lost - want;
+      if (!(want > 0)) continue;
+      const places = Object.keys(e.places);
+      let left = want;
+      // each place its share, rounded down; the remainder to the places with the most docks
+      const shares = places.map(function (p) { return { p: p, n: e.places[p], give: Math.floor(want * e.places[p] / e.n) }; });
+      for (const s of shares) left -= s.give;
+      shares.sort(function (a, b) { return b.n - a.n; });
+      for (let k = 0, g = 0; left > 0 && shares.length && g < 100000; k = (k + 1) % shares.length, g++) { if (shares[k].give < shares[k].n) { shares[k].give++; left--; } }
+      for (const s of shares) if (s.give > 0) {
+        const row = perPlace[s.p] || (perPlace[s.p] = {}); row[id] = (row[id] || 0) + s.give; n += s.give;
+        if (spare) { const recs = e.recs[s.p]; for (let k = 0; k < s.give && k < recs.length; k++) recs[k].spare = now + campaignDockSpareWeeks(recs[k].cls); }   // (v173.0) the spare went out: the dock builds the next one
+      }
+    }
+    for (const place in perPlace) {
+      campaignDeliver(place, side, perPlace[place]);
+      campaign.log[campaign.log.length - 1].dock = true;   // (the yard line was a replacement, not a build)
+    }
+    if (n > 0) { campaign.docks.stats.replaced[side] += n; campaign.stats.produced[side] += n; total += n; }
+    campaign.docks.short[side] = short;                    // (v173.0) ships lost whose docks are still building their spares
+    if (short > 0 && side === 0) campaign.docks.stats.waited[side] = Math.max(campaign.docks.stats.waited[side], short);
+  }
+  return total;
+}
+// ---- (v173.0) The spare (Alex 10 Nov: "a replacement time cost can tick over while the ship is alive, so this only comes into play in back to back losses") ----
+// Each dock keeps one spare ship ready. When its ship is lost the spare goes out at once (the next building day), and the dock starts building the next
+// spare (dockSpareDays for its class) while the new ship serves. A dock whose spare is not ready yet cannot replace: a second loss soon after the first
+// waits. A dock's record carries r.spare, the campaign week its next spare is ready (none = ready). Docks are interchangeable bookkeeping for a design,
+// so in practice: a design that loses more ships in a short time than it has docks with spares ready gets the rest back only as spares are finished.
+// So towing a crippled ship home keeps its dock's spare for the next loss, and scuttling spends it.
+function campaignDockSpareOn(side) { return SETTINGS.dockSpareModel === 1 && (side === 0 || SETTINGS.dockSpareSwarm === 1); }
+// Weeks a dock of this class takes to build its next spare.
+function campaignDockSpareWeeks(cls) { const t = SETTINGS.dockSpareDays || {}, d = typeof t[cls] === 'number' && isFinite(t[cls]) ? t[cls] : 0; return Math.max(0, d) / 7; }
+function campaignDockSpareReady(r, now) { return !(typeof r.spare === 'number' && r.spare > now + 1e-6); }
+// A side's awake docks by design, counting only those with a spare ready: { designId: { all (awake docks), n (ready), places: { placeId: ready }, recs: { placeId: [ready docks] } } }.
+function campaignDockReadyByDesign(side, now) {
+  const out = {}, list = campaign.docks.list, awake = {};
+  for (let k = 0; k < list.length; k++) {
+    const r = list[k];
+    if (r.side !== side) continue;
+    if (awake[r.place] === undefined) awake[r.place] = campaignYardSide(r.place) === side;
+    if (!awake[r.place] || typeIndexById(r.design) < 0) continue;
+    const e = out[r.design] || (out[r.design] = { all: 0, n: 0, places: {}, recs: {} });
+    e.all++;
+    if (!campaignDockSpareReady(r, now)) continue;
+    e.n++; e.places[r.place] = (e.places[r.place] || 0) + 1; (e.recs[r.place] || (e.recs[r.place] = [])).push(r);
+  }
+  return out;
+}
+// How many of a side's awake docks are building a spare now, and the soonest one ready (in days from now; -1 when none is building).
+function campaignDockSpareCount(side) {
+  const now = campaign.week, awake = {};
+  let n = 0, soon = Infinity;
+  for (const r of campaign.docks.list) {
+    if (r.side !== side) continue;
+    if (awake[r.place] === undefined) awake[r.place] = campaignYardSide(r.place) === side;
+    if (!awake[r.place] || campaignDockSpareReady(r, now)) continue;
+    n++; soon = Math.min(soon, r.spare - now);
+  }
+  return { building: n, soonDays: n > 0 ? Math.max(0, Math.ceil(soon * 7 - 1e-6)) : -1 };
+}
+
+// ---- (v171.0) The Swarm's match and the stalemate ----
+// The floor on the Swarm's awake hatcheries now: swarmDockMatch x the larger of our awake docks and our living ships, x the stalemate factor.
+function campaignSwarmDockFloor() {
+  const S = SETTINGS, ours = Math.max(campaignDocksAwake(0), campaignShipsAliveCount(0));
+  return Math.ceil(ours * Math.max(0, +S.swarmDockMatch || 0) * campaign.docks.swarm.stall);
+}
+// Each dawn (06f campaignDawn, through campaignDockDawn): the front has stood in one AO for swarmDockStallWeeks -> the stalemate factor grows by
+// swarmDockStallGrowth this week. It never falls.
+function campaignSwarmDockStall() {
+  const d = campaign.docks.swarm, S = SETTINGS, front = campaignFrontId(), week = Math.floor(campaign.week + 1e-9);
+  if (d.frontAo !== front) { d.frontAo = front; d.frontSince = week; return; }
+  if (d.frontSince < 0) { d.frontSince = week; return; }
+  if (week - d.frontSince >= Math.max(1, S.swarmDockStallWeeks || 1) && S.swarmDockStallGrowth > 0) {
+    const was = d.stall;
+    d.stall = Math.round(d.stall * (1 + S.swarmDockStallGrowth) * 10000) / 10000;
+    if (Math.floor(was * 10) !== Math.floor(d.stall * 10)) campaignLog('dock', 'The front has stood at ' + campaignAoName(front) + ' for ' + plural(week - d.frontSince, 'week') + ': the Swarm\'s strength grows to ' + Math.round(d.stall * 100) + '% of ours, with bigger hulls.');
+  }
+}
+// The Swarm's grant: what it is short of its floor is given as new hatcheries at its nests, free. Each picks a design of the roster mix online
+// (06g campaignAlienMix) by weight, leaning to bigger hulls as the stalemate factor grows, at the best-scored nest that can hatch it; the designs
+// no nest can hatch are left out.
+function campaignSwarmDockMatch() {
+  const d = campaign.docks, S = SETTINGS, floor = campaignSwarmDockFloor(), have = campaignDocksWorth(1);
+  d.swarm.floor = floor;
+  const short = floor - have;
+  if (!(short > 0)) return 0;
+  const mix = campaignAlienMix(), rows = [];
+  for (const name in mix) {
+    const id = campaignV3IdOf(name), info = typeIndexById(id) >= 0 ? campaignV3Info(id) : null;
+    if (!info || !(mix[name] > 0) || (HULL_BY_ID[info.sizeClass] && HULL_BY_ID[info.sizeClass].fighter)) continue;
+    const rank = Math.max(0, berthRank(info.berth || info.sizeClass));
+    rows.push({ id: id, info: info, w: mix[name] * (1 + Math.max(0, +S.swarmDockBigShift || 0) * rank * Math.max(0, d.swarm.stall - 1)), yards: campaignDockYardsFor(1, id) });
+  }
+  const can = rows.filter(function (r) { return r.yards.length > 0; });
+  if (!can.length) return 0;
+  const spread = Math.max(0, S.dockScoreSpread || 0), total = can.reduce(function (s, r) { return s + r.w; }, 0);
+  let given = 0;
+  const credit = {}, turn = {};
+  // the designs take turns by weight (a credit each turn, the highest credit goes); each design's hatcheries spread over its best nests
+  for (let guard = 0; guard < short && guard < 100000; guard++) {
+    let best = null;
+    for (const r of can) { credit[r.id] = (credit[r.id] || 0) + r.w; if (best === null || credit[r.id] > credit[best.id]) best = r; }
+    credit[best.id] -= total;
+    const top = best.yards.filter(function (y) { return y.score >= best.yards[0].score - spread - 1e-9; }), k = (turn[best.id] || 0) % top.length;
+    turn[best.id] = k + 1;
+    campaignDockAdd(1, top[k].id, best.id, best.info);
+    given++;
+  }
+  d.stats.granted[1] += given;
+  campaignLog('dock', 'The Swarm matches our numbers: ' + pluralV3(given, 'new hatchery', 'new hatcheries') + ' (' + have + ' -> ' + (have + given) + '; our ' + Math.max(campaignDocksAwake(0), campaignShipsAliveCount(0)) + ' ships' + (d.swarm.stall > 1 ? ' x ' + Math.round(d.swarm.stall * 100) + '%' : '') + ').');
+  return given;
+}
+
+// ---- Refits and upgrades, at dawn ----
+// Is a design on a side's yards now: ours active, not outdated, still here; the Swarm's in the roster mix online.
+function campaignDockDesignLive(side, id, mix) {
+  const t = typeIndexById(id), rec = t >= 0 ? SHIP_TYPES[t] : null;
+  if (!rec) return false;
+  if (side === 1) return !!(mix && mix[rec.name] > 0);
+  return !!(rec.yardsReady === true && !rec.outdated && !rec.removed && rec.design && rec.design.v === 3) && !campaignEvoBenched(id);   // (v172.0) benched = off the yards for the docks
+}
+// A side's designs on the yards by class rank: [{ id, rank, cls, alloys }].
+function campaignDockActiveList(side, mix) {
+  const recs = side === 1 ? Object.keys(mix || {}).filter(function (n) { return mix[n] > 0; }).map(function (n) { const t = typeIndexById(campaignV3IdOf(n)); return t >= 0 ? SHIP_TYPES[t] : null; }).filter(function (r) { return !!r; })
+                          : campaignV3ActiveRecs().filter(function (r) { return !r.outdated && !campaignEvoBenched(r.id); });
+  return recs.map(function (r) { const info = campaignV3Info(r.id); return info && !(HULL_BY_ID[info.sizeClass] && HULL_BY_ID[info.sizeClass].fighter) ? { id: r.id, rank: berthRank(info.berth || info.sizeClass), cls: info.berth || info.sizeClass, alloys: info.alloys } : null; }).filter(function (x) { return !!x; });
+}
+// At dawn, before the yards build (06f campaignDawn): (v171.0) the Swarm's stalemate clock; finished upgrades open; docks whose design left the yards
+// pick a refit or an upgrade; the pending ones are paid from the side's pot (at most dockRefitMaxShare of it) and switch over when paid.
+function campaignDockDawn(pot) {
+  if (!dockModelOn()) return;
+  if (!campaign.docks.seeded) campaignDockSeed();              // (a war started with docks on: the few ships it starts with get docks at the first dawn)
+  if (swarmDocksOn()) campaignSwarmDockStall();
+  if (dockEvoOn()) { campaignEvoWeek(); campaignEvoBench(); }   // (v172.0) the ledgers decay, poor designs are benched (06f3)
+  const d = campaign.docks, S = SETTINGS, today = Math.floor(campaign.week + 1e-9), list = d.list;
+  const mix = swarmDocksOn() ? campaignAlienMix() : null;
+  for (let side = 0; side < 2; side++) {
+    if (!campaignDockSideOn(side)) continue;
+    const active = campaignDockActiveList(side, mix), who = side === 0 ? 'dock' : 'hatchery', dockCount = {};
+    for (const r of list) if (r.side === side) dockCount[r.design] = (dockCount[r.design] || 0) + 1;
+    // 1. upgrades whose week is up open at the new class with the new design
+    for (const r of list) if (r.side === side && r.upgrade && r.upgrade.doneWeek >= 0 && r.upgrade.doneWeek <= today) {
+      campaignLog('dock', 'A ' + berthClassName(r.cls).toLowerCase() + ' ' + who + ' at ' + campaignYardName(r.place) + ' is now a ' + berthClassName(r.upgrade.cls).toLowerCase() + ' ' + who + ' for the ' + campaignSupplyName(r.upgrade.to) + '.');
+      r.cls = r.upgrade.cls; r.design = r.upgrade.to; r.upgrade = null; d.stats.upgrades[side]++;
+    }
+    // 2. a dock whose design is off the yards: a refit to a live design of its class or smaller (the fewest docks first), else an upgrade
+    for (const r of list) {
+      if (r.side !== side || r.refit || r.upgrade || campaignDockDesignLive(side, r.design, mix)) continue;
+      const from = campaignShipInfo(r.design), fromAlloys = from ? from.alloys : 0, rank = berthRank(r.cls);
+      let pick = null;
+      for (const a of active) { if (a.id === r.design || a.rank > rank) continue; if (pick === null || (dockCount[a.id] || 0) < (dockCount[pick.id] || 0) || ((dockCount[a.id] || 0) === (dockCount[pick.id] || 0) && a.rank > pick.rank)) pick = a; }
+      if (pick) { r.refit = { to: pick.id, cost: Math.max(0, pick.alloys - fromAlloys), paid: 0 }; dockCount[pick.id] = (dockCount[pick.id] || 0) + 1; continue; }
+      let up = null;
+      for (const a of active) { if (a.rank <= rank || !campaignDockSlotOk(side, r.place, a.cls)) continue; if (up === null || a.rank < up.rank || (a.rank === up.rank && (dockCount[a.id] || 0) < (dockCount[up.id] || 0))) up = a; }
+      if (up) { r.upgrade = { to: up.id, cls: up.cls, cost: Math.max(0, up.alloys - fromAlloys), paid: 0, doneWeek: -1 }; dockCount[up.id] = (dockCount[up.id] || 0) + 1; }
+    }
+    // (v172.0) the evolution's own choices: our docks put up for a bigger class that does better; the Swarm combines or splits hatcheries (06f3)
+    if (dockEvoOn()) { if (side === 0) campaignEvoUpgrade(active, dockCount); else campaignEvoSwarm(mix); }
+    // 3. the pending refits and upgrades are paid, oldest first; a paid refit switches at once, a paid upgrade starts its weeks
+    let budget = Math.max(0, pot[side]) * Math.max(0, Math.min(1, +S.dockRefitMaxShare || 0)), spent = 0;
+    for (const r of list) {
+      if (r.side !== side) continue;
+      const job = r.refit || r.upgrade;
+      if (!job || (r.upgrade && r.upgrade.doneWeek >= 0)) continue;
+      const take = Math.min(budget, Math.max(0, job.cost - job.paid));
+      job.paid += take; budget -= take; spent += take;
+      if (job.paid < job.cost - 1e-9) continue;                 // (not paid yet: the next dock may still be a free refit, so no stopping here)
+      if (r.refit) {
+        campaignLog('dock', 'A ' + berthClassName(r.cls).toLowerCase() + ' ' + who + ' at ' + campaignYardName(r.place) + ' now keeps a ' + campaignSupplyName(r.refit.to) + ' (was the ' + campaignSupplyName(r.design) + (r.refit.cost > 0 ? '; the difference of ' + Math.round(r.refit.cost) + ' Alloys paid' : '') + ').');
+        r.design = r.refit.to; r.refit = null; d.stats.refits[side]++;
+      } else {
+        r.upgrade.doneWeek = today + Math.max(1, Math.round(+S.dockUpgradeWeeks || 1));
+        campaignLog('dock', 'A ' + berthClassName(r.cls).toLowerCase() + ' ' + who + ' at ' + campaignYardName(r.place) + ' is being enlarged to a ' + berthClassName(r.upgrade.cls).toLowerCase() + ' ' + who + ' for the ' + campaignSupplyName(r.upgrade.to) + ' (ready week ' + r.upgrade.doneWeek + ').');
+      }
+    }
+    if (spent > 0) { pot[side] = Math.max(0, pot[side] - spent); campaign.stats.alloysSpent[side] += spent; }
+  }
+}
+
+// ---- What the docks cost each week ----
+// (06f campaignUpkeepCount) A side's upkeep with docks: every awake dock pays its design's class (with the craft in its hangars), as a living ship would.
+function campaignDockUpkeepCount(side) {
+  const out = { alloys: 0, ships: 0 };
+  if (!campaignDockSideOn(side)) return out;
+  const list = campaign.docks.list, awake = {};
+  for (const r of list) {
+    if (r.side !== side) continue;
+    if (awake[r.place] === undefined) awake[r.place] = campaignYardSide(r.place) === side;
+    const t = typeIndexById(r.design);
+    if (!awake[r.place] || t < 0) continue;
+    out.ships++; out.alloys += campaignUpkeepOfType(t);
+  }
+  return out;
+}
+// (06f campaignResourceRates) What our docks take off each advanced resource's rate a week, { resId: n }, worked out once a day: each awake dock
+// dockResUpkeepShare of what one of its ships needs. The cap (dockResUpkeepMaxShare of the rate) is applied by the caller, which knows the rate.
+const campaignDockResCache = { key: '', per: {} };
+function campaignDockResUpkeep() {
+  if (!dockModelOn()) return {};
+  const day = campaignDayIndex(campaign.week), key = day + '|' + campaign.docks.list.length + '|' + campaign.battle.state;
+  if (campaignDockResCache.key === key) return campaignDockResCache.per;
+  const out = {}, share = Math.max(0, +SETTINGS.dockResUpkeepShare || 0), awake = {};
+  if (share > 0) for (const r of campaign.docks.list) {
+    if (r.side !== 0) continue;
+    if (awake[r.place] === undefined) awake[r.place] = campaignYardSide(r.place) === 0;
+    if (!awake[r.place] || typeIndexById(r.design) < 0) continue;
+    const needs = campaignDesignNeeds(r.design);
+    for (const res in needs) if (needs[res] > 0) out[res] = (out[res] || 0) + needs[res] * share;
+  }
+  campaignDockResCache.key = key; campaignDockResCache.per = out;
+  return out;
+}
+// Takes the docks' share off a side's resource rates (in place): at most dockResUpkeepMaxShare of each. What was taken is kept for the tooltips.
+function campaignDockResApply(side, rates) {
+  if (side !== 0 || !dockModelOn()) return rates;
+  const want = campaignDockResUpkeep(), cap = Math.max(0, Math.min(1, +SETTINGS.dockResUpkeepMaxShare || 0)), taken = {};
+  for (const res in want) { const have = rates[res] || 0, take = Math.min(want[res], have * cap); if (take > 0) { rates[res] = have - take; taken[res] = Math.round(take * 100) / 100; } }
+  campaign.docks.resTaken = taken;
+  return rates;
+}
+// One line for a resource's tooltip: what the docks take off it ('' when nothing).
+function campaignDockResWords(resId) {
+  if (!dockModelOn()) return '';
+  const t = campaign.docks.resTaken ? campaign.docks.resTaken[resId] : 0, want = campaignDockResUpkeep()[resId] || 0;
+  if (!(t > 0)) return '';
+  return 'Docks: ' + (t >= 10 ? fmtWhole(Math.round(t)) : Math.round(t * 10) / 10) + ' a week goes to keeping the docks\' ships supplied (the rate shown is what is left' + (want > t + 0.05 ? '; they would take ' + Math.round(want) + ', the most allowed was taken' : '') + ').';
+}
+
+// ---- For the screens and the tests ----
+// Everything about a side's docks now: { on, docks, awake, byClass: { cls: n }, byPlace: { place: n }, byDesign: { id: n }, refits, upgrades, stats (the
+// side's numbers), seeded; and for the Swarm (side 1) swarm: { stall, floor, frontAo, frontSince } }.
+function campaignDockSummary(side) {
+  if (!campaign || !campaign.docks) return null;
+  side = side === 1 ? 1 : 0;
+  const d = campaign.docks, out = { on: campaignDockSideOn(side), docks: 0, awake: 0, byClass: {}, byPlace: {}, byDesign: {}, refits: 0, upgrades: 0, stats: {}, resTaken: Object.assign({}, d.resTaken || {}), seeded: d.seeded };
+  for (const key in d.stats) out.stats[key] = d.stats[key][side];
+  const awake = {};
+  for (const r of d.list) {
+    if (r.side !== side) continue;
+    out.docks++;
+    if (awake[r.place] === undefined) awake[r.place] = campaignV3() && campaignYardSide(r.place) === side;
+    if (awake[r.place]) out.awake++;
+    out.byClass[r.cls] = (out.byClass[r.cls] || 0) + 1; out.byPlace[r.place] = (out.byPlace[r.place] || 0) + 1; out.byDesign[r.design] = (out.byDesign[r.design] || 0) + 1;
+    if (r.refit) out.refits++; if (r.upgrade) out.upgrades++;
+  }
+  if (side === 1) out.swarm = Object.assign({}, d.swarm);
+  if (campaignDockSpareOn(side)) { const sp = campaignDockSpareCount(side); out.spares = { building: sp.building, soonDays: sp.soonDays, short: d.short ? d.short[side] : 0 }; }   // (v173.0)
+  return out;
+}
+// The War Room's "Docks" lines (24f): how many docks keep how many ships, by size class, where they are, what is changing; and the Swarm's hatcheries.
+function campaignDockShipyardsHtml() {
+  if (!dockModelOn()) return '';
+  const s = campaignDockSummary(0), rows = [];
+  for (const cls of berthClassIds()) if (s.byClass[cls] > 0) rows.push('<dt>' + esc(berthClassName(cls)) + '</dt><dd><span data-n="docks:' + cls + '" data-v="' + s.byClass[cls] + '">' + s.byClass[cls] + '</span></dd>');
+  const places = Object.keys(s.byPlace).sort(function (a, b) { return s.byPlace[b] - s.byPlace[a]; }).map(function (p) { return esc(campaignYardName(p)) + ' ' + s.byPlace[p]; });
+  let h = '<div class="sec-h">Docks (test): ' + s.docks + ' keep ' + plural(s.awake, 'ship') + '</div><dl class="kv">' + rows.join('') +
+         (places.length ? '<dt>Where</dt><dd>' + places.join(', ') + '</dd>' : '') +
+         (s.refits || s.upgrades ? '<dt>Changing</dt><dd>' + (s.refits ? plural(s.refits, 'refit') : '') + (s.refits && s.upgrades ? ', ' : '') + (s.upgrades ? plural(s.upgrades, 'upgrade') : '') + '</dd>' : '') +
+         '<dt>Over the war</dt><dd>' + s.stats.built + ' built, ' + s.stats.replaced + ' ships replaced free</dd>' +
+         (s.spares ? '<dt>Spares</dt><dd><span data-n="docks:spares" data-v="' + s.spares.building + '">' + s.spares.building + '</span> being built' + (s.spares.short > 0 ? ', <span data-n="docks:short" data-v="' + s.spares.short + '">' + (s.spares.short === 1 ? '1 lost ship waits' : s.spares.short + ' lost ships wait') + '</span> for one' : '') + (s.spares.soonDays >= 0 ? ' (next ready in ' + plural(s.spares.soonDays, 'day') + ')' : '') + '</dd>' : '') +
+         (s.docks > s.awake ? '<dt>Asleep</dt><dd>' + (s.docks - s.awake) + ' at places we have lost</dd>' : '') + '</dl>' + campaignEvoHtml(0);
+  if (swarmDocksOn()) {
+    const w = campaignDockSummary(1);
+    h += '<div class="sec-h">The Swarm\'s hatcheries: ' + w.docks + ' keep ' + plural(w.awake, 'ship') + '</div><dl class="kv">' +
+         '<dt>Its floor</dt><dd><span data-n="docks:swarm:floor" data-v="' + w.swarm.floor + '">' + w.swarm.floor + '</span> (it always matches our numbers' + (w.swarm.stall > 1 ? ' x ' + Math.round(w.swarm.stall * 100) + '%: the front has stood still' : '') + ')</dd>' +
+         '<dt>Over the war</dt><dd>' + w.stats.built + ' hatched, ' + w.stats.granted + ' granted, ' + w.stats.replaced + ' ships replaced</dd></dl>' + campaignEvoHtml(1);
+  }
+  return h;
+}
+// A yard's own dock lines for the AO panel (24f): its docks by design ('' when none).
+function campaignDockPlaceHtml(yardId) {
+  if (!dockModelOn()) return '';
+  const by = {};
+  let side = -1;
+  for (const r of campaign.docks.list) if (r.place === yardId) { by[r.design] = (by[r.design] || 0) + 1; side = r.side; }
+  const ids = Object.keys(by);
+  if (!ids.length) return '';
+  const awake = campaignYardSide(yardId) === side, who = side === 1 ? 'Hatcheries' : 'Docks';
+  return '<div class="sec-h">' + who + ' at ' + esc(campaignYardName(yardId)) + (awake ? '' : (side === 0 ? ' (asleep: the place is not ours)' : ' (asleep: the place is not the Swarm\'s)')) + '</div><dl class="kv">' +
+         ids.map(function (id) { return '<dt>' + esc(campaignSupplyName(id)) + '</dt><dd><span data-n="docks:' + yardId + ':' + id + '" data-v="' + by[id] + '">' + by[id] + '</span></dd>'; }).join('') + '</dl>';
+}
+Object.assign(CAMPAIGN_API, {
+  docks: function (side) { return campaignDockSummary(side); },          // (v170.0) a side's docks now (ours unless 1; null outside a war)
+  docksOn: function (on) { return campaignDockSet(on !== false); },      // switch the dock economy on (or off) in the running war
+  dockList: function () { return campaign && campaign.docks ? copyJson(campaign.docks.list) : []; },
+  dockYardsFor: function (id, side) { return campaignDockYardsFor(side === 1 ? 1 : 0, id); }    // where a design's docks would be built now, best first
+});
+// =====================================================================
+// 5z (continued). (v172.0) EVOLUTION: THE DOCKS LEARN FROM THE FIGHTING  (Alex 9 Nov; notes/plans/campaign/dock-economy.md, "Evolution")
+//
+//   WHAT THIS IS. Part of the dock economy test (06f2; nothing here runs unless the docks are on and dockEvoModel is 1). Alex: "the AI will choose
+//   to swap out poor performing designs with alternatives. It also should be able to choose to upgrade a dock to a larger size. The Swarm should
+//   decide to keep large numbers, or combine small ships to larger ships."
+//
+//   THE LEDGER (campaign.docks.evo.led, one per side). Every kill in a campaign battle is written down for both designs (05 killShip calls
+//   evoNoteKill): the killer's design gains the worth of what it killed (kw) and a kill (k); the victim's design gains a loss (l) and the worth it
+//   lost (lw). Worth is the campaign's ship worth (06g campaignShipWorth), so one capital ship killed counts for many small craft. The ledger
+//   DECAYS each dawn by dockEvoDecay, so what a design did lately counts most, and a design has a say only once it has dockEvoMinSample kills and
+//   losses together. A design's SCORE is worth killed per worth lost: kw / (lw + its own worth). The own worth stops a design that has never lost
+//   a ship from scoring infinitely, and a design that kills nothing scores 0.
+//
+//   OUR SIDE, 1: SWAPPING DESIGNS (campaignEvoBench, each dawn). Among the designs on the yards of one class (the berth class), a design that
+//   scores below dockEvoSwapRatio of the class's best is BENCHED: its docks are treated as if the design had left the yards, so 06f2 campaignDockDawn
+//   refits them to another design of the class (the one with the fewest docks first, so a new, untested design gets its trial) for the Alloys
+//   difference, and no new docks of it are built. A benched design comes back when it scores dockEvoKeepRatio of the best again (it keeps
+//   scoring only while its old ships still fight, so in practice it comes back when the design that replaced it does worse). The best design of a
+//   class is never benched, and a class with one design has nothing to swap. The player's yardsReady choice is never changed: benching is a dock
+//   decision, and the Bureau shows the design as active still.
+//
+//   OUR SIDE, 2: UPGRADING DOCKS BY CHOICE (campaignEvoUpgrade, each dawn). When the best design of a bigger class scores at least dockEvoUpRatio
+//   times a design's score (both with enough sample), a share dockEvoUpShare of that design's docks (at least one) is put up for the upgrade at
+//   places whose tier allows the bigger class, paid and timed exactly as a refit upgrade in 06f2 (the Alloys difference, dockUpgradeWeeks, at most
+//   dockRefitMaxShare of a week's Alloys); no new ones are started while that many are still waiting to be paid.
+//
+//   THE SWARM: NUMBERS OR SIZE (campaignEvoSwarm, each dawn). The Swarm's hatcheries are scored BY CLASS (all its designs of a class together).
+//   When a bigger class scores at least dockEvoSwarmRatio times a smaller one, the Swarm COMBINES: a share dockEvoSwarmShare of the smaller class's
+//   hatcheries, taken k at a time (k = the bigger design's Alloys over the smaller's, at least 2), become one hatchery of the bigger class for the
+//   best-scoring design of that class, at the first hatchery's nest if its tier and gravity allow the hull (06q campaignNestMayHatch), else at the
+//   best nest that does. The combined hatchery carries the WORTH of the hatcheries it was made from (r.worth), so the Swarm's match floor (06f2
+//   campaignSwarmDockFloor) counts it as k ships: combining never makes the match grant new small hatcheries to fill the gap. The small ships
+//   already flying are not touched; they fight on until lost and are then not replaced (the grown-up lore of the Swarm plan: the mass has moved
+//   into bigger hulls). When the smaller class scores dockEvoSwarmRatio times the bigger one, the Swarm SPLITS combined hatcheries back (only
+//   those with worth above 1) into as many small ones as their worth, at the same nest. The Swarm pays nothing for either.
+//
+//   WHAT IS SHOWN. The War Room's Docks block (06f2 campaignDockShipyardsHtml) gets an Evolution part: each design's score and sample, which
+//   are benched, how many docks were upgraded by choice, and for the Swarm how many hatcheries it has combined or split. The log says what changed.
+//   Saved with the campaign inside campaign.docks. Check: tools/v172.0/evolution-check.js.
+// =====================================================================
+
+function dockEvoOn() { return dockModelOn() && SETTINGS.dockEvoModel === 1; }
+// The evolution's fields inside campaign.docks (06f2 campaignDockFields calls this).
+function campaignEvoFields(d) {
+  if (!d.evo || typeof d.evo !== 'object') d.evo = {};
+  const e = d.evo;
+  if (!Array.isArray(e.led) || e.led.length !== 2) e.led = [{}, {}];
+  for (let side = 0; side < 2; side++) { if (!e.led[side] || typeof e.led[side] !== 'object') e.led[side] = {}; for (const id in e.led[side]) { const r = e.led[side][id]; if (!r || typeof r !== 'object') { delete e.led[side][id]; continue; } for (const k of ['k', 'kw', 'l', 'lw']) if (typeof r[k] !== 'number' || !isFinite(r[k])) r[k] = 0; } }
+  if (!e.bench || typeof e.bench !== 'object') e.bench = {};
+  if (!e.stats || typeof e.stats !== 'object') e.stats = {};
+  for (const key of ['benched', 'returned', 'upgrades']) if (!Array.isArray(e.stats[key]) || e.stats[key].length !== 2) e.stats[key] = [0, 0];
+  for (const key of ['combined', 'split']) if (typeof e.stats[key] !== 'number') e.stats[key] = 0;
+  if (typeof e.week !== 'number') e.week = -1;
+}
+// (05 killShip) one kill in the campaign's battle: both designs' ledgers. Facilities and anything outside the campaign are not counted.
+function evoNoteKill(killerST, st) {
+  if (killerST < 0 || !campaignBattleActive || typeof campaign === 'undefined' || !campaign || !dockEvoOn()) return;
+  const kSide = (killerST / TYPE_COUNT) | 0, vSide = (st / TYPE_COUNT) | 0, kt = killerST % TYPE_COUNT, vt = st % TYPE_COUNT;
+  if (kSide === vSide || stImmobile[killerST] === 1 || stImmobile[st] === 1) return;
+  const kId = typeId[kt], vId = typeId[vt];
+  if (!kId || !vId) return;
+  const worth = campaignShipWorth(vId), led = campaign.docks.evo.led;
+  const K = led[kSide][kId] || (led[kSide][kId] = { k: 0, kw: 0, l: 0, lw: 0 }), V = led[vSide][vId] || (led[vSide][vId] = { k: 0, kw: 0, l: 0, lw: 0 });
+  K.k++; K.kw += worth; V.l++; V.lw += worth;
+}
+// (v173.0, Alex 10 Nov) a ship of ours SCUTTLED in a campaign battle (17c cplScuttle): no enemy has the kill, but it is a loss of its design all the same
+// (scuttleOnLedger 1), so a fleet that scuttles freely sees its designs benched. Before v173.0 a scuttled ship was missing from the ledger.
+function evoNoteScuttle(st) {
+  if (SETTINGS.scuttleOnLedger !== 1 || !campaignBattleActive || typeof campaign === 'undefined' || !campaign || !dockEvoOn()) return;
+  const side = (st / TYPE_COUNT) | 0, id = typeId[st % TYPE_COUNT];
+  if (!id || stImmobile[st] === 1) return;
+  const led = campaign.docks.evo.led, V = led[side][id] || (led[side][id] = { k: 0, kw: 0, l: 0, lw: 0 });
+  V.l++; V.lw += campaignShipWorth(id); V.sc = (V.sc || 0) + 1;
+}
+// (v173.0) a crippled ship TOWED into a dock (17c): written as "saved" beside its design (shown in the War Room; it does not change the score, which
+// already gains by the loss that did not happen).
+function evoNoteSaved(st) {
+  if (!campaignBattleActive || typeof campaign === 'undefined' || !campaign || !dockEvoOn()) return;
+  const side = (st / TYPE_COUNT) | 0, id = typeId[st % TYPE_COUNT];
+  if (!id) return;
+  const led = campaign.docks.evo.led, V = led[side][id] || (led[side][id] = { k: 0, kw: 0, l: 0, lw: 0 });
+  V.sv = (V.sv || 0) + 1;
+}
+// A design's score (worth killed per worth lost, its own worth added so nothing is infinite) and whether it has said enough.
+function campaignEvoScore(side, id) {
+  const r = campaign.docks.evo.led[side][id];
+  if (!r) return { score: 0, sample: 0, tested: false, k: 0, l: 0, scuttled: 0, saved: 0 };
+  const own = Math.max(1, campaignShipWorth(id)), sample = r.k + r.l;
+  return { score: r.kw / (r.lw + own), sample: sample, tested: sample >= Math.max(1, SETTINGS.dockEvoMinSample || 1), k: r.k, l: r.l, kw: r.kw, lw: r.lw, scuttled: r.sc || 0, saved: r.sv || 0 };
+}
+function campaignEvoBenched(id) { return dockEvoOn() && campaign.docks.evo.bench[id] !== undefined; }
+// At dawn, first of all (06f2 campaignDockDawn): the ledgers decay, once a week.
+function campaignEvoWeek() {
+  const e = campaign.docks.evo, today = Math.floor(campaign.week + 1e-9), decay = Math.max(0, Math.min(1, +SETTINGS.dockEvoDecay || 0));
+  if (e.week === today) return;
+  e.week = today;
+  for (let side = 0; side < 2; side++) for (const id in e.led[side]) { const r = e.led[side][id]; r.k *= decay; r.kw *= decay; r.l *= decay; r.lw *= decay; if (r.sc) r.sc *= decay; if (r.sv) r.sv *= decay; if (r.k + r.l + (r.sv || 0) < 0.05) delete e.led[side][id]; }
+}
+// Our designs on the yards, by berth class, benched or not (the fighters, which have no docks, left out).
+function campaignEvoOurByClass() {
+  const by = {};
+  for (const rec of campaignV3ActiveRecs()) {
+    if (rec.outdated) continue;
+    const info = campaignV3Info(rec.id);
+    if (!info || (HULL_BY_ID[info.sizeClass] && HULL_BY_ID[info.sizeClass].fighter)) continue;
+    const cls = info.berth || info.sizeClass;
+    (by[cls] = by[cls] || []).push(Object.assign({ id: rec.id, cls: cls, rank: berthRank(cls), alloys: info.alloys }, campaignEvoScore(0, rec.id)));
+  }
+  return by;
+}
+// Our side, 1: which designs are benched now.
+function campaignEvoBench() {
+  const e = campaign.docks.evo, S = SETTINGS, by = campaignEvoOurByClass(), swap = Math.max(0, +S.dockEvoSwapRatio || 0), keep = Math.max(swap, +S.dockEvoKeepRatio || 0), today = Math.floor(campaign.week + 1e-9);
+  const onYards = {};
+  for (const cls in by) {
+    const rows = by[cls];
+    for (const r of rows) onYards[r.id] = true;
+    const tested = rows.filter(function (r) { return r.tested; });
+    if (rows.length < 2 || tested.length === 0) { for (const r of rows) campaignEvoUnbench(r.id, 'the only design of its class'); continue; }
+    let best = tested[0]; for (const r of tested) if (r.score > best.score) best = r;
+    // back first, so a class never ends with every design benched
+    for (const r of tested) if (e.bench[r.id] !== undefined && (r === best || r.score >= keep * best.score - 1e-9)) campaignEvoUnbench(r.id, 'it scores ' + campaignEvoPct(r.score, best.score) + ' of the best, the ' + campaignSupplyName(best.id));
+    for (const r of tested) {
+      if (r === best || e.bench[r.id] !== undefined || r.score >= swap * best.score - 1e-9) continue;
+      const others = rows.filter(function (q) { return q.id !== r.id && e.bench[q.id] === undefined; });
+      if (!others.length) continue;
+      e.bench[r.id] = today; e.stats.benched[0]++;
+      campaignLog('dock', 'The ' + campaignSupplyName(r.id) + ' is benched: it scores ' + campaignEvoPct(r.score, best.score) + ' of the ' + campaignSupplyName(best.id) + ' (' + campaignEvoWords(r) + '). Its docks will refit to another ' + berthClassName(cls).toLowerCase() + ' design.');
+    }
+  }
+  for (const id in e.bench) if (!onYards[id]) delete e.bench[id];   // (a design taken off the yards is simply off: 06f2 refits it as before)
+}
+function campaignEvoUnbench(id, why) {
+  const e = campaign.docks.evo;
+  if (e.bench[id] === undefined) return;
+  delete e.bench[id]; e.stats.returned[0]++;
+  campaignLog('dock', 'The ' + campaignSupplyName(id) + ' is back from the bench: ' + why + '.');
+}
+function campaignEvoPct(a, b) { return b > 0 ? Math.round(a / b * 100) + '%' : (a > 0 ? 'more than' : 'none'); }
+function campaignEvoWords(r) { return Math.round(r.kw) + ' worth killed for ' + Math.round(r.lw) + ' lost, ' + Math.round(r.k) + ' kills, ' + Math.round(r.l) + ' losses lately'; }
+// Our side, 2: docks put up for a bigger class because its best design does much better. active = 06f2's list of live designs (benched ones left out).
+function campaignEvoUpgrade(active, dockCount) {
+  const S = SETTINGS, list = campaign.docks.list, e = campaign.docks.evo, ratio = Math.max(1, +S.dockEvoUpRatio || 1), share = Math.max(0, Math.min(1, +S.dockEvoUpShare || 0));
+  if (!(share > 0)) return 0;
+  const scored = active.map(function (a) { return Object.assign({}, a, campaignEvoScore(0, a.id)); });
+  let ours = 0, waiting = 0;
+  for (const r of list) if (r.side === 0) { ours++; if (r.upgrade && r.upgrade.doneWeek < 0) waiting++; }
+  const room = Math.max(1, Math.ceil(ours * share)) - waiting;
+  if (room <= 0) return 0;
+  // for each design with docks: the best bigger design that beats it clearly
+  const byDesign = {};
+  for (const r of list) if (r.side === 0 && !r.refit && !r.upgrade && campaignDockDesignLive(0, r.design, null)) (byDesign[r.design] = byDesign[r.design] || []).push(r);
+  let started = 0;
+  for (const id in byDesign) {
+    if (started >= room) break;
+    const me = scored.find(function (a) { return a.id === id; }) || Object.assign({ id: id, rank: berthRank(campaignShipInfo(id).berth || 'small'), alloys: campaignShipInfo(id).alloys }, campaignEvoScore(0, id));
+    if (!me.tested) continue;
+    let up = null;
+    for (const a of scored) if (a.rank > me.rank && a.tested && a.score >= ratio * Math.max(me.score, 1e-9) && (up === null || a.score / Math.max(1, a.alloys) > up.score / Math.max(1, up.alloys))) up = a;
+    if (!up) continue;
+    const docks = byDesign[id], n = Math.min(room - started, Math.max(1, Math.ceil(docks.length * share)));
+    let k = 0;
+    for (const r of docks) {
+      if (k >= n) break;
+      if (!campaignDockSlotOk(0, r.place, up.cls)) continue;
+      r.upgrade = { to: up.id, cls: up.cls, cost: Math.max(0, up.alloys - me.alloys), paid: 0, doneWeek: -1, chosen: true };
+      dockCount[up.id] = (dockCount[up.id] || 0) + 1; k++;
+    }
+    if (k > 0) {
+      started += k; e.stats.upgrades[0] += k;
+      campaignLog('dock', pluralV3(k, 'dock', 'docks') + ' of the ' + campaignSupplyName(id) + ' will be enlarged for the ' + campaignSupplyName(up.id) + ': it scores ' + campaignEvoPct(up.score, me.score) + ' of the ' + campaignSupplyName(id) + '\'s (' + campaignEvoWords(up) + ').');
+    }
+  }
+  return started;
+}
+// The Swarm: its hatcheries' classes scored together, then combined up or split down.
+function campaignEvoSwarmClasses(mix) {
+  const by = {};
+  for (const name in mix) {
+    if (!(mix[name] > 0)) continue;
+    const id = campaignV3IdOf(name), info = typeIndexById(id) >= 0 ? campaignV3Info(id) : null;
+    if (!info || (HULL_BY_ID[info.sizeClass] && HULL_BY_ID[info.sizeClass].fighter)) continue;
+    const cls = info.berth || info.sizeClass, sc = campaignEvoScore(1, id);
+    const C = by[cls] || (by[cls] = { cls: cls, rank: berthRank(cls), designs: [], kw: 0, lw: 0, own: 0, sample: 0 });
+    C.designs.push(Object.assign({ id: id, alloys: info.alloys, info: info }, sc));
+    C.kw += sc.kw || 0; C.lw += sc.lw || 0; C.sample += sc.sample; C.own = Math.max(C.own, campaignShipWorth(id));
+  }
+  for (const cls in by) { const C = by[cls]; C.score = C.kw / (C.lw + Math.max(1, C.own)); C.tested = C.sample >= Math.max(1, SETTINGS.dockEvoMinSample || 1); }
+  return by;
+}
+function campaignEvoSwarm(mix) {
+  const S = SETTINGS, d = campaign.docks, e = d.evo, list = d.list, ratio = Math.max(1, +S.dockEvoSwarmRatio || 1), share = Math.max(0, Math.min(1, +S.dockEvoSwarmShare || 0));
+  if (!(share > 0) || !mix) return;
+  const by = campaignEvoSwarmClasses(mix), classes = Object.keys(by).map(function (c) { return by[c]; }).filter(function (C) { return C.tested; }).sort(function (a, b) { return a.rank - b.rank; });
+  if (classes.length < 2) return;
+  const bestOf = function (C) { let b = C.designs[0]; for (const x of C.designs) if (x.score > b.score) b = x; return b; };
+  const awake = function (r) { return !r.refit && !r.upgrade && campaignYardSide(r.place) === 1; };
+  for (let i = 0; i < classes.length; i++) {
+    const small = classes[i];
+    // the bigger class that beats this one most clearly
+    let big = null;
+    for (let j = i + 1; j < classes.length; j++) if (classes[j].score >= ratio * Math.max(small.score, 1e-9) && (big === null || classes[j].score > big.score)) big = classes[j];
+    if (big) {
+      const B = bestOf(big), mine = list.filter(function (r) { return r.side === 1 && r.cls === small.cls && awake(r); });
+      if (mine.length < 2) continue;
+      const want = Math.max(1, Math.ceil(mine.length * share));
+      let made = 0, used = 0;
+      // the same nest first, so a combined hatchery stays where its ships were
+      mine.sort(function (p, q) { return p.place < q.place ? -1 : (p.place > q.place ? 1 : p.id - q.id); });
+      while (used < mine.length && made < want) {
+        const first = mine[used], smallAlloys = Math.max(1, campaignV3Info(first.design).alloys || 1), k = Math.max(2, Math.round(Math.max(1, B.alloys) / smallAlloys));
+        if (used + k > mine.length) break;
+        const group = mine.slice(used, used + k);
+        let place = campaignDockSlotOk(1, first.place, B.info.berth || B.info.sizeClass) ? first.place : '';
+        if (!place) { const rows = campaignDockYardsFor(1, B.id); if (!rows.length) break; place = rows[0].id; }
+        let worth = 0;
+        for (const r of group) { worth += r.worth > 0 ? r.worth : 1; list.splice(list.indexOf(r), 1); }
+        const n = campaignDockAdd(1, place, B.id, B.info); n.worth = worth;
+        used += k; made++;
+      }
+      if (made > 0) {
+        e.stats.combined += made;
+        campaignLog('dock', 'The Swarm grows ' + pluralV3(used, 'hatchery', 'hatcheries') + ' of ' + berthClassName(small.cls).toLowerCase() + ' into ' + pluralV3(made, 'hatchery', 'hatcheries') + ' of the ' + campaignSupplyName(B.id) + ': its ' + berthClassName(big.cls).toLowerCase() + 's score ' + campaignEvoPct(big.score, small.score) + ' of its ' + berthClassName(small.cls).toLowerCase() + 's.');
+      }
+      continue;
+    }
+    // the other way: this class beats a bigger class clearly, so combined hatcheries of that class split back
+    if (S.dockEvoSwarmSplit !== 1) continue;
+    for (let j = i + 1; j < classes.length; j++) {
+      const bigC = classes[j];
+      if (!(small.score >= ratio * Math.max(bigC.score, 1e-9))) continue;
+      const grown = list.filter(function (r) { return r.side === 1 && r.cls === bigC.cls && r.worth > 1 && awake(r); });
+      if (!grown.length) continue;
+      const Sm = bestOf(small), n = Math.max(1, Math.ceil(grown.length * share));
+      let done = 0, back = 0;
+      for (const r of grown) {
+        if (done >= n) break;
+        const place = campaignDockSlotOk(1, r.place, Sm.info.berth || Sm.info.sizeClass) ? r.place : (campaignDockYardsFor(1, Sm.id)[0] || {}).id;
+        if (!place) continue;
+        const w = Math.round(r.worth);
+        list.splice(list.indexOf(r), 1);
+        for (let q = 0; q < w; q++) campaignDockAdd(1, place, Sm.id, Sm.info);
+        done++; back += w;
+      }
+      if (done > 0) {
+        e.stats.split += done;
+        campaignLog('dock', 'The Swarm splits ' + pluralV3(done, 'grown hatchery', 'grown hatcheries') + ' of ' + berthClassName(bigC.cls).toLowerCase() + ' back into ' + pluralV3(back, 'hatchery', 'hatcheries') + ' of the ' + campaignSupplyName(Sm.id) + ': its ' + berthClassName(small.cls).toLowerCase() + 's score ' + campaignEvoPct(small.score, bigC.score) + ' of its ' + berthClassName(bigC.cls).toLowerCase() + 's.');
+      }
+    }
+  }
+}
+// What the War Room shows under the docks (06f2 campaignDockShipyardsHtml).
+function campaignEvoHtml(side) {
+  if (!dockEvoOn()) return '';
+  const e = campaign.docks.evo, rows = [];
+  const ids = {};
+  for (const r of campaign.docks.list) if (r.side === side) ids[r.design] = (ids[r.design] || 0) + 1;
+  for (const id in e.led[side]) if (ids[id] === undefined) ids[id] = 0;
+  const scored = Object.keys(ids).map(function (id) { return Object.assign({ id: id, docks: ids[id] }, campaignEvoScore(side, id)); }).filter(function (r) { return r.sample > 0 || r.docks > 0; }).sort(function (a, b) { return b.score - a.score; });
+  for (const r of scored.slice(0, 8)) rows.push('<dt>' + esc(campaignSupplyName(r.id)) + (e.bench[r.id] !== undefined ? ' (benched)' : '') + '</dt><dd>' + (r.tested ? 'score ' + (Math.round(r.score * 100) / 100) : 'too few fights yet') + ', ' + Math.round(r.k) + ' kills, ' + Math.round(r.l) + ' losses lately' + (r.scuttled >= 0.5 ? ' (' + Math.round(r.scuttled) + ' scuttled)' : '') + (r.saved >= 0.5 ? ', ' + Math.round(r.saved) + ' towed home' : '') + (side === 0 ? ', ' + plural(r.docks, 'dock') : '') + '</dd>');
+  let h = '<div class="sec-h">' + (side === 0 ? 'Evolution: what the docks have learned' : 'The Swarm\'s evolution') + '</div><dl class="kv">' + rows.join('');
+  if (side === 0) h += '<dt>Over the war</dt><dd>' + e.stats.benched[0] + ' benched, ' + e.stats.returned[0] + ' back, ' + plural(e.stats.upgrades[0], 'dock') + ' enlarged by choice</dd>';
+  else h += '<dt>Over the war</dt><dd>' + plural(e.stats.combined, 'hatchery group') + ' grown into bigger hulls, ' + e.stats.split + ' split back</dd>';
+  return h + '</dl>';
+}
 // =====================================================================
 // 5z (continued). THE CAMPAIGN'S TWO BRAINS  (v24, Mars plan stop 4; SETTINGS.campaignModel, and campaign.ai.on)
 //
@@ -38684,7 +39582,8 @@ function campaignV3BuildList(yardId, fit, forSide) {
     const t = typeIndexById(id), info = t >= 0 ? campaignV3Info(id) : null;
     if (t < 0 || SHIP_TYPES[t].immobile || !(w > 0)) return;
     if (SHIP_TYPES[t].fighter || (info && HULL_BY_ID[info.sizeClass] && HULL_BY_ID[info.sizeClass].fighter)) return;   // (v51) a fighter is never built in a berth: it lives in a hangar (06p)
-    if (info && info.local && campaignLocalYardFor(side, id) !== yardId) return;   // (v168.0) a Local design is built at one yard only: the first on the priority list below
+    if (side === 0 && typeof dockModelOn === 'function' && dockModelOn()) { if (!campaignDockBuildsAt(yardId, id)) return; }   // (v170.0) with docks on, a design is built only at the yards its docks go to (06f2: Local behind the front, 1 transfer out to Jupiter, the AI's score)
+    else if (info && info.local && campaignLocalYardFor(side, id) !== yardId) return;   // (v168.0) a Local design is built at one yard only: the first on the priority list below
     if (side === 1 && info && !campaignNestMayHatch(yardId, info.sizeClass)) return;   // (v53) a Swarm nest hatches a hull class only once it is old enough (06q)
     if (fit !== false && !campaignV3Fits(yardId, id)) return;
     out.push({ id: id, weight: side === 0 ? w * docYardNudge(SHIP_TYPES[t]) : w });   // (v37, section 5kd) a little more of an escort or PD design a doctrine asks for and is short of
@@ -38888,6 +39787,8 @@ function campaignV3BerthsDawn(pot) {
   // 3. the berths being laid are paid, and logistics lays new ones at the two home yards (ours, and the aliens' main yard)
   const homes = [{ id: campaignHomeYard(0), side: 0 }, { id: campaignV3AlienMainYard(), side: 1 }];
   for (const h of homes) { if (!h.id || !v.berths[h.id] || campaignV3YardSide(h.id) !== h.side || (campaign.earthOnly && h.side === 1)) continue; campaignV3PayBerths(h.id, h.side, pot); campaignV3Logistics(h.id, h.side); }   // (v27 C3: nothing for the aliens while the tutorial holds the war at Earth)
+  // (v170.0) with docks on, every yard of ours that is asked to build lays its own berths too (a design's docks go to the yards the AI picks: 06f2)
+  if (typeof dockModelOn === 'function' && dockModelOn()) for (const y of campaignYardsOf(0)) if (y !== homes[0].id && v.berths[y]) campaignV3Logistics(y, 0);
 }
 // The aliens' main yard: Ceres while they hold it (the Belt is where their waves mass in the Mars campaign), else the yard of their rear AO, else their home's.
 function campaignV3AlienMainYard() {
@@ -43186,7 +44087,9 @@ let sqLabelNo;                                      // the squadron's number wit
 let sqAway;                                         // ships of the squadron that are away being repaired (in a dock, or off the map): the squadron still counts them as its own (section 5j)
 let sqMemberAway;                                   // sqMemberAway[k] = 1 when place k of the member list is kept for a ship that is away being repaired
 let sqKills, sqLosses;                              // (the Officers update, stop 2) ships each squadron has destroyed and lost, for the officers' service records (section 2l)
-let sqRouts, sqRepaired, sqBadOdds, sqBigKill;      // (stop 3) routs by its ships, ships mended and back, 1 = it has seen odds of routRatio or worse, the biggest kill (enemy size / own): for medals and scars
+let sqRouts, sqRepaired, sqBadOdds, sqBigKill;
+let sqTowed, sqScuttled;                            // (v173.0) crippled ships its ships towed into a dock, and its ships scuttled: for the Brought Her Home medal and the scuttle's cost to the officer's record
+      // (stop 3) routs by its ships, ships mended and back, 1 = it has seen odds of routRatio or worse, the biggest kill (enemy size / own): for medals and scars
 let sqDraftFor, sqDraftIncoming;
 let sqGathering;                                    // (stop 8) 1 = gathering at its leader before an attack or advance order starts (section 5p)                    // (stop 7) a draft squadron: the squadron it is for (0 = not a draft); a squadron: the draft on its way to it (0 = none)
 let sqFlagship, sqHandoverUntil;                    // (stop 6) the squadron's flagship, the ship its officer rides (-1 = none), and the battle time its change of commander settles (0 = none)
@@ -43302,6 +44205,7 @@ function allocateCommandArrays(n) {
   sqRetired = new Uint8Array(m);
   sqRouts = new Int32Array(m);
   sqRepaired = new Int32Array(m);
+  sqTowed = new Int32Array(m); sqScuttled = new Int32Array(m);   // (v173.0)
   sqBadOdds = new Uint8Array(m);
   sqBigKill = new Float32Array(m);
   sqMemberAway = new Uint8Array(n);
@@ -45896,7 +46800,7 @@ function retireSquadron(sq, why, departed) {                 // why (stop 7): th
 }
 // What a squadron did in this battle, for its officer's record (the medal and scar tests of section 2l read this).
 function squadronInfo(sq) {
-  return { scale: orgInfoScale(sq), sq: sq, kills: sqKills[sq], lost: sqLosses[sq], routs: sqRouts[sq], wiped: sqAlive[sq] === 0 && sqAway[sq] === 0, repaired: sqRepaired[sq], bigKill: sqBigKill[sq],
+  return { scale: orgInfoScale(sq), sq: sq, kills: sqKills[sq], lost: sqLosses[sq], routs: sqRouts[sq], wiped: sqAlive[sq] === 0 && sqAway[sq] === 0, repaired: sqRepaired[sq], towed: sqTowed[sq], scuttled: sqScuttled[sq], bigKill: sqBigKill[sq],
            badOdds: sqBadOdds[sq] === 1, sizeClass: typeClass[sqType[sq]], judged: sqOfficer[sq] && sqOfficer[sq].rec ? sqOfficer[sq].rec.scored : 0, byAction: sqOfficer[sq] && sqOfficer[sq].rec ? sqOfficer[sq].rec.byAction : {} };
 }
 
@@ -45954,7 +46858,7 @@ function resetCommandState() {
   moveHold = null;                                         // (v27.3) nobody is held at an anchor in a new battle (section 4)
   sqTarget.fill(-1); sqEscort.fill(-1); sqEscortThreat.fill(-1);
   sqFormation.fill(0); sqLocked.fill(0); sqDirty.fill(0); sqPace.fill(1); sqFlank.fill(FLANK_OFF); sqFlankPatience.fill(0); sqActive.fill(0);
-  sqNextThink.fill(0); sqAlive.fill(0); sqAway.fill(0); sqMemberAway.fill(0); sqLabelNo.fill(0); sqLostValue.fill(0); sqKillValue.fill(0); sqKills.fill(0); sqLosses.fill(0); sqRouts.fill(0); sqRepaired.fill(0); sqBadOdds.fill(0); sqBigKill.fill(0); sqBlock.fill(0); sqRetired.fill(0);
+  sqNextThink.fill(0); sqAlive.fill(0); sqAway.fill(0); sqMemberAway.fill(0); sqLabelNo.fill(0); sqLostValue.fill(0); sqKillValue.fill(0); sqKills.fill(0); sqLosses.fill(0); sqRouts.fill(0); sqRepaired.fill(0); sqTowed.fill(0); sqScuttled.fill(0); sqBadOdds.fill(0); sqBigKill.fill(0); sqBlock.fill(0); sqRetired.fill(0);
   freeSquadronNumbers.length = 0; for (const size in freeMemberBlocks) delete freeMemberBlocks[size]; freePlaces = 0; retiredOfficers.length = 0; retiredCount = 0; squadronsMade = 0; retireNextAt = 0; peakSquadrons = 0;   // (stop 4)
   sqDivision.fill(0); sqDivTarget.fill(0); divisions.length = 1;                      // (stop 5)
   sqFlagship.fill(-1); sqHandoverUntil.fill(0); successionReset(); scenarioScriptNext = 0;   // (stop 6)
@@ -46290,10 +47194,10 @@ function dissolveDivision(dv, why) {                        // why (stop 7): the
 }
 // What a Division did, for its Commodore's record (the medal tests of section 2l read this; a Commodore is judged like an Admiral: no squadron deeds).
 function divisionInfo(dv) {
-  let kills = dv.kills, lost = dv.lost, routs = 0, alive = 0;
-  for (let k = 0; k < dv.squads.length; k++) { const sq = dv.squads[k]; kills += sqKills[sq]; lost += sqLosses[sq]; routs += sqRouts[sq]; if (sqAlive[sq] > 0 || sqAway[sq] > 0) alive++; }
+  let kills = dv.kills, lost = dv.lost, routs = 0, alive = 0, towed = 0, scuttled = 0;
+  for (let k = 0; k < dv.squads.length; k++) { const sq = dv.squads[k]; kills += sqKills[sq]; lost += sqLosses[sq]; routs += sqRouts[sq]; towed += sqTowed[sq]; scuttled += sqScuttled[sq]; if (sqAlive[sq] > 0 || sqAway[sq] > 0) alive++; }
   const o = dv.officer;
-  return { sq: 0, kills: kills, lost: lost, routs: routs, wiped: alive === 0, repaired: 0, bigKill: 0, badOdds: false, sizeClass: -1, judged: o && o.rec ? o.rec.scored : 0, byAction: o && o.rec ? o.rec.byAction : {} };
+  return { sq: 0, kills: kills, lost: lost, routs: routs, wiped: alive === 0, repaired: 0, towed: towed, scuttled: scuttled, bigKill: 0, badOdds: false, sizeClass: -1, judged: o && o.rec ? o.rec.scored : 0, byAction: o && o.rec ? o.rec.byAction : {} };
 }
 function divisionAliveSquads(dv) { const out = []; for (let k = 0; k < dv.squads.length; k++) if (sqAlive[dv.squads[k]] > 0) out.push(dv.squads[k]); return out; }
 // Does the Division's task move its squadrons (so the Admiral's own rules must leave them alone)?
@@ -56622,6 +57526,9 @@ function fgPicture() {
 //       A crippled ship that can still move (it only lost its guns) flies to the station on its own. With no station here: it fights on.
 //     * FIGHT ON: it stays where it is as a hulk and shoots with whatever still works.
 //     * SCUTTLE: the crew blow the ship up and escape: it counts as lost, but the officers aboard abandon ship with the crew and survive (18: flagshipFate). A Dispatch says so.
+//       (v173.0, Alex 10 Nov: with free dock replacements scuttling was nearly always best) Now: the officers roll for their fate with scuttleKillShare of the
+//       usual killed chance; each ship scuttled costs its squadron officer and Commodore scuttleXpCost experience (22); it counts as a loss of its design on
+//       the docks' ledger (06f3 evoNoteScuttle); and it spends its dock's spare (06f2). A completed TOW earns the tug's squadron the Brought Her Home medal.
 //     * AUTO: tow it in when we have a station here; otherwise fight on while a gun works, and scuttle once none does.
 //   THE SWARM does not tow or scuttle: it FEEDS (Alex's idea). In a Swarm squadron of two or more, the weakest ship that is crippled or below feedHullBelow of its
 //   hull is eaten by the nearest healthier member of the same size class or bigger. The eater flies to it and stops beside it for feedSeconds (both can be
@@ -56882,6 +57789,8 @@ function cplAtStation(i, nx, ny) {
   if (c >= 0 && shipAlive[c] === 1 && cplPartner[c] === i) {
     cplCtl[c] = CTL_NONE; cplPartner[c] = -1;
     cplStats.towedIn[shipSide[c]]++;
+    { const tsq = shipSquad[i]; if (tsq > 0 && tsq < sqTowed.length) sqTowed[tsq]++; }   // (v173.0) the tug's squadron brought her home: the Brought Her Home medal (02 MEDALS)
+    if (typeof evoNoteSaved === 'function') evoNoteSaved(shipSide[c] * TYPE_COUNT + shipType[c]);   // (v173.0) "towed home" beside its design on the docks' ledger (06f3)
     enterRepairPoint(c, rp);                                               // into the dock queue, as a ship that flew there itself (section 5j)
   }
   cplGive(i);                                                               // the tug goes back to the fight
@@ -56890,10 +57799,12 @@ function cplAtStation(i, nx, ny) {
 
 // ---- Scuttling ----
 function cplScuttle(i) {
-  const side = shipSide[i], name = typeName[shipType[i]], sq = shipSquad[i];
+  const side = shipSide[i], name = typeName[shipType[i]], sq = shipSquad[i], st = side * TYPE_COUNT + shipType[i];
+  if (sq > 0 && sq < sqScuttled.length) sqScuttled[sq]++;                  // (v173.0) goes on the record of its squadron's officer and Commodore (22 applyCareer)
   cplScuttling = true;
   killShip(i, -1);                                                         // lost, but the crew and officers abandoned ship and survive (18 flagshipFate)
   cplScuttling = false;
+  if (typeof evoNoteScuttle === 'function') evoNoteScuttle(st);            // (v173.0) a loss of its design on the docks' ledger (06f3), as an enemy kill would be
   cplStats.scuttled[side]++;
   logEvent(side, (sq > 0 ? squadronLabel(sq) + ': ' : '') + 'a crippled ' + name + ' is scuttled; the crew abandoned ship and survived.');
   if (side === BLUE && typeof campaignBattleActive !== 'undefined' && campaignBattleActive) cplScuttled.names.push(name);
@@ -57525,12 +58436,13 @@ function shipMedicalWards(i) {
 // The roll when a flagship is destroyed: 'killed', 'wounded' or 'safe'. A wounded officer wounded again is killed.
 function flagshipFate(o, level) {
   let fate;
-  if (cplScuttling) fate = 'safe';                                    // (v66, section 5jc) a scuttled ship: its crew and officers abandon ship first and survive
+  if (cplScuttling && !(SETTINGS.scuttleKillShare > 0)) fate = 'safe';   // (v66, section 5jc) a scuttled ship: its crew and officers abandon ship first and survive (v173.0: only with scuttleKillShare 0)
   else if (forcedFlagshipFate !== null && forcedFlagshipFate.level === level) { fate = forcedFlagshipFate.fate; forcedFlagshipFate = null; }
   else {
     const shift = (officerSkill(o, 'readiness') - 0.5) * SETTINGS.flagSurviveSwing;
     let killed = clampNumber(SETTINGS.flagKilled - shift, 0, 1), wounded = clampNumber(SETTINGS.flagWounded - shift, 0, 1);
     // (v87) a MEDICAL WARD on the lost ship: the killed chance x medWardKillMul for each ward's worth (two at most); those saved are wounded instead
+    if (cplScuttling) killed *= clampNumber(SETTINGS.scuttleKillShare, 0, 1);   // (v173.0, Alex 10 Nov) scuttling no longer saves the officers for certain: the crew had time to get off, so the killed chance is cut, not gone
     if (flagMedical > 0) { const saved = killed * (1 - Math.pow(clampNumber(SETTINGS.medWardKillMul, 0, 1), Math.min(2, flagMedical))); killed -= saved; wounded = clampNumber(wounded + saved, 0, 1 - killed); }
     const r = officerRand();
     fate = r < killed ? 'killed' : (r < killed + wounded ? 'wounded' : 'safe');
@@ -57576,12 +58488,12 @@ function commanderFate(o, level, side, unitText, shipText, ref) {
     logEvent(side, who + '\'s flagship (' + shipText + ') was ' + (cplScuttling ? 'scuttled: ' + o.name + ' abandoned ship with the crew' : 'destroyed: ' + o.name + ' was picked up') + ' unhurt and carries on with ' + unitText + '.');   // (v66: scuttled)   // (the log only: a big battle loses hundreds of flags)
   } else if (fate === 'wounded') {
     o.wounded = 1; officersWounded++;
-    logEvent(side, who + '\'s flagship (' + shipText + ') was destroyed: ' + o.name + ' was wounded and carries on with ' + unitText + ' (every skill ' + SETTINGS.woundedSkillPenalty + ' lower).');
-    successionEvents.push(Object.assign({ kind: 'wounded', side: side, text: who + ' was wounded when the flagship of ' + unitText + ' was destroyed.', quiet: leaderNewsQuiet }, plain));
+    logEvent(side, who + '\'s flagship (' + shipText + ') was ' + (cplScuttling ? 'scuttled' : 'destroyed') + ': ' + o.name + ' was wounded and carries on with ' + unitText + ' (every skill ' + SETTINGS.woundedSkillPenalty + ' lower).');
+    successionEvents.push(Object.assign({ kind: 'wounded', side: side, text: who + ' was wounded when the flagship of ' + unitText + ' was ' + (cplScuttling ? 'scuttled' : 'destroyed') + '.', quiet: leaderNewsQuiet }, plain));
   } else {
     o.fallen = 1; officersKilled++;
-    logEvent(side, who + '\'s flagship (' + shipText + ') was destroyed: ' + o.name + ' was killed.');
-    successionEvents.push(Object.assign({ kind: 'fallen', side: side, text: who + ' was killed when the flagship of ' + unitText + ' was destroyed.', quiet: leaderNewsQuiet }, plain));
+    logEvent(side, who + '\'s flagship (' + shipText + ') was ' + (cplScuttling ? 'scuttled' : 'destroyed') + ': ' + o.name + ' was killed.');
+    successionEvents.push(Object.assign({ kind: 'fallen', side: side, text: who + ' was killed when the flagship of ' + unitText + ' was ' + (cplScuttling ? 'scuttled' : 'destroyed') + '.', quiet: leaderNewsQuiet }, plain));
   }
   return fate;
 }
@@ -63055,6 +63967,15 @@ function applyCareer(rec, o, info, events) {
   const repairXp = info.repaired * SETTINGS.readinessXpPerRepair;
   o.xp += repairXp; o.xpBy.readiness += repairXp;
   rec.xpBy = { strike: o.xpBy.strike, maneuver: o.xpBy.maneuver, command: o.xpBy.command, readiness: o.xpBy.readiness };
+  // (v173.0, Alex 10 Nov) ships of this officer's command that were SCUTTLED: each costs scuttleXpCost experience (a slower promotion) and goes on the record.
+  // A big squadron's count is taken per setup-sized share, as its medals are (20d orgMedalInfo).
+  const scuttled = Math.floor((info.scuttled || 0) / (info.scale > 1 ? info.scale : 1));
+  if (scuttled > 0) {
+    rec.service.scuttled = (rec.service.scuttled || 0) + scuttled;
+    const cost = Math.min(Math.max(0, o.xp), scuttled * Math.max(0, +SETTINGS.scuttleXpCost || 0));
+    if (cost > 0) { o.xp -= cost; events.push({ kind: 'scuttled', side: side, who: who, text: who + ' lost ' + Math.round(cost) + ' experience: ' + (scuttled === 1 ? 'a ship' : scuttled + ' ships') + ' of the command scuttled.' }); }
+  }
+  if ((info.towed || 0) > 0) rec.service.towed = (rec.service.towed || 0) + info.towed;
   // Skill growth: each level gained since the record was last written raises the skills by skillPerLevel in all, in proportion to xpBy.
   const levelBefore = 1 + Math.floor(Math.max(0, rec.xp) / SETTINGS.xpPerLevel), levelAfter = officerLevel(o);
   if (levelAfter > levelBefore && SETTINGS.skillPerLevel > 0) {
@@ -69253,11 +70174,14 @@ const statusText = document.getElementById('battleStatus');
 const hudPanel = document.getElementById('hud');
 const setupPanel = document.getElementById('setupScreen');
 const reportPanel = document.getElementById('reportScreen');
-const speedButtons = [document.getElementById('speed1'), document.getElementById('speed4'), document.getElementById('speed16'), document.getElementById('speed64'), document.getElementById('speed256')];
+const speedButtons = [document.getElementById('speedQuarter'), document.getElementById('speedHalf'), document.getElementById('speed1'), document.getElementById('speed4'), document.getElementById('speed16'), document.getElementById('speed64'), document.getElementById('speed256')];
 const SPEED_VALUES = [1, 4, 16, 64, 256];   // (v133.0, Alex: early wars took hours to test) 64x and 256x added; when the computer cannot keep up the battle just runs as fast as it can
 // (v133.0) The war map's five speed buttons. With the battle parked they set the map speed (campaign.speed, a multiple of mapSecondsPerWeek);
 // with the battle live the same five buttons set the battle's speed. These two lists pair them up, button by button.
 const MAP_SPEED_VALUES = [1, 2, 4, 16, 64];
+// (v174.0, a playtester asked) SLOW MOTION: the battle screen also has a quarter-speed and a half-speed button in front of 1x, to watch a fight closely.
+// The war map keeps its own five buttons; slow motion is only chosen on the battle screen. This list is the battle screen's buttons, in order.
+const BATTLE_SCREEN_SPEEDS = [0.25, 0.5].concat(SPEED_VALUES);
 function battleSpeedForMapSpeed(v) { const k = MAP_SPEED_VALUES.indexOf(v); return k >= 0 ? SPEED_VALUES[k] : 1; }
 function mapSpeedForBattleSpeed(v) { let k = 0; for (let j = 0; j < SPEED_VALUES.length; j++) if (v >= SPEED_VALUES[j]) k = j; return MAP_SPEED_VALUES[k]; }
 const backButton = document.getElementById('backButton');
@@ -69267,16 +70191,16 @@ const commandLogPanel = document.getElementById('commandLog');
 const commandLogLinesEl = document.getElementById('commandLogLines');
 
 let screenMode = 'setup';                       // 'setup', 'designer' or 'battle'
-let battleSpeed = 1;                            // 1, 4, 16, 64 or 256 (v133.0: 64 and 256 added)
+let battleSpeed = 1;                            // 1, 4, 16, 64 or 256 (v133.0: 64 and 256 added); 0.25 or 0.5 for slow motion (v174.0)
 
 function setBattleSpeed(value) {
   battleSpeed = value;
   for (let k = 0; k < speedButtons.length; k++) {
-    speedButtons[k].classList.toggle('active', SPEED_VALUES[k] === value);
+    speedButtons[k].classList.toggle('active', BATTLE_SCREEN_SPEEDS[k] === value);
   }
 }
 for (let k = 0; k < speedButtons.length; k++) {
-  speedButtons[k].addEventListener('click', function () { setBattleSpeed(SPEED_VALUES[k]); });
+  speedButtons[k].addEventListener('click', function () { setBattleSpeed(BATTLE_SCREEN_SPEEDS[k]); });
 }
 setBattleSpeed(1);
 
@@ -69495,12 +70419,12 @@ function updateHud(now) {
 const battleScreenEl = lookRootEl;
 const bsMapEl = document.getElementById('bsMap');
 const bsEl = {};                                 // the screen's elements by id (filled below)
-['bsOpLabel', 'bsName', 'bsObjective', 'bsObjName', 'bsObjNote', 'bsObjShield', 'bsObjShieldLabel', 'bsObjShieldBar', 'bsObjHull', 'bsClock', 'bsClockLabel', 'bsStop', 'bsSpeed1', 'bsSpeed4', 'bsSpeed16', 'bsSpeed64', 'bsSpeed256',
+['bsOpLabel', 'bsName', 'bsObjective', 'bsObjName', 'bsObjNote', 'bsObjShield', 'bsObjShieldLabel', 'bsObjShieldBar', 'bsObjHull', 'bsClock', 'bsClockLabel', 'bsStop', 'bsSpeedQuarter', 'bsSpeedHalf', 'bsSpeed1', 'bsSpeed4', 'bsSpeed16', 'bsSpeed64', 'bsSpeed256',
  'bsRedesign', 'bsRedesignText', 'bsReportButton', 'bsDisplayButton', 'bsSetupButton', 'bsSetupText', 'bsMenuButton', 'bsFoldLeft', 'bsFoldRight', 'bsCommsSize', 'bsUnfoldLeft', 'bsUnfoldRight',
  'bsShipsUs', 'bsShipsThem', 'bsShipsUsNote', 'bsShipsThemNote', 'bsTug', 'bsTugUs', 'bsTugThem', 'bsTugWd', 'bsRatio', 'bsRatioWords', 'bsSqUs', 'bsSqThem',
  'bsLostUs', 'bsLostThem', 'bsTonUs', 'bsTonThem', 'bsWaveUs', 'bsWaveThem', 'bsAdmTag', 'bsAdmiralBody', 'bsLayerLine', 'bsLayerRange', 'bsLayerTags', 'bsLayerDanger',
  'bsTip', 'bsTipClose', 'bsStamp', 'bsScaleBar', 'bsScaleText', 'bsDisplayBox', 'bsDisplayBody', 'bsDisplayClose', 'bsSquadBody'].forEach(function (id) { bsEl[id] = document.getElementById(id); });
-const bsSpeedButtons = [bsEl.bsSpeed1, bsEl.bsSpeed4, bsEl.bsSpeed16, bsEl.bsSpeed64, bsEl.bsSpeed256];   // (v133.0: 64x and 256x)
+const bsSpeedButtons = [bsEl.bsSpeedQuarter, bsEl.bsSpeedHalf, bsEl.bsSpeed1, bsEl.bsSpeed4, bsEl.bsSpeed16, bsEl.bsSpeed64, bsEl.bsSpeed256];   // (v133.0: 64x and 256x; v174.0: slow motion, a quarter and a half, in front)
 let clockStopped = false;                        // the Stop button: the battle clock stands still without opening the pause panel (nothing is logged)
 let bsSelectedSq = 0;                            // the squadron shown in the Selected squadron column (0 = none)
 let bsTestDrawerOpen = false;                    // the Test tools drawer (the old panel) is open
@@ -69555,13 +70479,13 @@ function bsBattleName() {
   return { op: 'Battle · seed ' + battleSeed, name: 'Battle' };
 }
 function setSpeedButtonsLook() {
-  for (let k = 0; k < bsSpeedButtons.length; k++) bsSpeedButtons[k].classList.toggle('active', !clockStopped && SPEED_VALUES[k] === battleSpeed);
+  for (let k = 0; k < bsSpeedButtons.length; k++) bsSpeedButtons[k].classList.toggle('active', !clockStopped && BATTLE_SCREEN_SPEEDS[k] === battleSpeed);
   bsEl.bsStop.classList.toggle('active', clockStopped);
 }
 bsEl.bsStop.addEventListener('click', function () { clockStopped = !clockStopped; setSpeedButtonsLook(); refreshTopBar(); refreshStoppedLook(); });
 // The map cell changes size when a column folds or the window is resized: the canvas follows it.
 if (window.ResizeObserver) new ResizeObserver(function () { if (canvas.parentNode === bsMapEl) resizeCanvas(); }).observe(bsMapEl);
-for (let k = 0; k < bsSpeedButtons.length; k++) bsSpeedButtons[k].addEventListener('click', function () { clockStopped = false; setBattleSpeed(SPEED_VALUES[k]); setSpeedButtonsLook(); refreshTopBar(); refreshStoppedLook(); });
+for (let k = 0; k < bsSpeedButtons.length; k++) bsSpeedButtons[k].addEventListener('click', function () { clockStopped = false; setBattleSpeed(BATTLE_SCREEN_SPEEDS[k]); setSpeedButtonsLook(); refreshTopBar(); refreshStoppedLook(); });
 bsEl.bsRedesign.addEventListener('click', function () {
   if (clickTooQuick('redesign')) return;                       // (v93.2) a double-click is one click
   if (bsCampaignRedesign(-1)) return;                          // (v93.2) in the campaign: the Design Bureau, not the test panel
@@ -71947,7 +72871,8 @@ const cmState = { built: false, view: 'map', sel: null, openDispatch: '', feedFi
                   battleWake: -1, sheet: '', sheetMsg: '', aoId: '',     // (v27 B3) aoId: the AO the AO view shows ('' = the front)
                   newTutorial: 1,
                   newEnemy: 'swarm',
-                  newLongMap: 0 };   // (v153.0) 1 = the next new campaign is the long map test (one battlefield from the Sun to the Kuiper Belt, 06d2)   // (v74) the enemy for the next new campaign (ALIEN_FACTIONS, 06d2): a Delver or Sylph war starts with the tutorial off   // (v27 C1) the Menu's Tutorial choice for the next new campaign: 1 on, 0 off (v27 C3: on by default, now that the 10 steps are written)
+                  newLongMap: 0,     // (v153.0)
+                  newDocks: 0 };     // (v170.0) 1 = the next new campaign runs the dock economy test (06f2); it skips the tutorial, like the long map   // 1 = the next new campaign is the long map test (one battlefield from the Sun to the Kuiper Belt, 06d2)   // (v74) the enemy for the next new campaign (ALIEN_FACTIONS, 06d2): a Delver or Sylph war starts with the tutorial off   // (v27 C1) the Menu's Tutorial choice for the next new campaign: 1 on, 0 off (v27 C3: on by default, now that the 10 steps are written)
 const CM_W = 1300, CM_H = 680;
 const CM_SL0 = 10, CM_PY = 300, CM_ESX = -2600, CM_ESY = 320;
 const CM_PR = { sun: 36, earth: 42, mars: 32, ceres: 28, jupiter: 48, saturn: 28, uranus: 34, neptune: 33, pluto: 26 };   // the planet's drawn radius, by its art
@@ -72432,7 +73357,7 @@ function cmRender(force) {
   setText(document.getElementById('cmSpeedCap'), live ? 'Battle' : 'Map');
   const labels = (live ? SPEED_VALUES : MAP_SPEED_VALUES).map(function (v) { return v + '×'; });   // (v133.0: five buttons)
   ['cmSp1', 'cmSp2', 'cmSp4', 'cmSp16', 'cmSp64'].forEach(function (id, k) { setText(document.getElementById(id), labels[k]); });
-  const on = !(campaign.speed > 0) ? '0' : (live ? String(mapSpeedForBattleSpeed(battleSpeed)) : String(campaign.speed));
+  const on = !(campaign.speed > 0) ? '0' : (live ? (battleSpeed < 1 ? 'slow' : String(mapSpeedForBattleSpeed(battleSpeed))) : String(campaign.speed));   // (v174.0) a slow-motion battle lights no button here: slow motion is chosen on the battle screen
   cmEl.querySelectorAll('[data-cm="speed"]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.id === on)); });
   const tabNow = cmState.view === 'dispatches' || cmState.view === 'council' || cmState.view === 'research' ? cmState.view : 'map';   // (stop 8: the Council Room is a tab too; v27 C3: Research)
   cmEl.querySelectorAll('[data-cm="tab"]').forEach(function (b) { if (b.dataset.id === 'map' || b.dataset.id === 'dispatches' || b.dataset.id === 'council' || b.dataset.id === 'research') b.setAttribute('aria-current', b.dataset.id === tabNow ? 'page' : 'false'); });
@@ -73181,6 +74106,7 @@ function cmRenderSide() {
     '<dt>Battles fought</dt><dd>' + cmNumH('battle:wakes', typeof c.battle.fights === 'number' ? c.battle.fights : c.battle.wakes) + '</dd></dl>';   // (v93.1) a fight carried on after stepping away is not a new battle
   h += cmCommandFleetsHtml(live);                                        // (v25) our numbered Fleets
   h += campaignV3ShipyardsHtml();                                        // (Bureau v2 stop 5) our berths overall, per size class (a v2 campaign)
+  h += campaignDockShipyardsHtml();                                      // (v170.0) the dock economy test: our docks, by size and place (06f2; '' when the test is off)
   const moving = c.fleets.filter(function (f) { return f.transit && campaignFleetSighted(f); });
   if (moving.length) h += '<div class="sec-h">On the lanes</div><div class="fleets">' + moving.map(cmFleetRow).join('') + '</div>';
   h += '<div class="acts-col">' + (live ? '<button type="button" class="btn btn-primary" data-cm="live">Watch the battle</button>' : '') + '<button type="button" class="btn" data-cm="ao" data-id="' + front + '">Open ' + esc(cmTheAo(fname)) + ' AO</button></div>';
@@ -73212,7 +74138,7 @@ function cmRenderAoCard(id) {
     (boostRetired() ? '' : '<dt>Boost a week (' + (side === 0 ? 'ours' : 'theirs') + ')</dt><dd>' + cmNumH('boost:' + id + ':' + side + ':perWeek', Math.round(row.perWeek)) + ' FU</dd><dt>Used this week</dt><dd>' + cmNumH('boost:' + id + ':' + side + ':used', Math.round(row.usedThisWeek)) + ' FU</dd>') +   // (v85.2) not while boost is retired
     '<dt>Worth to its holder</dt><dd>' + Math.round(cmAoAlloys(id)) + ' Alloys a week from its places' + (ao.sanctuary === true ? ' once developed' : '') + '</dd>' +
     '<dt>Alloys a week</dt><dd>' + cmNumH('alloys:' + side, Math.round(c.econ.alloys[side])) + (side === 0 ? ' <small>(Earth ' + Math.round(econ.earthBase * econ.growth[0] * econ.footing) + econ.nodes.map(function (n) { return ' + ' + esc(n.name) + ' ' + Math.round(n.alloys); }).join('') + ')</small>' : '') + '</dd>' +
-    (c.econ.upkeepShips && c.econ.upkeepShips[side] > 0 && campaignUpkeepOn() ? '<dt>Ship upkeep</dt><dd>' + cmNumH('upkeep:' + side, Math.round(c.econ.upkeep[side])) + ' Alloys a week for ' + fmtWhole(c.econ.upkeepShips[side]) + ' ships</dd>' : '') +   // (v97.5) the soft fleet cap (06f campaignUpkeepDawn)
+    (c.econ.upkeepShips && c.econ.upkeepShips[side] > 0 && campaignUpkeepOn() ? '<dt>' + (side === 0 && dockModelOn() ? 'Dock upkeep' : 'Ship upkeep') + '</dt><dd>' + cmNumH('upkeep:' + side, Math.round(c.econ.upkeep[side])) + ' Alloys a week for ' + fmtWhole(c.econ.upkeepShips[side]) + (side === 0 && dockModelOn() ? ' docks' : ' ships') + '</dd>' : '') +   // (v170.0: per dock with the docks test)   // (v97.5) the soft fleet cap (06f campaignUpkeepDawn)
     '<dt>Unused Alloys</dt><dd>' + cmNumH('civ:' + side, Math.round(c.econ.civTotal[side])) + ' Alloys over the war' + (c.econ.civ[side] > 0 ? ' (' + Math.round(c.econ.civ[side]) + ' this week)' : '') + '</dd>' +
     (side === 0 && c.econ.ramp.state !== 'done' ? '<dt>Industry</dt><dd>' + (c.econ.ramp.state === 'waiting' ? 'not yet on a war footing: Earth gives ' + SETTINGS.alloysEarthStart + ' Alloys a week' : 'turning to the war: rising to ' + SETTINGS.alloysEarthRampTo + ' a week') + '</dd>' : '');   // (v27: rates, not stockpiles)
   const pool = campaignRearAo(side) === id ? (c.pools[side] || {}) : {}, kinds = Object.keys(pool);
@@ -73232,7 +74158,7 @@ function cmRenderAoCard(id) {
     const made = (c.stats.producedTypes && c.stats.producedTypes[side]) || {}, mine = Object.keys(made).filter(function (k) { return campaignIsDesign(k) && made[k] > 0; });
     if (mine.length || ready.length) h += '<dl class="kv"><dt>Your designs built</dt><dd>' + (mine.length ? mine.map(function (k) { return esc(typeLabel(k)) + ' ' + made[k]; }).join(', ') : 'none yet') + '</dd></dl>';
   }
-  if (yard) h += campaignV3BerthsHtml(yard) + campaignV3WorkHtml(yard);   // (Bureau v2 stop 5) the yard's berths per size class, and (v27) the ships being built in them
+  if (yard) h += campaignV3BerthsHtml(yard) + campaignV3WorkHtml(yard) + campaignDockPlaceHtml(yard);   // (Bureau v2 stop 5) the yard's berths per size class, and (v27) the ships being built in them
   const here = c.fleets.filter(function (f) { return f.at === id && !f.transit; });
   if (here.length) h += '<div class="sec-h">Fleets here</div><div class="fleets">' + here.map(cmFleetRow).join('') + '</div>';
   // (v85.3) why our ships here cannot be watched: only the front has a battle, and when the front will come here
@@ -73312,7 +74238,7 @@ function cmRenderFrontCard(live) {
     '<dt>' + esc(fname) + '\'s Alloys for us</dt><dd>' + (nodes.length ? Math.round(nodeSum) + ' a week' + (nodes[0].besieged ? ' (siege: ' + Math.round(SETTINGS.siegeResourceFactor * 100) + '%)' : '') : 'none (we have not secured ' + esc(fname) + ')') + '</dd>' +
     (yard && campaignLiveYardDawn() ? '<dt>The Yard</dt><dd>' + (campaignPlaceOwner(yard) === 0 ? 'ours' : (campaignPlaceOwner(yard) === 1 ? 'theirs' : 'nobody\'s')) + ': its berths can put up to ' + fmtWhole(Math.round(campaignYardCapacity(yard))) + ' Alloys a week into ships, battle or not; new ships join the garrison here</dd>' :   // (v31 B1) the yard builds at dawn, live or parked
      yard ? '<dt>The Yard</dt><dd>' + (campaignPlaceOwner(yard) === 0 ? 'ours' : (campaignPlaceOwner(yard) === 1 ? 'theirs' : 'nobody\'s')) + ': about ' + (Math.round((fs.besieged ? yr.siege : yr.perWeek) * 10) / 10) + (campaignV3() ? ' corvettes' : ' ships') + ' a war week' + (fs.besieged ? ' (half rate)' : '') + ', while the battle runs</dd>' : '<dt>The Yard</dt><dd>none in this AO</dd>') + '</dl>' +
-    (yard ? campaignV3BerthsHtml(yard) + campaignV3WorkHtml(yard) : '');   // (Bureau v2 stop 5) the front yard's berths, and (v27) the ships being built in them
+    (yard ? campaignV3BerthsHtml(yard) + campaignV3WorkHtml(yard) + campaignDockPlaceHtml(yard) : '');   // (Bureau v2 stop 5) the front yard's berths, and (v27) the ships being built in them
   h += '<div class="acts-col">' + (live ? '<button type="button" class="btn btn-primary" data-cm="live">Watch the battle</button>' : '<p class="note-ai" style="margin:0">No battle now. The battle wakes when an enemy fleet reaches the ' + esc(fname) + ' edge while we are there.</p>') +
     '<button type="button" class="btn btn-ghost" data-cm="back">All AOs</button></div><p class="note-ai">Fleet orders come from the Admiral and Fleet Command. You fight this front at the drawing board, and through doctrine.</p>';
   cmSideSet('Area of operations', st[0].toUpperCase(), h);
@@ -73353,7 +74279,7 @@ function cmRenderPlaceCard(id, live) {
     const here = campaign.fleets.filter(function (f) { return f.at === aoId && !f.transit && f.place === id; });
     h += '<div class="sec-h">Fleets here</div>' + (here.length ? '<div class="fleets">' + here.map(cmFleetRow).join('') + '</div>' : '<p class="note-ai" style="margin-top:6px">None.</p>');
   }
-  if (f && f.yard) h += campaignV3BerthsHtml(id) + campaignV3WorkHtml(id);   // (v27 B3) the yard's berths and the ships being built there
+  if (f && f.yard) h += campaignV3BerthsHtml(id) + campaignV3WorkHtml(id) + campaignDockPlaceHtml(id);   // (v27 B3) the yard's berths and the ships being built there (v170.0: and its docks)
   cmSideSet('Place', cmOwnerWord(owner).toUpperCase(), h);
 }
 
@@ -73441,7 +74367,10 @@ function cmRenderSheet() {
         Object.keys(ALIEN_FACTIONS).map(function (id) { const f = ALIEN_FACTIONS[id]; return '<button type="button" data-cm="sheet" data-id="enemy" data-val="' + id + '" class="' + (cmState.newEnemy === id ? 'on' : '') + '"' + (f.ready ? '' : ' disabled title="Not ready yet"') + '>' + esc(f.adj === 'Swarm' ? 'Swarm' : f.adj + 's') + '</button>'; }).join('') + '</span></span>' +
       // (v153.0) the long map test (06d2 campaignBuildLongMap): one battlefield from the Sun to the Kuiper Belt; no tutorial on it
       '<span class="label" title="Chosen once, when the campaign starts. One long map (a test): the whole system is ONE battlefield, the Sun on the left and the Kuiper Belt on the right; new ships enter the map at their own yard and go where the fighting is; a ship may be sent only as far from the nearest friendly station as its transfers reach. The tutorial is skipped on the long map.">Map for a new campaign</span><span><span class="seg">' +
-        [['Normal', 0], ['One long map (test)', 1]].map(function (o) { return '<button type="button" data-cm="sheet" data-id="longmap" data-val="' + o[1] + '" class="' + ((cmState.newLongMap || 0) === o[1] ? 'on' : '') + '">' + o[0] + '</button>'; }).join('') + '</span></span></div>';
+        [['Normal', 0], ['One long map (test)', 1]].map(function (o) { return '<button type="button" data-cm="sheet" data-id="longmap" data-val="' + o[1] + '" class="' + ((cmState.newLongMap || 0) === o[1] ? 'on' : '') + '">' + o[0] + '</button>'; }).join('') + '</span></span>' +
+      // (v170.0) the dock economy test (06f2): Alloys build docks, each keeping one ship in service; no tutorial with it
+      '<span class="label" title="Chosen once, when the campaign starts. Docks (a test): our Alloys build DOCKS instead of ships; a dock costs what its ship costs, its ship appears at once, and when that ship is lost the dock replaces it free at the place the dock was built, so the fleet is always about as big as the docks. Local designs get docks behind the front, 1-transfer designs out to Jupiter, bigger transfers anywhere. Upkeep is paid per dock. The aliens build as before. No tutorial.">Economy for a new campaign</span><span><span class="seg">' +
+        [['Normal', 0], ['Docks (test)', 1]].map(function (o) { return '<button type="button" data-cm="sheet" data-id="docks" data-val="' + o[1] + '" class="' + ((cmState.newDocks || 0) === o[1] ? 'on' : '') + '">' + o[0] + '</button>'; }).join('') + '</span></span></div>';
     const files = '<div class="row">' + (running ? '<button type="button" class="btn" data-cm="sheet" data-id="restore">Load the autosave</button><button type="button" class="btn" data-cm="sheet" data-id="export">Export</button>' : '') +
         '<button type="button" class="btn" data-cm="sheet" data-id="importFile">Import a file</button><button type="button" class="btn btn-ghost" data-cm="sheet" data-id="importText">Import the text below</button>' +
         '<input type="file" id="cmFile" accept=".json,application/json,text/plain" class="hidden"></div>' +
@@ -73489,7 +74418,7 @@ function cmStartNewCampaign(id, seed, opts) {
   // (v74) the enemy picked (ALIEN_FACTIONS, 06d2; not ready = the Swarm); (v82) the tutorial runs for every enemy, each with its own first contact (24i part 3)
   const enemy = opts && typeof opts.enemy === 'string' && ALIEN_FACTIONS[opts.enemy] && ALIEN_FACTIONS[opts.enemy].ready ? opts.enemy : 'swarm';
   if (id === 'newMars') campaignStartMars({ seed: seed, enemy: enemy });
-  else tutorialStartCampaign({ seed: seed, tutorial: !!(opts && opts.tutorial) && !(opts && opts.longMap === true), script: opts && opts.script, enemy: enemy, longMap: !!(opts && opts.longMap === true) });   // (v153.0) the long map test skips the tutorial
+  else tutorialStartCampaign({ seed: seed, tutorial: !!(opts && opts.tutorial) && !(opts && opts.longMap === true) && !(opts && opts.docks === true), script: opts && opts.script, enemy: enemy, longMap: !!(opts && opts.longMap === true), docks: !!(opts && opts.docks === true) });   // (v153.0) the long map test skips the tutorial; (v170.0) so does the dock economy test
   officerNameSeedNext = null;
   if (campaign && campaign.v3) campaign.v3.noLibrary = !!(opts && opts.library === false);   // (v32) "Bring my design library" off: the Bureau's Library tab stays shut in this campaign (section 10h)
   dispatchNewCampaign(campaign, true);
@@ -73513,7 +74442,8 @@ function cmSheetAction(id, btn) {
   if (id === 'ui') { const key = btn.dataset.key, v = typeof UI_SETTINGS[key] === 'number' ? +btn.dataset.val : btn.dataset.val; saveUiSetting(key, v); if (key === 'effects') { applyEffectsClass(); cmEl.classList.toggle('fx-off', v === 'off'); cmEl.classList.toggle('fx-subtle', v === 'subtle'); } cmRenderSheet(); return; }
   if (id === 'tut') { cmState.newTutorial = +btn.dataset.val === 1 ? 1 : 0; cmRenderSheet(); return; }   // (v27 C1) the tutorial on or off for the next new campaign
   if (id === 'enemy') { const f = ALIEN_FACTIONS[btn.dataset.val]; if (f && f.ready) cmState.newEnemy = f.id; cmRenderSheet(); return; }
-  if (id === 'longmap') { cmState.newLongMap = +btn.dataset.val === 1 ? 1 : 0; if (cmState.newLongMap === 1) cmState.newTutorial = 0; cmRenderSheet(); return; }   // (v153.0) the long map test; it skips the tutorial   // (v74) the enemy for the next new campaign
+  if (id === 'longmap') { cmState.newLongMap = +btn.dataset.val === 1 ? 1 : 0; if (cmState.newLongMap === 1) cmState.newTutorial = 0; cmRenderSheet(); return; }
+  if (id === 'docks') { cmState.newDocks = +btn.dataset.val === 1 ? 1 : 0; if (cmState.newDocks === 1) cmState.newTutorial = 0; cmRenderSheet(); return; }   // (v170.0) the dock economy test; it skips the tutorial   // (v153.0) the long map test; it skips the tutorial   // (v74) the enemy for the next new campaign
   if (id === 'new' || id === 'newMars') {
     // (v93.1, AI tester Bug) with a war running, the first press only asks: "New campaign" ends the war you are in, so it must be pressed twice
     if (id === 'new' && campaign && !campaign.over && cmState.newArmed !== id) {   // (the Mars-only test war, from the testing tools, starts at once)
@@ -73524,7 +74454,7 @@ function cmSheetAction(id, btn) {
     cmState.newArmed = '';
     cmState.sheetPause = null;                                   // (the new war starts paused, as always)
     const seed = Math.floor(+document.getElementById('cmSeed').value);
-    cmStartNewCampaign(id, isFinite(seed) ? seed : SETTINGS.defaultSeed, { tutorial: cmState.newTutorial === 1 && cmState.newLongMap !== 1, enemy: cmState.newEnemy, longMap: cmState.newLongMap === 1 });   // (v153.0) the long map skips the tutorial
+    cmStartNewCampaign(id, isFinite(seed) ? seed : SETTINGS.defaultSeed, { tutorial: cmState.newTutorial === 1 && cmState.newLongMap !== 1 && cmState.newDocks !== 1, enemy: cmState.newEnemy, longMap: cmState.newLongMap === 1, docks: cmState.newDocks === 1 });   // (v153.0) the long map skips the tutorial; (v170.0) so does the dock economy test
     return;
   }
   if (id === 'restore') { SETTINGS.campaignModel = 1; const res = campaignRestoreAutosave(); if (res.ok) { cmCloseSheet(); cmState.view = 'map'; cmRender(true); return; } cmState.sheetMsg = res.messages.map(function (m) { return m.text; }).join('\n'); cmRenderSheet(); return; }
@@ -73657,7 +74587,8 @@ function cmUpkeepWords(side) {
   if (!e || !Array.isArray(e.upkeep) || typeof campaignUpkeepOn !== 'function' || !campaignUpkeepOn()) return '';
   const take = Math.round(e.upkeep[side] || 0), want = Math.round((e.upkeepWant || [0, 0])[side] || 0), n = (e.upkeepShips || [0, 0])[side] || 0;
   if (!(n > 0)) return '';
-  return 'Ship upkeep: ' + fmtWhole(take) + ' of it goes to keeping ' + (side === 0 ? 'our ' : 'their ') + fmtWhole(n) + ' ships' + (want > take ? ' (the most upkeep can take: the yards keep the rest)' : '') + '.';
+  const docks = side === 0 && typeof dockModelOn === 'function' && dockModelOn();   // (v170.0) with the docks test our upkeep is per dock
+  return (docks ? 'Dock upkeep: ' : 'Ship upkeep: ') + fmtWhole(take) + ' of it goes to keeping ' + (side === 0 ? 'our ' : 'their ') + fmtWhole(n) + (docks ? ' docks (one ship each)' : ' ships') + (want > take ? ' (the most upkeep can take: the yards keep the rest)' : '') + '.';
 }
 // The top bar's strip: every resource a week, the charged ones marked. Each number carries data-n "rate:<id>" for tools/campaign-map.js.
 function cmRatesBarHtml() {
@@ -73669,7 +74600,7 @@ function cmRatesBarHtml() {
     const v = Math.round(r.perWeek);
     const spent = r.charged && v > 0 ? ' This week so far the yards put ' + Math.round(r.used) + ' into ships.' : '';   // (v67: what goes unused is on the supply return)
     const from = cmResourceSourcesWords(r.id);                         // (v61) where it comes from, and which places are cut off or under siege
-    const upk = r.id === 'alloys' ? cmUpkeepWords(0) : '';             // (v97.5) what our ships' upkeep takes off it
+    const upk = r.id === 'alloys' ? cmUpkeepWords(0) : (typeof campaignDockResWords === 'function' ? campaignDockResWords(r.id) : '');   // (v97.5) what our ships' upkeep takes off it; (v170.0) what the docks take off a resource
     // (v67, section 7v) a charged resource is a button: its five-block meter (last week's share into ships), its tag, and a click opens the supply return
     const sup = r.charged && v > 0 && typeof supChipBits === 'function' ? supChipBits(r.id) : null, tag = r.charged ? 'button type="button" data-cm="supply"' : 'span';
     return '<' + tag + ' class="rt-r' + (r.charged ? ' ch' : '') + (v > 0 ? '' : ' zero') + '" title="' + esc(r.name) + ': ' + v + ' a week' + (r.charged ? ' (charged: the yards spend it, nothing is stored)' + spent : ' (shown only: nothing spends it)') + (from ? ' From: ' + esc(from) + '.' : '') + (upk ? ' ' + esc(upk) : '') + (sup ? esc(sup.words) : '') + '">' +
@@ -76210,7 +77141,7 @@ function tutorialStartCampaign(opts) {
   opts = opts || {};
   const on = opts.tutorial === true;
   if (on) campaignStartTutorial({ seed: opts.seed, enemy: opts.enemy });   // (v27 C3) the Earth-only start: the war held at Earth until step 10 hands it over (06g); (v82) against the enemy picked
-  else campaignStartFull({ seed: opts.seed, tutorial: false, enemy: opts.enemy, longMap: opts.longMap === true });   // (v74) the enemy picked on the New Campaign screen; (v153.0) the long map test
+  else campaignStartFull({ seed: opts.seed, tutorial: false, enemy: opts.enemy, longMap: opts.longMap === true, docks: opts.docks === true });   // (v74) the enemy picked on the New Campaign screen; (v153.0) the long map test; (v170.0) the dock economy test
   if (on) tutorialBegin(opts.script || 'main', true);
   else {
     tutorialHandOver();
@@ -77387,6 +78318,8 @@ function cmDebugSheetHtml() {
     '<div class="row"><button type="button" class="btn btn-ghost" id="dialReset" title="Evasion x' + BATTLE_DIAL_GAME.evasionStrength + ', fire rate x' + BATTLE_DIAL_GAME.fireRateScale + ', hit points x' + BATTLE_DIAL_GAME.hpScale + '">Battle dials back to the game\'s values</button></div>' +   // (v104.8)
     '<div class="opt"><span class="label" title="A test of simple orbits: Luna, Phobos, Deimos and the other moons go slowly round their planets on the battle map, carrying their stations with them. Planets, the Belt and the Sun\'s worlds stand still. Every battle, kept in this browser. Off is the normal game.">Moons orbit their planets</span>' +
       '<label class="check"><input type="checkbox" id="dbgMoons"' + (moonOrbitsOn() ? ' checked' : '') + '><span class="check-box"></span>Test: moons move round their planets in battle</label></div>' +   // (v159.0, section 5w3)
+    '<div class="opt"><span class="label" title="A test of the economy: Alloys build DOCKS instead of ships. A dock costs what its ship costs and its ship appears at once; when that ship is lost the dock replaces it free at the place it was built, so the fleet stays about as big as the docks. Switching it on gives every ship a dock. Upkeep is paid per dock. The Swarm gets hatcheries the same way (v171.0): at least as many as we have docks or ships, and its economy grows on its own in a long stalemate, leaning to larger hulls. Switching off goes back to building ships.">Dock economy</span>' +
+      '<label class="check"><input type="checkbox" id="dbgDocks"' + (typeof dockModelOn === 'function' && dockModelOn() ? ' checked' : '') + '><span class="check-box"></span>Test: the yards build docks, each keeping one ship in service</label></div>' +   // (v170.0, 06f2)
     '<div class="opt"><span class="label" title="The Design Bureau offers every part, mark, size and hull, whatever the research, and designs that use them can be saved. Only for testing: it changes what you can design, not what the aliens have.">Unlock everything</span>' +
       '<label class="check"><input type="checkbox" id="dbgUnlockAll"' + (campaignDebugUnlockAll() ? ' checked' : '') + '><span class="check-box"></span>In the Design Bureau, every part, whatever the research</label></div>' +   // (v97.9: moved here from the Bureau)
     '<div class="opt"><span class="label" title="Adds one design of every human ship class, from the Dart fighter to the six titans, and their upgraded versions on later research, to this war as your own draft designs named Test ... Open the Design Bureau to look at them or make them ready for the yards. A design that needs research this war has not done yet can be made ready only with Unlock everything on.">Stock test designs</span>' +
@@ -77405,6 +78338,8 @@ function cmDebugNowText() {
 function cmDebugSheetWire(el) {
   const mo = el.querySelector('#dbgMoons');                        // (v159.0) the moons test
   if (mo) mo.addEventListener('change', function () { moonOrbitsSet(mo.checked); });
+  const dk = el.querySelector('#dbgDocks');                        // (v170.0) the dock economy test
+  if (dk) dk.addEventListener('change', function () { campaignDockSet(dk.checked); cmRender(true); });
   const ua = el.querySelector('#dbgUnlockAll');                    // (v97.9) Unlock everything
   if (ua) ua.addEventListener('change', function () { campaignDebugSetUnlockAll(ua.checked); });
   const st = el.querySelector('#dbgStockSet');                     // (v98.2) the stock test set
@@ -80938,7 +81873,7 @@ function mmRender() {
     body.appendChild(en);
     const tut = el('div', 'mm-row'); tut.appendChild(el('span', 'label', 'Tutorial'));
     const seg = el('span', 'seg');
-    [['On', 1], ['Off', 0]].forEach(function (o) { const b = el('button', cmState.newTutorial === o[1] ? 'on' : '', o[0]); b.type = 'button'; if (o[1] === 1 && cmState.newLongMap === 1) { b.disabled = true; b.title = 'No tutorial on the long map'; } b.addEventListener('click', function () { cmState.newTutorial = o[1]; mmRender(); }); seg.appendChild(b); });
+    [['On', 1], ['Off', 0]].forEach(function (o) { const b = el('button', cmState.newTutorial === o[1] ? 'on' : '', o[0]); b.type = 'button'; if (o[1] === 1 && (cmState.newLongMap === 1 || cmState.newDocks === 1)) { b.disabled = true; b.title = cmState.newLongMap === 1 ? 'No tutorial on the long map' : 'No tutorial with the dock economy test'; } b.addEventListener('click', function () { cmState.newTutorial = o[1]; mmRender(); }); seg.appendChild(b); });
     tut.appendChild(seg);
     tut.appendChild(el('span', 'mm-msg', cmState.newTutorial === 1 ? 'Walks you through the first weeks, step by step.' : 'Starts as after the tutorial, with everything it unlocks.'));
     body.appendChild(tut);
@@ -80949,6 +81884,13 @@ function mmRender() {
     mp.appendChild(segM);
     mp.appendChild(el('span', 'mm-msg', cmState.newLongMap === 1 ? 'Test: one battlefield from the Sun on the left to the Kuiper Belt on the right. Ships enter at their own yards and stream to the front; no tutorial.' : 'The campaign map of AOs, one battle at the front.'));
     body.appendChild(mp);
+    // (v170.0) the economy: as it is, or the dock economy test (06f2: the yards build docks, each keeping one ship in service); it skips the tutorial too
+    const ec = el('div', 'mm-row'); ec.appendChild(el('span', 'label', 'Economy'));
+    const segD = el('span', 'seg');
+    [['Normal', 0], ['Docks (test)', 1]].forEach(function (o) { const b = el('button', cmState.newDocks === o[1] ? 'on' : '', o[0]); b.type = 'button'; b.addEventListener('click', function () { cmState.newDocks = o[1]; if (o[1] === 1) cmState.newTutorial = 0; mmRender(); }); segD.appendChild(b); });
+    ec.appendChild(segD);
+    ec.appendChild(el('span', 'mm-msg', cmState.newDocks === 1 ? 'Test: Alloys build docks instead of ships. Each dock keeps one ship of its design in service, replacing it free at the dock when it is lost. The Swarm gets hatcheries the same way and always matches our numbers, growing in a long stalemate; no tutorial.' : 'Alloys build ships, as before.'));
+    body.appendChild(ec);
     // (v32) the design library: your saved plans can be brought into the new war (section 10h)
     const lib = el('div', 'mm-row'); lib.appendChild(el('span', 'label', 'Design library'));
     const seg2 = el('span', 'seg');
@@ -80966,7 +81908,7 @@ function mmRender() {
     body.appendChild(ofr);
     const row = el('div', 'mm-row');
     // (v64) every new war gets a fresh random seed, so the Luna deposit and the war's other random numbers differ from game to game (before, it was always 12345)
-    button(row, 'Start the war', true, function () { hideMainMenu(); cmStartNewCampaign('new', newOfficerNameSeed(), { tutorial: cmState.newTutorial === 1 && cmState.newLongMap !== 1, library: mmNewLibrary === 1, officers: mmNewOfficers === 1, enemy: cmState.newEnemy, longMap: cmState.newLongMap === 1 }); });
+    button(row, 'Start the war', true, function () { hideMainMenu(); cmStartNewCampaign('new', newOfficerNameSeed(), { tutorial: cmState.newTutorial === 1 && cmState.newLongMap !== 1 && cmState.newDocks !== 1, library: mmNewLibrary === 1, officers: mmNewOfficers === 1, enemy: cmState.newEnemy, longMap: cmState.newLongMap === 1, docks: cmState.newDocks === 1 }); });   // (v170.0) docks: the dock economy test
     body.appendChild(row);
   } else if (mmPanelOpen === 'load') {
     head.textContent = 'Load';
