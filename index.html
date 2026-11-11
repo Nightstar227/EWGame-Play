@@ -3655,7 +3655,7 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
     <section class="panel hidden" id="mmPanel"><div class="panel-head" id="mmPanelHead"></div><div class="panel-body" id="mmPanelBody"></div></section>
     <input type="file" id="mmFile" accept=".json,application/json,text/plain" class="hidden">
   </div>
-  <div class="mm-version" title="The version of the game you are playing">Version v211.0</div>
+  <div class="mm-version" title="The version of the game you are playing">Version v212.0</div>
 </div>
 
 <!-- (v31 A2, section 7l) the end of the war: the game-over screen (Earth's people are gone) or the victory screen (the aliens' home secured). It lies over
@@ -12063,6 +12063,15 @@ const SETTINGS = {
   towSpeedShare: 0.5,           // a tug towing a crippled ship moves at this share of its own speed
   towMaxShare: 0.25,            // a Division can always give one tug; more only up to this share of its ships at one time (v66.1)
   towHealthyHull: 0.5,          // a tug must have at least this share of its hull left
+  // (v212.0, section 5jd) TOW JOBS: on the long map the commanders send tugs to the wrecks their own Division could not tow (our side; 0 = v211.0)
+  towJobs: 1,
+  towWaitSeconds: 20,           // a wreck is a tow job once it has waited this long for a tug of its own Division
+  towFreshSeconds: 90,          // the AO's Admiral sends at most one new ship to tow in each AO this often (battle seconds; a bold Admiral less often, a careful one more)
+  towLookSeconds: 5,            // how often the Vice Admirals look at the wrecks waiting in their AO
+  towFleetSeconds: 60,          // a Defence Fleet sends at most one tug this often (bold: less often; careful: more; a good Command stat sooner)
+  towBoldSwing: 0.4,            // how much boldness stretches (bold) or shortens (careful) those gaps: up to this share either way
+  towDangerRadius: 3000,        // no tug is sent to a wreck where the enemy within this distance ...
+  towDangerOdds: 1.5,           // ... is stronger than this many times our ships there
   swarmFeeding: 1,              // 1 = a Swarm squadron eats its crippled or badly hurt members (0 = off)
   feedHullBelow: 0.25,          // a Swarm ship below this share of its hull may be eaten (crippled ones always may)
   feedSeconds: 5,               // the eater stops beside its meal this long
@@ -12309,7 +12318,7 @@ const SETTING_MUST_BE_POSITIVE = ['moonOrbitMinutes', 'moonOrbitRef', 'moonOrbit
   'serviceLastMax', 'serviceHistoryMax', 'serviceEventsMax', 'recentChangeSeconds', 'dossierLastActions', 'reportOfficerRows', 'dossierChartMinSpan',
   'orbitRateHeadroom', 'orbitMinRate', 'facingLeadFactor', 'interceptMaxLead', 'orbitRangeFraction', 'orbitTurnMargin', 'tightOrbitSizeRatio', 'tightOrbitHulls', 'tightOrbitStraySeconds', 'tightOrbitSpacings', 'tacticMinSeconds', 'chaseGiveUpSeconds', 'noChaseSeconds',
   'shapeEnterFactor', 'shapeExitFactor', 'axisTurnRate'];
-const SETTING_MUST_BE_NON_NEGATIVE = ['alloysNeverIdleNote', 'aoMobilizeOdds', 'aoMobilizeBoldSwing', 'aoMobilizeReinSwing', 'aoMobilizeSeconds', 'aoMobilizeLossShare', 'aoMobilizeBeatenShare', 'aoMobilizeOtherShips', 'aoMobilizeEnemySpeed', 'aoMobilizeWaitSeconds', 'aoCharLineSwing', 'aoCharCommandSwing', 'aoCharMovePull', 'aoCharDisciplineSwing', 'aoPostureSeconds', 'aoPostureMinSeconds', 'aoMeetOdds', 'aoOddsOutShare', 'aoFallBackOdds', 'aoBoldLean', 'aoMeetReachSlots', 'aoMeetStandoff', 'aoEngageDist', 'aoGroupDist', 'aoEdgeSlots', 'aoInboundSlots', 'aoRetakeLooseShare', 'aoDangerDist', 'aoRetakeStayShare', 'aoRetakeGatherSeconds', 'aoDefenceSplitShips', 'aoFleetMax', 'aoGarrisonShare', 'aoForwardStationSpeed', 'aoRefitShare', 'divisionOwnerSeconds', 'divisionOwnerFirstSeconds', 'divisionOwnerCountBand', 'divisionOwnerJoinSeconds', 'admiralNeedsLean', 'admiralNeedsReachRatio', 'admiralNeedsDefenceRatio', 'admiralNeedsWorksRatio', 'admiralNeedsPdShare', 'scuttleKillShare', 'scuttleXpCost', 'campaignTidySeconds', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftPressed', 'coreLoopShiftQuiet', 'coreLoopShiftMax', 'coreLoopHiveHoldShare', 'coreLoopAssessSeconds', 'coreLoopAssaultMixShare', 'coreLoopReinSwing', 'coreLoopReserveShare', 'coreLoopStrikeShare', 'coreLoopBoldAbove', 'coreLoopVaSeconds', 'coreLoopVaSlack', 'coreLoopVaWornShare', 'coreLoopDefenceRatio', 'coreLoopFleetHoldSeconds', 'coreLoopDivisionMinShips', 'coreLoopAssaultRatio', 'coreLoopAssaultFloor', 'coreLoopPlaceDefenceWorth', 'placesHomeEdgeBias', 'placesBrokenBonus', 'coreLoopStreamWeeks', 'coreLoopStreamMinShips', 'coreLoopLineKeep', 'coreLoopLineSeconds', 'coreLoopLineLooks', 'coreLoopLineDepth', 'coreLoopLineStep', 'coreLoopLineWindow', 'coreLoopTipRatio', 'coreLoopClearSeconds', 'coreLoopBackSeconds', 'coreLoopHoldSeconds', 'coreLoopBerths', 'divisionMergeSlack', 'swarmNestRetakeKeep', 'swarmGrowWindowWeeks', 'swarmGrowLowLoss', 'swarmGrowHighLoss', 'swarmGrowFromShare', 'swarmGrowStep', 'swarmGrowSmallCut', 'swarmGrowBigGain', 'swarmSpreadWeeks', 'hangarRefillWeeks', 'fighterTurnaroundSeconds', 'fighterLaunchSeconds', 'fighterLaunchRange', 'fighterTickSeconds', 'stationFighterGuardRadius', 'droneJamReach', 'droneJamScatterMul', 'droneJamLoseChance', 'dcNoRoomSeconds', 'cmdPaceFormSeconds', 'cmdPaceMinShare', 'cmdPaceLeadSeconds', 'cmdPaceMinMarch', 'divisionSpeedSort', 'divisionSlowBelow', 'divisionFastAbove', 'swarmPaceFormSeconds', 'swarmDrift', 'swarmDivDrift', 'wreckHitShare', 'repairPartsWeeks', 'repairAutoBelow', 'dockQueueWarnSeconds', 'crippledCheckSeconds', 'towSpeedShare', 'towMaxShare', 'towHealthyHull', 'feedHullBelow', 'feedSeconds', 'feedSquadSeconds', 'feedHullShare', 'feedAmmoShare', 'feedGrabRange', 'feedHungryHull', 'feedHungryAmmo', 'feedHatchlingRange', 'swarmInfestTierGain', 'swarmInfestGrowShare', 'swarmInfestStartShare', 'swarmSurfaceInfest', 'swarmBurnPerDps', 'swarmBurnHotMul', 'swarmBurnPerKill', 'swarmRegrowSeconds', 'swarmSporeEvery', 'swarmSporeShotsPer', 'swarmSporeDpsPerInf', 'swarmBileEvery', 'swarmBileFrom', 'swarmBileDpsPerInf', 'swarmConvertCap', 'swarmConvertAimShare', 'swarmConvertFromWeek', 'swarmConvertFullWeek', 'swarmConvertDepthShare', 'swarmConvertWaste', 'facingTwoSidedAngle', 'freshSideHoldSeconds', 'crossTEdge', 'crossTCreepFraction', 'crossTWidth', 'crossTTurnEdge', 'placesPicketSpread', 'placesPicketMove', 'placesPicketMax', 'placesWithdrawGatherSeconds', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerTargetShare', 'ledgerLineMin', 'ledgerLossMargin', 'ledgerSaveFloor', 'ledgerMinLoss', 'ledgerSurplusShare', 'withdrawRatio', 'withdrawHoldWeeks', 'ledgerAssaultWeeks', 'indDevShareSave', 'indDevShareIdle', 'dirPriorityMul', 'resourceHeldShare', 'devGraceWeeks', 'devCapStart', 'devCapAlien', 'devPotShare', 'devIdleWeeks', 'devMaxBuilds', 'bbAcidSeconds', 'bbAcidMaxPatches', 'bbRegrowQuiet', 'bbRegrowHull', 'bbRegrowPlate', 'bbRegrowHeatStop', 'bbBurstTouch', 'bbBurstDeathReach', 'bbBurstSeek', 'bbVolleySpread', 'bbMissileRetries', 'bbPdRoundsPerShot', 'bbPdFlakRounds', 'bbPdReadyRounds', 'bbPdLaserHeat', 'bbRadiatorFoldSeconds', 'bbSideWeight', 'deflectRatio', 'deflectCallSeconds', 'readyRoundsPerGun', 'boostFuEarth', 'boostFuOther', 'boostGrowth', 'alloysEarthStart', 'alloysEarthRampTo', 'alloysEarthRampWeeks', 'alloysGrowth', 'fissilesGrowth', 'alienAlloysStart', 'alienAlloysGrowth', 'alienAlloysPerStep', 'alienBoostPerStep', 'alienNodeLossShare', 'shipUpkeepMaxShare', 'berthIdleWeeks', 'berthBoostWeeks', 'berthMaxGrowth', 'campaignBuildDays', 'campaignLiveEnterShips', 'civilianNoteWeeks', 'leaderNewsCooldown', 'leaderNewsCombatGap', 'stationRebuildYardBonus', 'stationRebuildSecuredBonus', 'stationRebuildNearShare', 'stationRebuildAlloys', 'cmdAttackMaxSeconds', 'cmdPaceGap', 'radioQuietSeconds', 'cmdSummaryMinutes', 'designRemarkSeconds', 'cmdReviewBattles', 'huntMaxShips', 'huntGraceSeconds', 'pursuitFleeingBonus', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'dangerConeSeconds', 'placesAttackStallSeconds', 'campaignAttackStallSeconds', 'campaignStragglerShips', 'campaignStragglerShare', 'campaignStragglerSeconds', 'campaignStandoffSeconds', 'campaignStandoffWeeks', 'campaignRetakeWeeks', 'comebackMassWeeks', 'alienGarrisonCap', 'campaignFallenMax', 'campaignPoolCap', 'campaignGarrisonCap', 'campaignStartOwnShips', 'campaignAlienGarrison', 'campaignAdvanceKeep', 'campaignAdvanceRatio', 'campaignAdvanceTake', 'campaignAdvanceAfterWaves', 'campaignAdvanceHoldWeeks', 'campaignRearKeep', 'campaignFrontMoveMinShips', 'campaignFrontMoveShare', 'executiveMassRatio', 'executiveAssaultRatio', 'executiveAssaultMin', 'campaignPriorityWeight', 'alienShoveWeeks', 'alienGatherRatio', 'alienGatherTarget', 'alienGatherMinShips', 'alienGatherMaxWeeks', 'alienPullBackRatio', 'alienStateHoldWeeks', 'alienFirstPool', 'alienWaveJitter', 'alienWarnWeeks', 'alienWaveBoostWeeks', 'alienTargetWeakest', 'alienTargetMain', 'alienFirstWaveWeek', 'minLaunchShips', 'placesHoldClearOdds', 'campaignYardEvery', 'boostPerMarker', 'campaignRefuelShare', 'capitalBuildShare', 'assaultMaxWaitWeeks', 'repairPerWeek', 'campaignDesignBoostPerMass', 'campaignDesignBuildPerCost', 'campaignDesignAlloysShare', 'campaignDesignWeight', 'placesReachShare', 'placesFailRaise', 'placesContestShare', 'aoSecureShare', 'aoLoseShare', 'siegeBoostTrickle', 'boostFootholdShare', 'siegeGrowthFactor', 'siegeResourceFactor', 'placesReportMinutes', 'placesHysteresis', 'placesMaxOpposite', 'internalChance', 'internalFresh', 'externalCover', 'deepBelowHull', 'dcSeconds', 'blastToHull', 'blastToParts', 'profileNudgeMax', 'profileNudgeTurn', 'profileNudgeFiring', 'reactorWallShare', 'trackSquareCut', 'pressDryValue', 'pressFleetRatio', 'pressOdds', 'pressHealthEdge', 'pressOddsHealthy', 'pressDangerShare', 'pressHitChance', 'pressAfter', 'pressProgress', 'pressHold', 'pressStep', 'pressRingMin', 'lockFormShare', 'looseJitter', 'looseRein', 'lockSettleSeconds', 'lockRein', 'lockBreakHull', 'lockMinShare', 'closeRanksDelay', 'mergeBelow', 'mergeMaxOdds', 'disbandAt', 'stragglerSeconds', 'divisionLeash', 'pursuitBase', 'formBeforeAttack', 'gatherSeconds', 'fallenKeep', 'topUpBelow', 'stagingContactSeconds', 'stagingMaxWait', 'minNewSquadron', 'entryDangerRatio', 'entryCheckFactor', 'entryRetrySeconds', 'rallyInset', 'joinWornBelow', 'survivorEdgeMargin', 'flagKilled', 'flagWounded', 'flagSurviveSwing', 'woundedSkillPenalty', 'woundedBattles', 'replacementDelay', 'handoverSeconds', 'standInSkill', 'pinRenewSeconds', 'divisionTaskMinSeconds', 'rotateWornShare', 'divisionRefuseOdds', 'divisionRallyOdds', 'divisionCounterPressure', 'mainEffortMinOdds', 'mainEffortFreeRein', 'pinRenewFactor', 'supportSeconds', 'supportMaxTravelSeconds', 'divisionTargetBonus', 'localAttackOdds', 'memberCompactShare', 'recruitAxisSpread', 'recruitSkillLow', 'recruitSkillHigh', 'skillPerLevel', 'readinessXpPerRepair', 'medalSkillAdd', 'scarShakenBoldness', 'repertoirePull', 'spawnEdgeMargin', 'doctrinePull', 'matchupPull', 'experimentMinSeconds', 'experimentCooldown', 'tacticLearnStep', 'tacticWeightMax', 'exploreLearnBoost', 'spawnBandWidth', 'spawnVerticalMargin', 'shieldRechargeDelay', 'minArmorPassFraction', 'separationStrength',
+const SETTING_MUST_BE_NON_NEGATIVE = ['alloysNeverIdleNote', 'towJobs', 'towWaitSeconds', 'towFreshSeconds', 'towLookSeconds', 'towFleetSeconds', 'towBoldSwing', 'towDangerRadius', 'towDangerOdds', 'aoMobilizeOdds', 'aoMobilizeBoldSwing', 'aoMobilizeReinSwing', 'aoMobilizeSeconds', 'aoMobilizeLossShare', 'aoMobilizeBeatenShare', 'aoMobilizeOtherShips', 'aoMobilizeEnemySpeed', 'aoMobilizeWaitSeconds', 'aoCharLineSwing', 'aoCharCommandSwing', 'aoCharMovePull', 'aoCharDisciplineSwing', 'aoPostureSeconds', 'aoPostureMinSeconds', 'aoMeetOdds', 'aoOddsOutShare', 'aoFallBackOdds', 'aoBoldLean', 'aoMeetReachSlots', 'aoMeetStandoff', 'aoEngageDist', 'aoGroupDist', 'aoEdgeSlots', 'aoInboundSlots', 'aoRetakeLooseShare', 'aoDangerDist', 'aoRetakeStayShare', 'aoRetakeGatherSeconds', 'aoDefenceSplitShips', 'aoFleetMax', 'aoGarrisonShare', 'aoForwardStationSpeed', 'aoRefitShare', 'divisionOwnerSeconds', 'divisionOwnerFirstSeconds', 'divisionOwnerCountBand', 'divisionOwnerJoinSeconds', 'admiralNeedsLean', 'admiralNeedsReachRatio', 'admiralNeedsDefenceRatio', 'admiralNeedsWorksRatio', 'admiralNeedsPdShare', 'scuttleKillShare', 'scuttleXpCost', 'campaignTidySeconds', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftPressed', 'coreLoopShiftQuiet', 'coreLoopShiftMax', 'coreLoopHiveHoldShare', 'coreLoopAssessSeconds', 'coreLoopAssaultMixShare', 'coreLoopReinSwing', 'coreLoopReserveShare', 'coreLoopStrikeShare', 'coreLoopBoldAbove', 'coreLoopVaSeconds', 'coreLoopVaSlack', 'coreLoopVaWornShare', 'coreLoopDefenceRatio', 'coreLoopFleetHoldSeconds', 'coreLoopDivisionMinShips', 'coreLoopAssaultRatio', 'coreLoopAssaultFloor', 'coreLoopPlaceDefenceWorth', 'placesHomeEdgeBias', 'placesBrokenBonus', 'coreLoopStreamWeeks', 'coreLoopStreamMinShips', 'coreLoopLineKeep', 'coreLoopLineSeconds', 'coreLoopLineLooks', 'coreLoopLineDepth', 'coreLoopLineStep', 'coreLoopLineWindow', 'coreLoopTipRatio', 'coreLoopClearSeconds', 'coreLoopBackSeconds', 'coreLoopHoldSeconds', 'coreLoopBerths', 'divisionMergeSlack', 'swarmNestRetakeKeep', 'swarmGrowWindowWeeks', 'swarmGrowLowLoss', 'swarmGrowHighLoss', 'swarmGrowFromShare', 'swarmGrowStep', 'swarmGrowSmallCut', 'swarmGrowBigGain', 'swarmSpreadWeeks', 'hangarRefillWeeks', 'fighterTurnaroundSeconds', 'fighterLaunchSeconds', 'fighterLaunchRange', 'fighterTickSeconds', 'stationFighterGuardRadius', 'droneJamReach', 'droneJamScatterMul', 'droneJamLoseChance', 'dcNoRoomSeconds', 'cmdPaceFormSeconds', 'cmdPaceMinShare', 'cmdPaceLeadSeconds', 'cmdPaceMinMarch', 'divisionSpeedSort', 'divisionSlowBelow', 'divisionFastAbove', 'swarmPaceFormSeconds', 'swarmDrift', 'swarmDivDrift', 'wreckHitShare', 'repairPartsWeeks', 'repairAutoBelow', 'dockQueueWarnSeconds', 'crippledCheckSeconds', 'towSpeedShare', 'towMaxShare', 'towHealthyHull', 'feedHullBelow', 'feedSeconds', 'feedSquadSeconds', 'feedHullShare', 'feedAmmoShare', 'feedGrabRange', 'feedHungryHull', 'feedHungryAmmo', 'feedHatchlingRange', 'swarmInfestTierGain', 'swarmInfestGrowShare', 'swarmInfestStartShare', 'swarmSurfaceInfest', 'swarmBurnPerDps', 'swarmBurnHotMul', 'swarmBurnPerKill', 'swarmRegrowSeconds', 'swarmSporeEvery', 'swarmSporeShotsPer', 'swarmSporeDpsPerInf', 'swarmBileEvery', 'swarmBileFrom', 'swarmBileDpsPerInf', 'swarmConvertCap', 'swarmConvertAimShare', 'swarmConvertFromWeek', 'swarmConvertFullWeek', 'swarmConvertDepthShare', 'swarmConvertWaste', 'facingTwoSidedAngle', 'freshSideHoldSeconds', 'crossTEdge', 'crossTCreepFraction', 'crossTWidth', 'crossTTurnEdge', 'placesPicketSpread', 'placesPicketMove', 'placesPicketMax', 'placesWithdrawGatherSeconds', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerTargetShare', 'ledgerLineMin', 'ledgerLossMargin', 'ledgerSaveFloor', 'ledgerMinLoss', 'ledgerSurplusShare', 'withdrawRatio', 'withdrawHoldWeeks', 'ledgerAssaultWeeks', 'indDevShareSave', 'indDevShareIdle', 'dirPriorityMul', 'resourceHeldShare', 'devGraceWeeks', 'devCapStart', 'devCapAlien', 'devPotShare', 'devIdleWeeks', 'devMaxBuilds', 'bbAcidSeconds', 'bbAcidMaxPatches', 'bbRegrowQuiet', 'bbRegrowHull', 'bbRegrowPlate', 'bbRegrowHeatStop', 'bbBurstTouch', 'bbBurstDeathReach', 'bbBurstSeek', 'bbVolleySpread', 'bbMissileRetries', 'bbPdRoundsPerShot', 'bbPdFlakRounds', 'bbPdReadyRounds', 'bbPdLaserHeat', 'bbRadiatorFoldSeconds', 'bbSideWeight', 'deflectRatio', 'deflectCallSeconds', 'readyRoundsPerGun', 'boostFuEarth', 'boostFuOther', 'boostGrowth', 'alloysEarthStart', 'alloysEarthRampTo', 'alloysEarthRampWeeks', 'alloysGrowth', 'fissilesGrowth', 'alienAlloysStart', 'alienAlloysGrowth', 'alienAlloysPerStep', 'alienBoostPerStep', 'alienNodeLossShare', 'shipUpkeepMaxShare', 'berthIdleWeeks', 'berthBoostWeeks', 'berthMaxGrowth', 'campaignBuildDays', 'campaignLiveEnterShips', 'civilianNoteWeeks', 'leaderNewsCooldown', 'leaderNewsCombatGap', 'stationRebuildYardBonus', 'stationRebuildSecuredBonus', 'stationRebuildNearShare', 'stationRebuildAlloys', 'cmdAttackMaxSeconds', 'cmdPaceGap', 'radioQuietSeconds', 'cmdSummaryMinutes', 'designRemarkSeconds', 'cmdReviewBattles', 'huntMaxShips', 'huntGraceSeconds', 'pursuitFleeingBonus', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'dangerConeSeconds', 'placesAttackStallSeconds', 'campaignAttackStallSeconds', 'campaignStragglerShips', 'campaignStragglerShare', 'campaignStragglerSeconds', 'campaignStandoffSeconds', 'campaignStandoffWeeks', 'campaignRetakeWeeks', 'comebackMassWeeks', 'alienGarrisonCap', 'campaignFallenMax', 'campaignPoolCap', 'campaignGarrisonCap', 'campaignStartOwnShips', 'campaignAlienGarrison', 'campaignAdvanceKeep', 'campaignAdvanceRatio', 'campaignAdvanceTake', 'campaignAdvanceAfterWaves', 'campaignAdvanceHoldWeeks', 'campaignRearKeep', 'campaignFrontMoveMinShips', 'campaignFrontMoveShare', 'executiveMassRatio', 'executiveAssaultRatio', 'executiveAssaultMin', 'campaignPriorityWeight', 'alienShoveWeeks', 'alienGatherRatio', 'alienGatherTarget', 'alienGatherMinShips', 'alienGatherMaxWeeks', 'alienPullBackRatio', 'alienStateHoldWeeks', 'alienFirstPool', 'alienWaveJitter', 'alienWarnWeeks', 'alienWaveBoostWeeks', 'alienTargetWeakest', 'alienTargetMain', 'alienFirstWaveWeek', 'minLaunchShips', 'placesHoldClearOdds', 'campaignYardEvery', 'boostPerMarker', 'campaignRefuelShare', 'capitalBuildShare', 'assaultMaxWaitWeeks', 'repairPerWeek', 'campaignDesignBoostPerMass', 'campaignDesignBuildPerCost', 'campaignDesignAlloysShare', 'campaignDesignWeight', 'placesReachShare', 'placesFailRaise', 'placesContestShare', 'aoSecureShare', 'aoLoseShare', 'siegeBoostTrickle', 'boostFootholdShare', 'siegeGrowthFactor', 'siegeResourceFactor', 'placesReportMinutes', 'placesHysteresis', 'placesMaxOpposite', 'internalChance', 'internalFresh', 'externalCover', 'deepBelowHull', 'dcSeconds', 'blastToHull', 'blastToParts', 'profileNudgeMax', 'profileNudgeTurn', 'profileNudgeFiring', 'reactorWallShare', 'trackSquareCut', 'pressDryValue', 'pressFleetRatio', 'pressOdds', 'pressHealthEdge', 'pressOddsHealthy', 'pressDangerShare', 'pressHitChance', 'pressAfter', 'pressProgress', 'pressHold', 'pressStep', 'pressRingMin', 'lockFormShare', 'looseJitter', 'looseRein', 'lockSettleSeconds', 'lockRein', 'lockBreakHull', 'lockMinShare', 'closeRanksDelay', 'mergeBelow', 'mergeMaxOdds', 'disbandAt', 'stragglerSeconds', 'divisionLeash', 'pursuitBase', 'formBeforeAttack', 'gatherSeconds', 'fallenKeep', 'topUpBelow', 'stagingContactSeconds', 'stagingMaxWait', 'minNewSquadron', 'entryDangerRatio', 'entryCheckFactor', 'entryRetrySeconds', 'rallyInset', 'joinWornBelow', 'survivorEdgeMargin', 'flagKilled', 'flagWounded', 'flagSurviveSwing', 'woundedSkillPenalty', 'woundedBattles', 'replacementDelay', 'handoverSeconds', 'standInSkill', 'pinRenewSeconds', 'divisionTaskMinSeconds', 'rotateWornShare', 'divisionRefuseOdds', 'divisionRallyOdds', 'divisionCounterPressure', 'mainEffortMinOdds', 'mainEffortFreeRein', 'pinRenewFactor', 'supportSeconds', 'supportMaxTravelSeconds', 'divisionTargetBonus', 'localAttackOdds', 'memberCompactShare', 'recruitAxisSpread', 'recruitSkillLow', 'recruitSkillHigh', 'skillPerLevel', 'readinessXpPerRepair', 'medalSkillAdd', 'scarShakenBoldness', 'repertoirePull', 'spawnEdgeMargin', 'doctrinePull', 'matchupPull', 'experimentMinSeconds', 'experimentCooldown', 'tacticLearnStep', 'tacticWeightMax', 'exploreLearnBoost', 'spawnBandWidth', 'spawnVerticalMargin', 'shieldRechargeDelay', 'minArmorPassFraction', 'separationStrength',
   'separationMaxStepFraction', 'reengageMinGap', 'kiteEnterFactor', 'kiteExitFactor', 'kiteBackSpeed', 'debugMaxLines', 'formationHoldFraction', 'formationPaceMin',
   'formationBreakAngle', 'formationBreakSeconds', 'formationPassBend', 'leaderCloserMin', 'escortHoldFraction', 'escortStandOff', 'flankMarginFactor', 'flankAlong', 'flankContactFactor', 'flankArriveFactor', 'flankMapMarginFactor',
   'shotLengthSizes', 'minShipScreenPixels', 'maxTriangleShips', 'defaultReengage', 'defaultSeed',
@@ -35106,7 +35115,7 @@ function campaignBattleScenario(entering) {
         row.officer = 'roster'; row.squadSize = campaignSquadSize(id); row.count = entering[side][id] || 0;
         // (v37, section 5kd) a design's doctrine sets its boxes; with every choice on Auto they are the old ones: a heavy hull at its longest range
         if (!docApplyToRow(row, t, { campaign: true }) && (id === 'capital' || id === 'lance' || campaignV3Heavy(id))) Object.assign(row, { engage: 'max', priority: 'smart', kite: 'auto', flank: 'auto', fallbackBelow: 60, breakOff: 4 });
-        if (docOn() && SHIP_TYPES[t].design && !docOf(SHIP_TYPES[t])) { row.repairBelow = docRepairBelow(t); row.crippled = docCrippled(t); }   // (v46) a design with no doctrine record yet: Auto's "Go for repairs below" (v66: and "When crippled")
+        // (v46, v66) a design with no doctrine record yet gets Auto's "Go for repairs below" and "When crippled": docApplyToRow writes them now (v212.0, 21b)
       }
     }
   };
@@ -37657,6 +37666,7 @@ function coreFleetArrival(a, squads, ev) {
   if (to[0].length > 0) parts.push(plural(to[0].length, 'squadron') + ' (' + plural(ships[0], 'ship') + ') to the ' + (coreDefenceCount(side) > 1 ? 'Defence Fleets' : D.name) + (why ? ' (' + why + ')' : ' (Local)'));
   if (to[1].length > 0) parts.push(plural(to[1].length, 'squadron') + ' (' + plural(ships[1], 'ship') + ') to the ' + A.name + (attack ? ' (the attack)' : ''));
   logEvent(side, 'Fleet Command routes the arrival: ' + parts.join(', ') + '.');
+  if (typeof towFreshArrival === 'function') towFreshArrival(a, squads);   // (v212.0, 17c2) the AO's Admiral may send one of the new ships to tow a waiting wreck in first
   return made;
 }
 
@@ -62617,17 +62627,18 @@ const CTL_NONE = 0, CTL_TUG_GO = 1, CTL_TUG_TOW = 2, CTL_TOWED = 3, CTL_EATER = 
 // The per-ship lists and this section's state (cplState, cplCtl, cplPartner, cplPreX, cplPreY, cplEatEnd, cplList, cplSqFedAt, cplNextCheck, cplFeedCallAt,
 // cplScuttling, cplStats, cplScuttled) are declared in section 3 with the other per-ship lists, because they are made before this file is read.
 
-function cplStatsBlank() { return { crippled: [0, 0], selfTow: [0, 0], towStarted: [0, 0], towedIn: [0, 0], scuttled: [0, 0], meals: 0, mealHull: 0, mealParts: 0, mealsEnemy: 0, mealsHatch: 0, mealAmmo: 0 }; }
+function cplStatsBlank() { return { crippled: [0, 0], selfTow: [0, 0], towStarted: [0, 0], towedIn: [0, 0], scuttled: [0, 0], meals: 0, mealHull: 0, mealParts: 0, mealsEnemy: 0, mealsHatch: 0, mealAmmo: 0, towFresh: [0, 0], towFleet: [0, 0] }; }   // (v212.0) towFresh / towFleet: tows sent by the Admiral from new ships / by a Vice Admiral (17c2)
 function cplAllocateShipArrays(n) {
   cplState = new Uint8Array(n); cplCtl = new Uint8Array(n); cplPartner = new Int32Array(n).fill(-1);
   cplPreX = new Float64Array(n); cplPreY = new Float64Array(n); cplEatEnd = new Float64Array(n).fill(-1);
 }
-function cplResetShip(slot) { if (slot < cplState.length) { cplState[slot] = CR_NONE; cplCtl[slot] = CTL_NONE; cplPartner[slot] = -1; cplEatEnd[slot] = -1; } }
+function cplResetShip(slot) { if (slot < cplState.length) { cplState[slot] = CR_NONE; cplCtl[slot] = CTL_NONE; cplPartner[slot] = -1; cplEatEnd[slot] = -1; } if (typeof towWaitSince !== 'undefined') towWaitSince.delete(slot); }
 function cplReset() {
   cplList.length = 0; cplSqFedAt.clear();
   cplNextCheck = 0; cplFeedCallAt = -1e9; cplScuttling = false;
   cplStats = cplStatsBlank();
   cplScuttled.names = []; cplScuttled.told = -1e9;
+  if (typeof towReset === 'function') towReset();                         // (v212.0) the tow jobs (17c2)
 }
 
 // ---- Is it crippled? ----
@@ -62678,6 +62689,7 @@ function cplStep(dt) {
   if (simTime < cplNextCheck) return;
   cplNextCheck = simTime + Math.max(0.1, SETTINGS.crippledCheckSeconds);
   cplLook();
+  if (typeof towFleetStep === 'function') towFleetStep();                // (v212.0, 17c2) the Defence Fleets' Vice Admirals send tugs to the wrecks still waiting
   if (SETTINGS.swarmFeeding === 1) cplFeedLook();
   cplScuttleTell();
 }
@@ -62715,7 +62727,7 @@ function cplDecide(i, st) {
     return;
   }
   const tug = cplFindTug(i);
-  if (tug < 0) { cplState[i] = CR_WAIT; return; }                           // no tug free: it fights on meanwhile and asks again at the next check
+  if (tug < 0) { cplState[i] = CR_WAIT; if (typeof towNoteWait === 'function') towNoteWait(i, true); return; }   // no tug free: it fights on meanwhile and asks again at the next check ((v212.0) and is a tow job for the commanders, 17c2)
   cplStartTow(tug, i, dock);
 }
 
@@ -62759,6 +62771,7 @@ function cplGive(i) {                                                       // .
 function cplStartTow(tug, c, dock) {
   const side = shipSide[c];
   cplCtl[tug] = CTL_TUG_GO; cplPartner[tug] = c; cplPartner[c] = tug; cplState[c] = CR_TOWED;
+  if (typeof towNoteWait === 'function') towNoteWait(c, false);            // (v212.0) no longer a tow job (17c2)
   shipRepairPoint[tug] = dock;
   setShipState(tug, STATE_REPAIR); cplTake(tug);
   cplList.push(tug);
@@ -63056,8 +63069,166 @@ function cplReportHtml() {
   if (!s || s.crippled[0] + s.crippled[1] + s.meals === 0) return '';
   const row = function (side) { return '<tr><td>' + SIDE_NAMES[side] + '</td><td>' + fmtNum(s.crippled[side]) + '</td><td>' + fmtNum(s.towStarted[side]) + '</td><td>' + fmtNum(s.towedIn[side]) + '</td><td>' + fmtNum(s.selfTow[side]) + '</td><td>' + fmtNum(s.scuttled[side]) + '</td></tr>'; };
   let html = '<h3>Crippled ships</h3><table><tr><th>side</th><th>crippled</th><th>tows started</th><th>towed into a dock</th><th>flew in on their own</th><th>scuttled</th></tr>' + row(BLUE) + row(RED) + '</table>';
+  if (s.towFresh && s.towFresh[BLUE] + s.towFleet[BLUE] > 0) html += '<div>Of our tows, ' + fmtNum(s.towFresh[BLUE]) + ' were new ships the Admiral sent before they joined their Fleet, and ' + fmtNum(s.towFleet[BLUE]) + ' were ships a Defence Fleet\'s Vice Admiral sent.</div>';   // (v212.0, 17c2)
   if (s.meals > 0) html += '<div>The Swarm ate ' + plural(s.meals, 'of its own ship') + ' ("consumed"), gaining ' + fmtNum(Math.round(s.mealHull)) + ' hull and mending ' + plural(s.mealParts, 'wrecked part') + '.</div>';
   return html;
+}
+// =====================================================================
+// 5jd. TOW JOBS: THE COMMANDERS SEND TUGS  (v212.0, SETTINGS.towJobs 1: on the long map, our side, with the Admiral running every AO (06c7); 0 = v211.0)
+//
+//   Alex, 11 Nov 2026: "we need a way to clean up crippled ships on the map. I recommend the AO commander assign the occasional single ship that's made
+//   to go tow before dropping it in a fleet. Defence Fleet commanders should also be willing to occasionally send a ship out to tow."
+//
+//   WHAT WAS WRONG IN v211.0. Two things kept crippled ships lying about on the map:
+//     1. A design that joined the war after the battle woke (every design made or switched on during a long-map war, since that battle never ends) got
+//        "Fight on" when crippled and never went for repairs, whatever its Doctrine page said: its doctrine's Auto choices were written into the battle
+//        only at the wake. Fixed where the doctrine is written (21b docApplyToRow), so every way a design enters a battle gets the same Auto.
+//     2. Only the crippled ship's own Division could give a tug (17c cplFindTug). A Division far away, in a fight, with no ship big enough, or already
+//        giving its share of tugs left the wreck "waiting for a tug" for good.
+//
+//   WHAT THIS ADDS: a wreck that has waited towWaitSeconds for its own Division is a TOW JOB for the commanders above it.
+//     A. THE AO'S ADMIRAL AND NEW SHIPS (towFreshArrival, called by Fleet Command's routing of a new arrival, 06e part 6 coreFleetArrival). When new
+//        ships come into an AO (a yard's builds), the Admiral may send ONE of them to tow the nearest waiting wreck in that AO (or one within a region's
+//        width of it in an AO not yet ours) before it takes its place: the ship tows the wreck to our nearest station, then rejoins its squadron in the
+//        Fleet the arrival was routed to. At most one a towFreshSeconds in each AO: a careful Admiral sends one sooner, a bold one later.
+//     B. THE DEFENCE FLEETS' VICE ADMIRALS (towFleetStep, from 17c cplStep). Every towLookSeconds (sooner for a good Command stat) each Defence Fleet's Vice
+//        Admiral looks at the waiting wrecks in its own AO and may send one ship from a Division that is out of contact (its reserve first) to tow the
+//        nearest. At most one tug of its own out at a time (two for a careful Vice Admiral), at most one sent every towFleetSeconds (a careful one
+//        sooner, a bold one later), never while its Fleet is in a mass mobilization, and never more than the Division's tug share (towMaxShare).
+//     Neither sends a tug to a wreck where the enemy is stronger than us within towDangerRadius (towDangerOdds): a tug sent there is a second loss.
+//     The tug is any ship the same size class or bigger with towHealthyHull of its hull, as for a Division's own tug; the tow itself is 17c's.
+//     A log line says each one ("The Admiral sends a new Corvette to tow a crippled Frigate in, before it joins the Earth Defence Fleet."), and the battle
+//     report's Crippled ships table says how many tows each kind of commander sent.
+//   With towJobs 0, off the long map, or for the aliens, nothing here runs and a wreck waits for its own Division as before.
+//   Check: tools/v212.0/tow-jobs-check.js. Notes: notes/v212.0/summary.md.
+// =====================================================================
+
+function towJobsOn(side) { return side === 0 && SETTINGS.towJobs === 1 && cplOn() && typeof aoAdmiralOn === 'function' && aoAdmiralOn(side); }
+
+// The wrecks waiting for a tug: slot -> the battle time it started waiting (kept by 17c cplDecide; cleared when the ship is reset).
+const towWaitSince = new Map();
+let towNextLook = 0;
+function towReset() { towWaitSince.clear(); towNextLook = 0; }
+// (17c cplDecide) a wreck found no tug in its own Division (wait true), or its state changed (wait false).
+function towNoteWait(i, wait) {
+  if (!wait) { towWaitSince.delete(i); return; }
+  if (!towWaitSince.has(i)) towWaitSince.set(i, simTime);
+}
+
+// A swing round 1 from an officer's boldness (0 to 1): bold above 1 (it waits longer before it gives a ship up), careful below.
+function towBoldFactor(boldness) { return 1 + clampNumber(SETTINGS.towBoldSwing, 0, 0.9) * (clampNumber(boldness, 0, 1) - 0.5) * 2; }
+
+// The wrecks of this side that are a tow job now: waiting long enough, still waiting, and not where the enemy is stronger. [{ c, x, y, ao }]
+function towJobs(side, th) {
+  const out = [], wait = Math.max(0, SETTINGS.towWaitSeconds);
+  towWaitSince.forEach(function (since, c) {
+    if (shipAlive[c] !== 1 || shipSide[c] !== side || cplState[c] !== CR_WAIT || cplCtl[c] !== CTL_NONE || cplPartner[c] >= 0) { towWaitSince.delete(c); return; }
+    if (simTime - since < wait) return;
+    if (oddsAt(side, shipX[c], shipY[c], Math.max(100, SETTINGS.towDangerRadius)) > SETTINGS.towDangerOdds) return;
+    out.push({ c: c, x: shipX[c], y: shipY[c], ao: aoOfPoint(th, shipX[c]) });
+  });
+  return out;
+}
+// Can ship m tow wreck c (a free, healthy, moving ship of the same size class or bigger)?
+function towCanTug(m, c) {
+  if (m < 0 || m === c || shipAlive[m] !== 1 || shipSide[m] !== shipSide[c]) return false;
+  if (cplState[m] !== CR_NONE || cplCtl[m] !== CTL_NONE || cplPartner[m] >= 0) return false;
+  const s = shipState[m], mt = shipType[m], mst = shipSide[m] * TYPE_COUNT + mt;
+  if (s === STATE_REPAIR || s === STATE_RETREAT || s === STATE_REGROUP || shipRetreating[m] === 1) return false;
+  if (SHIP_TYPES[mt].fighter === true || stImmobile[mst] === 1 || (typeof shipBay !== 'undefined' && shipBay.length > m && shipBay[m] >= 0)) return false;
+  if (shipHp[m] < SETTINGS.towHealthyHull * stHull[mst] || !cplCanMove(m) || !(cplSpeedOf(m) > 0)) return false;
+  return cplBigEnough(mt, shipType[c]);
+}
+// The tow begins (17c's tow, with the station nearest the wreck). Returns true when it began.
+function towSend(tug, c) {
+  const dock = nearestRepairPointTo(shipSide[c], shipX[c], shipY[c], c);
+  if (dock < 0) return false;
+  cplStartTow(tug, c, dock);
+  towWaitSince.delete(c);
+  return true;
+}
+function towDist2(a, x, y) { const dx = shipX[a] - x, dy = shipY[a] - y; return dx * dx + dy * dy; }
+
+// ---- A. The AO's Admiral sends a new ship ----
+// squads: the squadrons of an arrival Fleet Command has just routed (each already in its Fleet). One ship of them may go to tow first.
+function towFreshArrival(a, squads) {
+  const side = a.side;
+  if (!towJobsOn(side) || !squads || squads.length === 0) return;
+  const th = theatreStateOf(a), S = aoStateOf(th);
+  let sx = 0, sy = 0, n = 0;
+  for (const sq of squads) if (sqAlive[sq] > 0) { sx += sqCenterX[sq]; sy += sqCenterY[sq]; n++; }
+  if (n === 0) return;
+  sx /= n; sy /= n;
+  const here = aoOfPoint(th, sx);
+  if (!S.towFresh) S.towFresh = {};
+  const key = here || '-', gap = Math.max(0, SETTINGS.towFreshSeconds) * towBoldFactor(theatreBoldness(a));
+  if (simTime - (S.towFresh[key] === undefined ? -Infinity : S.towFresh[key]) < gap) return;
+  const reach = longMapSlotWidth(), reach2 = reach * reach;
+  // the wreck: the nearest job in this AO, or (in an AO not ours) within a region's width
+  let job = null, bestD2 = Infinity;
+  for (const J of towJobs(side, th)) {
+    const dx = J.x - sx, dy = J.y - sy, d2 = dx * dx + dy * dy;
+    if (here !== '' ? J.ao !== here : d2 > reach2) continue;
+    if (d2 < bestD2) { bestD2 = d2; job = J; }
+  }
+  if (job === null) return;
+  // the tug: the arrival's ship nearest the wreck that can tow it
+  let tug = -1, tugD2 = Infinity;
+  for (const sq of squads) for (let k = 0; k < sqSize[sq]; k++) {
+    const m = sqMembers[sqStart[sq] + k];
+    if (!towCanTug(m, job.c)) continue;
+    const d2 = towDist2(m, job.x, job.y);
+    if (d2 < tugD2) { tugD2 = d2; tug = m; }
+  }
+  if (tug < 0 || !towSend(tug, job.c)) return;
+  S.towFresh[key] = simTime;
+  cplStats.towFresh[side]++;
+  const dv = sqDivision[shipSquad[tug]] > 0 ? divisions[sqDivision[shipSquad[tug]]] : null, F = dv ? cmdFleetOfDivision(dv) : null;
+  logEvent(side, 'The Admiral sends a new ' + typeName[shipType[tug]] + ' to tow a crippled ' + typeName[shipType[job.c]] + ' in, before it joins the ' + (F ? F.name : 'fleet') + '.');
+}
+
+// ---- B. The Defence Fleets' Vice Admirals send a ship ----
+function towFleetStep() {
+  const side = 0, a = admirals[side];
+  if (!towJobsOn(side) || !a || towWaitSince.size === 0) return;
+  if (simTime < towNextLook) return;
+  towNextLook = simTime + Math.max(1, SETTINGS.towLookSeconds);
+  const th = theatreStateOf(a), jobs = towJobs(side, th);
+  if (jobs.length === 0) return;
+  for (const F of cmdLiveFleets(side)) {
+    if (F.purpose !== 'defence' || (typeof aoMobFrozen === 'function' && aoMobFrozen(th, F))) continue;
+    const ao = aoFleetAo(F), mine = jobs.filter(function (J) { return J.ao === ao && shipAlive[J.c] === 1 && cplState[J.c] === CR_WAIT; });
+    if (mine.length === 0) continue;
+    const T = coreVaTraits(F), pace = typeof aoCharPace === 'function' ? aoCharPace(side, F.officer) : 1;
+    if (!F.tow) F.tow = { at: -Infinity, sent: 0 };
+    if (simTime - F.tow.at < Math.max(0, SETTINGS.towFleetSeconds) * towBoldFactor(T.boldness) * pace) continue;
+    const divs = cmdFleetDivisions(F);
+    let out = 0;                                                            // this Fleet's tugs at work now
+    for (const dv of divs) for (const sq of dv.squads) for (let k = 0; k < sqSize[sq]; k++) { const m = sqMembers[sqStart[sq] + k]; if (m >= 0 && (cplCtl[m] === CTL_TUG_GO || cplCtl[m] === CTL_TUG_TOW)) out++; }
+    if (out >= (T.cautious ? 2 : 1)) continue;
+    // the wreck nearest a free ship of a quiet Division; the reserve's ships count as half as far
+    let best = null, bestKey = Infinity;
+    for (const dv of divs) {
+      if (dv.transfer !== null || divisionInContact(dv)) continue;
+      let ships = 0, tugs = 0;
+      for (const sq of dv.squads) for (let k = 0; k < sqSize[sq]; k++) { const m = sqMembers[sqStart[sq] + k]; if (m < 0 || shipAlive[m] !== 1) continue; ships++; if (cplCtl[m] === CTL_TUG_GO || cplCtl[m] === CTL_TUG_TOW) tugs++; }
+      if (tugs + 1 > Math.max(1, Math.floor(ships * SETTINGS.towMaxShare + 1e-9))) continue;
+      const w = dv.vaTag === 'reserve' ? 0.5 : 1;
+      for (const sq of dv.squads) for (let k = 0; k < sqSize[sq]; k++) {
+        const m = sqMembers[sqStart[sq] + k];
+        for (const J of mine) {
+          if (!towCanTug(m, J.c)) continue;
+          const key = towDist2(m, J.x, J.y) * w;
+          if (key < bestKey) { bestKey = key; best = { m: m, J: J, dv: dv }; }
+        }
+      }
+    }
+    if (best === null || !towSend(best.m, best.J.c)) continue;
+    F.tow.at = simTime; F.tow.sent++;
+    cplStats.towFleet[side]++;
+    for (let j = jobs.length - 1; j >= 0; j--) if (jobs[j].c === best.J.c) jobs.splice(j, 1);
+    logEvent(side, T.name + ' (' + F.name + ') sends a ' + typeName[shipType[best.m]] + ' of the ' + best.dv.name + ' to tow a crippled ' + typeName[shipType[best.J.c]] + ' in.');
+  }
 }
 // =====================================================================
 // 5jt. TENDERS AND FERRIES IN BATTLE  (v95; Alex 31 Oct: "now that we have tenders and hangars, we need to make these a bit more robust, and make sure
@@ -68037,7 +68208,14 @@ function docDefaultBoxes(t, campaignRow) {
 function docApplyToRow(row, t, opts) {
   opts = opts || {};
   const rec = SHIP_TYPES[t], doc = docOf(rec) || (rec && rec.design && typeof docEscortAsk === 'function' && docEscortAsk(t) ? docNew() : null);   // (a design on Auto that another design asks to escort it)
-  if (!docOn() || !doc) return false;
+  if (!docOn()) return false;
+  if (!doc) {
+    // (v212.0) a design with no doctrine record yet still has Auto's "Go for repairs below" and "When crippled" in a campaign battle. Until v211.0 only
+    // the battle's wake wrote them (06e part 2), so a design that joined a war's battle later (21 addDesignVersionDuringBattle: every design made or
+    // switched on during a long-map war, whose battle never ends) fought on as a hulk when crippled and never went for repairs.
+    if (opts.campaign === true && rec && rec.design) { row.repairBelow = docRepairBelow(t); row.crippled = docCrippled(t); }
+    return false;
+  }
   const R = docResolve(doc, rec), c = R.c, base = docDefaultBoxes(t, opts.campaign === true);
   Object.assign(row, base);
   const set = function (k) { return c[k].src !== 'auto' || (k === 'range' && c[k].v !== base.engage); };
@@ -103379,7 +103557,7 @@ BUREAU2_SCREEN_API.testRange = { run: testRangeRun, state: testRange, plan: func
 //   adopted habits come along in its copy code and into every new campaign. A doctrine changed in the Bureau after the save updates the plan's copy.
 //   DOCTRINE TEMPLATES (LIBRARY.templates: [{ name, doctrine, savedAt }]) live here too, so they carry over as well. A plan from before v37 has no doctrine: Auto.
 // =====================================================================
-const GAME_VERSION = 'v211.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
+const GAME_VERSION = 'v212.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
 const LIBRARY_KEY = 'engineersWar.library';
 const LIBRARY_FORMAT = 1;
 const LIBRARY_CODE_SHIP = 'EW-SHIP-1:', LIBRARY_CODE_LIB = 'EW-LIB-1:';
