@@ -3654,7 +3654,7 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
     <section class="panel hidden" id="mmPanel"><div class="panel-head" id="mmPanelHead"></div><div class="panel-body" id="mmPanelBody"></div></section>
     <input type="file" id="mmFile" accept=".json,application/json,text/plain" class="hidden">
   </div>
-  <div class="mm-version" title="The version of the game you are playing">Version v201.0</div>
+  <div class="mm-version" title="The version of the game you are playing">Version v204.0</div>
 </div>
 
 <!-- (v31 A2, section 7l) the end of the war: the game-over screen (Earth's people are gone) or the victory screen (the aliens' home secured). It lies over
@@ -10872,6 +10872,13 @@ const SETTINGS = {
   squareSpacingFactor: 0.55, // the square is a tight box: this x the ship spacing between neighbours
   squareMinSeconds: 15,      // a square stays formed at least this long
   cmdRankGapFactor: 1.3,     // a Division's second rank stands this x the front rank's widest squadron behind the first
+  cmdCapLongGuns: 1,         // (v204.0) 1 = a fighter-class squadron with more range than cmdLongRangeFactor x the Division's bigger ships (a missile boat like the
+                             //   Siren) stands with the artillery, never as CAP; 0 = v203: every fighter-class squadron is CAP
+  cmdCapShare: 1,            // (v203.0) 1 = a Division's CAP (its fighter squadrons on escort duty) is shared out, at most cmdCapPerWard over each of its other
+                             //   squadrons, and the fighters left over stand in the rows; 0 = v202: every CAP squadron could pile onto the same "Needs escort" ship
+  cmdCapPerWard: 1,          // ... how many CAP squadrons one squadron of the Division may have over it
+  cmdFormRealSize: 1,        // (v203.0) 1 = a Division's places take each squadron's real size (a block is as deep as it is wide), so its rows never stand inside
+                             //   each other; 0 = v202: the rows spaced for a thin line abreast (Alex: "a bunch of squadrons all stacked on top of each other")
   cmdRearToughShare: 0.6,    // squadrons whose ships are less than this x as tough as the Division's toughest stand in the rear rank (escorts behind the heavies)
   cmdMaxAbreast: 5,          // (v35) a Commodore never puts more than this many squadrons side by side in one row; the rest go into the row behind
   divisionFormations: 1,     // (v35) 1 = Division formations (the 5-abreast cap, Line / Line with flankers / Checkerboard / Spearhead, the CAP, PD cover and long-range jobs); 0 = the v34 two ranks
@@ -11014,6 +11021,10 @@ const SETTINGS = {
                              //   Admiral defends, each Division in its formation; and a Division moving to its spot marches there together, in shape, behind its marker.
                              //   0 = v196: on the long map the line never formed (the whole system counted as "an AO not ours", so the Admiral stayed in attack mode)
   longMapLineDepthSlots: 0.25,   // ... how far out from the defended place the line may stand at most, in region widths (it must stay inside a Local ship's fuel)
+  lineDriftQuiet: 1,         // (v202.0) 1 = when the Admiral's line only drifts (a moving moon or planet carries the place it guards), each Division's spot on it moves
+                             // quietly with it, instead of a fresh "hold the line here" order every look (that re-ordered every squadron and filled the radio). 0 = the old way
+  lineDriftQuietMax: 3000,   // (v202.0) the farthest a spot may move in one look and still count as drift; a bigger jump is a new spot and a fresh order (the Division marches there together)
+  radioRepeatSeconds: 90,    // (v202.0) the same call sign saying the same words again within this many battle seconds is not put on the air twice
   longMapLineMeetOdds: 0.8,  // (v201.0) ... an enemy in the region the line defends: the whole line moves out to meet it when it is at least this many times the
                              //   enemy's strength, else it pulls in close round our places there and waits for it
   longMapJoinSlots: 0.5,     // ... a squadron joins a Division only within this many region widths of it, and a Division spread wider is split by where its squadrons are
@@ -12215,12 +12226,12 @@ const SETTING_MUST_BE_NON_NEGATIVE = ['scuttleKillShare', 'scuttleXpCost', 'camp
   'arrivalStandOff', 'arrivalEdgeMargin', 'arrivalEdgeHeight', 'repairOffMapMinSeconds', 'repairForwardSetback', 'repairReleaseSpreadFactor', 'repairReturnDelay',
   'learningSpeed', 'learningStep', 'learningSoftZone', 'learningMaxRoomShare', 'levelEffect', 'serviceEffectPerHour', 'adaptabilityMin', 'xpPerAction', 'xpScoreBonus', 'driftSize', 'learningMinWindow', 'learningMinActivity',
   'expectationWeight', 'successScore', 'notableScore', 'arrowThreshold', 'objectiveMinShare', 'fireBarLowStoreBelow', 'pdProtectedFactor', 'pdSlugPerMount', 'pdSlugCap', 'pdCrossingKill', 'spinalDeadband', 'safeRingMargin', 'stationHysteresis', 'holdHysteresis', 'stationLeeBelow', 'hotWeaveOutgunned', 'hotWeaveShare', 'stragglerFactorSurvival', 'probeWindow', 'probeRecover', 'probeShieldBack', 'probeLossLimit', 'probeOutgunned', 'commitOdds', 'commitDropFactor', 'aheadMax', 'screenAhead', 'marchQuantile', 'massAttackOdds', 'massAttackWaitedOdds', 'flankMinSquadrons', 'survivalPressSeconds', 'abandonAfter', 'abandonRatio', 'abandonRatioNow', 'abandonWaitReinf', 'abandonLossShare', 'dangerRadiusPad', 'surroundRadiusFactor', 'surroundShare', 'supportRadiusFactor', 'supportWant', 'lineSpacingMin', 'dangerAttackFactor', 'dangerWeakFactor', 'dangerWeakBelow'];
-const SETTING_WHOLE_NUMBERS = ['longMapLine', 'matchupsInPlay', 'calmShips', 'calmLookEvery', 'cmRenderParts', 'simBudgetModel', 'closeWarmAll', 'closeKeepPictures', 'allyShoveOff', 'allyNudge', 'allyNudgeEvery', 'allyNudgeChecks', 'divisionSpots', 'divisionSpotsInFight', 'allyFineGrid', 'campaignTidyLive', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftMax', 'campaignSensors', 'showBoost', 'coreLoop', 'coreLoopFleetCommand', 'coreLoopFleetDivisions', 'coreLoopRecompose', 'coreLoopAlienCommand', 'coreLoopDivisionShips', 'coreLoopDivisionMinShips', 'coreLoopStreamMinShips', 'coreLoopLine', 'coreLoopLineLooks', 'coreLoopBerths', 'divisionMergeSmall', 'mergeFarOutOfContact', 'divisionMergeSlack', 'repairOffMap', 'supplyNoteWeeks', 'divisionPaceModel', 'swarmFormations', 'campaignBuildDays', 'campaignLiveEnterShips', 'cmdMaxAbreast', 'divisionFormations', 'doctrineModel', 'doctrineAlienClose', 'facingByGuns', 'facingVsTarget', 'facingTwoSided', 'freshSide', 'crossT', 'facingDodge', 'doctrineFindBattles', 'doctrineReviewMinLosses', 'doctrineReviewWeeks', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerMinLoss', 'ledgerAssaultWeeks', 'devCapStart', 'devCapAlien', 'devMaxBuilds', 'bbBeams', 'bbHeatModel', 'bbMissiles', 'bbPointDefence', 'bbBeamTicks', 'bbMissileRetries', 'bbPdFlakMax', 'bbLineOfFire', 'lineMinRanks', 'lineDeepRanks', 'lineDeepAbove', 'squadronMaxShips', 'tightOrbit', 'stationRebuild', 'radioMaxPerMinute', 'cmdReviewBattles', 'huntMaxShips', 'commandModel', 'cmdPassThrough', 'cmdSquadronBudget', 'cmdSquadronMax', 'cmdFleetMax', 'cmdRankBumpShips', 'cmdDivisionsMin', 'cmdDivisionsPerFleet', 'cmdDivisionsMax', 'orgScale', 'orgSquadronBudget', 'orgSquadronMax', 'orgDivisionTarget', 'orgDivisionMax', 'campaignLateAdmiral', 'campaignStartKit', 'placesFacilityApart', 'campaignFacilityApart', 'campaignStragglerShips', 'alienGarrisonCap', 'alienGatherMinShips', 'alienFirstPool', 'campaignFallenMax', 'placesHoldClear', 'campaignHoldClear', 'campaignPoolCap', 'campaignGarrisonCap', 'minLaunchShips', 'campaignYardShips', 'campaignModel', 'officerCarryOver', 'campaignAutosave', 'campaignLogMax', 'placesRetry', 'placesSweep', 'placesDecisive', 'siegeYardSlowdown', 'placesModel', 'placesAllowAbandon', 'placesTheatre', 'placesMaxOpposite', 'designModel', 'bureauBattle', 'moduleDamage', 'pressModel', 'partLossCall', 'crewRuleSquares', 'supplyReach', 'heatReach', 'exhaustLane', 'designMinSquares', 'designMaxSquares', 'survivalModel', 'allowAbandon', 'flankMinSquadrons', 'weaponModel', 'maxMissiles', 'pdSlugMaxMounts', 'missileInboundCall', 'formationModel', 'lockStep', 'columnMaxFile', 'wedgeMaxArm', 'reorgModel', 'disbandAt', 'fallenKeep', 'stagingModel', 'entrySegments', 'minNewSquadron', 'successionMode', 'woundedBattles', 'divisionTier', 'divisionTargetSize', 'divisionMinSize', 'divisionMaxSize', 'divisionMinSquadrons', 'rosterHistoryKeep', 'repertoireSize', 'aceKills', 'scarShakenBattles', 'maxShipsTotal', 'maxGridCells', 'targetCandidates', 'maxSalvosPerStep', 'maxShots', 'maxFlashes', 'formationMatchMaxShips', 'defaultSquadronSize',
+const SETTING_WHOLE_NUMBERS = ['longMapLine', 'cmdFormRealSize', 'cmdCapShare', 'cmdCapPerWard', 'cmdCapLongGuns', 'matchupsInPlay', 'calmShips', 'calmLookEvery', 'cmRenderParts', 'simBudgetModel', 'closeWarmAll', 'closeKeepPictures', 'allyShoveOff', 'allyNudge', 'allyNudgeEvery', 'allyNudgeChecks', 'divisionSpots', 'divisionSpotsInFight', 'allyFineGrid', 'campaignTidyLive', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftMax', 'campaignSensors', 'showBoost', 'coreLoop', 'coreLoopFleetCommand', 'coreLoopFleetDivisions', 'coreLoopRecompose', 'coreLoopAlienCommand', 'coreLoopDivisionShips', 'coreLoopDivisionMinShips', 'coreLoopStreamMinShips', 'coreLoopLine', 'coreLoopLineLooks', 'coreLoopBerths', 'divisionMergeSmall', 'mergeFarOutOfContact', 'divisionMergeSlack', 'repairOffMap', 'supplyNoteWeeks', 'divisionPaceModel', 'swarmFormations', 'campaignBuildDays', 'campaignLiveEnterShips', 'cmdMaxAbreast', 'divisionFormations', 'doctrineModel', 'doctrineAlienClose', 'facingByGuns', 'facingVsTarget', 'facingTwoSided', 'freshSide', 'crossT', 'facingDodge', 'doctrineFindBattles', 'doctrineReviewMinLosses', 'doctrineReviewWeeks', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerMinLoss', 'ledgerAssaultWeeks', 'devCapStart', 'devCapAlien', 'devMaxBuilds', 'bbBeams', 'bbHeatModel', 'bbMissiles', 'bbPointDefence', 'bbBeamTicks', 'bbMissileRetries', 'bbPdFlakMax', 'bbLineOfFire', 'lineMinRanks', 'lineDeepRanks', 'lineDeepAbove', 'squadronMaxShips', 'tightOrbit', 'stationRebuild', 'radioMaxPerMinute', 'cmdReviewBattles', 'huntMaxShips', 'commandModel', 'cmdPassThrough', 'cmdSquadronBudget', 'cmdSquadronMax', 'cmdFleetMax', 'cmdRankBumpShips', 'cmdDivisionsMin', 'cmdDivisionsPerFleet', 'cmdDivisionsMax', 'orgScale', 'orgSquadronBudget', 'orgSquadronMax', 'orgDivisionTarget', 'orgDivisionMax', 'campaignLateAdmiral', 'campaignStartKit', 'placesFacilityApart', 'campaignFacilityApart', 'campaignStragglerShips', 'alienGarrisonCap', 'alienGatherMinShips', 'alienFirstPool', 'campaignFallenMax', 'placesHoldClear', 'campaignHoldClear', 'campaignPoolCap', 'campaignGarrisonCap', 'minLaunchShips', 'campaignYardShips', 'campaignModel', 'officerCarryOver', 'campaignAutosave', 'campaignLogMax', 'placesRetry', 'placesSweep', 'placesDecisive', 'siegeYardSlowdown', 'placesModel', 'placesAllowAbandon', 'placesTheatre', 'placesMaxOpposite', 'designModel', 'bureauBattle', 'moduleDamage', 'pressModel', 'partLossCall', 'crewRuleSquares', 'supplyReach', 'heatReach', 'exhaustLane', 'designMinSquares', 'designMaxSquares', 'survivalModel', 'allowAbandon', 'flankMinSquadrons', 'weaponModel', 'maxMissiles', 'pdSlugMaxMounts', 'missileInboundCall', 'formationModel', 'lockStep', 'columnMaxFile', 'wedgeMaxArm', 'reorgModel', 'disbandAt', 'fallenKeep', 'stagingModel', 'entrySegments', 'minNewSquadron', 'successionMode', 'woundedBattles', 'divisionTier', 'divisionTargetSize', 'divisionMinSize', 'divisionMaxSize', 'divisionMinSquadrons', 'rosterHistoryKeep', 'repertoireSize', 'aceKills', 'scarShakenBattles', 'maxShipsTotal', 'maxGridCells', 'targetCandidates', 'maxSalvosPerStep', 'maxShots', 'maxFlashes', 'formationMatchMaxShips', 'defaultSquadronSize',
   'farGoalBlocksAcross', 'debugMaxLines', 'maxTriangleShips', 'sectorsAcross', 'eventLogMax', 'logPanelLines', 'logBatchDetail', 'lineOrderRetries',
   'reportSquadronRows', 'reportPacketRows', 'reinforceMaxSquadrons', 'flankMaxSquadrons', 'counterMaxSquadrons', 'withdrawSamples', 'versionLogMax', 'serviceLastMax', 'serviceHistoryMax', 'serviceEventsMax', 'dossierLastActions', 'reportOfficerRows',
   'movementModel', 'hitModel', 'tacticsModel', 'flightAssist', 'retreatFiring', 'simultaneousFire', 'officerModel', 'strengthMapSteps', 'oddsCellsPerRadius', 'oddsMaxCells', 'maxRouts', 'maxBreakOffs', 'overheatFallback', 'smartTargetCandidates'];
 // The switches (section 1b, "The rules in force"): the values each may have, and the names the code uses for them.
-const SETTING_CHOICES = { longMapLine: [0, 1], moonOrbits: [0, 1], dockModel: [0, 1], dockSpareModel: [0, 1], dockSpareSwarm: [0, 1], scuttleOnLedger: [0, 1], swarmDockModel: [0, 1], dockEvoModel: [0, 1], dockEvoSwarmSplit: [0, 1], matchupsInPlay: [0, 1], calmShips: [0, 1], cmRenderParts: [0, 1], simBudgetModel: [0, 1], closeWarmAll: [0, 1], closeKeepPictures: [0, 1], allyShoveOff: [0, 1], allyNudge: [0, 1], divisionSpots: [0, 1], divisionSpotsInFight: [0, 1], campaignSensors: [0, 1], showBoost: [0, 1], coreLoop: [0, 1], coreLoopLine: [0, 1], coreLoopFleetCommand: [0, 1], coreLoopFleetDivisions: [0, 1], coreLoopRecompose: [0, 1], coreLoopAlienCommand: [0, 1], divisionMergeSmall: [0, 1], mergeFarOutOfContact: [0, 1], berthPairingModel: [0, 1], swarmNestModel: [0, 1], swarmGrowUpModel: [0, 1], swarmOpeningSpread: [0, 1], swarmLifeModel: [0, 1], swarmSurfaceModel: [0, 1], swarmEatsEnemies: [0, 1], swarmEatsHatchlings: [0, 1], fighterHangarModel: [0, 1], fighterLaunchModel: [0, 1], hangarRefillFromFleet: [0, 1], hangarOrphansStay: [0, 1], tenderDocking: [0, 1], supplyRuns: [0, 1], cargoKept: [0, 1], ferryRuns: [0, 1], stationFighterGuard: [0, 1], stationNoSquadron: [0, 1], stationCrewSquad: [0, 1], stationPass: [0, 1], droneJamModel: [0, 1], divisionPaceModel: [0, 1], swarmFormations: [0, 1], facingVsTarget: [0, 1], facingTwoSided: [0, 1], freshSide: [0, 1], crossT: [0, 1], facingDodge: [0, 1], placesPicket: [0, 1], placesPicketSwarm: [0, 1], campaignStandoffPark: [0, 1], placesWithdrawOrder: [0, 1], placesWithdrawGuardDry: [0, 1], campaignLiveYardDawn: [0, 1], longMapReach: [0, 1], longMapLeash: [0, 1], longMapFog: [0, 1], sleepShips: [0, 1, 2], campaignResourceGate: [0, 1], bbAcid: [0, 1], bbRegrow: [0, 1], bbBurst: [0, 1], bbMissileStoreBySize: [0, 1], bbBeams: [0, 1], bbHeatModel: [0, 1], bbMissiles: [0, 1], bbPointDefence: [0, 1], bbLineOfFire: [0, 1], tightOrbit: [0, 1], campaignStartAtEarth: [0, 1], placesCrush: [0, 1], placesMassAttack: [0, 1], assaultSendAll: [0, 1], assaultReachOnly: [0, 1], frontReachOnly: [0, 1], placesNoLeapfrog: [0, 1], placesClaimKeeps: [0, 1], enemyWaitTurnBack: [0, 1], placesClaimFirm: [0, 1], placesSwarmPress: [0, 1], campaignSupplyLine: [0, 1], commandModel: [0, 1], stationRebuild: [0, 1], cmdHelpMarches: [0, 1], cmdOpCommit: [0, 1, 2], cmdPassThrough: [0, 1, 2], orgScale: [0, 1], campaignLateAdmiral: [0, 1], campaignStartKit: [0, 1], placesFacilityApart: [0, 1], campaignFacilityApart: [0, 1], placesHoldClear: [0, 1], campaignHoldClear: [0, 1], campaignModel: [0, 1], officerCarryOver: [0, 1], campaignAutosave: [0, 1], placesRetry: [0, 1], placesSweep: [0, 1], placesDecisive: [0, 1], siegeYardSlowdown: [0, 1], placesModel: [0, 1], placesAllowAbandon: [0, 1], placesTheatre: [0, 1], designModel: [0, 1, 2], bureauBattle: [0, 1], moduleDamage: [0, 1], pressModel: [0, 1], partLossCall: [0, 1], survivalModel: [0, 1], allowAbandon: [0, 1], weaponModel: [0, 1], formationModel: [0, 1], lockStep: [0, 1], reorgModel: [0, 1], movementModel: [0, 1], hitModel: [0, 1, 2], tacticsModel: [0, 1], flightAssist: [0, 1], retreatFiring: [0, 1], overheatFallback: [0, 1], newSetupDefaults: [0, 1], unmannedRearGuard: [0, 1], simultaneousFire: [0, 1], officerModel: [0, 1], promoteNeedsVacancy: [0, 1], divisionTier: [0, 1], successionMode: [0, 1, 2], stagingModel: [0, 1] };
+const SETTING_CHOICES = { longMapLine: [0, 1], cmdFormRealSize: [0, 1], cmdCapShare: [0, 1], cmdCapLongGuns: [0, 1], moonOrbits: [0, 1], dockModel: [0, 1], dockSpareModel: [0, 1], dockSpareSwarm: [0, 1], scuttleOnLedger: [0, 1], swarmDockModel: [0, 1], dockEvoModel: [0, 1], dockEvoSwarmSplit: [0, 1], matchupsInPlay: [0, 1], calmShips: [0, 1], cmRenderParts: [0, 1], simBudgetModel: [0, 1], closeWarmAll: [0, 1], closeKeepPictures: [0, 1], allyShoveOff: [0, 1], allyNudge: [0, 1], divisionSpots: [0, 1], divisionSpotsInFight: [0, 1], campaignSensors: [0, 1], showBoost: [0, 1], coreLoop: [0, 1], coreLoopLine: [0, 1], coreLoopFleetCommand: [0, 1], coreLoopFleetDivisions: [0, 1], coreLoopRecompose: [0, 1], coreLoopAlienCommand: [0, 1], divisionMergeSmall: [0, 1], mergeFarOutOfContact: [0, 1], berthPairingModel: [0, 1], swarmNestModel: [0, 1], swarmGrowUpModel: [0, 1], swarmOpeningSpread: [0, 1], swarmLifeModel: [0, 1], swarmSurfaceModel: [0, 1], swarmEatsEnemies: [0, 1], swarmEatsHatchlings: [0, 1], fighterHangarModel: [0, 1], fighterLaunchModel: [0, 1], hangarRefillFromFleet: [0, 1], hangarOrphansStay: [0, 1], tenderDocking: [0, 1], supplyRuns: [0, 1], cargoKept: [0, 1], ferryRuns: [0, 1], stationFighterGuard: [0, 1], stationNoSquadron: [0, 1], stationCrewSquad: [0, 1], stationPass: [0, 1], droneJamModel: [0, 1], divisionPaceModel: [0, 1], swarmFormations: [0, 1], facingVsTarget: [0, 1], facingTwoSided: [0, 1], freshSide: [0, 1], crossT: [0, 1], facingDodge: [0, 1], placesPicket: [0, 1], placesPicketSwarm: [0, 1], campaignStandoffPark: [0, 1], placesWithdrawOrder: [0, 1], placesWithdrawGuardDry: [0, 1], campaignLiveYardDawn: [0, 1], longMapReach: [0, 1], longMapLeash: [0, 1], longMapFog: [0, 1], sleepShips: [0, 1, 2], campaignResourceGate: [0, 1], bbAcid: [0, 1], bbRegrow: [0, 1], bbBurst: [0, 1], bbMissileStoreBySize: [0, 1], bbBeams: [0, 1], bbHeatModel: [0, 1], bbMissiles: [0, 1], bbPointDefence: [0, 1], bbLineOfFire: [0, 1], tightOrbit: [0, 1], campaignStartAtEarth: [0, 1], placesCrush: [0, 1], placesMassAttack: [0, 1], assaultSendAll: [0, 1], assaultReachOnly: [0, 1], frontReachOnly: [0, 1], placesNoLeapfrog: [0, 1], placesClaimKeeps: [0, 1], enemyWaitTurnBack: [0, 1], placesClaimFirm: [0, 1], placesSwarmPress: [0, 1], campaignSupplyLine: [0, 1], commandModel: [0, 1], stationRebuild: [0, 1], cmdHelpMarches: [0, 1], cmdOpCommit: [0, 1, 2], cmdPassThrough: [0, 1, 2], orgScale: [0, 1], campaignLateAdmiral: [0, 1], campaignStartKit: [0, 1], placesFacilityApart: [0, 1], campaignFacilityApart: [0, 1], placesHoldClear: [0, 1], campaignHoldClear: [0, 1], campaignModel: [0, 1], officerCarryOver: [0, 1], campaignAutosave: [0, 1], placesRetry: [0, 1], placesSweep: [0, 1], placesDecisive: [0, 1], siegeYardSlowdown: [0, 1], placesModel: [0, 1], placesAllowAbandon: [0, 1], placesTheatre: [0, 1], designModel: [0, 1, 2], bureauBattle: [0, 1], moduleDamage: [0, 1], pressModel: [0, 1], partLossCall: [0, 1], survivalModel: [0, 1], allowAbandon: [0, 1], weaponModel: [0, 1], formationModel: [0, 1], lockStep: [0, 1], reorgModel: [0, 1], movementModel: [0, 1], hitModel: [0, 1, 2], tacticsModel: [0, 1], flightAssist: [0, 1], retreatFiring: [0, 1], overheatFallback: [0, 1], newSetupDefaults: [0, 1], unmannedRearGuard: [0, 1], simultaneousFire: [0, 1], officerModel: [0, 1], promoteNeedsVacancy: [0, 1], divisionTier: [0, 1], successionMode: [0, 1, 2], stagingModel: [0, 1] };
 // Rule switches that an imported file may lack: a missing one is read as 0 (the file was made before the rule existed), not as this version's default (stage 12).
 const SETTING_SWITCHES_OLD_FILES = ['commandModel', 'orgScale', 'movementModel', 'hitModel', 'tacticsModel', 'newSetupDefaults', 'simultaneousFire', 'officerModel', 'divisionTier', 'stagingModel', 'reorgModel', 'formationModel', 'lockStep', 'weaponModel', 'survivalModel', 'designModel', 'moduleDamage', 'pressModel', 'placesModel'];
 const MOVE_CLASSIC = 0, MOVE_THRUST = 1;
@@ -35052,8 +35063,27 @@ function coreLinePost(a, dv, x, y, gx, gy, why) {
   const n = divisionAliveSquads(dv).length, moved = !(dv.lineAt >= 0) || theatreDist(x, y, dv.lineX, dv.lineY) > Math.max(600, 0.5 * coreDivisionFrontage(dv));
   const ended = divisionTaskId(dv) !== 'hold';
   if (!moved && !ended && dv.lineN === n) return;
+  if (moved && !ended && dv.lineN === n && coreLineDrift(dv, x, y, gx, gy)) { dv.lineX = x; dv.lineY = y; dv.lineGx = gx; dv.lineGy = gy; dv.lineAt = simTime; dv.lineWhy = why; return; }
   dv.lineX = x; dv.lineY = y; dv.lineGx = gx; dv.lineGy = gy; dv.lineAt = simTime; dv.lineN = n; dv.lineWhy = why; dv.place = -1; dv.placeTask = 'line';
   admiralTask(a, dv, 'hold', { x: x, y: y, gx: gx, gy: gy, place: -1 }, why);
+}
+// (v202.0) The line only drifted (the place it guards is a moon or planet on the move): the Division already holds its stretch, so its spot moves with
+// the line without a fresh order. Before this, every look (45 s) gave a new "hold the line here": the Commodore took it again, every squadron was sent to
+// its place again, and the radio repeated it all. Returns false (give a fresh order as before) when the switch is off, the Commodore has not yet read
+// its hold task, or the spot jumped too far to call it drift.
+function coreLineDrift(dv, x, y, gx, gy) {
+  if (SETTINGS.lineDriftQuiet !== 1 || !dv.task || dv.task.id !== 'hold' || dv.placeTask !== 'line') return false;
+  if (dv.taskGiven && dv.taskGiven.at > dv.task.since) return false;                         // (the last task given has not been read yet)
+  if (theatreDist(x, y, dv.lineX, dv.lineY) > SETTINGS.lineDriftQuietMax) return false;
+  const p = dv.task.params || (dv.task.params = {});
+  p.x = x; p.y = y; p.gx = gx; p.gy = gy;
+  dsTaskGiven(dv, 'hold', p);                                                                 // (section 5sp: the spot is kept clear of the other Divisions')
+  const c = dv.cmd;
+  if (c && c.order && c.order.state === 'active' && c.taskRef === dv.task && c.order.task === 'hold' && c.order.params && isFinite(c.order.params.x)) {
+    c.order.params.x = p.x; c.order.params.y = p.y; c.order.params.gx = gx; c.order.params.gy = gy;   // (the role order in force reads its spot every think: hold_line, 15b)
+    dsOrderActivated(dv, c.order);
+  }
+  return true;
 }
 // Between looks the line stands still: a Division whose task ended or whose squadrons came or went is given its last spot again; one with no spot yet waits for the look.
 function coreLineKeep(a, live) {
@@ -48205,7 +48235,8 @@ function reportTactic(sq, st, est, et, tac, why) {
   if ((tac === TACTIC_STANDOFF || tac === TACTIC_KITE) && outranges) { text = TACTIC_VERBS[tac] + ': outranges ' + foe; code = 'standoff'; }
   else if ((tac === TACTIC_CLOSE || tac === TACTIC_ORBIT) && outranged) { text = TACTIC_VERBS[tac] + ': outranged by ' + foe; code = 'close'; }
   else text = TACTIC_VERBS[tac] + ' against ' + foe + ' (' + WHY_TEXT[why] + ')';
-  squadronReport(sq, 'tactic', sqOrder[sq], text, 0, code);
+  if (why === WHY_EXPERIMENT) radioHushed++;                 // (v202.0) the "is trying ..." line already went on the radio: this one stays in the log only
+  try { squadronReport(sq, 'tactic', sqOrder[sq], text, 0, code); } finally { if (why === WHY_EXPERIMENT) radioHushed--; }
 }
 
 // The sideways weave velocity right now: a square wave that strictly alternates (the first segment of each weave is half a period long), so the ship sways about its
@@ -49526,7 +49557,8 @@ function issueOrder(issuer, to, typeId, params, batch) {
 // ---------------------------------------------------------------------
 const eventLog = [];                            // { time, side, text }   side -1 = a note about the log itself
 let eventLogDirty = false;                      // true when a line was added that the panel has not shown yet
-let eventLogDropped = 0;                        // lines dropped from the start of the log because it was full (the newest lines are the ones worth reading)
+let eventLogDropped = 0;
+let radioHushed = 0;                            // (v202.0) above 0: the lines logged now stay in the log and are not heard on the radio                        // lines dropped from the start of the log because it was full (the newest lines are the ones worth reading)
 function logEvent(side, text) {
   if (eventLog.length >= SETTINGS.eventLogMax) {                           // full: drop the oldest tenth in one go (one line at a time would be slow)
     const drop = Math.max(1, Math.floor(SETTINGS.eventLogMax / 10));
@@ -49536,7 +49568,7 @@ function logEvent(side, text) {
   const quiet = leaderNewsQuiet === true;     // (v25.1, section 5n) a leader loss kept off the radio: the log still has it
   eventLog.push(quiet ? { time: simTime, side: side, text: text, quiet: true } : { time: simTime, side: side, text: text });
   eventLogDirty = true;
-  if (SETTINGS.commandModel === 1 && !quiet) radioHear(side, text);        // (v25 stop 5c, section 7q) the comms pass hears every line and picks what plays
+  if (SETTINGS.commandModel === 1 && !quiet && radioHushed === 0) radioHear(side, text);        // (v25 stop 5c, section 7q) the comms pass hears every line and picks what plays
 }
 function fmtClock(t) {                          // 125.4 -> "02:05"
   const s = Math.max(0, Math.floor(t));
@@ -50777,6 +50809,7 @@ function squadronReceiveOrder(node, order) {
   else if (rIgnore < officerIgnoreChance(o)) { refuse = 'its officer ignored it'; code = 'ignored'; }
   if (refuse !== '') {
     order.status = 'refused';
+    if (code === 'busy') order.busyWith = current;            // (v202.0) what it was busy with: the Commodore does not send the same place again while that lasts (cmdStation, 15b)
     orderStats[sqSide[sq]].refused[order.type]++;
     squadronReport(sq, 'refused', order, refuse, 0, code);
     return;
@@ -54790,6 +54823,12 @@ function cmdStation(dv, a, sq, x, y, face, opt) {
     }
     return o;
   }
+  // (v202.0) It turned this place down because it is busy with a more urgent order: while that order lasts, sending the place again would only be turned
+  // down again (every think, filling the log and the radio). It is sent again once the squadron is free.
+  if (o && c.mine.get(sq) === o && ORDER_TYPES[o.type].id === 'holdline' && o.status === 'refused' && o.busyWith && sqOrder[sq] === o.busyWith && o.busyWith.status === 'active') {
+    o.params.x = x; o.params.y = y; if (face !== undefined) o.params.face = face;
+    return o;
+  }
   const params = { x: x, y: y, face: face === undefined ? (a.side === BLUE ? 0 : Math.PI) : face, reserve: !!(opt && opt.reserve), objective: a.objective, posture: opt && opt.posture !== undefined ? opt.posture : orderPosture(a) };
   const order = divisionOrder(dv, sq, 'holdline', params);
   if (order !== null) { order.priority = 55; c.mine.set(sq, order); }
@@ -54845,16 +54884,25 @@ function cmdUnit(dx, dy, side) { const d = Math.hypot(dx, dy); return d > 1e-6 ?
 // A row of places across (gx, gy) through (cx, cy), the squadrons in their order along it (so they do not cross), with gapMul x the Commodore's usual gaps.
 // abreast: every squadron in line abreast (SHAPE_LINE), so the row is one continuous line across the Division: each squadron takes the width of its own
 // line abreast (sqSpacing x the ships in its front rank) plus one spacing between squadrons (plan A3: the Line reads as a line).
+// (v203.0) Alex, week 7 save: "this fleet is a bunch of squadrons all stacked on top of each other". The rows were spaced for squadrons standing in a thin
+// line abreast (3 spacings deep), but most of the time a squadron stands or marches as a block (a 16-ship block is about 290 u deep), so a row 140 u behind
+// the one in front stood half inside it, and a Division of many squadrons became one pile. Now every place takes the squadron's real size: its width along the
+// row is at least its formed width, and the rows stand far enough apart for the deepest squadron in them. SETTINGS.cmdFormRealSize 0 = as before.
+function cmdRealSizeOn() { return SETTINGS.cmdFormRealSize === 1; }
+// How deep a squadron stands in its row (front to back), for the gap between rows.
+function cmdFootDepth(sq, abreast, pic) { const d = abreast ? 3 * Math.max(sqSpacing[sq], 1) : pic.pWidth[sq]; return cmdRealSizeOn() ? Math.max(d, pic.pWidth[sq]) : d; }
+// How much of the row a squadron takes when the row is one continuous line abreast.
+function cmdAbreastRowLen(sq, pic) { const l = cmdAbreastLen(sq); return cmdRealSizeOn() ? Math.max(l, pic.pWidth[sq]) : l; }
 function cmdAbreastLen(sq) { const n = Math.max(1, sqAlive[sq]), per = n > 8 ? Math.ceil(n / lineRanks(n)) : n; return per * Math.max(sqSpacing[sq], 1); }   // (v35: a big squadron is 4 deep, so its front rank is a quarter of it, not half)
 function cmdRow(dv, a, squads, cx, cy, gx, gy, gapMul, abreast) {
   if (cmdFormationOn() && cmdDivIsSwarm(dv)) return cmdSwarmPlaces(dv, a, squads, cx, cy, gx, gy, { row: true, gap: gapMul, abreast: abreast });   // (v50) no straight rows for the Swarm
   const pic = a.picture, nx = -gy, ny = gx;
   const gap = commodoreGapScale(dv.officer) * gapMul;
   const items = squads.slice().sort(function (p, q) { return ((pic.pX[p] - cx) * nx + (pic.pY[p] - cy) * ny) - ((pic.pX[q] - cx) * nx + (pic.pY[q] - cy) * ny) || (p - q); });
-  const lenOf = function (sq) { return abreast ? cmdAbreastLen(sq) + Math.max(sqSpacing[sq], 1) * gap : pic.pWidth[sq] + SETTINGS.lineGapFactor * pic.pSpacing[sq] * gap; };
+  const lenOf = function (sq) { return abreast ? cmdAbreastRowLen(sq, pic) + Math.max(sqSpacing[sq], 1) * gap : pic.pWidth[sq] + SETTINGS.lineGapFactor * pic.pSpacing[sq] * gap; };
   // (v35) never more than cmdMaxAbreast in one row: the rest stand in rows behind, each centred so it sits in the gaps of the row before
   const cap = cmdFormationOn() ? cmdMaxAbreast() : items.length;
-  let wide = 0; for (const sq of items) wide = Math.max(wide, abreast ? 3 * Math.max(sqSpacing[sq], 1) : pic.pWidth[sq]);
+  let wide = 0; for (const sq of items) wide = Math.max(wide, cmdFootDepth(sq, abreast, pic));
   const rowGap = SETTINGS.cmdRankGapFactor * Math.max(wide, 100);
   const out = [];
   for (let r = 0; r * cap < items.length; r++) {
@@ -54884,7 +54932,7 @@ function cmdRanks(dv, a, squads, cx, cy, gx, gy, abreast) {
   if (front.length === 0) { for (const sq of rear) front.push(sq); rear.length = 0; }
   const out = cmdRow(dv, a, front, cx, cy, gx, gy, 1, abreast);
   if (rear.length > 0) {
-    let wide = 0; for (const sq of front) wide = Math.max(wide, abreast ? 3 * Math.max(sqSpacing[sq], 1) : pic.pWidth[sq]);
+    let wide = 0; for (const sq of (cmdRealSizeOn() ? front.concat(rear) : front)) wide = Math.max(wide, cmdFootDepth(sq, abreast, pic));   // (v203.0: the rear rank's depth too)
     const back = SETTINGS.cmdRankGapFactor * Math.max(wide, 100);
     const r = cmdRow(dv, a, rear, cx - gx * back, cy - gy * back, gx, gy, 1, abreast);
     for (const p of r) { p.rank = 1; out.push(p); }
@@ -54966,11 +55014,15 @@ function cmdSquadJobs(dv, a, squads) {
   let n = 0, sRange = 0, sSpeed = 0, sTough = 0, sPd = 0;
   for (const sq of ships) { const st = side * TYPE_COUNT + sqType[sq]; n++; sRange += cmdTypeRange(st); sSpeed += stSpeed[st]; sTough += stHull[st] + stShield[st]; sPd += pdOf(st); }
   const midRange = sRange / n, midSpeed = sSpeed / n, midTough = sTough / n, midPd = sPd / n;
+  // (v204.0) Alex: "the siren is a long range unarmored missile boat, it should be in the battery position, not ever used as a pd escort like that". A fighter-class
+  // squadron that outranges the Division's bigger ships (more than cmdLongRangeFactor x their average) is a missile boat, not fighter cover: it stands with the
+  // artillery at the back, never as CAP. SETTINGS.cmdCapLongGuns 0 = as before (every fighter-class squadron is CAP).
+  const longGunCap = function (sq) { return SETTINGS.cmdCapLongGuns === 1 && typeUnmanned[sqType[sq]] !== 1 && midRange > 0 && cmdTypeRange(side * TYPE_COUNT + sqType[sq]) > SETTINGS.cmdLongRangeFactor * midRange; };
   const chosen = new Set();                                                    // (v37) squadrons whose job the player's doctrine set
   for (const sq of squads) {
     const t = sqType[sq], st = side * TYPE_COUNT + t;
     let job = 'line';
-    if (isCap(sq)) job = 'cap';
+    if (isCap(sq)) job = (longGunCap(sq) ? 'artillery' : 'cap');
     else if (stPdMounts[st] > 0 && midPd > 0 && pdOf(st) > SETTINGS.cmdPdCoverFactor * midPd) job = 'pd';
     else if (midRange > 0 && cmdTypeRange(st) > SETTINGS.cmdLongRangeFactor * midRange) job = (stSpeed[st] > midSpeed && (stHull[st] + stShield[st]) < midTough) ? 'skirmisher' : 'artillery';
     // (v37) the design's doctrine (the Bureau's Doctrine tab) overrules the guess: its Style first, then its Duties (Auto leaves the guess as it is)
@@ -55005,6 +55057,7 @@ function cmdMostVulnerable(dv, squads, jobs) {
 // CAP: a fighter or drone squadron of the Division takes escort duty over the Division's squadron with the fewest guards (the biggest when tied), through the escort
 // duty that already exists (cmdEscort: a screen round its largest ship). A type with an Escort box set keeps that pairing (cmdPairArrivalEscort). Returns the squadrons left for the rows.
 function cmdFormCap(dv, a, squads, jobs) {
+  if (SETTINGS.cmdCapShare === 1) return cmdFormCapShared(dv, a, squads, jobs);
   const rest = [];
   for (const sq of squads) {
     if (jobs.get(sq) !== 'cap') { rest.push(sq); continue; }
@@ -55020,6 +55073,60 @@ function cmdFormCap(dv, a, squads, jobs) {
     }
     if (best > 0 && cmdEscort(sq, best)) { cmdSqOrder[sq] = { id: 'escort', dv: dv.id, since: simTime, about: 'CAP over Squadron ' + squadronLabel(best) }; cmdLogOnce(dv, 'cap' + sq, 120, 'sends Squadron ' + squadronLabel(sq) + ' up as CAP over Squadron ' + squadronLabel(best)); }
     else rest.push(sq);
+  }
+  return rest;
+}
+// (v203.0) THE CAP SHARED OUT. Alex, week 7 save: "this fleet is a bunch of squadrons all stacked on top of each other". His Sirens are the lightest class, so
+// every Siren squadron was CAP, and the Privateers are marked "Needs escort". That mark counted for more than how many guards a ship already had, so all the
+// Siren squadrons went to the same Privateer and each flew its screen round it at the same distance: eight rings on one spot. Now each squadron of the Division
+// takes at most cmdCapPerWard CAP squadrons (the "Needs escort" ones are served first, then the most valuable), two charges closer together than a screen's
+// distance share one screen, a squadron keeps the charge it already has while there is room, and the fighters left over stand in the rows as line squadrons.
+function cmdCapRelease(sq) {
+  const p = sqEscort[sq];
+  if (p < 0) return;
+  if (shipAlive[p] === 1) shipProtectedBy[p] = Math.max(0, shipProtectedBy[p] - 1);
+  sqEscort[sq] = -1; sqEscortThreat[sq] = -1;
+  sqFlank[sq] = stFlank[sqSide[sq] * TYPE_COUNT + sqType[sq]] === 1 ? FLANK_PENDING : FLANK_OFF;
+  if (cmdSqOrder[sq] && cmdSqOrder[sq].id === 'escort') cmdSqOrder[sq] = null;
+}
+function cmdFormCapShared(dv, a, squads, jobs) {
+  const side = dv.side, per = Math.max(0, Math.floor(SETTINGS.cmdCapPerWard));
+  // the squadrons already flying CAP are left out of the list the role orders move (cmdUsable), so they are added back here to be counted, kept or let go
+  const flying = dv.squads.filter(function (sq) { return squads.indexOf(sq) < 0 && sqAlive[sq] > 0 && sqEscort[sq] >= 0 && stEscort[side * TYPE_COUNT + sqType[sq]] < 0; });
+  if (flying.length > 0) { const all = squads.concat(flying); jobs = cmdSquadJobs(dv, a, all); squads = all; }
+  const isCapSq = function (sq) { return jobs.get(sq) === 'cap' && stEscort[side * TYPE_COUNT + sqType[sq]] < 0 && sqAlive[sq] > 0; };
+  const caps = squads.filter(isCapSq), rest = squads.filter(function (sq) { return !isCapSq(sq) && flying.indexOf(sq) < 0; });
+  // a squadron that is no longer CAP here (its Division is now all fighters, say) lets go of its old charge and stands in the rows
+  for (const sq of squads) if (!isCapSq(sq) && sqEscort[sq] >= 0 && stEscort[side * TYPE_COUNT + sqType[sq]] < 0) cmdCapRelease(sq);
+  if (caps.length === 0) return rest;
+  // the charges: every other squadron of the Division with a ship to guard, "Needs escort" first, then the most valuable
+  const wards = [];
+  for (const q of squads) {
+    if (isCapSq(q) || jobs.get(q) === 'cap') continue;
+    const p = largestShipOf([q]); if (p < 0) continue;
+    const Bq = docBattleOf(side * TYPE_COUNT + sqType[q]);
+    wards.push({ q: q, p: p, needs: Bq && Bq.escortDuty === 'needs' ? 1 : 0, value: orgTypeValue(side * TYPE_COUNT + sqType[q]) * Math.max(1, sqAlive[q]), n: 0 });
+  }
+  wards.sort(function (u, v) { return (v.needs - u.needs) || (v.value - u.value) || (u.q - v.q); });
+  const byShip = new Map(); for (const w of wards) byShip.set(w.p, w);
+  const free = [];
+  // the screen's distance round its charge (as updateEscortGeometry works it out): two charges closer than that share one screen, or the rings sit on each other
+  const ringOf = function (sq, w) { return SETTINGS.escortStandOff * officerEscortRadius(sqOfficer[sq], escortBaseRadius(typeSize[shipType[w.p]], stRange[side * TYPE_COUNT + sqType[sq]])); };
+  const crowded = function (sq, w) { const R = ringOf(sq, w); for (const g of wards) if (g !== w && g.n > 0 && Math.hypot(shipX[g.p] - shipX[w.p], shipY[g.p] - shipY[w.p]) < R) return true; return false; };
+  // 1. a CAP squadron already over one of these charges keeps it while the charge has room (no reshuffle every look)
+  for (const sq of caps) { const w = sqEscort[sq] >= 0 ? byShip.get(sqEscort[sq]) : undefined; if (w && w.n < per && !crowded(sq, w)) { w.n++; } else free.push(sq); }
+  // 2. the rest go to the charge with the fewest guards ("Needs escort", then value, breaking ties) that has no screen close by; else they stand in the rows
+  for (const sq of free) {
+    let best = null;
+    for (const w of wards) if (w.n < per && (best === null || w.n < best.n) && !crowded(sq, w)) best = w;
+    if (best !== null && (sqEscort[sq] === best.p || cmdEscort(sq, best.q))) {
+      best.n++;
+      cmdSqOrder[sq] = { id: 'escort', dv: dv.id, since: simTime, about: 'CAP over Squadron ' + squadronLabel(best.q) };
+      cmdLogOnce(dv, 'cap' + sq, 120, 'sends Squadron ' + squadronLabel(sq) + ' up as CAP over Squadron ' + squadronLabel(best.q));
+    } else {
+      if (sqEscort[sq] >= 0) cmdCapRelease(sq);
+      if (flying.indexOf(sq) < 0) rest.push(sq);                             // (one let go here joins the rows at the Commodore's next look)
+    }
   }
   return rest;
 }
@@ -55075,7 +55182,7 @@ function cmdFormationPlaces(dv, a, squads, cx, cy, gx, gy, opt) {
   const all = cmdFormCap(dv, a, squads, jobs);
   if (all.length === 0) return [];
   const F = cmdPickFormation(dv, a, all, opt.marching === true);
-  const lenOf = function (sq) { return abreast ? cmdAbreastLen(sq) + Math.max(sqSpacing[sq], 1) * gap : pic.pWidth[sq] + SETTINGS.lineGapFactor * pic.pSpacing[sq] * gap; };
+  const lenOf = function (sq) { return abreast ? cmdAbreastRowLen(sq, pic) + Math.max(sqSpacing[sq], 1) * gap : pic.pWidth[sq] + SETTINGS.lineGapFactor * pic.pSpacing[sq] * gap; };
   const latOf = function (sq) { return (pic.pX[sq] - cx) * nx + (pic.pY[sq] - cy) * ny; };
   const tough = function (sq) { const st = dv.side * TYPE_COUNT + sqType[sq]; return stHull[st] + stShield[st]; };
   const inContact = cmdInContact(dv);
@@ -55102,7 +55209,7 @@ function cmdFormationPlaces(dv, a, squads, cx, cy, gx, gy, opt) {
     for (const sq of pds) { const r = vr > 0 ? vr - 1 : 0; rows[r].push({ sq: sq, key: vk + (vr > 0 ? 0 : 1e-3), about: 'PD cover for Squadron ' + squadronLabel(vul) }); }
   } else for (const sq of pds) rows[rows.length - 1].push({ sq: sq, key: latOf(sq), about: 'PD cover' });
   // 3. the geometry: each row centred on the axis (so a 2 stands in the gaps of a 3), the rows a gap apart
-  let wide = 0; for (const it of rows[0]) wide = Math.max(wide, abreast ? 3 * Math.max(sqSpacing[it.sq], 1) : pic.pWidth[it.sq]);
+  let wide = 0; for (let r = 0; r < (cmdRealSizeOn() ? rows.length : 1); r++) for (const it of rows[r]) wide = Math.max(wide, cmdFootDepth(it.sq, abreast, pic));   // (v203.0: every row's depth, not only the front's)
   const rowGap = SETTINGS.cmdRankGapFactor * Math.max(wide, 100);
   const out = [];
   let frontHalf = 0;
@@ -74923,7 +75030,7 @@ const RADIO_LINES = {
   'division.steady':    { imp: 'low',    text: '{div} steadies.',                                        many: '{list}.' },
   'division.breakout':  { imp: 'middle', text: '{div}: the aliens are across our way back. Breaking out to the rally point.', many: '{n} Divisions breaking out: {list}.' },
   'division.cut':       { imp: 'middle', text: '{div}: the aliens are across our way back. We fight on.',  many: '{n} Divisions cut off: {list}.' },
-  'division.order':     { imp: 'low',    text: '{div}: {order}.',                                        many: '{list}.' },
+  'division.order':     { imp: 'low',    text: '{div}: {order}.',                                        many: 'New orders for {n} Divisions: {list}.' },   // (v202.0, was a bare list of names)
   'line.advance':       { imp: 'low',    text: '{div}: line advancing.',                                 many: '{n} Divisions advance in line: {list}.' },
   'battery.fire':       { imp: 'low',    text: '{div}: guns in position. Bombarding.',                   many: '{n} batteries open fire: {list}.' },
   'light.sweep':        { imp: 'low',    text: '{div}: sweeping round their flank.',                     many: '{n} Divisions sweep the flanks: {list}.' },
@@ -75091,6 +75198,14 @@ function radioPush(c) {
   if (c.imp === RADIO_IMP.low && !c.sel) { R.stats.skipped++; return; }
   c.t = simTime;
   c.msg = radioAliens(c.key === 'legacy' || c.key === 'enemy.fleet.arrives' ? c.d.text : radioLine(c.key, c.d));
+  // (v202.0) The same call sign with the same words again within radioRepeatSeconds is not heard twice (an order given again, a refusal again, a stance taken again).
+  if (c.imp < RADIO_IMP.top && SETTINGS.radioRepeatSeconds > 0) {
+    if (!R.said) R.said = new Map();
+    const said = (c.call || '') + '|' + c.msg, at = R.said.get(said);
+    if (at !== undefined && c.t - at < SETTINGS.radioRepeatSeconds && c.t >= at) { R.stats.repeats = (R.stats.repeats || 0) + 1; return; }
+    R.said.set(said, c.t);
+    if (R.said.size > 400) { for (const [k, t] of R.said) if (c.t - t >= SETTINGS.radioRepeatSeconds) R.said.delete(k); }
+  }
   c.mergeKey = c.key === 'legacy' ? 'legacy|' + c.msg : (c.key === 'design.remark' || c.key === 'report.summary' ? c.key + '|' + R.stats.heard : c.key);
   if (c.imp === RADIO_IMP.top) R.stats.topEvents++;
   R.stats.heard++;
@@ -100548,7 +100663,7 @@ BUREAU2_SCREEN_API.testRange = { run: testRangeRun, state: testRange, plan: func
 //   adopted habits come along in its copy code and into every new campaign. A doctrine changed in the Bureau after the save updates the plan's copy.
 //   DOCTRINE TEMPLATES (LIBRARY.templates: [{ name, doctrine, savedAt }]) live here too, so they carry over as well. A plan from before v37 has no doctrine: Auto.
 // =====================================================================
-const GAME_VERSION = 'v201.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
+const GAME_VERSION = 'v204.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
 const LIBRARY_KEY = 'engineersWar.library';
 const LIBRARY_FORMAT = 1;
 const LIBRARY_CODE_SHIP = 'EW-SHIP-1:', LIBRARY_CODE_LIB = 'EW-LIB-1:';
