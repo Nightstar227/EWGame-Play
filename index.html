@@ -2803,6 +2803,7 @@ hr.rule { border:0; border-top:var(--line-w) solid var(--line); margin:var(--sp-
 #bureau2Screen .lvp { flex: 0 0 360px; min-height: 0; overflow: auto; border: 1px solid var(--line-strong); padding: 8px 10px; display: flex; flex-direction: column; gap: 8px; }
 #bureau2Screen .lvp h4 { margin: 0; font: 600 14px var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--text); }
 #bureau2Screen .lvnote, #bureau2Screen .lvmsg { margin: 0; font: 500 12px var(--font-data); color: var(--dim); }
+#bureau2Screen .lvunsaved { color: var(--accent); }   /* (v224.0) "Not saved yet" */
 #bureau2Screen .lvrow { display: flex; flex-direction: column; gap: 3px; }
 #bureau2Screen .lvrow .l { font: 600 11px var(--font-display); letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
 #bureau2Screen .lvrow .opts { display: flex; flex-wrap: wrap; gap: 3px; }
@@ -3686,7 +3687,7 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
     <section class="panel hidden" id="mmPanel"><div class="panel-head" id="mmPanelHead"></div><div class="panel-body" id="mmPanelBody"></div></section>
     <input type="file" id="mmFile" accept=".json,application/json,text/plain" class="hidden">
   </div>
-  <div class="mm-version" title="The version of the game you are playing">Version v223.0</div>
+  <div class="mm-version" title="The version of the game you are playing">Version v228.0</div>
 </div>
 
 <!-- (v31 A2, section 7l) the end of the war: the game-over screen (Earth's people are gone) or the victory screen (the aliens' home secured). It lies over
@@ -11378,6 +11379,12 @@ const SETTINGS = {
   simBudgetMin: 8,           // (v103.5) the simulation always gets at least this many ms a frame
   maxFrameSeconds: 0.1,      // if the screen stalls for longer than this (a hidden tab, say), the battle clock only moves on by this much (s)
   maxCatchUpSteps: 2,        // if the computer cannot keep up, the battle clock falls behind real time; it never owes more than this many steps
+  simKeepPace: 1,            // (v226.0, section 11) 1 = on a slow computer the battle keeps the speed you chose and the picture updates less often instead
+                             //   (before, the battle got 16 ms a frame whatever the frame cost, so a slow-drawing computer played the battle in slow motion); 0 = as before
+  simKeepPaceShare: 0.67,    // (v226.0) the most of each frame the battle may take to keep up: 0.67 = up to twice the drawing's time
+  simKeepPaceMaxMs: 120,     // (v226.0) and never more than this many ms in one frame
+  simKeepPaceFrameSeconds: 0.25,  // (v226.0) a slow frame still counts for up to this many seconds of battle (maxFrameSeconds without it)
+  simKeepPaceOweSeconds: 0.25,    // (v226.0) and the battle may owe up to this many seconds to catch up on the next frames (maxCatchUpSteps without it)
   formationMatchMaxShips: 40,// squadrons up to this size give out formation slots by matching every ship with every slot (best, but slow for big squadrons)
 
   // ---- Time ----
@@ -13378,7 +13385,7 @@ const OFFICER_LIMITS = {
 //     (The lists below say which settings need which check.)
 // ---------------------------------------------------------------------
 const SETTING_MUST_BE_POSITIVE = ['moonOrbitMinutes', 'moonOrbitRef', 'moonOrbitMaxSpeed', 'coreLoopDivisionShips', 'cmdMaxAbreast', 'cmdPaceFactor', 'cmdPaceShare', 'cmdPaceInPlace', 'cmdPaceCatchUp', 'cmdPaceFastFactor', 'swarmPaceInPlace', 'swarmCloudSpread', 'swarmKnotSpread', 'swarmDriftSeconds', 'swarmDriftPeriod', 'cmdPdCoverFactor', 'cmdLongRangeFactor', 'bbBeamTicks', 'bbFocusMax', 'bbOverheatSlow', 'bbPdFlakMax', 'falloffScatter', 'falloffPower', 'falloffWall', 'lineMinRanks', 'lineDeepRanks', 'lineDeepAbove', 'squadronMaxShips', 'stationRebuildSeconds', 'stationHullMendSeconds', 'stationRebuildYardFactor', 'radioMinGap', 'radioMaxPerMinute', 'radioMergeSeconds', 'radioStaleSeconds', 'cmdMarchLeashFactor', 'cmdLeashLong', 'cmdMarchOdds', 'cmdMarchRange', 'cmdBatteryCover', 'huntCutoff', 'huntLeash', 'huntOdds', 'cmdPursuitSwing', 'pursuitMaxSeconds', 'deployRangeFactor', 'squareTriggerRange', 'squareSpacingFactor', 'squareMinSeconds', 'cmdRankGapFactor', 'cmdStepSeconds', 'cmdStepWaitFactor', 'cmdVolleySeconds', 'cmdVolleyWindow', 'fireBarVolley', 'cmdHoldUntilFactor', 'cmdScreenAhead', 'cmdScreenFallBack', 'cmdSkirmishSpread', 'cmdBatteryGap', 'cmdSweepWide', 'cmdSweepCooldown', 'cmdStrikeSeconds', 'cmdWingOffset', 'cmdProbeSeconds', 'cmdFeintSeconds', 'cmdOrderMaxSeconds', 'cmdIdleAdvanceSeconds', 'cmdMopUpRatio', 'moraleContagionRange', 'moraleRallyRadius', 'moraleWaverStep', 'retreatThreatRange', 'cutOffHoldSeconds', 'dangerTtdScale', 'dangerShakenFactor', 'cmdSquadronBudget', 'cmdSquadronMax', 'cmdFleetMax', 'cmdFleetAt2', 'cmdFleetAt3', 'cmdFleetAt4', 'cmdFleetWornShare', 'cmdRankBumpShips', 'cmdDivisionsMin', 'cmdDivisionsPerFleet', 'cmdDivisionsMax', 'cmdFleetThinkSeconds', 'cmdCommitFactor', 'cmdHelpSeconds', 'cmdJumpInRange', 'cmdClockSeconds', 'cmdAdmiralOrderSeconds', 'cmdPounceOdds', 'cmdTriedHalfLife', 'cmdTriedRange', 'cmdFleetRallyBack', 'orgSquadronBudget', 'orgSquadronMax', 'orgRecheckShare', 'orgDivisionTarget', 'orgDivisionMax', 'comebackBehindMult', 'comebackScrewedMult', 'comebackScrewedRatio', 'campaignParkQuietSeconds', 'campaignShipsPerOfficer', 'mapSecondsPerWeek', 'campaignLogMax', 'placesClearSeconds', 'placesDecisiveRatio', 'placesDecisiveShare', 'aoSecureHours', 'warHoursPerBattleSecond', 'placesCommitSeconds', 'placesAttackOdds', 'placesAbortOdds', 'placesDefendMargin', 'placesGatherSeconds', 'placesRetrySeconds', 'placesWarnSeconds', 'captureSeconds', 'placeTickSeconds', 'placeNearFactor', 'placeDefaultRadius', 'placesSectorSize', 'placesOddsMaxCells', 'placesTheatreSeconds', 'crewRuleSquares', 'supplyReach', 'heatReach', 'designMinSquares', 'designMaxSquares', 'columnMaxFile', 'wedgeHalfAngle', 'wedgeMaxArm', 'looseSpacingFactor', 'lockTolerance', 'glideMaxDistance', 'glideSpeedFactor', 'mergeDistance', 'stragglerDistance', 'stragglerFarFactor', 'stagingThinkSeconds', 'entrySegments', 'draftJoinFactor', 'handoverSlowdown', 'divisionTargetSize', 'divisionMinSize', 'divisionMaxSize', 'divisionMinSquadrons', 'commodoreThinkMin', 'commodoreThinkMax', 'pinRangeFactor', 'divisionTargetRangeFactor', 'divisionReserveBackFactor', 'retireCheckSeconds', 'withdrawSamples', 'exploreTemperature', 'worldWidth', 'worldHeight', 'maxShipsTotal', 'gridCellsPerShip', 'maxGridCells', 'targetCandidates', 'maxSalvosPerStep', 'maxShots', 'maxFlashes',
-  'maxSimMillisPerFrame', 'maxFrameSeconds', 'maxCatchUpSteps', 'formationMatchMaxShips', 'simStep', 'maxBattleSeconds', 'gridCellFactor', 'spacingClassRatio', 'awarenessFactor', 'lookAheadFraction', 'farGoalBlocksAcross',
+  'maxSimMillisPerFrame', 'maxFrameSeconds', 'maxCatchUpSteps', 'simKeepPaceShare', 'simKeepPaceMaxMs', 'simKeepPaceFrameSeconds', 'simKeepPaceOweSeconds', 'formationMatchMaxShips', 'simStep', 'maxBattleSeconds', 'gridCellFactor', 'spacingClassRatio', 'awarenessFactor', 'lookAheadFraction', 'farGoalBlocksAcross',
   'sweepTriggerFraction', 'retargetSeconds', 'shipThinkMin', 'shipThinkMax', 'squadronThinkMin', 'squadronThinkMax', 'fleetThinkMin', 'fleetThinkMax',
   'defaultSquadronSize', 'formationSpacingFactor', 'formationMinFactor', 'targetReachFactor', 'escortRadiusFactor', 'flankMaxSeconds', 'shotSeconds', 'flashSeconds',
   'zoomInShipPixels', 'zoomOutBeyondWorld', 'cameraFitFraction', 'formationPassClear', 'formationPassAlongMax', 'formationPassFadeIn', 'formationPassFadeOut', 'leaderCloserRadius', 'flankMinDistanceFactor', 'escortThreatFactor',
@@ -13409,12 +13416,12 @@ const SETTING_MUST_BE_NON_NEGATIVE = ['stationHullMendQuiet', 'alloysNeverIdleNo
   'arrivalStandOff', 'arrivalEdgeMargin', 'arrivalEdgeHeight', 'repairOffMapMinSeconds', 'repairForwardSetback', 'repairReleaseSpreadFactor', 'repairReturnDelay',
   'learningSpeed', 'learningStep', 'learningSoftZone', 'learningMaxRoomShare', 'levelEffect', 'serviceEffectPerHour', 'adaptabilityMin', 'xpPerAction', 'xpScoreBonus', 'driftSize', 'learningMinWindow', 'learningMinActivity',
   'expectationWeight', 'successScore', 'notableScore', 'arrowThreshold', 'objectiveMinShare', 'fireBarLowStoreBelow', 'pdProtectedFactor', 'pdSlugPerMount', 'pdSlugCap', 'pdCrossingKill', 'spinalDeadband', 'safeRingMargin', 'stationHysteresis', 'holdHysteresis', 'stationLeeBelow', 'hotWeaveOutgunned', 'hotWeaveShare', 'stragglerFactorSurvival', 'probeWindow', 'probeRecover', 'probeShieldBack', 'probeLossLimit', 'probeOutgunned', 'commitOdds', 'commitDropFactor', 'aheadMax', 'screenAhead', 'marchQuantile', 'massAttackOdds', 'massAttackWaitedOdds', 'flankMinSquadrons', 'survivalPressSeconds', 'abandonAfter', 'abandonRatio', 'abandonRatioNow', 'abandonWaitReinf', 'abandonLossShare', 'dangerRadiusPad', 'surroundRadiusFactor', 'surroundShare', 'supportRadiusFactor', 'supportWant', 'lineSpacingMin', 'dangerAttackFactor', 'dangerWeakFactor', 'dangerWeakBelow'];
-const SETTING_WHOLE_NUMBERS = ['placeHoldFollow', 'aoMobilize', 'aoCharacter', 'aoAdmiral', 'cmdFormMoves', 'orderMovesObeyed', 'huntDetach', 'cmdStatLeans', 'huntDetachMax', 'huntDetachWhole', 'alloysNeverIdle', 'aoPostures', 'divisionOwner', 'longMapLine', 'cmdFormRealSize', 'cmdCapShare', 'cmdCapPerWard', 'cmdCapLongGuns', 'matchupsInPlay', 'calmShips', 'calmLookEvery', 'cmRenderParts', 'simBudgetModel', 'closeWarmAll', 'closeKeepPictures', 'allyShoveOff', 'allyNudge', 'allyNudgeEvery', 'allyNudgeChecks', 'divisionSpots', 'divisionSpotsInFight', 'allyFineGrid', 'campaignTidyLive', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftMax', 'campaignSensors', 'showBoost', 'coreLoop', 'coreLoopFleetCommand', 'coreLoopFleetDivisions', 'coreLoopRecompose', 'coreLoopAlienCommand', 'coreLoopDivisionShips', 'coreLoopDivisionMinShips', 'coreLoopStreamMinShips', 'coreLoopLine', 'coreLoopLineLooks', 'coreLoopBerths', 'divisionMergeSmall', 'mergeFarOutOfContact', 'divisionMergeSlack', 'repairOffMap', 'supplyNoteWeeks', 'divisionPaceModel', 'swarmFormations', 'campaignBuildDays', 'campaignLiveEnterShips', 'cmdMaxAbreast', 'divisionFormations', 'doctrineModel', 'doctrineAlienClose', 'facingByGuns', 'facingVsTarget', 'facingTwoSided', 'freshSide', 'crossT', 'facingDodge', 'doctrineFindBattles', 'doctrineReviewMinLosses', 'doctrineReviewWeeks', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerMinLoss', 'ledgerAssaultWeeks', 'devCapStart', 'devCapAlien', 'devMaxBuilds', 'bbBeams', 'bbHeatModel', 'bbMissiles', 'bbPointDefence', 'bbBeamTicks', 'bbMissileRetries', 'bbPdFlakMax', 'bbLineOfFire', 'lineMinRanks', 'lineDeepRanks', 'lineDeepAbove', 'squadronMaxShips', 'tightOrbit', 'stationRebuild', 'radioMaxPerMinute', 'cmdReviewBattles', 'huntMaxShips', 'commandModel', 'cmdPassThrough', 'cmdSquadronBudget', 'cmdSquadronMax', 'cmdFleetMax', 'cmdRankBumpShips', 'cmdDivisionsMin', 'cmdDivisionsPerFleet', 'cmdDivisionsMax', 'orgScale', 'orgSquadronBudget', 'orgSquadronMax', 'orgDivisionTarget', 'orgDivisionMax', 'campaignLateAdmiral', 'campaignStartKit', 'placesFacilityApart', 'campaignFacilityApart', 'campaignStragglerShips', 'alienGarrisonCap', 'alienGatherMinShips', 'alienFirstPool', 'campaignFallenMax', 'placesHoldClear', 'campaignHoldClear', 'campaignPoolCap', 'campaignGarrisonCap', 'minLaunchShips', 'campaignYardShips', 'campaignModel', 'officerCarryOver', 'campaignAutosave', 'campaignLogMax', 'placesRetry', 'placesSweep', 'placesDecisive', 'siegeYardSlowdown', 'placesModel', 'placesAllowAbandon', 'placesTheatre', 'placesMaxOpposite', 'designModel', 'bureauBattle', 'moduleDamage', 'pressModel', 'partLossCall', 'crewRuleSquares', 'supplyReach', 'heatReach', 'exhaustLane', 'designMinSquares', 'designMaxSquares', 'survivalModel', 'allowAbandon', 'flankMinSquadrons', 'weaponModel', 'maxMissiles', 'pdSlugMaxMounts', 'missileInboundCall', 'formationModel', 'lockStep', 'columnMaxFile', 'wedgeMaxArm', 'reorgModel', 'disbandAt', 'fallenKeep', 'stagingModel', 'entrySegments', 'minNewSquadron', 'successionMode', 'woundedBattles', 'divisionTier', 'divisionTargetSize', 'divisionMinSize', 'divisionMaxSize', 'divisionMinSquadrons', 'rosterHistoryKeep', 'repertoireSize', 'aceKills', 'scarShakenBattles', 'maxShipsTotal', 'maxGridCells', 'targetCandidates', 'maxSalvosPerStep', 'maxShots', 'maxFlashes', 'formationMatchMaxShips', 'defaultSquadronSize',
+const SETTING_WHOLE_NUMBERS = ['placeHoldFollow', 'aoMobilize', 'aoCharacter', 'aoAdmiral', 'cmdFormMoves', 'orderMovesObeyed', 'huntDetach', 'cmdStatLeans', 'huntDetachMax', 'huntDetachWhole', 'alloysNeverIdle', 'aoPostures', 'divisionOwner', 'longMapLine', 'cmdFormRealSize', 'cmdCapShare', 'cmdCapPerWard', 'cmdCapLongGuns', 'matchupsInPlay', 'calmShips', 'calmLookEvery', 'cmRenderParts', 'simBudgetModel', 'simKeepPace', 'closeWarmAll', 'closeKeepPictures', 'allyShoveOff', 'allyNudge', 'allyNudgeEvery', 'allyNudgeChecks', 'divisionSpots', 'divisionSpotsInFight', 'allyFineGrid', 'campaignTidyLive', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftMax', 'campaignSensors', 'showBoost', 'coreLoop', 'coreLoopFleetCommand', 'coreLoopFleetDivisions', 'coreLoopRecompose', 'coreLoopAlienCommand', 'coreLoopDivisionShips', 'coreLoopDivisionMinShips', 'coreLoopStreamMinShips', 'coreLoopLine', 'coreLoopLineLooks', 'coreLoopBerths', 'divisionMergeSmall', 'mergeFarOutOfContact', 'divisionMergeSlack', 'repairOffMap', 'supplyNoteWeeks', 'divisionPaceModel', 'swarmFormations', 'campaignBuildDays', 'campaignLiveEnterShips', 'cmdMaxAbreast', 'divisionFormations', 'doctrineModel', 'doctrineAlienClose', 'facingByGuns', 'facingVsTarget', 'facingTwoSided', 'freshSide', 'crossT', 'facingDodge', 'doctrineFindBattles', 'doctrineReviewMinLosses', 'doctrineReviewWeeks', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerMinLoss', 'ledgerAssaultWeeks', 'devCapStart', 'devCapAlien', 'devMaxBuilds', 'bbBeams', 'bbHeatModel', 'bbMissiles', 'bbPointDefence', 'bbBeamTicks', 'bbMissileRetries', 'bbPdFlakMax', 'bbLineOfFire', 'lineMinRanks', 'lineDeepRanks', 'lineDeepAbove', 'squadronMaxShips', 'tightOrbit', 'stationRebuild', 'radioMaxPerMinute', 'cmdReviewBattles', 'huntMaxShips', 'commandModel', 'cmdPassThrough', 'cmdSquadronBudget', 'cmdSquadronMax', 'cmdFleetMax', 'cmdRankBumpShips', 'cmdDivisionsMin', 'cmdDivisionsPerFleet', 'cmdDivisionsMax', 'orgScale', 'orgSquadronBudget', 'orgSquadronMax', 'orgDivisionTarget', 'orgDivisionMax', 'campaignLateAdmiral', 'campaignStartKit', 'placesFacilityApart', 'campaignFacilityApart', 'campaignStragglerShips', 'alienGarrisonCap', 'alienGatherMinShips', 'alienFirstPool', 'campaignFallenMax', 'placesHoldClear', 'campaignHoldClear', 'campaignPoolCap', 'campaignGarrisonCap', 'minLaunchShips', 'campaignYardShips', 'campaignModel', 'officerCarryOver', 'campaignAutosave', 'campaignLogMax', 'placesRetry', 'placesSweep', 'placesDecisive', 'siegeYardSlowdown', 'placesModel', 'placesAllowAbandon', 'placesTheatre', 'placesMaxOpposite', 'designModel', 'bureauBattle', 'moduleDamage', 'pressModel', 'partLossCall', 'crewRuleSquares', 'supplyReach', 'heatReach', 'exhaustLane', 'designMinSquares', 'designMaxSquares', 'survivalModel', 'allowAbandon', 'flankMinSquadrons', 'weaponModel', 'maxMissiles', 'pdSlugMaxMounts', 'missileInboundCall', 'formationModel', 'lockStep', 'columnMaxFile', 'wedgeMaxArm', 'reorgModel', 'disbandAt', 'fallenKeep', 'stagingModel', 'entrySegments', 'minNewSquadron', 'successionMode', 'woundedBattles', 'divisionTier', 'divisionTargetSize', 'divisionMinSize', 'divisionMaxSize', 'divisionMinSquadrons', 'rosterHistoryKeep', 'repertoireSize', 'aceKills', 'scarShakenBattles', 'maxShipsTotal', 'maxGridCells', 'targetCandidates', 'maxSalvosPerStep', 'maxShots', 'maxFlashes', 'formationMatchMaxShips', 'defaultSquadronSize',
   'farGoalBlocksAcross', 'debugMaxLines', 'maxTriangleShips', 'sectorsAcross', 'eventLogMax', 'logPanelLines', 'logBatchDetail', 'lineOrderRetries',
   'reportSquadronRows', 'reportPacketRows', 'reinforceMaxSquadrons', 'flankMaxSquadrons', 'counterMaxSquadrons', 'withdrawSamples', 'versionLogMax', 'serviceLastMax', 'serviceHistoryMax', 'serviceEventsMax', 'dossierLastActions', 'reportOfficerRows',
   'movementModel', 'hitModel', 'tacticsModel', 'flightAssist', 'retreatFiring', 'simultaneousFire', 'officerModel', 'strengthMapSteps', 'oddsCellsPerRadius', 'oddsMaxCells', 'maxRouts', 'maxBreakOffs', 'overheatFallback', 'smartTargetCandidates'];
 // The switches (section 1b, "The rules in force"): the values each may have, and the names the code uses for them.
-const SETTING_CHOICES = { placeHoldFollow: [0, 1], aoMobilize: [0, 1], aoCharacter: [0, 1], aoAdmiral: [0, 1], cmdFormMoves: [0, 1], orderMovesObeyed: [0, 1], huntDetach: [0, 1], cmdStatLeans: [0, 1], huntDetachWhole: [0, 1], aoPostures: [0, 1], divisionOwner: [0, 1], admiralNeedsModel: [0, 1], longMapLine: [0, 1], cmdFormRealSize: [0, 1], cmdCapShare: [0, 1], cmdCapLongGuns: [0, 1], moonOrbits: [0, 1], dockModel: [0, 1], dockSpareModel: [0, 1], dockSpareSwarm: [0, 1], scuttleOnLedger: [0, 1], swarmDockModel: [0, 1], dockEvoModel: [0, 1], dockEvoSwarmSplit: [0, 1], matchupsInPlay: [0, 1], calmShips: [0, 1], cmRenderParts: [0, 1], simBudgetModel: [0, 1], closeWarmAll: [0, 1], closeKeepPictures: [0, 1], allyShoveOff: [0, 1], allyNudge: [0, 1], divisionSpots: [0, 1], divisionSpotsInFight: [0, 1], campaignSensors: [0, 1], showBoost: [0, 1], coreLoop: [0, 1], coreLoopLine: [0, 1], coreLoopFleetCommand: [0, 1], coreLoopFleetDivisions: [0, 1], coreLoopRecompose: [0, 1], coreLoopAlienCommand: [0, 1], divisionMergeSmall: [0, 1], mergeFarOutOfContact: [0, 1], berthPairingModel: [0, 1], swarmNestModel: [0, 1], swarmGrowUpModel: [0, 1], swarmOpeningSpread: [0, 1], swarmLifeModel: [0, 1], swarmSurfaceModel: [0, 1], swarmEatsEnemies: [0, 1], swarmEatsHatchlings: [0, 1], fighterHangarModel: [0, 1], fighterLaunchModel: [0, 1], hangarRefillFromFleet: [0, 1], hangarOrphansStay: [0, 1], tenderDocking: [0, 1], supplyRuns: [0, 1], cargoKept: [0, 1], ferryRuns: [0, 1], stationFighterGuard: [0, 1], stationNoSquadron: [0, 1], stationCrewSquad: [0, 1], stationPass: [0, 1], droneJamModel: [0, 1], divisionPaceModel: [0, 1], swarmFormations: [0, 1], facingVsTarget: [0, 1], facingTwoSided: [0, 1], freshSide: [0, 1], crossT: [0, 1], facingDodge: [0, 1], placesPicket: [0, 1], placesPicketSwarm: [0, 1], campaignStandoffPark: [0, 1], placesWithdrawOrder: [0, 1], placesWithdrawGuardDry: [0, 1], campaignLiveYardDawn: [0, 1], longMapReach: [0, 1], longMapLeash: [0, 1], longMapFog: [0, 1], sleepShips: [0, 1, 2], campaignResourceGate: [0, 1], bbAcid: [0, 1], bbRegrow: [0, 1], bbBurst: [0, 1], bbMissileStoreBySize: [0, 1], bbBeams: [0, 1], bbHeatModel: [0, 1], bbMissiles: [0, 1], bbPointDefence: [0, 1], bbLineOfFire: [0, 1], tightOrbit: [0, 1], campaignStartAtEarth: [0, 1], placesCrush: [0, 1], placesMassAttack: [0, 1], assaultSendAll: [0, 1], assaultReachOnly: [0, 1], frontReachOnly: [0, 1], placesNoLeapfrog: [0, 1], placesClaimKeeps: [0, 1], enemyWaitTurnBack: [0, 1], placesClaimFirm: [0, 1], placesSwarmPress: [0, 1], campaignSupplyLine: [0, 1], commandModel: [0, 1], stationRebuild: [0, 1], stationHullMend: [0, 1], cmdHelpMarches: [0, 1], cmdOpCommit: [0, 1, 2], cmdPassThrough: [0, 1, 2], orgScale: [0, 1], campaignLateAdmiral: [0, 1], campaignStartKit: [0, 1], placesFacilityApart: [0, 1], campaignFacilityApart: [0, 1], placesHoldClear: [0, 1], campaignHoldClear: [0, 1], campaignModel: [0, 1], officerCarryOver: [0, 1], campaignAutosave: [0, 1], placesRetry: [0, 1], placesSweep: [0, 1], placesDecisive: [0, 1], siegeYardSlowdown: [0, 1], placesModel: [0, 1], placesAllowAbandon: [0, 1], placesTheatre: [0, 1], designModel: [0, 1, 2], bureauBattle: [0, 1], moduleDamage: [0, 1], pressModel: [0, 1], partLossCall: [0, 1], survivalModel: [0, 1], allowAbandon: [0, 1], weaponModel: [0, 1], formationModel: [0, 1], lockStep: [0, 1], reorgModel: [0, 1], movementModel: [0, 1], hitModel: [0, 1, 2], tacticsModel: [0, 1], flightAssist: [0, 1], retreatFiring: [0, 1], overheatFallback: [0, 1], newSetupDefaults: [0, 1], unmannedRearGuard: [0, 1], simultaneousFire: [0, 1], officerModel: [0, 1], promoteNeedsVacancy: [0, 1], divisionTier: [0, 1], successionMode: [0, 1, 2], stagingModel: [0, 1] };
+const SETTING_CHOICES = { placeHoldFollow: [0, 1], aoMobilize: [0, 1], aoCharacter: [0, 1], aoAdmiral: [0, 1], cmdFormMoves: [0, 1], orderMovesObeyed: [0, 1], huntDetach: [0, 1], cmdStatLeans: [0, 1], huntDetachWhole: [0, 1], aoPostures: [0, 1], divisionOwner: [0, 1], admiralNeedsModel: [0, 1], longMapLine: [0, 1], cmdFormRealSize: [0, 1], cmdCapShare: [0, 1], cmdCapLongGuns: [0, 1], moonOrbits: [0, 1], dockModel: [0, 1], dockSpareModel: [0, 1], dockSpareSwarm: [0, 1], scuttleOnLedger: [0, 1], swarmDockModel: [0, 1], dockEvoModel: [0, 1], dockEvoSwarmSplit: [0, 1], matchupsInPlay: [0, 1], calmShips: [0, 1], cmRenderParts: [0, 1], simBudgetModel: [0, 1], simKeepPace: [0, 1], closeWarmAll: [0, 1], closeKeepPictures: [0, 1], allyShoveOff: [0, 1], allyNudge: [0, 1], divisionSpots: [0, 1], divisionSpotsInFight: [0, 1], campaignSensors: [0, 1], showBoost: [0, 1], coreLoop: [0, 1], coreLoopLine: [0, 1], coreLoopFleetCommand: [0, 1], coreLoopFleetDivisions: [0, 1], coreLoopRecompose: [0, 1], coreLoopAlienCommand: [0, 1], divisionMergeSmall: [0, 1], mergeFarOutOfContact: [0, 1], berthPairingModel: [0, 1], swarmNestModel: [0, 1], swarmGrowUpModel: [0, 1], swarmOpeningSpread: [0, 1], swarmLifeModel: [0, 1], swarmSurfaceModel: [0, 1], swarmEatsEnemies: [0, 1], swarmEatsHatchlings: [0, 1], fighterHangarModel: [0, 1], fighterLaunchModel: [0, 1], hangarRefillFromFleet: [0, 1], hangarOrphansStay: [0, 1], tenderDocking: [0, 1], supplyRuns: [0, 1], cargoKept: [0, 1], ferryRuns: [0, 1], stationFighterGuard: [0, 1], stationNoSquadron: [0, 1], stationCrewSquad: [0, 1], stationPass: [0, 1], droneJamModel: [0, 1], divisionPaceModel: [0, 1], swarmFormations: [0, 1], facingVsTarget: [0, 1], facingTwoSided: [0, 1], freshSide: [0, 1], crossT: [0, 1], facingDodge: [0, 1], placesPicket: [0, 1], placesPicketSwarm: [0, 1], campaignStandoffPark: [0, 1], placesWithdrawOrder: [0, 1], placesWithdrawGuardDry: [0, 1], campaignLiveYardDawn: [0, 1], longMapReach: [0, 1], longMapLeash: [0, 1], longMapFog: [0, 1], sleepShips: [0, 1, 2], campaignResourceGate: [0, 1], bbAcid: [0, 1], bbRegrow: [0, 1], bbBurst: [0, 1], bbMissileStoreBySize: [0, 1], bbBeams: [0, 1], bbHeatModel: [0, 1], bbMissiles: [0, 1], bbPointDefence: [0, 1], bbLineOfFire: [0, 1], tightOrbit: [0, 1], campaignStartAtEarth: [0, 1], placesCrush: [0, 1], placesMassAttack: [0, 1], assaultSendAll: [0, 1], assaultReachOnly: [0, 1], frontReachOnly: [0, 1], placesNoLeapfrog: [0, 1], placesClaimKeeps: [0, 1], enemyWaitTurnBack: [0, 1], placesClaimFirm: [0, 1], placesSwarmPress: [0, 1], campaignSupplyLine: [0, 1], commandModel: [0, 1], stationRebuild: [0, 1], stationHullMend: [0, 1], cmdHelpMarches: [0, 1], cmdOpCommit: [0, 1, 2], cmdPassThrough: [0, 1, 2], orgScale: [0, 1], campaignLateAdmiral: [0, 1], campaignStartKit: [0, 1], placesFacilityApart: [0, 1], campaignFacilityApart: [0, 1], placesHoldClear: [0, 1], campaignHoldClear: [0, 1], campaignModel: [0, 1], officerCarryOver: [0, 1], campaignAutosave: [0, 1], placesRetry: [0, 1], placesSweep: [0, 1], placesDecisive: [0, 1], siegeYardSlowdown: [0, 1], placesModel: [0, 1], placesAllowAbandon: [0, 1], placesTheatre: [0, 1], designModel: [0, 1, 2], bureauBattle: [0, 1], moduleDamage: [0, 1], pressModel: [0, 1], partLossCall: [0, 1], survivalModel: [0, 1], allowAbandon: [0, 1], weaponModel: [0, 1], formationModel: [0, 1], lockStep: [0, 1], reorgModel: [0, 1], movementModel: [0, 1], hitModel: [0, 1, 2], tacticsModel: [0, 1], flightAssist: [0, 1], retreatFiring: [0, 1], overheatFallback: [0, 1], newSetupDefaults: [0, 1], unmannedRearGuard: [0, 1], simultaneousFire: [0, 1], officerModel: [0, 1], promoteNeedsVacancy: [0, 1], divisionTier: [0, 1], successionMode: [0, 1, 2], stagingModel: [0, 1] };
 // Rule switches that an imported file may lack: a missing one is read as 0 (the file was made before the rule existed), not as this version's default (stage 12).
 const SETTING_SWITCHES_OLD_FILES = ['commandModel', 'orgScale', 'movementModel', 'hitModel', 'tacticsModel', 'newSetupDefaults', 'simultaneousFire', 'officerModel', 'divisionTier', 'stagingModel', 'reorgModel', 'formationModel', 'lockStep', 'weaponModel', 'survivalModel', 'designModel', 'moduleDamage', 'pressModel', 'placesModel'];
 const MOVE_CLASSIC = 0, MOVE_THRUST = 1;
@@ -27589,7 +27596,7 @@ function pulseWakeStep(deferred) {
     if (was === q.n) continue;
     pulseLastN.set(i, q.n);
     if (was === undefined) continue;                // the first look at a ship only starts her count
-    if (shipSide[i] === 0 && !d.fusion && typeof campaign !== 'undefined' && campaign && campaign.battle && campaign.battle.ao) pulseLitWeek[campaign.battle.ao] = 1;
+    if (shipSide[i] === 0 && !d.fusion && gameWarHere() && campaign.battle && campaign.battle.ao) pulseLitWeek[campaign.battle.ao] = 1;
     const pt = pulseTypeOf(shipType[i]), g = pulseGeom(i, pt, d);
     const reach = g.hw * PULSE_RULES.wakeLen, bx = -g.c, by = -g.s;   // straight astern
     for (let j = 0; j < highWater; j++) {
@@ -29331,8 +29338,8 @@ function syPicture() {
 let bbScars = {};                      // design id -> { W, H, hits: Int32Array(W*H), dead: Int32Array(W*H), out: Int32Array(parts), ships, lost }
 let bbLastCell = new Int32Array(0);    // per ship slot: the square the last damaging hit landed on (-1 = none yet)
 let SCARS_SESSION = {};                // the store outside a campaign (this page only)
-function scarsStore() {
-  if (typeof campaign !== 'undefined' && campaign) { if (!campaign.scars || typeof campaign.scars !== 'object' || Array.isArray(campaign.scars)) campaign.scars = {}; return campaign.scars; }
+function scarsStore() {   // (v228.0, section 7i5) the war's, only while no other mode has the game
+  if (gameWarHere()) { if (!campaign.scars || typeof campaign.scars !== 'object' || Array.isArray(campaign.scars)) campaign.scars = {}; return campaign.scars; }
   return SCARS_SESSION;
 }
 function scarsReset() { bbScars = {}; if (bbLastCell.length !== MAX_SHIPS) bbLastCell = new Int32Array(MAX_SHIPS); bbLastCell.fill(-1); }
@@ -35748,7 +35755,8 @@ function campaignRand() {
 
 // ---- The campaign object ----
 let campaign = null;                                     // the running campaign, or null
-function campaignOn() { return SETTINGS.campaignModel === 1 && campaign !== null; }
+// (v228.0, section 7i5) and only while no other mode (Last Stand, the Proving grounds) owns the game
+function campaignOn() { return SETTINGS.campaignModel === 1 && campaign !== null && !(typeof gameOtherModeOwns === 'function' && gameOtherModeOwns()); }
 
 // A fresh campaign at week 0 on the map of the enemy faction: every AO secured by its starting owner with every place theirs and a standing station, the
 // boost rows, empty pools and fleets, the front at `front` (the AO the first battle is at: Mars), parked. opts: { seed, enemy, bonus (a hand-given bonus AO),
@@ -58520,8 +58528,8 @@ function cmdFormationById(id) { for (const F of DIVISION_FORMATIONS) if (F.id ==
 // The doctrine record of a side (the campaign's when one runs, so it is saved and loaded with it; else this battle's own).
 function cmdFormDoctrineNew() { const pref = {}; for (const F of DIVISION_FORMATIONS) pref[F.id] = 0; return { pref: pref, jobs: { cap: 'auto', pd: 'auto', longRange: 'auto' }, roles: {}, designs: {}, tally: {}, exp: {}, habits: {} }; }
 const cmdFormDoctrineLocal = [null, null];
-function cmdFormDoctrine(side) {
-  if (typeof campaign !== 'undefined' && campaign) { if (!Array.isArray(campaign.formDoctrine) || campaign.formDoctrine.length !== 2) campaign.formDoctrine = [cmdFormDoctrineNew(), cmdFormDoctrineNew()]; return campaign.formDoctrine[side]; }
+function cmdFormDoctrine(side) {   // (v228.0, section 7i5) the war's, only while no other mode has the game
+  if (gameWarHere()) { if (!Array.isArray(campaign.formDoctrine) || campaign.formDoctrine.length !== 2) campaign.formDoctrine = [cmdFormDoctrineNew(), cmdFormDoctrineNew()]; return campaign.formDoctrine[side]; }
   if (!cmdFormDoctrineLocal[side]) cmdFormDoctrineLocal[side] = cmdFormDoctrineNew();
   return cmdFormDoctrineLocal[side];
 }
@@ -58788,7 +58796,7 @@ function cmdFormationsBattleEnd() {
       doc.exp[e.id] = clampNumber((doc.exp[e.id] || 0) + SETTINGS.cmdFormationLearn * score, -1, 1);
       const rec = dv.officer && dv.officer.rosterId ? rosterById(dv.officer.rosterId) : null;
       if (rec) { if (!rec.formLean) rec.formLean = {}; rec.formLean[e.id] = clampNumber((rec.formLean[e.id] || 0) + SETTINGS.cmdFormationLearn * score, -0.5, 0.5); }
-      if (doc.exp[e.id] >= 0.5 && !doc.habits[e.id] && typeof campaign !== 'undefined' && campaign) {
+      if (doc.exp[e.id] >= 0.5 && !doc.habits[e.id] && gameWarHere()) {
         doc.habits[e.id] = true;
         campaignLog('doctrine', (side === BLUE ? 'Our Commodores now favour the ' : 'The enemy\'s Commodores now favour the ') + cmdFormationById(e.id).name.toLowerCase() + '.');
       }
@@ -62135,7 +62143,7 @@ function fmReset() {
   for (let s = 0; s < 2; s++) {
     fmStats[s] = fmStatsNew();
     fmHuntSide[s] = { s: 0, w: 0, at: 0 };
-    if (fmHuntOn() && typeof campaign !== 'undefined' && campaign && Array.isArray(campaign.huntMem) && campaign.huntMem[s]) { fmHuntSide[s].s = num(campaign.huntMem[s].s, 0); fmHuntSide[s].w = Math.max(0, num(campaign.huntMem[s].w, 0)); }
+    if (fmHuntOn() && gameWarHere() && Array.isArray(campaign.huntMem) && campaign.huntMem[s]) { fmHuntSide[s].s = num(campaign.huntMem[s].s, 0); fmHuntSide[s].w = Math.max(0, num(campaign.huntMem[s].w, 0)); }
   }
 }
 
@@ -62279,7 +62287,7 @@ function fmMemAdd(dv, score) {
   const side = dv.side, S = fmHuntSide[side];
   fmMemFade(S); S.s += score; S.w += 1;
   if (dv.officer) { const m = fmMemOf(dv.officer); fmMemFade(m); m.s += score; m.w += 1; }
-  if (typeof campaign !== 'undefined' && campaign && SETTINGS.campaignModel === 1) {
+  if (gameWarHere() && SETTINGS.campaignModel === 1) {
     if (!Array.isArray(campaign.huntMem) || campaign.huntMem.length !== 2) campaign.huntMem = [{ s: 0, w: 0 }, { s: 0, w: 0 }];
     campaign.huntMem[side] = { s: Math.round(S.s * 1000) / 1000, w: Math.round(S.w * 1000) / 1000 };
   }
@@ -63417,7 +63425,7 @@ function fgNoteSpawn(slot) {
 // The station hangars of a facility ship: { n, type } or null. Ours by 06p's pick (our newest fighter that we can really build); the Swarm's by its tier's hangars, filled with Mites.
 function fgStationHangars(o) {
   if (lsActive()) return lsStationHangars(o);                     // (v100.0, section 8h) the Last Stand's station: its own hangars
-  if (!o || o.place < 0 || typeof campaignStationHangars !== 'function' || !campaign) return null;
+  if (!o || o.place < 0 || typeof campaignStationHangars !== 'function' || !gameWarHere()) return null;   // (v228.0, section 7i5) the war's, only while no other mode has the game
   const placeId = battlePlaces[o.place] ? battlePlaces[o.place].id : null;
   if (!placeId) return null;
   if (o.owner === 0) { const h = campaignStationHangars(placeId); if (!h || !h.rec || !(h.n > 0)) return null; const f = typeIndexById(h.rec.id); return f >= 0 && SHIP_TYPES[f].design ? { n: h.n, type: f } : null; }   // (v68) a tier 4 or 5 station may hold small craft
@@ -69692,7 +69700,7 @@ function docBattleReset() {
   docB.serial++; docB.kills.clear(); docB.next = 0; docB.seen = {}; docB.lossesBySq.clear(); docB.tactics = []; docB.notes = [];
 }
 function docCampaign() {
-  if (typeof campaign === 'undefined' || !campaign) return null;
+  if (!gameWarHere()) return null;                              // (v228.0, section 7i5) the war's, only while no other mode has the game
   const c = campaign.doctrine && typeof campaign.doctrine === 'object' ? campaign.doctrine : (campaign.doctrine = {});
   for (const k of ['learn', 'kl', 'intel', 'reviews', 'aide', 'follow']) if (!c[k] || typeof c[k] !== 'object' || Array.isArray(c[k])) c[k] = {};
   if (!Array.isArray(c.findings)) c.findings = [];
@@ -70740,7 +70748,7 @@ function drawPixelLayer(w, h, z) {
   const offX = w / 2 - camera.x * z, offY = h / 2 - camera.y * z;   // screen position = world position * zoom + offset
   if (!backdropFillPixels(w, h, z)) { pixels.fill(PIXEL_BACKGROUND); starfieldPixels(w, h, camera.x * z, camera.y * z); }   // (v24, section 6c) the planet backdrops of a places map under the dots, else the plain background (v161.0, section 6c2: and the stars)
 
-  if (UI_SETTINGS.engineGlow) fxDrawEnginePixels(w, h, z, offX, offY);                          // (v101.8, section 6w) engine trails and a bright stern pixel, under the ship dots
+  if (UI_SETTINGS.engineGlow && !unitFar) fxDrawEnginePixels(w, h, z, offX, offY);   // (v227.0: none under the unit markers, so the faint ships stay calm)                      // (v101.8, section 6w) engine trails and a bright stern pixel, under the ship dots
 
   // Ships: squares at least 2 pixels wide (a bigger ship, or a closer zoom, gives a bigger square: there is no upper limit).
   for (let i = 0; i < highWater; i++) {
@@ -70751,8 +70759,10 @@ function drawPixelLayer(w, h, z) {
     if (fx < -d || fx >= w + d || fy < -d || fy >= h + d) continue; // off screen (a big dot can reach in from outside the screen)
     shipsDrawn++;
     if (typeDrawLen[shipType[i]] * z >= DOTS_UNTIL_PIXELS) shipsDrawnBig++;   // (v126.3, v136.0) big on screen
+    unitCountShip(shipType[i], z);   // (v227.0, section 6x2) how big the ships on screen are
     const pg = paintOn ? paintGroupOfShip(i) : shipSide[i];
-    fillSquare(fx | 0, fy | 0, d, pg < 2 ? shipPixelFor(pg, shipType[i]) : paintPixels[pg], w, h);   // (v101.1: an enemy ship in its faction's colour)   // (v25, section 7p: Fleet shades and the selection)
+    const px = pg < 2 ? shipPixelFor(pg, shipType[i]) : paintPixels[pg];
+    fillSquare(fx | 0, fy | 0, d, unitFar && !SHIP_TYPES[shipType[i]].immobile ? unitFaintPixel(px) : px, w, h);   // (v227.0, section 6x2) under the unit markers the ships are faint   // (v101.1: an enemy ship in its faction's colour)   // (v25, section 7p: Fleet shades and the selection)
   }
 
   // Shots: (v101.5, section 6w) short lines in their weapon's colour, picked by weight class with each squadron's voice kept (they were a 2-pixel dot each)
@@ -70883,11 +70893,11 @@ function draw() {
   drawLenRefresh();                                              // (v110.0, section 6b) each ship type's drawn length this frame
   fogPrepare();                                                  // (v154.0, section 6x) the long map's fog: which enemy ships this frame may show
   paintPrepare();                                                // (v25, section 7p) Fleet shades and the selected Fleet or Division: who is drawn in which colour
-  chooseDrawMode();
+  if (unitMarkersOn()) chooseUnitMode(); else { unitFar = false; unitLenAll = unitLenMid = unitLenBig = 0; chooseDrawMode(); }   // (v227.0, section 6x2) unit markers take the place of the dots
   shipsDrawnLastFrame = shipsDrawn;
   shipsDrawn = 0; shipsDrawnBig = 0;
 
-  if (dotMode) {
+  if (dotMode || unitFar) {
     fxRec = false;                                               // (v33, section 6w) no close effects among the dots
     // Fast path: write dots into the pixel buffer, copy it to the screen in one go, then add the border.
     drawPixelLayer(w, h, z);
@@ -70898,6 +70908,7 @@ function draw() {
     ctx.strokeStyle = SETTINGS.colors.border;
     ctx.strokeRect(0, 0, SETTINGS.worldWidth, SETTINGS.worldHeight);
     if (placesTracked()) drawPlaces(w, h, z, true);              // (v21, section 5w) the places: outlines and names only, over the dots
+    if (unitFar) drawUnitMarkers(w, h, z);                       // (v227.0, section 6x2) squadron chips, Division plates and Fleet counters over the faint ships
     // (v127.0) the titans' weapons are always shown, among the dots too: strips, lances, siege missiles, their bursts and clouds, on top of everything
     if (typeof drawTitanBeams === 'function') drawTitanBeams(camera.x - w / (2 * z), camera.y - h / (2 * z), camera.x + w / (2 * z), camera.y + h / (2 * z));
     return;
@@ -70930,7 +70941,7 @@ function draw() {
   fxFrameStart(left, top, right, bottom);                        // (v33, section 6w) the close effects: one step, on battle time
   fxDrawUnder(z);                                                // smoke, missile trails and wreck pieces, under the ships
   if (UI_SETTINGS.engineGlow) fxDrawEngines(left, top, right, bottom, z);                    // (v101.8, section 6w) engine trails and plumes in each drive's colour, under the ships
-  if (UI_SETTINGS.icons && shipsDrawnLastFrame <= UI_SETTINGS.iconMaxShips) drawShipIcons(left, top, right, bottom, minSize);   // (v17, section 6b)
+  if (UI_SETTINGS.icons && (shipsDrawnLastFrame <= UI_SETTINGS.iconMaxShips || unitMarkersOn())) drawShipIcons(left, top, right, bottom, minSize);   // (v17, section 6b)
   else drawShips(left, top, right, bottom, minSize);
   if (typeof pulseDrawAll === 'function') pulseDrawAll(left, top, right, bottom, z);   // (v181.0, 05f-2d) the pulse drives: plate, flash, plasma fan, fallout
   ctx.lineWidth = 1.5 / z;
@@ -70966,6 +70977,7 @@ function draw() {
 const UI_SETTINGS = {
   hudModel: 1,               // (v105.7) always 1, the battle screen: the old v16 panel can no longer be chosen (an old saved 0 is ignored)
   icons: 1,                  // 1 = ships are drawn as icons when they are big enough on screen; 0 = the v16 triangles
+  unitMarkers: 1,            // (v227.0, section 6x2) 1 = zoomed far out, faint ships with squadron, Division and Fleet markers on top, and no triangles; 0 = the v226 triangles and dots
   iconMaxShips: 5000,        // more ships than this on screen: triangles for that frame (dot mode, maxTriangleShips in section 1, usually starts first)
   iconSilhouettePixels: 6,   // a ship smaller than this on screen is a triangle
   iconFullPixels: 14,        // ... from this size it is the full drawing (in between: a plain silhouette, because the fine seams blur when small)
@@ -71314,7 +71326,7 @@ function drawShipIcons(left, top, right, bottom, minSize) {
       const len = Math.max(typeDrawLen[t], minSize * UI_SETTINGS.iconScale * iconTypeScale[t] * DRAWN_SIZE.baseShare);
       const px = len * z / iconFillOf(shipIconFor(t, side));
       iconPx[st] = px;
-      iconLod[st] = px < UI_SETTINGS.iconSilhouettePixels ? ICON_TRIANGLE : (px < UI_SETTINGS.iconFullPixels ? ICON_SILHOUETTE : ICON_FULL);
+      iconLod[st] = px < UI_SETTINGS.iconSilhouettePixels && !unitMarkersOn() ? ICON_TRIANGLE : (px < UI_SETTINGS.iconFullPixels ? ICON_SILHOUETTE : ICON_FULL);   // (v227.0, section 6x2: with unit markers on there are no triangles)
       // (v126.2) a big icon too comes from its sprite (at most 512 pixels, drawn larger), so it keeps its look: it used to be painted flat
       iconSprite[st] = iconLod[st] === ICON_TRIANGLE ? null : shipSprite(shipIconFor(t, side), shipColorFor(side, t), px, iconLod[st] === ICON_SILHOUETTE, echoLookOfShip(side, t));
     }
@@ -71334,6 +71346,7 @@ function drawShipIcons(left, top, right, bottom, minSize) {
       const x = shipX[i], y = shipY[i];
       if (x < left || x > right || y < top || y > bottom) continue;
       shipsDrawn++;
+      unitCountShip(shipType[i], z);   // (v227.0, section 6x2) how big the ships on screen are
       const L = triangleLen(shipType[i], minSize), nose = L * DRAWN_SIZE.triangleNose, back = L - nose, wing = L * DRAWN_SIZE.triangleWide * 0.5;   // (v110.0) as long as the icon
       const c = shipCos[i], s = shipSin[i];
       const backX = x - c * back, backY = y - s * back;
@@ -71357,6 +71370,7 @@ function drawShipIcons(left, top, right, bottom, minSize) {
     if (x < left || x > right || y < top || y > bottom) continue;
     shipsDrawn++;
     if (typeDrawLen[shipType[i]] * z >= DOTS_UNTIL_PIXELS) shipsDrawnBig++;   // (v126.3, v136.0) big on screen (chooseDrawMode, section 6)
+    unitCountShip(shipType[i], z);   // (v227.0, section 6x2) how big the ships on screen are
     const px = iconPx[st], sx = x * z + offX, sy = y * z + offY;
     if (lod === ICON_FACILITY) { if (!closeDrawStation(i, sx, sy, px, side)) drawFacilityMarker(sx, sy, px, side); continue; }
     const c = shipCos[i], s = shipSin[i];
@@ -77371,6 +77385,328 @@ function fogHidesDivision(dv) {
   return true;
 }
 // =====================================================================
+// 6x2. UNIT MARKERS AT FAR ZOOM  (v227.0, Alex 12 Nov 2026: "have the far LOD art show squadrons, divisions, or entire fleets rather than individual
+//      ships"; he picked the Division plates (B) and the auto ladder (D) of the mockup, with its Fleet counters (C), on condition that it draws faster
+//      than the mid-zoom icons. Mockup and timings: https://claude.ai/artifact/4xPRn8AF53B1LYpVAscq6w, files in EWGame/far-zoom-groups/)
+//
+//   When most ships on screen are too small to read (under UI_SETTINGS.iconSilhouettePixels long, or under DOTS_UNTIL_PIXELS when the screen is crowded,
+//   as the old dot mode did), the map stops drawing ships one by one. Instead:
+//     * every ship is a FAINT dot (the old dot layer, section 6, dimmed), so the mass of the fight still shows;
+//     * on top, markers for the units the officers command, picked per unit by how crowded its markers would be (the ladder):
+//         - a squadron CHIP (its ship count, a tick for its heading) while a Division's squadrons are far enough apart to read;
+//         - a Division PLATE (a soft shape over its squadrons, joined where they are close, a thin dashed line across gaps) with one counter in the middle
+//           (XX, its number, its ship count rounded, a health bar) once its chips would sit on each other;
+//         - a FLEET COUNTER (XXX, the Fleet's name, ships, Divisions, health, thin command lines to its Divisions) when, zoomed far out, its Division
+//           counters would sit on each other.
+//       Counters that still overlap are pinned apart a little, with a pin line to the real spot.
+//   The old triangles are gone while this is on: closer in, every ship is an icon (a plain silhouette when small). UI_SETTINGS.unitMarkers 0 = v226.
+//   Only what the player may see is drawn: an enemy ship hidden by the long map's fog (section 6x) counts for nothing here.
+//   Display only: nothing here is read by the battle or uses its random numbers.
+// =====================================================================
+const UNIT_MARKERS = {
+  enterShare: 0.45,     // far mode starts when less than this share of the ships on screen (by drawn length) is big enough for an icon ...
+  leaveShare: 0.55,     // ... and ends when more than this share is (the gap stops it flickering)
+  faint: 0.38,          // the faint ships: how much of their colour shows over the map's background (0 to 1)
+  layoutSeconds: 0.25,  // which units are chips, plates or Fleet counters is worked out again this often (real seconds), or at once on a zoom change
+  joinPixels: 70,       // a Division plate joins two of its squadrons into one shape when they are closer than this on screen; further apart, a thin dashed line
+  chipH: 13,            // a squadron chip's height in screen pixels (its width grows with the digits of its count)
+  divW: 56, divH: 30,   // a Division counter's size
+  fleetW: 124, fleetH: 50   // a Fleet counter's size
+};
+let unitFar = false;                             // this frame, the ships are drawn as faint dots with unit markers on top
+// How big the ships on screen were last frame, each ship counted by its drawn length (so a squadron of 120 fighters does not outvote the capital ships
+// it escorts): all of them, those at least iconSilhouettePixels long, those at least DOTS_UNTIL_PIXELS long. Counted by the drawing code (unitCountShip).
+let unitLenAll = 0, unitLenMid = 0, unitLenBig = 0;
+function unitCountShip(t, z) {
+  const L = typeDrawLen[t];
+  unitLenAll += L;
+  if (L * z >= UI_SETTINGS.iconSilhouettePixels) { unitLenMid += L; if (L * z >= DOTS_UNTIL_PIXELS) unitLenBig += L; }
+}
+function unitMarkersOn() { return UI_SETTINGS.unitMarkers === 1 && UI_SETTINGS.icons === 1; }
+
+// Called by draw() (section 6) in place of chooseDrawMode while unit markers are on: the old dot mode never starts; far mode starts instead.
+function chooseUnitMode() {
+  dotMode = false;
+  if (pixels === null) { unitFar = false; return; }
+  const n = shipsDrawn, all = unitLenAll, lenMid = unitLenMid, lenBig = unitLenBig;
+  unitLenAll = 0; unitLenMid = 0; unitLenBig = 0;                 // (counted afresh this frame)
+  if (n <= 0 || all <= 0) return;                // nothing on screen last frame: keep the mode as it is
+  if (n > UI_SETTINGS.iconMaxShips) { unitFar = true; return; }   // too many to draw as icons, whatever their size
+  const crowded = n > SETTINGS.maxTriangleShips;                  // (as v136.0's dots: when crowded, far mode lasts until ships are DOTS_UNTIL_PIXELS long)
+  const share = (crowded ? lenBig : lenMid) / all;
+  if (unitFar) { if (share > UNIT_MARKERS.leaveShare) unitFar = false; }
+  else if (share < UNIT_MARKERS.enterShare) unitFar = true;
+}
+
+// The faint version of a dot colour (the dot layer's pixel format), mixed toward the map's background
+const unitFaintCache = new Map();
+function unitFaintPixel(p) {
+  let f = unitFaintCache.get(p);
+  if (f !== undefined) return f;
+  const a = UNIT_MARKERS.faint, b = PIXEL_BACKGROUND;
+  const ch = function (sh) { return Math.round(((p >>> sh) & 255) * a + ((b >>> sh) & 255) * (1 - a)) & 255; };
+  f = ((255 << 24) | (ch(16) << 16) | (ch(8) << 8) | ch(0)) >>> 0;
+  if (unitFaintCache.size > 256) unitFaintCache.clear();
+  unitFaintCache.set(p, f);
+  return f;
+}
+
+// Ship player counts are rounded (Alex: 50s and 1,000s, never 1,437)
+function unitRoundCount(n) {
+  if (n < 20) return String(n);
+  if (n < 200) return String(Math.round(n / 10) * 10);
+  if (n < 2000) return String(Math.round(n / 50) * 50);
+  return (Math.round(n / 500) * 500).toLocaleString('en-US');
+}
+
+// ---- Per squadron sums, filled by one pass over the ships each frame ----
+let umX = new Float64Array(0), umY = new Float64Array(0), umN = new Int32Array(0), umHp = new Float64Array(0), umHpMax = new Float64Array(0);
+let umCos = new Float64Array(0), umSin = new Float64Array(0);
+const umLayout = { at: -1e9, zoom: 0, divCount: -1, level: new Map(), edges: new Map(), fleetUp: new Set() };   // the ladder's last decision
+
+function unitSums() {
+  const nS = sqSide.length;
+  if (umX.length < nS) { umX = new Float64Array(nS); umY = new Float64Array(nS); umN = new Int32Array(nS); umHp = new Float64Array(nS); umHpMax = new Float64Array(nS); umCos = new Float64Array(nS); umSin = new Float64Array(nS); }
+  umX.fill(0, 0, nS); umY.fill(0, 0, nS); umN.fill(0, 0, nS); umHp.fill(0, 0, nS); umHpMax.fill(0, 0, nS); umCos.fill(0, 0, nS); umSin.fill(0, 0, nS);
+  for (let i = 0; i < highWater; i++) {
+    if (shipAlive[i] === 0 || fogHides(i)) continue;
+    const t = shipType[i];
+    if (SHIP_TYPES[t].immobile) continue;                     // stations stay plain dots (bright: drawPixelLayer leaves them unfaded)
+    const q = shipSquad[i];
+    if (q < 0 || q >= nS) continue;
+    umX[q] += shipX[i]; umY[q] += shipY[i]; umN[q]++;
+    umHp[q] += shipHp[i]; umHpMax[q] += stHull[shipSide[i] * TYPE_COUNT + t];
+    umCos[q] += shipCos[i]; umSin[q] += shipSin[i];
+  }
+  for (let q = 0; q < nS; q++) if (umN[q] > 0) { umX[q] /= umN[q]; umY[q] /= umN[q]; }
+}
+
+// The Fleet a Division answers to (an attached Fleet counts as the Fleet it is attached to), or null without the chain of command
+function unitFleetOf(dv) {
+  let F = dv.fleet > 0 && typeof cmdFleetById === 'function' ? cmdFleetById(dv.fleet) : null;
+  for (let k = 0; F && F.attachedTo >= 0 && k < 8; k++) F = cmdFleetById(F.attachedTo);
+  return F || null;
+}
+function unitColorOf(side, F) { return F ? fleetShadeOf(F) : (side === BLUE ? lookColors.friendly : lookColors.alien); }
+function unitSelected(kind, id) { return bsSelectedUnit !== null && bsSelectedUnit.kind === kind && bsSelectedUnit.id === id; }
+
+// ---- The units seen this frame ----
+function unitList() {
+  const divs = [], groups = new Map(), loose = [];
+  for (let d = 1; d < divisions.length; d++) {
+    const dv = divisions[d];
+    if (!dv || dv.dissolved) continue;
+    const sqs = [];
+    let n = 0, x = 0, y = 0, hp = 0, hpMax = 0;
+    for (const q of dv.squads) if (sqAlive[q] && umN[q] > 0) { sqs.push(q); n += umN[q]; x += umX[q] * umN[q]; y += umY[q] * umN[q]; hp += umHp[q]; hpMax += umHpMax[q]; }
+    if (n === 0) continue;
+    const F = unitFleetOf(dv), key = F ? 'f' + F.id : 's' + dv.side;
+    const u = { dv, side: dv.side, sqs, n, x: x / n, y: y / n, health: hpMax > 0 ? hp / hpMax : 1, F, key, color: unitColorOf(dv.side, F) };
+    divs.push(u);
+    let g = groups.get(key);
+    if (!g) { g = { key, F, side: dv.side, divs: [], n: 0, x: 0, y: 0, hp: 0, hpMax: 0, color: u.color }; groups.set(key, g); }
+    g.divs.push(u); g.n += n; g.x += u.x * n; g.y += u.y * n; g.hp += hp; g.hpMax += hpMax;
+  }
+  for (const g of groups.values()) { g.x /= g.n; g.y /= g.n; g.health = g.hpMax > 0 ? g.hp / g.hpMax : 1; }
+  for (let q = 0; q < sqSide.length; q++) if (umN[q] > 0 && sqAlive[q] && !(sqDivision[q] > 0 && divisions[sqDivision[q]] && !divisions[sqDivision[q]].dissolved)) loose.push(q);
+  return { divs, groups, loose };
+}
+
+// ---- The ladder (worked out a few times a second) ----
+function unitChipW(n) { return n >= 100 ? 26 : (n >= 10 ? 22 : 16); }
+function unitBoxesHit(A, B) {
+  for (const a of A) for (const b of B) if (Math.min(a[2], b[2]) > Math.max(a[0], b[0]) && Math.min(a[3], b[3]) > Math.max(a[1], b[1])) return true;
+  return false;
+}
+function unitLayout(U, z, offX, offY) {
+  const chipBox = function (q) { const X = umX[q] * z + offX, Y = umY[q] * z + offY, w = unitChipW(umN[q]) / 2 + 2, h = UNIT_MARKERS.chipH / 2 + 2; return [X - w, Y - h, X + w, Y + h]; };
+  const divBox = function (u) { const X = u.x * z + offX, Y = u.y * z + offY, w = UNIT_MARKERS.divW / 2 + 3, h = UNIT_MARKERS.divH / 2 + 3; return [X - w, Y - h, X + w, Y + h]; };
+  const level = new Map(), fleetUp = new Set(), edges = new Map();
+  const far = typeDrawLenTypical() * z < 3;                  // zoomed far out: crowded Division counters give way to their Fleet's counter
+  for (const g of U.groups.values()) {
+    const chips = new Map();
+    for (const u of g.divs) {
+      const bx = u.sqs.map(chipBox); chips.set(u, bx);
+      let crowd = false;                                        // a Division's own chips on each other: it shows as a plate
+      for (let i = 0; i < bx.length && !crowd; i++) for (let j = i + 1; j < bx.length; j++) if (unitBoxesHit([bx[i]], [bx[j]])) { crowd = true; break; }
+      level.set(u.dv.id, crowd ? 1 : 0);
+    }
+    const boxes = function (u) { return level.get(u.dv.id) === 0 ? chips.get(u) : [divBox(u)]; };
+    let up = false;
+    for (let pass = 0; pass < 4 && !up; pass++) {             // two Divisions of a Fleet whose markers touch: both step up; two counters touching, far out: the Fleet
+      let changed = false;
+      for (let i = 0; i < g.divs.length; i++) for (let j = i + 1; j < g.divs.length; j++) {
+        const a = g.divs[i], b = g.divs[j];
+        if (!unitBoxesHit(boxes(a), boxes(b))) continue;
+        if (level.get(a.dv.id) === 0 || level.get(b.dv.id) === 0) { level.set(a.dv.id, 1); level.set(b.dv.id, 1); changed = true; }
+        else if (far) up = true;
+      }
+      if (!changed) break;
+    }
+    if (up && g.divs.length > 1) fleetUp.add(g.key);
+  }
+  // each plate's spanning tree (which of its squadrons join which), on screen distances
+  for (const u of U.divs) {
+    if (level.get(u.dv.id) !== 1 && !fleetUp.has(u.key)) continue;
+    const n = u.sqs.length, inT = new Uint8Array(n), best = new Float64Array(n).fill(Infinity), from = new Int32Array(n).fill(-1), list = [];
+    if (n > 0) best[0] = 0;
+    for (let it = 0; it < n; it++) {
+      let k = -1;
+      for (let i = 0; i < n; i++) if (!inT[i] && (k < 0 || best[i] < best[k])) k = i;
+      inT[k] = 1;
+      if (from[k] >= 0) list.push(u.sqs[from[k]], u.sqs[k]);
+      const kx = umX[u.sqs[k]], ky = umY[u.sqs[k]];
+      for (let i = 0; i < n; i++) if (!inT[i]) { const d = Math.hypot(umX[u.sqs[i]] - kx, umY[u.sqs[i]] - ky); if (d < best[i]) { best[i] = d; from[i] = k; } }
+    }
+    edges.set(u.dv.id, list);
+  }
+  umLayout.level = level; umLayout.fleetUp = fleetUp; umLayout.edges = edges;
+}
+// The drawn length of a typical ship on the field, for "zoomed far out": an average where each ship counts by its own length (so swarms of
+// fighters do not make the field look small). Worked out again every 5 battle seconds.
+let umTypicalAt = -1e9, umTypical = 60;
+function typeDrawLenTypical() {
+  if (simTime - umTypicalAt < 5 && simTime >= umTypicalAt) return umTypical;
+  umTypicalAt = simTime;
+  let s1 = 0, s2 = 0;
+  for (let i = 0; i < highWater; i += 3) if (shipAlive[i] && !SHIP_TYPES[shipType[i]].immobile) { const L = typeDrawLen[shipType[i]]; s1 += L; s2 += L * L; }
+  if (s1 > 0) umTypical = s2 / s1;
+  return umTypical;
+}
+
+// ---- Drawing ----
+function unitHealthBar(x, y, w, health, ink) {
+  ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(x, y, w, 3);
+  ctx.fillStyle = health > 0.6 ? ink : (health > 0.3 ? lookColors.warn : lookColors.heat);
+  ctx.fillRect(x, y, Math.max(1, w * Math.min(1, health)), 3);
+}
+function unitDrawPlate(u, z, offX, offY) {
+  const list = umLayout.edges.get(u.dv.id) || [];
+  const r = function (q) { return Math.max(8, Math.min(22, Math.sqrt(umN[q]) * 2.2)); };
+  ctx.globalAlpha = 0.16; ctx.fillStyle = u.color; ctx.strokeStyle = u.color; ctx.lineCap = 'round';
+  ctx.beginPath();
+  for (const q of u.sqs) { const X = umX[q] * z + offX, Y = umY[q] * z + offY, R = r(q); ctx.moveTo(X + R, Y); ctx.arc(X, Y, R, 0, 6.2832); }
+  ctx.fill();
+  ctx.lineWidth = 16; ctx.beginPath();
+  const dashed = [];
+  for (let k = 0; k < list.length; k += 2) {
+    const a = list[k], b = list[k + 1];
+    if (umN[a] === 0 || umN[b] === 0) continue;
+    const ax = umX[a] * z + offX, ay = umY[a] * z + offY, bx = umX[b] * z + offX, by = umY[b] * z + offY;
+    if (Math.hypot(bx - ax, by - ay) < UNIT_MARKERS.joinPixels) { ctx.moveTo(ax, ay); ctx.lineTo(bx, by); } else dashed.push(ax, ay, bx, by);
+  }
+  ctx.stroke();
+  ctx.globalAlpha = 0.7; ctx.lineWidth = 1; ctx.setLineDash(u.side === BLUE ? [5, 4] : [2, 3]); ctx.beginPath();
+  for (let k = 0; k < dashed.length; k += 4) { ctx.moveTo(dashed[k], dashed[k + 1]); ctx.lineTo(dashed[k + 2], dashed[k + 3]); }
+  ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+}
+function unitDrawChip(q, color, side, z, offX, offY, w, h) {
+  const X = umX[q] * z + offX, Y = umY[q] * z + offY, cw = unitChipW(umN[q]), ch = UNIT_MARKERS.chipH;
+  if (X < -cw || X > w + cw || Y < -ch || Y > h + ch) return 0;
+  const hl = Math.hypot(umCos[q], umSin[q]) || 1, hx = umCos[q] / hl, hy = umSin[q] / hl;
+  ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(X + hx * cw / 2, Y + hy * ch / 2); ctx.lineTo(X + hx * (cw / 2 + 7), Y + hy * (ch / 2 + 7)); ctx.stroke();
+  if (side === BLUE) { ctx.fillStyle = color; ctx.fillRect(X - cw / 2, Y - ch / 2, cw, ch); ctx.fillStyle = lookColors.mapBg; }
+  else { ctx.fillStyle = lookColors.mapBg; ctx.beginPath(); ctx.moveTo(X - cw / 2 - 3, Y); ctx.lineTo(X, Y - ch / 2 - 2); ctx.lineTo(X + cw / 2 + 3, Y); ctx.lineTo(X, Y + ch / 2 + 2); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.fillStyle = color; }
+  ctx.fillText(String(umN[q]), X, Y + 0.5);
+  return 1;
+}
+function unitDrawDivCounter(u, X, Y) {
+  const w = UNIT_MARKERS.divW, h = UNIT_MARKERS.divH, ours = u.side === BLUE, ink = ours ? lookColors.mapBg : u.color;
+  ctx.fillStyle = ours ? u.color : lookColors.mapBg; ctx.fillRect(X - w / 2, Y - h / 2, w, h);
+  ctx.strokeStyle = unitSelected('division', u.dv.id) ? lookColors.select : u.color; ctx.lineWidth = unitSelected('division', u.dv.id) ? 2.5 : 1.5;
+  ctx.strokeRect(X - w / 2, Y - h / 2, w, h);
+  ctx.fillStyle = ink;
+  ctx.font = '600 9px "IBM Plex Mono", ui-monospace, monospace'; ctx.fillText('XX', X, Y - h / 2 + 7);
+  const no = parseInt(u.dv.name, 10);
+  ctx.font = '800 13px "Big Shoulders Display", "Arial Narrow", sans-serif'; ctx.fillText((no > 0 ? no + ' · ' : '') + unitRoundCount(u.n), X, Y + 3);
+  unitHealthBar(X - w / 2 + 4, Y + h / 2 - 6, w - 8, u.health, ink);
+}
+function unitShortName(g) {
+  if (!g.F) return g.side === BLUE ? 'OUR FORCES' : 'ENEMY';
+  return String(g.F.name || 'Fleet').replace(' Defence Fleet', ' Def').replace(/ Fleet$/, '').toUpperCase();
+}
+function unitDrawFleetCounter(g, X, Y) {
+  const w = UNIT_MARKERS.fleetW, h = UNIT_MARKERS.fleetH, ours = g.side === BLUE, ink = ours ? lookColors.mapBg : g.color, sel = g.F && unitSelected('fleet', g.F.id);
+  ctx.fillStyle = lookColors.mapBg; ctx.fillRect(X - w / 2 - 3, Y - h / 2 - 3, w + 6, h + 6);
+  ctx.fillStyle = ours ? g.color : lookColors.mapBg; ctx.fillRect(X - w / 2, Y - h / 2, w, h);
+  ctx.strokeStyle = sel ? lookColors.select : g.color; ctx.lineWidth = sel ? 3 : 2; ctx.strokeRect(X - w / 2, Y - h / 2, w, h);
+  ctx.fillStyle = ink;
+  ctx.font = '600 10px "IBM Plex Mono", ui-monospace, monospace'; ctx.fillText('XXX', X, Y - h / 2 + 8);
+  ctx.font = '800 16px "Big Shoulders Display", "Arial Narrow", sans-serif'; ctx.fillText(unitShortName(g), X, Y - 1);
+  ctx.font = '600 10px "IBM Plex Mono", ui-monospace, monospace'; ctx.fillText(unitRoundCount(g.n) + ' SHIPS · ' + g.divs.length + ' DIV', X, Y + h / 2 - 11);
+  unitHealthBar(X - w / 2 + 6, Y + h / 2 - 5, w - 12, g.health, ink);
+}
+// Counters that would sit on each other are nudged apart (pins on a war-room table); a pin line marks a counter's real spot when it moved
+function unitSpread(items) {
+  for (let pass = 0; pass < 24; pass++) {
+    let moved = false;
+    for (let i = 0; i < items.length; i++) for (let j = i + 1; j < items.length; j++) {
+      const a = items[i], b = items[j];
+      const ox = (a.w + b.w) / 2 + 4 - Math.abs(a.X - b.X), oy = (a.h + b.h) / 2 + 4 - Math.abs(a.Y - b.Y);
+      if (ox <= 0 || oy <= 0) continue;
+      moved = true;
+      if (oy < ox) { const d = (a.Y <= b.Y ? -1 : 1) * oy / 2; a.Y += d; b.Y -= d; } else { const d = (a.X <= b.X ? -1 : 1) * ox / 2; a.X += d; b.X -= d; }
+    }
+    if (!moved) break;
+  }
+}
+
+// Draws the markers over the faint dots (draw() calls it in far mode, after the dot layer is on screen)
+function drawUnitMarkers(w, h, z) {
+  const offX = w / 2 - camera.x * z, offY = h / 2 - camera.y * z;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  unitSums();
+  const U = unitList();
+  const nowS = performance.now() / 1000;
+  if (nowS - umLayout.at > UNIT_MARKERS.layoutSeconds || nowS < umLayout.at || Math.abs(Math.log(z / (umLayout.zoom || z))) > 0.08 || U.divs.length !== umLayout.divCount) {
+    unitLayout(U, z, offX, offY);
+    umLayout.at = nowS; umLayout.zoom = z; umLayout.divCount = U.divs.length;
+  }
+  const lvl = umLayout.level, up = umLayout.fleetUp;
+  const inView = function (x, y, m) { const X = x * z + offX, Y = y * z + offY; return X > -m && X < w + m && Y > -m && Y < h + m; };
+  // 1. plates (also under a Fleet counter, so its spread still shows) and the Fleets' command lines
+  for (const u of U.divs) if ((lvl.get(u.dv.id) !== 0 || up.has(u.key)) && umLayout.edges.has(u.dv.id)) unitDrawPlate(u, z, offX, offY);
+  for (const g of U.groups.values()) {
+    if (!up.has(g.key)) continue;
+    const X = g.x * z + offX, Y = g.y * z + offY;   // (the lines start at the Fleet's true middle; the counter may sit nearer the screen's part of it)
+    ctx.strokeStyle = g.color; ctx.globalAlpha = 0.5; ctx.lineWidth = 1; ctx.setLineDash([3, 4]); ctx.beginPath();
+    for (const u of g.divs) { ctx.moveTo(X, Y); ctx.lineTo(u.x * z + offX, u.y * z + offY); }
+    ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+  }
+  // 2. chips: squadrons of Divisions on the bottom rung, and squadrons in no Division
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '600 10px "IBM Plex Mono", ui-monospace, monospace';
+  let drawn = 0;
+  for (const u of U.divs) if (lvl.get(u.dv.id) === 0 && !up.has(u.key)) for (const q of u.sqs) drawn += unitDrawChip(q, u.color, u.side, z, offX, offY, w, h);
+  for (const q of U.loose) drawn += unitDrawChip(q, sqSide[q] === BLUE ? lookColors.friendly : lookColors.alien, sqSide[q], z, offX, offY, w, h);
+  // 3. counters, pinned apart where they would overlap. A unit strung out past the screen edge puts its counter in the middle of its part on screen.
+  const items = [];
+  const seenMiddle = function (pts) {             // pts: [x, y, weight] in map units; the weighted middle of those on screen, or null
+    let n = 0, x = 0, y = 0;
+    for (const p of pts) if (inView(p[0], p[1], 0)) { n += p[2]; x += p[0] * p[2]; y += p[1] * p[2]; }
+    return n > 0 ? [x / n, y / n] : null;
+  };
+  for (const u of U.divs) {
+    if (lvl.get(u.dv.id) !== 1 || up.has(u.key)) continue;
+    const m = inView(u.x, u.y, 0) ? [u.x, u.y] : seenMiddle(u.sqs.map(function (q) { return [umX[q], umY[q], umN[q]]; }));
+    if (m) items.push({ d: u, x: m[0], y: m[1], X: m[0] * z + offX, Y: m[1] * z + offY, w: UNIT_MARKERS.divW, h: UNIT_MARKERS.divH, color: u.color });
+  }
+  for (const g of U.groups.values()) {
+    if (!up.has(g.key)) continue;
+    const m = inView(g.x, g.y, 0) ? [g.x, g.y] : seenMiddle(g.divs.map(function (u) { return [u.x, u.y, u.n]; }));
+    if (m) items.push({ g, x: m[0], y: m[1], X: m[0] * z + offX, Y: m[1] * z + offY, w: UNIT_MARKERS.fleetW, h: UNIT_MARKERS.fleetH, color: g.color });
+  }
+  unitSpread(items);
+  for (const it of items) {
+    const rx = it.x * z + offX, ry = it.y * z + offY;
+    if (Math.hypot(it.X - rx, it.Y - ry) > 4) { ctx.strokeStyle = it.color; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(it.X, it.Y); ctx.stroke(); ctx.fillStyle = it.color; ctx.fillRect(rx - 2, ry - 2, 4, 4); }
+  }
+  for (const it of items) { if (it.d) unitDrawDivCounter(it.d, it.X, it.Y); else unitDrawFleetCounter(it.g, it.X, it.Y); drawn++; }
+  unitMarkersDrawn = drawn;
+  ctx.setTransform(z, 0, 0, z, offX, offY);
+}
+let unitMarkersDrawn = 0;                        // markers drawn last frame (for the checks)
+// =====================================================================
 // 7. UI  (battle screen text, speed buttons, screen switching, mouse pan and zoom)
 // =====================================================================
 const fpsText = document.getElementById('fps');
@@ -77437,12 +77773,10 @@ function provingRosterLeave() {
   setRoster(k.roster);
 }
 function showSetupScreen() {
-  lsLeave();                                                 // (v100.0, section 8h) a Last Stand run ends when you leave it
-  pgLeave();                                                 // (v105.4, section 8j) and a battle from the Proving grounds panel
+  gameEnterMode('proving');                                  // (v228.0, section 7i5) the setup page is the Proving grounds: Last Stand ends, the war is set aside
   battleRunning = false;
   clearPauseState();                                         // (section 7e)
   screenMode = 'setup';
-  provingRosterEnter();                                      // (v93.1) the campaign's officers are put aside
   if (typeof refreshRosterPanel === 'function' && typeof rosterTableEl !== 'undefined') refreshRosterPanel();   // (stop 2) the records may have changed in the battle
   setupPanel.classList.remove('hidden');
   document.getElementById('bureauScreen').classList.add('hidden');   // (v20) the Design Bureau
@@ -77585,7 +77919,7 @@ function refreshHudNumbers() {
   const blueFleeing = retreatingCount[BLUE], redFleeing = retreatingCount[RED];
   blueText.textContent = (shipCount[BLUE] - facilityCount[BLUE] - blueFleeing) + (blueFleeing > 0 ? ' (+' + blueFleeing + ' retreating)' : '');     // (a facility is not counted as a ship: its bar shows its health)
   redText.textContent = (shipCount[RED] - facilityCount[RED] - redFleeing) + (redFleeing > 0 ? ' (+' + redFleeing + ' retreating)' : '');
-  onScreenText.textContent = shipsDrawn + (dotMode ? ' (dots)' : (UI_SETTINGS.icons && shipsDrawnLastFrame <= UI_SETTINGS.iconMaxShips ? ' (icons)' : ' (triangles)'));
+  onScreenText.textContent = shipsDrawn + (unitFar ? ' (units)' : dotMode ? ' (dots)' : (UI_SETTINGS.icons && shipsDrawnLastFrame <= UI_SETTINGS.iconMaxShips ? ' (icons)' : ' (triangles)'));
   timeText.textContent = simTime.toFixed(1);
   if (battleResult === null) statusText.textContent = '';
   else {
@@ -79118,6 +79452,7 @@ window.addEventListener('keydown', function (e) {
 // Is the war's clock the one being set? (a campaign is running, and we are on its map or watching its battle)
 function gameWarOn() {
   if (typeof campaign === 'undefined' || !campaign || SETTINGS.campaignModel !== 1) return false;
+  if (typeof gameOtherModeOwns === 'function' && gameOtherModeOwns()) return false;   // (v228.0, section 7i5) another mode has the game
   if (screenMode === 'campaign') return true;
   return screenMode === 'battle' && typeof campaignBattleActive !== 'undefined' && campaignBattleActive && cmState.watching && !campaignPeekActive();
 }
@@ -79304,6 +79639,7 @@ const UI_LAYER = { now: '', skin: '', listeners: [], holds: {} };
 // Is the two-layer rule on? (a war that runs on the core loop's never-parked battle, not decided, no tutorial)
 function uiTwoLayersOn() {
   if (typeof campaign === 'undefined' || !campaign || SETTINGS.campaignModel !== 1 || campaign.over) return false;
+  if (typeof gameOtherModeOwns === 'function' && gameOtherModeOwns()) return false;   // (v228.0, section 7i5) Last Stand or the Proving grounds has the game: its own pause
   if (typeof tutorialActive === 'function' && tutorialActive()) return false;
   if (screenMode === 'menu') return false;
   return typeof coreLoopNeverParks === 'function' && coreLoopNeverParks();
@@ -79323,7 +79659,7 @@ function uiOnLive() {
 }
 // Which layer, by name: 'live', 'command', or 'none' (outside a war: the main menu, the Proving grounds, a Last Stand run).
 function uiLayerNow() {
-  if (typeof campaign === 'undefined' || !campaign || SETTINGS.campaignModel !== 1 || screenMode === 'menu') return 'none';
+  if (typeof campaign === 'undefined' || !campaign || SETTINGS.campaignModel !== 1 || screenMode === 'menu' || (typeof gameOtherModeOwns === 'function' && gameOtherModeOwns())) return 'none';
   if (uiOnLive()) return 'live';
   if (uiOnCommand()) return 'command';
   return 'none';
@@ -79435,6 +79771,73 @@ function uiLayerSync() {
   UI_LAYER.now = now;
   root.setAttribute('data-ui-layer', now);
   for (const fn of UI_LAYER.listeners) { try { fn(now, before); } catch (e) { console.error(e); } }
+}
+// =====================================================================
+// 7i5. GAME MODES: ONE MODE OWNS THE GAME AT A TIME  (v228.0, Alex 12 Nov)
+//   Alex: "changing the way pause works broke last stand. pausing there currently can open up the campaign map". A playtester found the war itself
+//   changed too: with a war loaded, Main menu > Last Stand > pause pulled up the war's map, and the war's clock ran on behind the Last Stand battle
+//   (with Last Stand's ships and map size still in place), so Earth's fight came out differently and the war's admirals were muddled.
+//
+//   Why it happened: the game has ONE shared battle (its ships, ship types, clock and map size) and several modes that use it in turn: the war, Last
+//   Stand, and the Proving grounds (its quick panel and the setup page). The war's switch (SETTINGS.campaignModel) lets the war's clock, its frame and
+//   its pause rules (the two layers, section 7i4) run. The Proving grounds turned that switch off when it started; Last Stand and the setup page never
+//   did, so a war left loaded in the background still thought it owned the game.
+//
+//   The rule now: only one mode owns the game, and every mode comes in through one door, gameEnterMode(mode):
+//     'campaign'   the war (the campaign screen, its battle, its tabs): the war's switch on, its own officers back.
+//     'laststand'  a Last Stand run.
+//     'proving'    the Proving grounds (the quick panel's battles and the setup page's).
+//     'menu'       the main menu (nothing runs).
+//   Going into any mode leaves every other one properly: Last Stand and Proving grounds runs end (their ship types and borrowed settings put back),
+//   and the war is set aside (its battle parked, its clock stopped, the battle screen no longer "watching" it, its switch off, and its officers put
+//   aside so another mode's battle cannot write into them). Only the war's own door turns the war back on.
+//   On top of that, while another mode owns the game the war's pause rules and campaignOn() say "no war" whatever else is set, so no stray key or
+//   frame can reach into the war from Last Stand or the Proving grounds.
+//
+//   A test tool that drives the war straight through the debug API (EW.campaign) without any screen is untouched: before any door is used, nobody
+//   owns the game yet ('') and everything behaves as before.
+// =====================================================================
+
+var gameModeOwner = '';   // (var, not let: asked by code that may run while the page is still loading)
+
+// Which mode owns the game: 'campaign', 'laststand', 'proving', 'menu', or '' (no door used yet: a test tool's page).
+function gameModeNow() { return gameModeOwner; }
+// Does a mode other than the war own the game? (then the war must not run, pause, draw or wake)
+function gameOtherModeOwns() { return gameModeOwner === 'laststand' || gameModeOwner === 'proving'; }
+
+// May this code use the war's saved state (its doctrine, battle scars, hunt memory, station hangars...)? Yes when a war is loaded and no other mode
+// owns the game. Battle code asks this instead of just "is there a campaign?", so a Last Stand or Proving grounds battle keeps its lessons, scars and
+// memories to itself and never writes them into the war (the war's screens, the Bureau and the Officers screen on the main menu still see it).
+function gameWarHere() { return typeof campaign !== 'undefined' && !!campaign && !gameOtherModeOwns(); }
+
+// The one door into a mode. Leaves every other mode first.
+function gameEnterMode(mode) {
+  if (mode !== 'laststand' && typeof lsLeave === 'function') lsLeave();
+  if (mode !== 'proving' && typeof pgLeave === 'function') pgLeave();
+  if (mode === 'campaign') {
+    gameModeOwner = 'campaign';
+    SETTINGS.campaignModel = 1;                                  // the war's switch: its clock, frame and battle hooks may run from now on
+    if (typeof provingRosterLeave === 'function') provingRosterLeave();   // the war's own officers back
+    return;
+  }
+  gameSetWarAside(mode);
+  gameModeOwner = mode;
+}
+
+// The war, put aside while another mode (or the main menu) has the game: exactly as it was, waiting.
+function gameSetWarAside(mode) {
+  if (typeof campaign !== 'undefined' && campaign) {
+    if (typeof campaignBattleLive === 'function' && SETTINGS.campaignModel === 1 && campaignBattleLive()) campaignParkBattle(mode === 'menu' ? 'the war was left for the main menu' : 'the war was left for another game mode');
+    campaign.speed = 0;                                          // (the war waits while you are away)
+  }
+  if (typeof cmState !== 'undefined') { cmState.watching = false; cmState.toBattle = false; }   // (the battle screen is no longer the war's)
+  if (typeof hideCampaignScreen === 'function' && screenMode === 'campaign') hideCampaignScreen();
+  SETTINGS.campaignModel = 0;                                    // the war's clock, frame and hooks stay out
+  // the war's officers: put aside while another mode's battle runs (it never writes into them); back in place on the main menu, where the
+  // Officers screen shows them and nothing fights
+  if (mode === 'menu') { if (typeof provingRosterLeave === 'function') provingRosterLeave(); }
+  else if (typeof provingRosterEnter === 'function') provingRosterEnter();
+  if (typeof uiLayerSync === 'function') uiLayerSync();
 }
 // =====================================================================
 // 7j. COMMS: THE RADIO, THE STAMPS AND THE SCREEN EFFECTS  (v17)
@@ -80749,15 +81152,16 @@ function cmBuild() {
 
 // ---- Opening and leaving the screen ----
 function showCampaignScreen() {
-  if (typeof pgLeave === 'function') pgLeave();                       // (v105.4) a battle from the Proving grounds panel ends (section 8j)
-  if (typeof provingRosterLeave === 'function') provingRosterLeave();   // (v93.1) back from the Proving grounds: the campaign's own officers again (section 7)
+  // (v228.0, section 7i5) the war's door: a Last Stand run or Proving grounds battle ends (their types and settings put back), the war's own officers
+  // come back (v93.1), and the war's switch goes on (its clock and battle hooks may run from now on)
+  if (screenMode === 'battle' && gameOtherModeOwns()) battleRunning = false;
+  gameEnterMode('campaign');
   cmBuild();
   // (v177.0) Leaving the battle for the map: one pause for both screens. A battle paused on its screen is a paused war on the map; a running one runs.
   if (screenMode === 'battle' && cmState.watching && campaign && !campaignPeekActive()) {
     gameSpeedOntoMap();                                          // (v194.0, section 7i3) the battle's Stop button too, and the speed it ran at
   }
   if (campaignPeekEnd()) cmState.battleWake = -1;               // (v27.1) back from looking at a quiet AO: that battlefield is dropped, the campaign is as it was
-  SETTINGS.campaignModel = 1;                                    // the campaign's switch (section 5z): its clock and its battle hooks may run from now on
   if (campaignBattleLive() && !battleRunning) battleRunning = true;
   setupPanel.classList.add('hidden'); document.getElementById('bureauScreen').classList.add('hidden'); hideBureau2();
   hudPanel.classList.add('hidden'); reportPanel.classList.add('hidden'); commandLogPanel.classList.add('hidden');
@@ -82287,7 +82691,7 @@ function cmTutorialChoice(on) {
 function cmStartNewCampaign(id, seed, opts) {
   cmBuild();
   if (campaign && campaignBattleActive) campaignParkBattle('a new campaign was started');
-  SETTINGS.campaignModel = 1;
+  gameEnterMode('campaign');                                      // (v228.0, section 7i5) the war's door
   if (screenMode !== 'campaign') showCampaignScreen();
   const nameSeed = opts && typeof opts.nameSeed === 'number' ? opts.nameSeed >>> 0 : newOfficerNameSeed();   // (v41) fresh officers with random names for every new war (section 2l)
   rosterForNewCampaign(nameSeed);
@@ -89808,14 +90212,9 @@ let mmPanelOpen = '';                    // the panel shown under the buttons: '
 let mmNewLibrary = 1;
 let mmNewOfficers = 1;                   // (v106.0) "Bring my officers" (the officer library's on-duty officers) for the next new campaign: on by default                    // (v32) "Bring my design library" for the next new campaign: on by default
 function showMainMenu() {
-  lsLeave();                                                          // (v100.0, section 8h) a Last Stand run ends when you leave it
-  pgLeave();                                                          // (v105.4, section 8j) and so does a Proving grounds battle from the panel
-  if (screenMode === 'battle' && !(SETTINGS.campaignModel === 1 && campaignBattleLive())) { battleRunning = false; clearPauseState(); }   // (a Proving grounds battle stops)
-  if (screenMode === 'campaign' || (SETTINGS.campaignModel === 1 && campaign)) {
-    if (campaign && campaignBattleLive()) campaignParkBattle('the war was left for the main menu');
-    if (campaign) campaign.speed = 0;                                 // (the war waits while you are away, as it does for the Proving grounds)
-  }
-  if (screenMode === 'campaign') hideCampaignScreen();
+  if (screenMode === 'battle' && !(SETTINGS.campaignModel === 1 && campaignBattleLive())) { battleRunning = false; clearPauseState(); }   // (a Proving grounds or Last Stand battle stops)
+  // (v228.0, section 7i5) the one door: a Last Stand run or Proving grounds battle ends, and the war is set aside (parked, its clock stopped, its switch off)
+  gameEnterMode('menu');
   setupPanel.classList.add('hidden');
   hideBattleScreen();
   screenMode = 'menu';
@@ -90121,6 +90520,8 @@ function lsStart(enemy, opts) {
   const wantLook = opts && typeof echoLookById === 'function' && echoLookById(opts.echoLook) ? opts.echoLook : '';   // (v126.0) a check tool may name the Echo look; (v220.0) the menu may ask for 'mine', the player's own Echo livery
   opts = lsCleanOpts(opts);
   if (lastStand !== null) lsLeave();
+  gameEnterMode('laststand');                             // (v228.0, section 7i5) the run owns the game: a Proving grounds battle ends; a loaded war is set aside
+                                                          // (parked, its clock stopped, its switch and pause rules off, its officers put aside) so the run can never reach it
   // (v124.0) the menu starts a run against one race: lsStart('random') picks one of LAST_STAND.enemyChoices (with the run's seed when one is fixed, so the
   // same seed brings the same enemy), lsStart('delver') names one. lsStart() with no enemy is still the old mixed run (v100.5), for the older check tools.
   const pick = enemy === 'random' ? 'random' : enemy;
@@ -93477,9 +93878,7 @@ function pgRenderMenu(body) {
 function pgStart(sameSeed) {
   const S = pgLoad();
   pgLeave();
-  lsLeave();
-  SETTINGS.campaignModel = 0;                                     // (the war's clock and hooks stay out of a Proving grounds battle)
-  provingRosterEnter();                                           // (the campaign's officers are put aside, as on the setup page)
+  gameEnterMode('proving');                                       // (v228.0, section 7i5) Last Stand ends; the war is set aside: its clock, hooks and officers stay out
   const typesBefore = SHIP_TYPES.length, savedScenario = activeScenario;
   const ours = [];
   for (const r of S.rows) { const t = pgInstall(r.name); if (t >= 0) ours.push([t, r.n]); }
@@ -104389,8 +104788,11 @@ function b2ArtDraw() {
 //   foe colours of icons, triangles, rings or map markers. It shows on the outer hull up close in battle and on the Bureau's Ship art page.
 //
 //   WHERE IT GOES. The Livery view of the Ship art page (10e-9b): the hull on the left, the picks on the right, as rows of buttons.
-//     - A change goes on the design at once (every version of it), like its standing orders; the design library's plan of it keeps the new copy.
-//       A design not saved yet keeps its livery as a draft that the first save puts on it.
+//     - (v224.0, Alex: "add a save for this ship button") A pick shows on the picture first; "Save for this ship" puts the picks on the design
+//       (every version of it), and the design library's plan of it keeps the new copy. Until then the panel says the changes are not saved, and
+//       "Undo changes" goes back to what the design wears. Unsaved picks wait in the panel (per design, per side) if you look at something else.
+//       Our Echo and the races work the same way: "Save Echo livery", "Save Delver livery" and so on.
+//       A design not saved yet keeps its livery as a draft that the first save puts on it (the button shows greyed out and says to save the design first, v225.0).
 //     - "Make faction default": new designs start with these picks (kept in this browser, for every campaign).
 //     - "Apply to all ships": after a yes, every one of our designs (and the library's plans) gets these picks.
 //     - A new version of a design starts with its parent's livery.
@@ -104410,7 +104812,7 @@ function b2ArtDraw() {
 //   against the Delvers or the Swarm when the menu's "Enemy look" is "My livery" (livRaceInPlay), and later on the race the player plays. Enemy Sylph
 //   ships always keep their houses' colours (they tell you which house you are fighting), so the Sylph livery waits for a playable Sylph.
 // =====================================================================
-const b2lv = { key: '', L: null, draft: null, msg: '', askAll: false, side: 'ours', ship: {} };   // side: 'ours' (this design), (v220.0) 'echo' (our Echo), (v222.0) 'delver', 'sylph', 'swarm'; ship: the race's ship shown
+const b2lv = { key: '', L: null, draft: null, msg: '', askAll: false, side: 'ours', ship: {}, work: {} };   // side: 'ours' (this design), (v220.0) 'echo' (our Echo), (v222.0) 'delver', 'sylph', 'swarm'; ship: the race's ship shown; (v224.0) work: unsaved picks, by panel key
 const LIVERY_DEFAULT_PREF = 'ew-livery-default';
 
 // ---- the livery's data: cleaning, comparing, the faction default ----
@@ -104432,6 +104834,7 @@ function livOnNewDesign(rec, previous) {
   let L = prev ? prev.livery : (b2lv.key === 'draft' && b2lv.draft ? b2lv.draft : livFactionDefault());
   L = livCopy(L);
   if (L) rec.livery = L; else delete rec.livery;
+  if (prev && b2lv.work['rec:' + prev.id]) b2lv.work['rec:' + rec.id] = b2lv.work['rec:' + prev.id];   // (v224.0) picks not saved yet stay waiting on the new version
   if (!prev) { b2lv.draft = null; b2lv.key = ''; }
 }
 // Puts a livery on every version of a design's family (null = the plain look). Returns the designs changed.
@@ -104499,6 +104902,7 @@ function b2LvSync() {
   const race = b2LvRace(), rec = b2LvRec(), key = race ? 'race:' + race : b2LvEcho() ? 'echo' : rec ? 'rec:' + rec.id : 'draft';
   if (b2lv.key === key && b2lv.L) return;
   b2lv.key = key; b2lv.askAll = false; b2lv.msg = '';
+  if (b2lv.work[key]) { b2lv.L = JSON.parse(JSON.stringify(b2lv.work[key])); return; }   // (v224.0) picks not saved yet, waiting for this design or side
   if (race) { b2lv.L = Object.assign({}, livRace(race) || {}); return; }   // (v222.0) a race
   if (key === 'echo') { b2lv.L = Object.assign({}, window.HULL_ART.livery.defaults, JSON.parse(JSON.stringify(echoMyLivery()))); return; }   // (v220.0) our Echo
   b2lv.L = Object.assign({}, livHave() ? window.HULL_ART.livery.defaults : {}, rec ? (rec.livery || {}) : (b2lv.draft || livFactionDefault() || {}));
@@ -104507,12 +104911,47 @@ function b2LvSync() {
 function b2LvWorking() { if (!livHave() || !b2.d) return null; b2LvSync(); return b2LvEcho() ? window.HULL_ART.livery.cleanEcho(b2lv.L) : livClean(b2lv.L); }
 // (10e b2Load) a design opened: the panel starts again from its record
 function b2LvLoaded() { b2lv.key = b2LvRace() ? 'race:' + b2LvRace() : b2LvEcho() ? 'echo' : ''; b2lv.draft = null; b2lv.askAll = false; }
-// A change: into the working copy, then onto the design (every version of it), and the picture again
+// (v224.0) What the design (or our Echo, or the race) wears now, cleaned the way the panel's picks are, as text to compare
+function b2LvSavedText(L) {
+  const race = b2LvRace(), A = window.HULL_ART;
+  const canon = function (o) { if (!o) return 'null'; const k = Object.keys(o).sort(), c = {}; k.forEach(function (x) { c[x] = o[x] && typeof o[x] === 'object' ? JSON.parse(canon(o[x])) : o[x]; }); return JSON.stringify(c); };
+  if (race) return canon(A.alien.clean(L, race));
+  if (b2LvEcho()) return canon(A.livery.cleanEcho(L));
+  return canon(livClean(L));
+}
+function b2LvSavedLivery() {
+  const race = b2LvRace(), rec = b2LvRec();
+  if (race) return livRace(race) || {};
+  if (b2LvEcho()) return Object.assign({}, window.HULL_ART.livery.defaults, JSON.parse(JSON.stringify(echoMyLivery())));
+  return rec ? Object.assign({}, window.HULL_ART.livery.defaults, rec.livery || {}) : null;
+}
+// Are there picks on the panel that are not saved? (A design not saved yet never asks: saving the design saves its livery.)
+function b2LvUnsaved() {
+  if (!livHave() || b2lv.key === 'draft' || !b2lv.L) return false;
+  const saved = b2LvSavedLivery();
+  return !!saved && b2LvSavedText(b2lv.L) !== b2LvSavedText(saved);
+}
+// (v224.0) A pick: into the working copy and onto the picture. Not on the design until "Save for this ship" (a design not saved yet keeps it as its draft at once).
+function b2LvPick(msg) {
+  if (b2lv.key === 'draft' && !b2LvRace() && !b2LvEcho()) { b2LvCommit(msg); return; }
+  if (b2LvUnsaved()) b2lv.work[b2lv.key] = JSON.parse(JSON.stringify(b2lv.L)); else delete b2lv.work[b2lv.key];
+  b2lv.msg = msg || '';
+  b2RenderLivery(); b2ArtMake();
+}
+// (v224.0) "Undo changes": back to what the design (or our Echo, or the race) wears now
+function b2LvUndo() {
+  const saved = b2LvSavedLivery(); if (!saved) return;
+  b2lv.L = JSON.parse(JSON.stringify(saved)); delete b2lv.work[b2lv.key];
+  b2lv.msg = 'Back to the saved livery.';
+  b2RenderLivery(); b2ArtMake();
+}
+// The save: the working copy onto the design (every version of it), our Echo or the race, and the picture again
 function b2LvCommit(msg) {
+  delete b2lv.work[b2lv.key];
   const rec = b2LvRec(), race = b2LvRace();
-  if (race) { const ok = livSetRace(race, b2lv.L); b2lv.msg = (msg ? msg + ' ' : '') + (ok ? (window.HULL_ART.alien.clean(b2lv.L, race) ? 'Every ' + livRaceOf(race).one + ' ship wearing your livery looks like this.' : livRaceOf(race).name + ' in their own look.') : 'This browser would not keep it (a private window?).'); }
-  else if (b2LvEcho()) { const ok = echoSetMyLivery(b2lv.L); b2lv.msg = (msg ? msg + ' ' : '') + (ok ? 'Every Echo ship wearing your Echo livery looks like this.' : 'This browser would not keep it (a private window?).'); }
-  else if (rec) { const recs = livSetFor(rec, b2lv.L); b2lv.msg = (msg ? msg + ' ' : '') + (recs.length > 1 ? 'On all ' + recs.length + ' versions of ' + designFamily(rec) + '.' : 'On ' + rec.name + '.'); }
+  if (race) { const ok = livSetRace(race, b2lv.L); b2lv.msg = (msg ? msg + ' ' : '') + (ok ? (window.HULL_ART.alien.clean(b2lv.L, race) ? 'Saved: every ' + livRaceOf(race).one + ' ship wearing your livery looks like this.' : 'Saved: ' + livRaceOf(race).name + ' in their own look.') : 'This browser would not keep it (a private window?).'); }
+  else if (b2LvEcho()) { const ok = echoSetMyLivery(b2lv.L); b2lv.msg = (msg ? msg + ' ' : '') + (ok ? 'Saved: every Echo ship wearing your Echo livery looks like this.' : 'This browser would not keep it (a private window?).'); }
+  else if (rec) { const recs = livSetFor(rec, b2lv.L); b2lv.msg = (msg ? msg + ' ' : '') + (recs.length > 1 ? 'Saved on all ' + recs.length + ' versions of ' + designFamily(rec) + '.' : 'Saved on ' + rec.name + '.'); }
   else { b2lv.draft = livCopy(b2lv.L); b2lv.msg = (msg ? msg + ' ' : '') + 'Kept with the design: saving it puts this livery on it.'; }
   b2RenderLivery(); b2ArtMake();
 }
@@ -104530,6 +104969,15 @@ const B2LV_ROWS = [
 const B2LV_PIECES = ['nose', 'bridge', 'drive', 'deck', 'fins'];   // (v221.0) the rows a titan does not show
 const B2LV_COLOURS = [['hull', 'Hull'], ['trim', 'Trim'], ['accent', 'Accent'], ['lights', 'Lights']];
 const B2LV_MARKS = [['hazard', 'Hazard bands', 'Black and yellow bands at the nose'], ['roundel', 'Roundels', 'A roundel on each flank'], ['tally', 'Kill tally', 'A row of kill marks near the bow']];
+// (v224.0) The Save and Undo buttons and the unsaved note, first in the row of actions
+function b2LvSaveButtons(label, tip) {
+  // (v225.0, Alex could not find it) always shown; a design not saved yet has nothing to save onto, so the button says to save the design first
+  if (b2lv.key === 'draft') return '<button class="btn btn-primary" type="button" data-lvact="save" disabled title="Save the design first (its Save button): it keeps these picks">' + esc(label) + '</button>';
+  const un = b2LvUnsaved();
+  return '<button class="btn btn-primary" type="button" data-lvact="save" title="' + esc(tip) + '"' + (un ? '' : ' disabled') + '>' + esc(label) + '</button>' +
+         '<button class="btn" type="button" data-lvact="undo" title="Back to the saved livery"' + (un ? '' : ' disabled') + '>Undo changes</button>';
+}
+function b2LvUnsavedNote() { return b2LvUnsaved() ? '<p class="lvnote lvunsaved" role="status">Not saved yet: the picture shows your picks. Save to keep them.</p>' : ''; }
 function b2RenderLivery() {
   const el = b2El('b2Lv'); if (!el) return;
   if (!livHave()) { el.innerHTML = '<p class="lvnote">The hull art is not loaded, so there is nothing to paint.</p>'; return; }
@@ -104572,7 +105020,9 @@ function b2RenderLivery() {
   });
   h += '<div class="lvrow"><span class="l">Markings</span><div class="opts">';
   B2LV_MARKS.forEach(function (m) { h += '<button type="button" data-lvmark="' + m[0] + '" aria-pressed="' + (!!L[m[0]]) + '" title="' + esc(m[2]) + '">' + esc(m[1]) + '</button>'; });
-  h += '</div></div><div class="lvacts"><button class="btn" type="button" data-lvact="random" title="A random livery to start from">Random</button>';
+  h += '</div></div>' + b2LvUnsavedNote() + '<div class="lvacts">' +
+       (echo ? b2LvSaveButtons('Save Echo livery', 'Every Echo ship wearing your Echo livery gets these picks') : b2LvSaveButtons('Save for this ship', rec ? 'Puts these picks on ' + designFamily(rec) + ' (every version of it)' : '')) +
+       '<button class="btn" type="button" data-lvact="random" title="A random livery to start from">Random</button>';
   if (echo) {
     h += '<button class="btn" type="button" data-lvact="plain" title="Back to the Echo livery you started with">Starting Echo</button>';
     h += '</div><p class="lvmsg" aria-live="polite">' + esc(b2lv.msg) + '</p>';
@@ -104604,7 +105054,8 @@ function b2RenderRaceLivery(el, h, race) {
   h += '<div class="lvrow"><span class="l" title="The surface laid over their hull">Material</span><div class="opts" role="group" aria-label="Material">' +
        '<button type="button" data-lvk="mat" data-lvv="" aria-pressed="' + !L.mat + '">Their own</button>';
   Object.keys(A.mats[race]).forEach(function (v) { h += '<button type="button" data-lvk="mat" data-lvv="' + esc(v) + '" aria-pressed="' + (L.mat === v) + '">' + esc(A.mats[race][v]) + '</button>'; });
-  h += '</div></div><div class="lvacts"><button class="btn" type="button" data-lvact="random" title="A random livery to start from">Random</button>' +
+  h += '</div></div>' + b2LvUnsavedNote() + '<div class="lvacts">' + b2LvSaveButtons('Save ' + R.one + ' livery', 'Every ' + R.one + ' ship wearing your livery gets these picks') +
+       '<button class="btn" type="button" data-lvact="random" title="A random livery to start from">Random</button>' +
        '<button class="btn" type="button" data-lvact="plain" title="Back to their own colours"' + (A.clean(L, race) ? '' : ' disabled') + '>Their own look</button>' +
        '</div><p class="lvmsg" aria-live="polite">' + esc(b2lv.msg) + '</p>';
   el.innerHTML = h;
@@ -104616,15 +105067,17 @@ function b2LvWire(el) {
     const A = window.HULL_ART.livery, L = b2lv.L;
     if (b.dataset.lvship) { b2lv.ship[b2LvRace()] = b.dataset.lvship; b2RenderLivery(); b2ArtMake(); return; }   // (v222.0) the race's ship shown
     if (b.dataset.lvside) { b2lv.side = b.dataset.lvside === 'echo' || livRaceOf(b.dataset.lvside) ? b.dataset.lvside : 'ours'; b2lv.key = ''; b2lv.L = null; b2RenderLivery(); b2ArtMake(); if (typeof b2ArtNote === 'function' && b2art.pic) b2ArtNote(); return; }   // (v220.0)
-    if (b.dataset.lvecho) { L.echo = { look: b.dataset.lvecho, glow: (L.echo && L.echo.glow) || '#b28cff' }; b2LvCommit(A.echoLooks[b.dataset.lvecho] + '.'); return; }
-    if (b.dataset.lvk) { L[b.dataset.lvk] = b.dataset.lvv; b2LvCommit(''); return; }
-    if (b.dataset.lvmark) { L[b.dataset.lvmark] = !L[b.dataset.lvmark]; b2LvCommit(''); return; }
-    if (b.dataset.lvpre) { const p = A.presets[+b.dataset.lvpre]; ['hull', 'trim', 'accent', 'lights'].forEach(function (k) { L[k] = p[1][k] || A.defaults[k]; }); b2LvCommit(p[0] + ' colours.'); return; }
+    if (b.dataset.lvecho) { L.echo = { look: b.dataset.lvecho, glow: (L.echo && L.echo.glow) || '#b28cff' }; b2LvPick(A.echoLooks[b.dataset.lvecho] + '.'); return; }
+    if (b.dataset.lvk) { L[b.dataset.lvk] = b.dataset.lvv; b2LvPick(''); return; }
+    if (b.dataset.lvmark) { L[b.dataset.lvmark] = !L[b.dataset.lvmark]; b2LvPick(''); return; }
+    if (b.dataset.lvpre) { const p = A.presets[+b.dataset.lvpre]; ['hull', 'trim', 'accent', 'lights'].forEach(function (k) { L[k] = p[1][k] || A.defaults[k]; }); b2LvPick(p[0] + ' colours.'); return; }
     const act = b.dataset.lvact;
+    if (act === 'save') { b2LvCommit(''); return; }   // (v224.0)
+    if (act === 'undo') { b2LvUndo(); return; }
     if (b2LvRace() && (act === 'random' || act === 'plain')) {   // (v222.0) a race
       const race = b2LvRace(), r = Math.random, hex = function () { return '#' + ('00000' + Math.floor(r() * 16777216).toString(16)).slice(-6); }, mats = Object.keys(window.HULL_ART.alien.mats[race]);
       b2lv.L = act === 'plain' ? {} : { hull: hex(), lights: hex(), mat: r() < .75 ? mats[Math.floor(r() * mats.length)] : '' };
-      b2LvCommit(act === 'plain' ? '' : 'A random livery.'); return;
+      b2LvPick(act === 'plain' ? '' : 'A random livery.'); return;
     }
     if (act === 'random') {
       const r = Math.random, hex = function () { return '#' + ('00000' + Math.floor(r() * 16777216).toString(16)).slice(-6); }, pick = function (o) { const k = Object.keys(o); return k[Math.floor(r() * k.length)]; };
@@ -104632,20 +105085,20 @@ function b2LvWire(el) {
       B2LV_ROWS.forEach(function (row) { L[row.k] = pick(A.lists[row.k]); });
       L.hazard = r() < .6; L.roundel = r() < .4; L.tally = r() < .3;
       if (b2LvEcho()) { const looks = Object.keys(A.echoLooks), mats = Object.keys(A.echoMats); L.echo = { look: looks[Math.floor(r() * looks.length)], glow: hex() }; if (r() < .6) L.mat = mats[Math.floor(r() * mats.length)]; }   // (v220.0)
-      b2LvCommit('A random livery.'); return;
+      b2LvPick('A random livery.'); return;
     }
-    if (act === 'plain' && b2LvEcho()) { b2lv.L = Object.assign({}, A.defaults, JSON.parse(JSON.stringify(A.echoDefault))); b2LvCommit('The starting Echo livery.'); return; }   // (v220.0)
-    if (act === 'plain') { b2lv.L = Object.assign({}, A.defaults); b2LvCommit('The plain look.'); return; }
+    if (act === 'plain' && b2LvEcho()) { b2lv.L = Object.assign({}, A.defaults, JSON.parse(JSON.stringify(A.echoDefault))); b2LvPick('The starting Echo livery.'); return; }   // (v220.0)
+    if (act === 'plain') { b2lv.L = Object.assign({}, A.defaults); b2LvPick('The plain look.'); return; }
     if (act === 'default') { const ok = livSetFactionDefault(L); b2lv.msg = ok ? (livClean(L) ? 'New designs now start with this livery. Designs you already have keep theirs.' : 'New designs now start in the plain look.') : 'This browser would not keep it (a private window?).'; b2RenderLivery(); return; }
     if (act === 'all') { b2lv.askAll = true; b2RenderLivery(); return; }
     if (act === 'allno') { b2lv.askAll = false; b2RenderLivery(); return; }
-    if (act === 'allyes') { b2lv.askAll = false; const n = livApplyAll(L); b2lv.msg = 'Repainted all ' + n + ' of our designs' + (typeof libOpenHere === 'function' && libOpenHere() ? ' and the design library\'s plans' : '') + '.'; b2RenderLivery(); b2ArtMake(); return; }
+    if (act === 'allyes') { b2lv.askAll = false; const n = livApplyAll(L); Object.keys(b2lv.work).forEach(function (k) { if (k.indexOf('rec:') === 0) delete b2lv.work[k]; }); b2lv.msg = 'Repainted all ' + n + ' of our designs' + (typeof libOpenHere === 'function' && libOpenHere() ? ' and the design library\'s plans' : '') + '.'; b2RenderLivery(); b2ArtMake(); return; }
   });
-  // the colour wheels: the picture follows while the wheel moves, the design gets it when the wheel is let go
+  // the colour wheels: the picture follows while the wheel moves; letting go counts as a pick (saved with the Save button, v224.0)
   // (v220.0) and our Echo's glow wheel the same way
   const glow = function (ev) { if (!(ev.target.dataset && ev.target.dataset.lvglow)) return false; b2lv.L.echo = { look: (b2lv.L.echo && b2lv.L.echo.look) || 'E1', glow: ev.target.value }; return true; };
   el.addEventListener('input', function (ev) { if (glow(ev)) { b2ArtMake(); return; } const k = ev.target.dataset && ev.target.dataset.lvcol; if (!k) return; b2lv.L[k] = ev.target.value; b2ArtMake(); });
-  el.addEventListener('change', function (ev) { if (glow(ev)) { b2LvCommit(''); return; } const k = ev.target.dataset && ev.target.dataset.lvcol; if (!k) return; b2lv.L[k] = ev.target.value; b2LvCommit(''); });
+  el.addEventListener('change', function (ev) { if (glow(ev)) { b2LvPick(''); return; } const k = ev.target.dataset && ev.target.dataset.lvcol; if (!k) return; b2lv.L[k] = ev.target.value; b2LvPick(''); });
 }
 // =====================================================================
 // 10f. THE BUREAU v2 STOCK DESIGNS  (SETTINGS.designModel 2; stop 2: content)
@@ -106027,7 +106480,7 @@ BUREAU2_SCREEN_API.testRange = { run: testRangeRun, state: testRange, plan: func
 //   adopted habits come along in its copy code and into every new campaign. A doctrine changed in the Bureau after the save updates the plan's copy.
 //   DOCTRINE TEMPLATES (LIBRARY.templates: [{ name, doctrine, savedAt }]) live here too, so they carry over as well. A plan from before v37 has no doctrine: Auto.
 // =====================================================================
-const GAME_VERSION = 'v223.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
+const GAME_VERSION = 'v228.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
 const LIBRARY_KEY = 'engineersWar.library';
 const LIBRARY_FORMAT = 1;
 const LIBRARY_CODE_SHIP = 'EW-SHIP-1:', LIBRARY_CODE_LIB = 'EW-LIB-1:';
@@ -108353,7 +108806,7 @@ function simulateStep(dt) {
   simTime += dt;
   if (!peek) lastStandStep();                    // (v100.0, section 8h) a Last Stand run: the next wave when its time comes
   if (!peek) checkForBattleEnd();
-  if (SETTINGS.campaignModel === 1) campaignBattleStep(dt);   // (v24, section 5z) while the campaign's battle is live: the war clock, arrivals, the reports read back, the park decision; nothing with campaignModel 0
+  if (SETTINGS.campaignModel === 1 && !gameOtherModeOwns()) campaignBattleStep(dt);   // (v24, section 5z) while the campaign's battle is live: the war clock, arrivals, the reports read back, the park decision; nothing with campaignModel 0
 }
 
 // (v103.5) THE SIMULATION'S TIME BUDGET. Before v103.5 every frame let the battle simulate for at most maxSimMillisPerFrame (16 ms) whatever the speed, so
@@ -108365,7 +108818,23 @@ function simulateStep(dt) {
 let frameOtherMs = 4;                           // the frame's time outside the simulation (drawing, the panels), smoothed over the last frames
 let frameSimMs = 0;                             // the simulation's time in this frame
 let stepMsAvg = 2;                              // one step's time, smoothed (the last step of a frame runs past the budget by about this much)
-function simBudgetMs() {
+// (v226.0) KEEPING PACE ON A SLOW COMPUTER. A playtester on an older PC without a graphics card saw the campaign's battle run at a quarter speed.
+// The cause: each frame gave the battle at most 16 ms (and forgot any battle time it still owed beyond two steps, or beyond a tenth of a second
+// per frame), however long the drawing took. On a fast PC the drawing takes a few ms, so 16 ms is plenty. On a slow one the drawing takes 50-100 ms,
+// the frame comes round only 10-15 times a second, and 16 ms of battle each time is a fraction of what real time needs: the battle itself slowed down.
+// (Before v215.0 the war could be run from the strategic map, where the battle is not drawn, which hid this; now the live battle is the main screen.)
+// Now the battle may take up to simKeepPaceShare of each frame (twice the drawing's time) to keep up, and owed time is kept for a quarter second:
+// a slow computer shows fewer pictures a second, but the battle runs at the speed you chose as long as the computer can step it at all.
+// It changes nothing on a fast computer: the battle stops as soon as it has caught up, and that is long before the old 16 ms.
+// SETTINGS.simKeepPace 0 = as before.
+function simKeepPaceOn() { return SETTINGS.simKeepPace === 1; }
+function simKeepPaceBudget(base) {
+  if (!simKeepPaceOn()) return base;
+  const share = Math.min(0.9, Math.max(0, SETTINGS.simKeepPaceShare));
+  return Math.max(base, Math.min(SETTINGS.simKeepPaceMaxMs, frameOtherMs * share / (1 - share)));
+}
+function simBudgetMs() { return simKeepPaceBudget(simBudgetBaseMs()); }
+function simBudgetBaseMs() {
   if (SETTINGS.simBudgetModel !== 1) return SETTINGS.maxSimMillisPerFrame;
   if (screenMode === 'battle' && battleSpeed < 16) return SETTINGS.maxSimMillisPerFrame;   // (1x and 4x: as before; tried a 4x target too, it gave a smoother picture but no more battle)
   const target = screenMode !== 'battle' ? SETTINGS.simFrameMsMap : SETTINGS.simFrameMs16;
@@ -108389,14 +108858,16 @@ function runSimulation(frameSeconds) {
   simMillisCounted += performance.now() - startMs;
   frameSimMs += performance.now() - startMs;
   if (steps > 0) stepMsAvg += 0.2 * ((performance.now() - startMs) / steps - stepMsAvg);
-  if (simDebt > SETTINGS.maxCatchUpSteps * step) simDebt = SETTINGS.maxCatchUpSteps * step;   // if the computer cannot keep up, the battle just runs slower
+  const owe = simKeepPaceOn() ? Math.max(SETTINGS.maxCatchUpSteps * step, SETTINGS.simKeepPaceOweSeconds * battleSpeed) : SETTINGS.maxCatchUpSteps * step;   // (v226.0) owed time kept a little while
+  if (simDebt > owe) simDebt = owe;   // if the computer cannot keep up, the battle just runs slower
 }
 
 function frame(now) {
   const frameStartMs = performance.now(); frameSimMs = 0;
   let frameSeconds = (now - lastFrameTime) / 1000;
   lastFrameTime = now;
-  if (frameSeconds > SETTINGS.maxFrameSeconds) frameSeconds = SETTINGS.maxFrameSeconds;
+  const maxFrame = simKeepPaceOn() ? Math.max(SETTINGS.maxFrameSeconds, SETTINGS.simKeepPaceFrameSeconds) : SETTINGS.maxFrameSeconds;   // (v226.0) a slow frame counts in full
+  if (frameSeconds > maxFrame) frameSeconds = maxFrame;
 
   if (screenMode === 'battle') {
     if (battleRunning && !battlePaused && !clockStopped && !lsChoosing()) runSimulation(frameSeconds);   // (v100.1: a Last Stand level-up waits for its card)      // (a paused battle is still drawn, so it can be looked at and zoomed; v17: the Stop button stops the clock too)
@@ -108408,8 +108879,8 @@ function frame(now) {
     if (hudIsNew()) { drawMapOverlays(now); commsTick(now); }   // (v17) the battle line, brackets, tags and ping (section 7i); the radio's typewriter (7j)
   }
   updateHud(now);
-  if (SETTINGS.campaignModel === 1) campaignFrame(frameSeconds);   // (v24, section 5z) the war clock at map speed while the battle is parked; nothing with campaignModel 0
-  if (SETTINGS.campaignModel === 1) campaignScreenFrame(frameSeconds, now);
+  if (SETTINGS.campaignModel === 1 && !gameOtherModeOwns()) campaignFrame(frameSeconds);   // (v24, section 5z) the war clock at map speed while the battle is parked; nothing with campaignModel 0
+  if (SETTINGS.campaignModel === 1 && !gameOtherModeOwns()) campaignScreenFrame(frameSeconds, now);   // (v228.0, section 7i5) never while Last Stand or the Proving grounds owns the game
   lastStandFrame(now);
   pgFrame();                                    // (v105.4, section 8j) a Proving grounds battle from the panel is over: its short report                          // (v100.0, section 8h) the Last Stand strip: wave, countdown, kills
   soundFrame(now);                              // (v28, section 6t) the sounds of this frame: what the battle did, where the camera is; nothing while the sound is off
