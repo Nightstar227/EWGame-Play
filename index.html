@@ -3687,7 +3687,7 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
     <section class="panel hidden" id="mmPanel"><div class="panel-head" id="mmPanelHead"></div><div class="panel-body" id="mmPanelBody"></div></section>
     <input type="file" id="mmFile" accept=".json,application/json,text/plain" class="hidden">
   </div>
-  <div class="mm-version" title="The version of the game you are playing">Version v235.0</div>
+  <div class="mm-version" title="The version of the game you are playing">Version v243.0</div>
 </div>
 
 <!-- (v31 A2, section 7l) the end of the war: the game-over screen (Earth's people are gone) or the victory screen (the aliens' home secured). It lies over
@@ -8930,6 +8930,86 @@ ringHull = function (c, cx, R, r, o) {
 };
 // ---- the livery ends ----
 
+// ---- (v239.0) THE FITTED DRIVES: a titan's art shows the main drive its design really carries ----
+// Alex 12 Nov 2026: "the top art is also not incorporating modules properly. its especially important to get pulse drives working and showing for titans".
+// The art sheet gives every titan a bank of plain drive bells at its stern. A titan fitted with a pulse drive (fission or fusion) now shows a pulse drive
+// there instead: no bells and no plumes, but a pusher plate on chrome rams in their housings, across the whole drive bank. The battle (section 5vb-2d)
+// draws the moving plate, the flash and the plasma fan at the same place, read from TITAN_ART.stern. This works for every titan the same way: the
+// drive bank is found from the art's own drive bells (where they sit and how big they are), never from a list per titan.
+// Any other main drive keeps the art's bells, but their plumes burn in that drive's colour (fit.plume: the battle's engine colours, section 6w
+// FX_ENGINE_LOOK: chemical orange, nuclear thermal pale cyan, ion blue, fusion torch violet-white, antimatter magenta).
+var FIT = { drive: '', plume: '' };   // what the drawing being made carries: drive '' (the art's own bells), 'pulse' (fission pulse) or 'pulsef' (fusion pulse); plume: a colour or ''
+var ENG = null;            // while measuring: the drive bells the art draws, [x, y, h] each (art squares)
+var _fitEngine = engine;
+engine = function (c, x, y, h, t, i) {
+  if (ENG) ENG.push([x, y, h]);
+  if (FIT.drive === 'pulse' || FIT.drive === 'pulsef') return;   // a pulse drive has no bells: its assembly is drawn after (fitPulse)
+  _fitEngine(c, x, y, h, t, i);
+  if (!FIT.plume) return;
+  // the plume (and the glow at the bell's mouth) given the drive's colour: painted over only where the plume already is ('source-atop'), so its
+  // fade stays. ((v243.0) v239.0 used a 'color' blend, which on the empty space round a plume filled a solid block of colour.)
+  var len = h * 1.1; c.save(); c.beginPath(); c.rect(x - h * 6, y - h, h * 6 - len * .9, h * 2); c.rect(x - len - PX * 3, y - h * .5, PX * 5, h);
+  c.clip(); c.globalCompositeOperation = 'source-atop'; c.globalAlpha = .8; c.fillStyle = FIT.plume; c.fillRect(x - h * 6, y - h, h * 6, h * 2); c.restore();
+};
+// The drive bank at a titan's stern, in art squares (ship's middle at 0,0, bow +x), measured once from a small test drawing:
+// { x: the stern face the bells hang off, y: the bank's middle, half: half its height (bells and all) }, or null when the art draws no bells.
+// Only the rearmost row of bells counts (any bell within 6 squares of the rearmost).
+function fitBank(T) {
+  if (T.bank !== undefined) return T.bank;
+  var bank = null, keep = FIT.drive;
+  try {
+    var cv = document.createElement('canvas'); cv.width = cv.height = 8;
+    var c = cv.getContext('2d'); PX = 1;
+    ENG = []; FIT.drive = 'pulse';   // (measured without drawing the bells)
+    T.draw(c, STILL_AT);
+    var minX = 1e9; ENG.forEach(function (e) { if (e[0] < minX) minX = e[0]; });
+    var y0 = 1e9, y1 = -1e9;
+    ENG.forEach(function (e) { if (e[0] <= minX + 6) { y0 = Math.min(y0, e[1] - e[2] / 2); y1 = Math.max(y1, e[1] + e[2] / 2); } });
+    if (ENG.length && y1 > y0) bank = { x: minX, y: (y0 + y1) / 2, half: (y1 - y0) / 2 };
+  } catch (err) { bank = null; }
+  ENG = null; FIT.drive = keep;
+  T.bank = bank;
+  return bank;
+}
+// The pulse drive's size from the bank, the same shapes as the battle's plate (section 5vb-2d pulseDrawPlate): plate half-width hw, ram block half-height hb,
+// depth D (plate face to stern), plate thickness th. The plate's face rests at x = bank.x - D; the housings fill the back half of D.
+function fitPulseGeom(bank) {
+  var hw = bank.half * 1.15;
+  return { hw: hw, hb: hw * .62, D: hw * .5, th: Math.max(hw * .11, hw / 8 * .9), face: bank.x - hw * .5, y: bank.y };
+}
+// Draws the pulse drive at rest at the stern: a mounting frame on the hull, the ram housings, the chrome rams and the pusher plate
+function fitPulse(c, T, fusion) {
+  var bank = fitBank(T); if (!bank) return;
+  var G = fitPulseGeom(bank), hw = G.hw, hb = G.hb, D = G.D, th = G.th, X = G.face, cy = G.y, i;
+  c.save(); c.translate(0, cy);
+  // the mounting frame bolted across the old drive bank, and its heavy shock absorber housings
+  var MF = cut(bank.x - D * .55, -hb * 1.08, bank.x + D * .35, hb * 1.08, hb * .12);
+  hull(c, MF, { seed: 7101, plate: 4, tone: -.08, shadow: 10 }); bevel(c, MF, 1.4);
+  var n = 4, pw = hb * 1.7 / n * .25;
+  for (i = 0; i < n; i++) {
+    var py = -hb * .8 + hb * 1.6 * (n > 1 ? i / (n - 1) : .5);
+    var HS = cut(X + D * .5, py - pw * 2.1, bank.x + D * .1, py + pw * 2.1, pw * .8);
+    hull(c, HS, { seed: 7110 + i, plate: 2, tone: .06, shadow: 4 });
+    c.fillStyle = '#0c0d0b'; c.fillRect(X + D * .5 - PX, py - pw * 1.2, PX * 3, pw * 2.4);
+    var gr = c.createLinearGradient(0, py - pw, 0, py + pw);
+    gr.addColorStop(0, '#55574f'); gr.addColorStop(.35, '#e6e8e2'); gr.addColorStop(.6, '#8a8d86'); gr.addColorStop(1, '#2a2b27');
+    c.fillStyle = gr; c.fillRect(X, py - pw, D * .5, pw * 2);
+  }
+  hazard(c, bank.x - D * .55, -hb * 1.08, D * .12, hb * 2.16);
+  // the pulse feed down the middle
+  var fw = hw * .06; c.fillStyle = '#1b1c18'; c.fillRect(X, -fw, D * .5 + D * .4, fw * 2);
+  for (var lx = X; lx < X + D * .9; lx += fw * 2.2) { c.fillStyle = fusion ? 'rgba(120,220,255,.8)' : 'rgba(255,190,80,.8)'; c.fillRect(lx, -fw * .35, fw * .7, fw * .7); }
+  // the pusher plate: a thick scorched slab, wider than the bank, hazard stripes on its front face
+  var P = cut(X - th, -hw, X, hw, th * .5);
+  var pg = c.createLinearGradient(X - th, 0, X, 0);
+  pg.addColorStop(0, fusion ? '#9fb8c8' : '#a39d8e'); pg.addColorStop(.18, '#6b675d'); pg.addColorStop(.55, '#3a3a33'); pg.addColorStop(1, '#26261f');
+  c.fillStyle = pg; c.fill(poly(P)); c.strokeStyle = COL.line; c.lineWidth = PX * 1.5; c.stroke(poly(P));
+  var hz = th * .28, st = hz * 1.6; c.fillStyle = '#14130f'; c.fillRect(X - hz, -hw + th * .5, hz, hw * 2 - th);
+  c.fillStyle = '#d9b23a'; for (var yy = -hw + th * .5; yy < hw - th * .5 - st * .5; yy += st * 2) c.fillRect(X - hz, yy, hz, st);
+  c.fillStyle = '#050505'; c.fillRect(X - th, -fw * .9, th, fw * 1.8);
+  c.restore();
+}
+
 // What the game calls: one still picture of a titan (its frame's key: colossus, halo, rake, wheel, slip, flattop).
 // longest: the picture's longest side at most this many pixels. Returns { canvas, s (pixels an art square), pivX, pivY (the build grid's middle, the
 // ship's turning point, in picture pixels), bodyW (the build grid's length in pixels: the ship's length on the map) }, or null.
@@ -8943,20 +9023,35 @@ window.TITAN_ART = {
   livery: { pieces: false, clean: function (o) { return lvTitanClean(o, true); } },
   // (v221.0) livery (optional): the titan drawn in it (colours, material, pattern, wear, markings; an Echo livery's look laid over it too).
   //   Leave it out, or a livery with nothing in it, and the titan is drawn exactly as before.
-  picture: function (key, longest, gridW, gridH, livery) {
+  // (v239.0) fit (optional): what the design carries that the art shows, { drive: 'pulse' or 'pulsef' } for a pulse drive (see fitPulse above),
+  //   or { plume: '#rrggbb' } for any other main drive (its bells' plumes in that colour).
+  //   Leave it out and the titan has the art's own drive bells, as before.
+  picture: function (key, longest, gridW, gridH, livery, fit) {
     var T = BYKEY[key]; if (!T) return null;
     var L = lvTitanClean(livery, true);
+    var drive = fit && (fit.drive === 'pulse' || fit.drive === 'pulsef') ? fit.drive : '', bank = drive ? fitBank(T) : null;
+    if (!bank) drive = '';
     var x0 = T.span[0], x1 = T.span[1], cy = T.cy || 0, y0 = cy - T.tall / 2, y1 = cy + T.tall / 2;
+    if (drive) { var G = fitPulseGeom(bank); x0 = Math.min(x0, G.face - G.th - 2); y0 = Math.min(y0, G.y - G.hw - 2); y1 = Math.max(y1, G.y + G.hw + 2); }   // the plate may reach past the art's own box
     var s = Math.min(6, longest / Math.max(x1 - x0, y1 - y0));
     var cv = document.createElement('canvas'); cv.width = Math.ceil((x1 - x0) * s); cv.height = Math.ceil((y1 - y0) * s);
     var c = cv.getContext('2d');
     PX = 1 / s;
     c.setTransform(s, 0, 0, s, -x0 * s, -y0 * s);
-    livSet(L);
-    try { T.draw(c, STILL_AT); } finally { livSet({}); }
+    livSet(L); FIT.drive = drive; FIT.plume = !drive && fit && /^#[0-9a-fA-F]{6}$/.test(fit.plume || '') ? fit.plume : '';
+    try { T.draw(c, STILL_AT); if (drive) fitPulse(c, T, drive === 'pulsef'); } finally { livSet({}); FIT.drive = ''; FIT.plume = ''; }
     if (L && L.echo) cv = lvEchoLook(cv, L.echo.look, L.echo.glow, htSeed(key));   // (v221.0) the player's own Echo: its look over the finished titan (the same size)
     var gw = gridW || 0, gh = gridH || 0;
     return { canvas: cv, s: s, pivX: (T.gx + gw / 2 - x0) * s, pivY: (T.gy + gh / 2 - y0) * s, bodyW: gw > 0 ? gw * s : cv.width };
+  },
+  // (v239.0) Where a titan's pulse drive sits: { x: the plate's face at rest, y: its middle, hw: the plate's half-width, hb: the rams' half-spread,
+  // depth: plate face to stern, th: the plate's thickness }, in art squares from the ship's turning point (the build grid's middle), x toward the bow.
+  // The battle draws the moving plate and the blast there (section 5vb-2d pulseGeom). null when the art has no drive bank.
+  stern: function (key, gridW, gridH) {
+    var T = BYKEY[key]; if (!T) return null;
+    var bank = fitBank(T); if (!bank) return null;
+    var G = fitPulseGeom(bank), px = T.gx + (gridW || 0) / 2, py = T.gy + (gridH || 0) / 2;
+    return { x: G.face - px, y: G.y - py, hw: G.hw, hb: G.hb, depth: G.D, th: G.th };
   },
   // (v129.0) Where a titan's weapons leave it: its `launch` points (the Rake's launcher mouths) in art squares from the ship's turning point (the build
   // grid's middle), x toward the bow, y to starboard. The game turns them into map units with the art's scale (section 6b shipDrawLenOf / box.w). [] if none.
@@ -12201,6 +12296,19 @@ const SETTINGS = {
   swarmLine: 1,              // 1 = the Swarm MASSES: its idle Divisions and every arrival gather at its mass place (the place it holds at the front nearest ours) and
                              //   stand there; it presses only when its strength near the target is swarmPressOdds x ours there, and an attack falls back to the mass
                              //   under swarmFallBackOdds (06c3 longSwarmMassPlace, 06c theatreSwarmPress, theatreOperation); 0 = as v231.0
+  // (v236.0) THE RANKS OF THE LINE (step 3 of the front; Alex 12 Nov: the front has a fixed length, each Division covers a part of it, the rest stand behind in
+  //  ranks; ranks by gun size, never hull size; the reserve fires when reached but does not move; rotation by the line ships really there). 06e part 8.
+  lineRanks: 1,              // 1 = our line has a front rank that fills a fixed length and reserve ranks behind it; 0 = every Division gets a stretch (as v235.0)
+  lineRankMinWidth: 8000,    // u; the front is at least this long (wider when the places it covers span more); Divisions that do not fit stand behind
+  lineRankDepth: 3500,       // u; each reserve rank stands this far behind the one in front of it (beyond the typical gun, so it fires only when reached)
+  lineRankRotateAt: 0.5,     // a front-rank Division down to this share of the line ships it had when it took its stretch changes places with a fresher reserve Division
+  batteryDepthFactor: 2.5,   // a Division's battery (long-gun) squadrons stand this x the front row's widest squadron behind it (never beyond 60% of their reach)
+  // (v236.0) THE SWARM SPREADS: at its mass place the Swarm's Divisions spread across a ragged front facing our nearest place instead of one point (Alex 12 Nov:
+  //  "blobby, unorganized", leaning forward in one part of the front for a while). 06c3 longSwarmSpread.
+  swarmSpread: 1,            // 1 = the Swarm spreads at its mass place; 0 = it stands at the place's slots (as v232.0)
+  swarmSpreadWidth: 1.3,     // its front is this x the sum of its Divisions' frontages
+  swarmSpreadDepth: 2500,    // u; how far forward or back a Division wanders from the front (and how far the leaning part bulges)
+  swarmSpreadRejig: 300,     // battle seconds between reshuffles of the spread (where each Division stands and where the Swarm leans)
   swarmPressOdds: 1.2,       //   ... the Swarm's bar for an attack (in place of placesSwarmAttackOdds falling to longMapSwarmWaveOdds)
   swarmFallBackOdds: 0.8,    //   ... and the odds below which its attack falls back to the mass (in place of placesSwarmAbortOdds)
   longMapFog: 1,             // (v154.0) 1 = on the long map the battle screen draws an enemy ship only within longMapFogRange of our eyes (a ship of ours, a standing station or people of ours; 23i); 0 = show all
@@ -12312,6 +12420,21 @@ const SETTINGS = {
   dockSpareModel: 1,          // 1 = each of our docks keeps ONE SPARE ready: a lost ship is replaced at once from it, and the dock then builds the next spare
                               //   while the new ship serves (dockSpareDays). Only a dock that loses its ship again before that spare is ready has to wait.
                               //   0 = replaced every building day with no wait (v172.0)
+  // (v237.0, Alex 12 Nov) SHIPS ON THE LONG MAP (06f5). longSolarReach 1: a ship running on solar panels never goes farther from the Sun than the region its
+  // panels reach (the reach the Bureau shows); the fuel line pulls it back, the Admiral never sends it past. 0 = fuel alone decides, as v236.
+  longSolarReach: 1,
+  // longDockModel 1: on the long map our docks spread over our yards by how developed and how long held each is, and keep out of conflict: none in the
+  // front region, the region just behind it only once its yard is developed, a region with enemy ships in it much less. Docks caught in the front region
+  // move back. Local designs get a few small docks at our stations in the front region instead. 0 = the docks as v236.
+  longDockModel: 1,
+  longDockShareMin: 0.4,      // a design is built at every allowed yard weighing at least this share of the best one (the docks spread out)
+  longDockBehindTier: 2,      // the region just behind the front: a yard of this tier or higher weighs in full there, one tier lower at half, lower not at all
+  longDockBesieged: 0.3,      // a yard in a region with enemy ships in it weighs this much of its usual weight
+  longDockMoveWeeks: 1,       // a dock caught in the front region moves back to the best allowed yard: its next ship waits this many weeks
+  longLocalDockStart: 3,      // Local docks at a station of ours in the front region: this many the moment it stands ...
+  longLocalDockWeeks: 5,      //   ... one more for each this many weeks we have held it ...
+  longLocalDockPerTier: 3,    //   ... this many more for each development tier above 1 ...
+  longLocalDockMax: 16,       //   ... and never more than this at one station
   dockSpareDays: { tiny: 1, small: 2, corvette: 3, frigate: 5, destroyer: 7, cruiser: 10, capital: 14, titan: 21 },   // days a dock takes to build its next spare, by size class
   dockSpareSwarm: 0,          // 1 = the Swarm's hatcheries wait for spares too; 0 = they replace at once (its match floor works as before)
   scuttleOnLedger: 1,         // 1 = a scuttled ship counts as a loss of its design on the docks' ledger (06f3), as a ship the enemy destroyed does; 0 = not counted (v172.0)
@@ -13430,7 +13553,7 @@ const SETTING_MUST_BE_POSITIVE = ['moonOrbitMinutes', 'moonOrbitRef', 'moonOrbit
   'serviceLastMax', 'serviceHistoryMax', 'serviceEventsMax', 'recentChangeSeconds', 'dossierLastActions', 'reportOfficerRows', 'dossierChartMinSpan',
   'orbitRateHeadroom', 'orbitMinRate', 'facingLeadFactor', 'interceptMaxLead', 'orbitRangeFraction', 'orbitTurnMargin', 'tightOrbitSizeRatio', 'tightOrbitHulls', 'tightOrbitStraySeconds', 'tightOrbitSpacings', 'tacticMinSeconds', 'chaseGiveUpSeconds', 'noChaseSeconds',
   'shapeEnterFactor', 'shapeExitFactor', 'axisTurnRate'];
-const SETTING_MUST_BE_NON_NEGATIVE = ['swarmPressOdds', 'swarmFallBackOdds', 'bombardShieldShare', 'bombardHoldSeconds', 'swarmDockStallCap', 'swarmDockStallQuietShare', 'stationHullMendQuiet', 'alloysNeverIdleNote', 'towJobs', 'towWaitSeconds', 'towFreshSeconds', 'towLookSeconds', 'towFleetSeconds', 'towBoldSwing', 'towDangerRadius', 'towDangerOdds', 'aoMobilizeOdds', 'aoMobilizeBoldSwing', 'aoMobilizeReinSwing', 'aoMobilizeSeconds', 'aoMobilizeLossShare', 'aoMobilizeBeatenShare', 'aoMobilizeOtherShips', 'aoMobilizeEnemySpeed', 'aoMobilizeWaitSeconds', 'aoCharLineSwing', 'aoCharCommandSwing', 'aoCharMovePull', 'aoCharDisciplineSwing', 'aoPostureSeconds', 'aoPostureMinSeconds', 'aoMeetOdds', 'aoOddsOutShare', 'aoFallBackOdds', 'aoBoldLean', 'aoMeetReachSlots', 'aoMeetStandoff', 'aoEngageDist', 'aoGroupDist', 'aoEdgeSlots', 'aoInboundSlots', 'aoRetakeLooseShare', 'aoDangerDist', 'aoRetakeStayShare', 'aoRetakeGatherSeconds', 'aoDefenceSplitShips', 'aoFleetMax', 'aoGarrisonShare', 'aoForwardStationSpeed', 'aoRefitShare', 'divisionOwnerSeconds', 'divisionOwnerFirstSeconds', 'divisionOwnerCountBand', 'divisionOwnerJoinSeconds', 'admiralNeedsLean', 'admiralNeedsReachRatio', 'admiralNeedsDefenceRatio', 'admiralNeedsWorksRatio', 'admiralNeedsPdShare', 'scuttleKillShare', 'scuttleXpCost', 'campaignTidySeconds', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftPressed', 'coreLoopShiftQuiet', 'coreLoopShiftMax', 'coreLoopHiveHoldShare', 'coreLoopAssessSeconds', 'coreLoopAssaultMixShare', 'coreLoopReinSwing', 'coreLoopReserveShare', 'coreLoopStrikeShare', 'coreLoopBoldAbove', 'coreLoopVaSeconds', 'coreLoopVaSlack', 'coreLoopVaWornShare', 'coreLoopDefenceRatio', 'coreLoopFleetHoldSeconds', 'coreLoopDivisionMinShips', 'coreLoopAssaultRatio', 'coreLoopAssaultFloor', 'coreLoopPlaceDefenceWorth', 'placesHomeEdgeBias', 'placesBrokenBonus', 'coreLoopStreamWeeks', 'coreLoopStreamMinShips', 'coreLoopLineKeep', 'coreLoopLineSeconds', 'coreLoopLineLooks', 'coreLoopLineDepth', 'coreLoopLineStep', 'coreLoopLineWindow', 'coreLoopTipRatio', 'coreLoopClearSeconds', 'coreLoopBackSeconds', 'coreLoopHoldSeconds', 'coreLoopBerths', 'divisionMergeSlack', 'swarmNestRetakeKeep', 'swarmGrowWindowWeeks', 'swarmGrowLowLoss', 'swarmGrowHighLoss', 'swarmGrowFromShare', 'swarmGrowStep', 'swarmGrowSmallCut', 'swarmGrowBigGain', 'swarmSpreadWeeks', 'hangarRefillWeeks', 'fighterTurnaroundSeconds', 'fighterLaunchSeconds', 'fighterLaunchRange', 'fighterTickSeconds', 'stationFighterGuardRadius', 'droneJamReach', 'droneJamScatterMul', 'droneJamLoseChance', 'dcNoRoomSeconds', 'cmdPaceFormSeconds', 'cmdPaceMinShare', 'cmdPaceLeadSeconds', 'cmdPaceMinMarch', 'divisionSpeedSort', 'divisionSlowBelow', 'divisionFastAbove', 'swarmPaceFormSeconds', 'swarmDrift', 'swarmDivDrift', 'wreckHitShare', 'repairPartsWeeks', 'repairAutoBelow', 'dockQueueWarnSeconds', 'crippledCheckSeconds', 'towSpeedShare', 'towMaxShare', 'towHealthyHull', 'feedHullBelow', 'feedSeconds', 'feedSquadSeconds', 'feedHullShare', 'feedAmmoShare', 'feedGrabRange', 'feedHungryHull', 'feedHungryAmmo', 'feedHatchlingRange', 'swarmInfestTierGain', 'swarmInfestGrowShare', 'swarmInfestStartShare', 'swarmSurfaceInfest', 'swarmBurnPerDps', 'swarmBurnHotMul', 'swarmBurnPerKill', 'swarmRegrowSeconds', 'swarmSporeEvery', 'swarmSporeShotsPer', 'swarmSporeDpsPerInf', 'swarmBileEvery', 'swarmBileFrom', 'swarmBileDpsPerInf', 'swarmConvertCap', 'swarmConvertAimShare', 'swarmConvertFromWeek', 'swarmConvertFullWeek', 'swarmConvertDepthShare', 'swarmConvertWaste', 'facingTwoSidedAngle', 'freshSideHoldSeconds', 'crossTEdge', 'crossTCreepFraction', 'crossTWidth', 'crossTTurnEdge', 'placesPicketSpread', 'placesPicketMove', 'placesPicketMax', 'placesWithdrawGatherSeconds', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerTargetShare', 'ledgerLineMin', 'ledgerLossMargin', 'ledgerSaveFloor', 'ledgerMinLoss', 'ledgerSurplusShare', 'withdrawRatio', 'withdrawHoldWeeks', 'ledgerAssaultWeeks', 'indDevShareSave', 'indDevShareIdle', 'dirPriorityMul', 'resourceHeldShare', 'devGraceWeeks', 'devCapStart', 'devCapAlien', 'devPotShare', 'devIdleWeeks', 'devMaxBuilds', 'bbAcidSeconds', 'bbAcidMaxPatches', 'bbRegrowQuiet', 'bbRegrowHull', 'bbRegrowPlate', 'bbRegrowHeatStop', 'bbBurstTouch', 'bbBurstDeathReach', 'bbBurstSeek', 'bbVolleySpread', 'bbMissileRetries', 'bbPdRoundsPerShot', 'bbPdFlakRounds', 'bbPdReadyRounds', 'bbPdLaserHeat', 'bbRadiatorFoldSeconds', 'bbSideWeight', 'deflectRatio', 'deflectCallSeconds', 'readyRoundsPerGun', 'boostFuEarth', 'boostFuOther', 'boostGrowth', 'alloysEarthStart', 'alloysEarthRampTo', 'alloysEarthRampWeeks', 'alloysGrowth', 'fissilesGrowth', 'alienAlloysStart', 'alienAlloysGrowth', 'alienAlloysPerStep', 'alienBoostPerStep', 'alienNodeLossShare', 'shipUpkeepMaxShare', 'berthIdleWeeks', 'berthBoostWeeks', 'berthMaxGrowth', 'campaignBuildDays', 'campaignLiveEnterShips', 'civilianNoteWeeks', 'leaderNewsCooldown', 'leaderNewsCombatGap', 'stationRebuildYardBonus', 'stationRebuildSecuredBonus', 'stationRebuildNearShare', 'stationRebuildAlloys', 'cmdAttackMaxSeconds', 'cmdPaceGap', 'radioQuietSeconds', 'cmdSummaryMinutes', 'designRemarkSeconds', 'cmdReviewBattles', 'huntMaxShips', 'huntGraceSeconds', 'pursuitFleeingBonus', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'dangerConeSeconds', 'placesAttackStallSeconds', 'campaignAttackStallSeconds', 'campaignStragglerShips', 'campaignStragglerShare', 'campaignStragglerSeconds', 'campaignStandoffSeconds', 'campaignStandoffWeeks', 'campaignRetakeWeeks', 'comebackMassWeeks', 'alienGarrisonCap', 'campaignFallenMax', 'campaignPoolCap', 'campaignGarrisonCap', 'campaignStartOwnShips', 'campaignAlienGarrison', 'campaignAdvanceKeep', 'campaignAdvanceRatio', 'campaignAdvanceTake', 'campaignAdvanceAfterWaves', 'campaignAdvanceHoldWeeks', 'campaignRearKeep', 'campaignFrontMoveMinShips', 'campaignFrontMoveShare', 'executiveMassRatio', 'executiveAssaultRatio', 'executiveAssaultMin', 'campaignPriorityWeight', 'alienShoveWeeks', 'alienGatherRatio', 'alienGatherTarget', 'alienGatherMinShips', 'alienGatherMaxWeeks', 'alienPullBackRatio', 'alienStateHoldWeeks', 'alienFirstPool', 'alienWaveJitter', 'alienWarnWeeks', 'alienWaveBoostWeeks', 'alienTargetWeakest', 'alienTargetMain', 'alienFirstWaveWeek', 'minLaunchShips', 'placesHoldClearOdds', 'campaignYardEvery', 'boostPerMarker', 'campaignRefuelShare', 'capitalBuildShare', 'assaultMaxWaitWeeks', 'repairPerWeek', 'campaignDesignBoostPerMass', 'campaignDesignBuildPerCost', 'campaignDesignAlloysShare', 'campaignDesignWeight', 'placesReachShare', 'placesFailRaise', 'placesContestShare', 'aoSecureShare', 'aoLoseShare', 'siegeBoostTrickle', 'boostFootholdShare', 'siegeGrowthFactor', 'siegeResourceFactor', 'placesReportMinutes', 'placesHysteresis', 'placesMaxOpposite', 'internalChance', 'internalFresh', 'externalCover', 'deepBelowHull', 'dcSeconds', 'blastToHull', 'blastToParts', 'profileNudgeMax', 'profileNudgeTurn', 'profileNudgeFiring', 'reactorWallShare', 'trackSquareCut', 'pressDryValue', 'pressFleetRatio', 'pressOdds', 'pressHealthEdge', 'pressOddsHealthy', 'pressDangerShare', 'pressHitChance', 'pressAfter', 'pressProgress', 'pressHold', 'pressStep', 'pressRingMin', 'lockFormShare', 'looseJitter', 'looseRein', 'lockSettleSeconds', 'lockRein', 'lockBreakHull', 'lockMinShare', 'closeRanksDelay', 'mergeBelow', 'mergeMaxOdds', 'disbandAt', 'stragglerSeconds', 'divisionLeash', 'pursuitBase', 'formBeforeAttack', 'gatherSeconds', 'fallenKeep', 'topUpBelow', 'stagingContactSeconds', 'stagingMaxWait', 'minNewSquadron', 'entryDangerRatio', 'entryCheckFactor', 'entryRetrySeconds', 'rallyInset', 'joinWornBelow', 'survivorEdgeMargin', 'flagKilled', 'flagWounded', 'flagSurviveSwing', 'woundedSkillPenalty', 'woundedBattles', 'replacementDelay', 'handoverSeconds', 'standInSkill', 'pinRenewSeconds', 'divisionTaskMinSeconds', 'rotateWornShare', 'divisionRefuseOdds', 'divisionRallyOdds', 'divisionCounterPressure', 'mainEffortMinOdds', 'mainEffortFreeRein', 'pinRenewFactor', 'supportSeconds', 'supportMaxTravelSeconds', 'divisionTargetBonus', 'localAttackOdds', 'memberCompactShare', 'recruitAxisSpread', 'recruitSkillLow', 'recruitSkillHigh', 'skillPerLevel', 'readinessXpPerRepair', 'medalSkillAdd', 'scarShakenBoldness', 'repertoirePull', 'spawnEdgeMargin', 'doctrinePull', 'matchupPull', 'experimentMinSeconds', 'experimentCooldown', 'tacticLearnStep', 'tacticWeightMax', 'exploreLearnBoost', 'spawnBandWidth', 'spawnVerticalMargin', 'shieldRechargeDelay', 'minArmorPassFraction', 'separationStrength',
+const SETTING_MUST_BE_NON_NEGATIVE = ['lineRankMinWidth', 'lineRankDepth', 'lineRankRotateAt', 'batteryDepthFactor', 'swarmSpreadWidth', 'swarmSpreadDepth', 'swarmSpreadRejig', 'swarmPressOdds', 'swarmFallBackOdds', 'bombardShieldShare', 'bombardHoldSeconds', 'swarmDockStallCap', 'swarmDockStallQuietShare', 'stationHullMendQuiet', 'alloysNeverIdleNote', 'towJobs', 'towWaitSeconds', 'towFreshSeconds', 'towLookSeconds', 'towFleetSeconds', 'towBoldSwing', 'towDangerRadius', 'towDangerOdds', 'aoMobilizeOdds', 'aoMobilizeBoldSwing', 'aoMobilizeReinSwing', 'aoMobilizeSeconds', 'aoMobilizeLossShare', 'aoMobilizeBeatenShare', 'aoMobilizeOtherShips', 'aoMobilizeEnemySpeed', 'aoMobilizeWaitSeconds', 'aoCharLineSwing', 'aoCharCommandSwing', 'aoCharMovePull', 'aoCharDisciplineSwing', 'aoPostureSeconds', 'aoPostureMinSeconds', 'aoMeetOdds', 'aoOddsOutShare', 'aoFallBackOdds', 'aoBoldLean', 'aoMeetReachSlots', 'aoMeetStandoff', 'aoEngageDist', 'aoGroupDist', 'aoEdgeSlots', 'aoInboundSlots', 'aoRetakeLooseShare', 'aoDangerDist', 'aoRetakeStayShare', 'aoRetakeGatherSeconds', 'aoDefenceSplitShips', 'aoFleetMax', 'aoGarrisonShare', 'aoForwardStationSpeed', 'aoRefitShare', 'divisionOwnerSeconds', 'divisionOwnerFirstSeconds', 'divisionOwnerCountBand', 'divisionOwnerJoinSeconds', 'admiralNeedsLean', 'admiralNeedsReachRatio', 'admiralNeedsDefenceRatio', 'admiralNeedsWorksRatio', 'admiralNeedsPdShare', 'scuttleKillShare', 'scuttleXpCost', 'campaignTidySeconds', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftPressed', 'coreLoopShiftQuiet', 'coreLoopShiftMax', 'coreLoopHiveHoldShare', 'coreLoopAssessSeconds', 'coreLoopAssaultMixShare', 'coreLoopReinSwing', 'coreLoopReserveShare', 'coreLoopStrikeShare', 'coreLoopBoldAbove', 'coreLoopVaSeconds', 'coreLoopVaSlack', 'coreLoopVaWornShare', 'coreLoopDefenceRatio', 'coreLoopFleetHoldSeconds', 'coreLoopDivisionMinShips', 'coreLoopAssaultRatio', 'coreLoopAssaultFloor', 'coreLoopPlaceDefenceWorth', 'placesHomeEdgeBias', 'placesBrokenBonus', 'coreLoopStreamWeeks', 'coreLoopStreamMinShips', 'coreLoopLineKeep', 'coreLoopLineSeconds', 'coreLoopLineLooks', 'coreLoopLineDepth', 'coreLoopLineStep', 'coreLoopLineWindow', 'coreLoopTipRatio', 'coreLoopClearSeconds', 'coreLoopBackSeconds', 'coreLoopHoldSeconds', 'coreLoopBerths', 'divisionMergeSlack', 'swarmNestRetakeKeep', 'swarmGrowWindowWeeks', 'swarmGrowLowLoss', 'swarmGrowHighLoss', 'swarmGrowFromShare', 'swarmGrowStep', 'swarmGrowSmallCut', 'swarmGrowBigGain', 'swarmSpreadWeeks', 'hangarRefillWeeks', 'fighterTurnaroundSeconds', 'fighterLaunchSeconds', 'fighterLaunchRange', 'fighterTickSeconds', 'stationFighterGuardRadius', 'droneJamReach', 'droneJamScatterMul', 'droneJamLoseChance', 'dcNoRoomSeconds', 'cmdPaceFormSeconds', 'cmdPaceMinShare', 'cmdPaceLeadSeconds', 'cmdPaceMinMarch', 'divisionSpeedSort', 'divisionSlowBelow', 'divisionFastAbove', 'swarmPaceFormSeconds', 'swarmDrift', 'swarmDivDrift', 'wreckHitShare', 'repairPartsWeeks', 'repairAutoBelow', 'dockQueueWarnSeconds', 'crippledCheckSeconds', 'towSpeedShare', 'towMaxShare', 'towHealthyHull', 'feedHullBelow', 'feedSeconds', 'feedSquadSeconds', 'feedHullShare', 'feedAmmoShare', 'feedGrabRange', 'feedHungryHull', 'feedHungryAmmo', 'feedHatchlingRange', 'swarmInfestTierGain', 'swarmInfestGrowShare', 'swarmInfestStartShare', 'swarmSurfaceInfest', 'swarmBurnPerDps', 'swarmBurnHotMul', 'swarmBurnPerKill', 'swarmRegrowSeconds', 'swarmSporeEvery', 'swarmSporeShotsPer', 'swarmSporeDpsPerInf', 'swarmBileEvery', 'swarmBileFrom', 'swarmBileDpsPerInf', 'swarmConvertCap', 'swarmConvertAimShare', 'swarmConvertFromWeek', 'swarmConvertFullWeek', 'swarmConvertDepthShare', 'swarmConvertWaste', 'facingTwoSidedAngle', 'freshSideHoldSeconds', 'crossTEdge', 'crossTCreepFraction', 'crossTWidth', 'crossTTurnEdge', 'placesPicketSpread', 'placesPicketMove', 'placesPicketMax', 'placesWithdrawGatherSeconds', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerTargetShare', 'ledgerLineMin', 'ledgerLossMargin', 'ledgerSaveFloor', 'ledgerMinLoss', 'ledgerSurplusShare', 'withdrawRatio', 'withdrawHoldWeeks', 'ledgerAssaultWeeks', 'indDevShareSave', 'indDevShareIdle', 'dirPriorityMul', 'resourceHeldShare', 'devGraceWeeks', 'devCapStart', 'devCapAlien', 'devPotShare', 'devIdleWeeks', 'devMaxBuilds', 'bbAcidSeconds', 'bbAcidMaxPatches', 'bbRegrowQuiet', 'bbRegrowHull', 'bbRegrowPlate', 'bbRegrowHeatStop', 'bbBurstTouch', 'bbBurstDeathReach', 'bbBurstSeek', 'bbVolleySpread', 'bbMissileRetries', 'bbPdRoundsPerShot', 'bbPdFlakRounds', 'bbPdReadyRounds', 'bbPdLaserHeat', 'bbRadiatorFoldSeconds', 'bbSideWeight', 'deflectRatio', 'deflectCallSeconds', 'readyRoundsPerGun', 'boostFuEarth', 'boostFuOther', 'boostGrowth', 'alloysEarthStart', 'alloysEarthRampTo', 'alloysEarthRampWeeks', 'alloysGrowth', 'fissilesGrowth', 'alienAlloysStart', 'alienAlloysGrowth', 'alienAlloysPerStep', 'alienBoostPerStep', 'alienNodeLossShare', 'shipUpkeepMaxShare', 'berthIdleWeeks', 'berthBoostWeeks', 'berthMaxGrowth', 'campaignBuildDays', 'campaignLiveEnterShips', 'civilianNoteWeeks', 'leaderNewsCooldown', 'leaderNewsCombatGap', 'stationRebuildYardBonus', 'stationRebuildSecuredBonus', 'stationRebuildNearShare', 'stationRebuildAlloys', 'cmdAttackMaxSeconds', 'cmdPaceGap', 'radioQuietSeconds', 'cmdSummaryMinutes', 'designRemarkSeconds', 'cmdReviewBattles', 'huntMaxShips', 'huntGraceSeconds', 'pursuitFleeingBonus', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'dangerConeSeconds', 'placesAttackStallSeconds', 'campaignAttackStallSeconds', 'campaignStragglerShips', 'campaignStragglerShare', 'campaignStragglerSeconds', 'campaignStandoffSeconds', 'campaignStandoffWeeks', 'campaignRetakeWeeks', 'comebackMassWeeks', 'alienGarrisonCap', 'campaignFallenMax', 'campaignPoolCap', 'campaignGarrisonCap', 'campaignStartOwnShips', 'campaignAlienGarrison', 'campaignAdvanceKeep', 'campaignAdvanceRatio', 'campaignAdvanceTake', 'campaignAdvanceAfterWaves', 'campaignAdvanceHoldWeeks', 'campaignRearKeep', 'campaignFrontMoveMinShips', 'campaignFrontMoveShare', 'executiveMassRatio', 'executiveAssaultRatio', 'executiveAssaultMin', 'campaignPriorityWeight', 'alienShoveWeeks', 'alienGatherRatio', 'alienGatherTarget', 'alienGatherMinShips', 'alienGatherMaxWeeks', 'alienPullBackRatio', 'alienStateHoldWeeks', 'alienFirstPool', 'alienWaveJitter', 'alienWarnWeeks', 'alienWaveBoostWeeks', 'alienTargetWeakest', 'alienTargetMain', 'alienFirstWaveWeek', 'minLaunchShips', 'placesHoldClearOdds', 'campaignYardEvery', 'boostPerMarker', 'campaignRefuelShare', 'capitalBuildShare', 'assaultMaxWaitWeeks', 'repairPerWeek', 'campaignDesignBoostPerMass', 'campaignDesignBuildPerCost', 'campaignDesignAlloysShare', 'campaignDesignWeight', 'placesReachShare', 'placesFailRaise', 'placesContestShare', 'aoSecureShare', 'aoLoseShare', 'siegeBoostTrickle', 'boostFootholdShare', 'siegeGrowthFactor', 'siegeResourceFactor', 'placesReportMinutes', 'placesHysteresis', 'placesMaxOpposite', 'internalChance', 'internalFresh', 'externalCover', 'deepBelowHull', 'dcSeconds', 'blastToHull', 'blastToParts', 'profileNudgeMax', 'profileNudgeTurn', 'profileNudgeFiring', 'reactorWallShare', 'trackSquareCut', 'pressDryValue', 'pressFleetRatio', 'pressOdds', 'pressHealthEdge', 'pressOddsHealthy', 'pressDangerShare', 'pressHitChance', 'pressAfter', 'pressProgress', 'pressHold', 'pressStep', 'pressRingMin', 'lockFormShare', 'looseJitter', 'looseRein', 'lockSettleSeconds', 'lockRein', 'lockBreakHull', 'lockMinShare', 'closeRanksDelay', 'mergeBelow', 'mergeMaxOdds', 'disbandAt', 'stragglerSeconds', 'divisionLeash', 'pursuitBase', 'formBeforeAttack', 'gatherSeconds', 'fallenKeep', 'topUpBelow', 'stagingContactSeconds', 'stagingMaxWait', 'minNewSquadron', 'entryDangerRatio', 'entryCheckFactor', 'entryRetrySeconds', 'rallyInset', 'joinWornBelow', 'survivorEdgeMargin', 'flagKilled', 'flagWounded', 'flagSurviveSwing', 'woundedSkillPenalty', 'woundedBattles', 'replacementDelay', 'handoverSeconds', 'standInSkill', 'pinRenewSeconds', 'divisionTaskMinSeconds', 'rotateWornShare', 'divisionRefuseOdds', 'divisionRallyOdds', 'divisionCounterPressure', 'mainEffortMinOdds', 'mainEffortFreeRein', 'pinRenewFactor', 'supportSeconds', 'supportMaxTravelSeconds', 'divisionTargetBonus', 'localAttackOdds', 'memberCompactShare', 'recruitAxisSpread', 'recruitSkillLow', 'recruitSkillHigh', 'skillPerLevel', 'readinessXpPerRepair', 'medalSkillAdd', 'scarShakenBoldness', 'repertoirePull', 'spawnEdgeMargin', 'doctrinePull', 'matchupPull', 'experimentMinSeconds', 'experimentCooldown', 'tacticLearnStep', 'tacticWeightMax', 'exploreLearnBoost', 'spawnBandWidth', 'spawnVerticalMargin', 'shieldRechargeDelay', 'minArmorPassFraction', 'separationStrength',
   'separationMaxStepFraction', 'reengageMinGap', 'kiteEnterFactor', 'kiteExitFactor', 'kiteBackSpeed', 'debugMaxLines', 'formationHoldFraction', 'formationPaceMin',
   'formationBreakAngle', 'formationBreakSeconds', 'formationPassBend', 'leaderCloserMin', 'escortHoldFraction', 'escortStandOff', 'flankMarginFactor', 'flankAlong', 'flankContactFactor', 'flankArriveFactor', 'flankMapMarginFactor',
   'shotLengthSizes', 'minShipScreenPixels', 'maxTriangleShips', 'defaultReengage', 'defaultSeed',
@@ -13447,12 +13570,12 @@ const SETTING_MUST_BE_NON_NEGATIVE = ['swarmPressOdds', 'swarmFallBackOdds', 'bo
   'arrivalStandOff', 'arrivalEdgeMargin', 'arrivalEdgeHeight', 'repairOffMapMinSeconds', 'repairForwardSetback', 'repairReleaseSpreadFactor', 'repairReturnDelay',
   'learningSpeed', 'learningStep', 'learningSoftZone', 'learningMaxRoomShare', 'levelEffect', 'serviceEffectPerHour', 'adaptabilityMin', 'xpPerAction', 'xpScoreBonus', 'driftSize', 'learningMinWindow', 'learningMinActivity',
   'expectationWeight', 'successScore', 'notableScore', 'arrowThreshold', 'objectiveMinShare', 'fireBarLowStoreBelow', 'pdProtectedFactor', 'pdSlugPerMount', 'pdSlugCap', 'pdCrossingKill', 'spinalDeadband', 'safeRingMargin', 'stationHysteresis', 'holdHysteresis', 'stationLeeBelow', 'hotWeaveOutgunned', 'hotWeaveShare', 'stragglerFactorSurvival', 'probeWindow', 'probeRecover', 'probeShieldBack', 'probeLossLimit', 'probeOutgunned', 'commitOdds', 'commitDropFactor', 'aheadMax', 'screenAhead', 'marchQuantile', 'massAttackOdds', 'massAttackWaitedOdds', 'flankMinSquadrons', 'survivalPressSeconds', 'abandonAfter', 'abandonRatio', 'abandonRatioNow', 'abandonWaitReinf', 'abandonLossShare', 'dangerRadiusPad', 'surroundRadiusFactor', 'surroundShare', 'supportRadiusFactor', 'supportWant', 'lineSpacingMin', 'dangerAttackFactor', 'dangerWeakFactor', 'dangerWeakBelow'];
-const SETTING_WHOLE_NUMBERS = ['swarmLine', 'warValves', 'bombardShield', 'stationCrewWithStation', 'placeHoldFollow', 'aoMobilize', 'aoCharacter', 'aoAdmiral', 'cmdFormMoves', 'orderMovesObeyed', 'huntDetach', 'cmdStatLeans', 'huntDetachMax', 'huntDetachWhole', 'alloysNeverIdle', 'aoPostures', 'divisionOwner', 'longMapLine', 'cmdFormRealSize', 'cmdCapShare', 'cmdCapPerWard', 'cmdCapLongGuns', 'matchupsInPlay', 'calmShips', 'calmLookEvery', 'cmRenderParts', 'simBudgetModel', 'simKeepPace', 'closeWarmAll', 'closeKeepPictures', 'allyShoveOff', 'allyNudge', 'allyNudgeEvery', 'allyNudgeChecks', 'divisionSpots', 'divisionSpotsInFight', 'allyFineGrid', 'campaignTidyLive', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftMax', 'campaignSensors', 'showBoost', 'coreLoop', 'coreLoopFleetCommand', 'coreLoopFleetDivisions', 'coreLoopRecompose', 'coreLoopAlienCommand', 'coreLoopDivisionShips', 'coreLoopDivisionMinShips', 'coreLoopStreamMinShips', 'coreLoopLine', 'coreLoopLineLooks', 'coreLoopBerths', 'divisionMergeSmall', 'mergeFarOutOfContact', 'divisionMergeSlack', 'repairOffMap', 'supplyNoteWeeks', 'divisionPaceModel', 'swarmFormations', 'campaignBuildDays', 'campaignLiveEnterShips', 'cmdMaxAbreast', 'divisionFormations', 'doctrineModel', 'doctrineAlienClose', 'facingByGuns', 'facingVsTarget', 'facingTwoSided', 'freshSide', 'crossT', 'facingDodge', 'doctrineFindBattles', 'doctrineReviewMinLosses', 'doctrineReviewWeeks', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerMinLoss', 'ledgerAssaultWeeks', 'devCapStart', 'devCapAlien', 'devMaxBuilds', 'bbBeams', 'bbHeatModel', 'bbMissiles', 'bbPointDefence', 'bbBeamTicks', 'bbMissileRetries', 'bbPdFlakMax', 'bbLineOfFire', 'lineMinRanks', 'lineDeepRanks', 'lineDeepAbove', 'squadronMaxShips', 'tightOrbit', 'stationRebuild', 'radioMaxPerMinute', 'cmdReviewBattles', 'huntMaxShips', 'commandModel', 'cmdPassThrough', 'cmdSquadronBudget', 'cmdSquadronMax', 'cmdFleetMax', 'cmdRankBumpShips', 'cmdDivisionsMin', 'cmdDivisionsPerFleet', 'cmdDivisionsMax', 'orgScale', 'orgSquadronBudget', 'orgSquadronMax', 'orgDivisionTarget', 'orgDivisionMax', 'campaignLateAdmiral', 'campaignStartKit', 'placesFacilityApart', 'campaignFacilityApart', 'campaignStragglerShips', 'alienGarrisonCap', 'alienGatherMinShips', 'alienFirstPool', 'campaignFallenMax', 'placesHoldClear', 'campaignHoldClear', 'campaignPoolCap', 'campaignGarrisonCap', 'minLaunchShips', 'campaignYardShips', 'campaignModel', 'officerCarryOver', 'campaignAutosave', 'campaignLogMax', 'placesRetry', 'placesSweep', 'placesDecisive', 'siegeYardSlowdown', 'placesModel', 'placesAllowAbandon', 'placesTheatre', 'placesMaxOpposite', 'designModel', 'bureauBattle', 'moduleDamage', 'pressModel', 'partLossCall', 'crewRuleSquares', 'supplyReach', 'heatReach', 'exhaustLane', 'designMinSquares', 'designMaxSquares', 'survivalModel', 'allowAbandon', 'flankMinSquadrons', 'weaponModel', 'maxMissiles', 'pdSlugMaxMounts', 'missileInboundCall', 'formationModel', 'lockStep', 'columnMaxFile', 'wedgeMaxArm', 'reorgModel', 'disbandAt', 'fallenKeep', 'stagingModel', 'entrySegments', 'minNewSquadron', 'successionMode', 'woundedBattles', 'divisionTier', 'divisionTargetSize', 'divisionMinSize', 'divisionMaxSize', 'divisionMinSquadrons', 'rosterHistoryKeep', 'repertoireSize', 'aceKills', 'scarShakenBattles', 'maxShipsTotal', 'maxGridCells', 'targetCandidates', 'maxSalvosPerStep', 'maxShots', 'maxFlashes', 'formationMatchMaxShips', 'defaultSquadronSize',
+const SETTING_WHOLE_NUMBERS = ['lineRanks', 'swarmSpread', 'swarmLine', 'warValves', 'bombardShield', 'stationCrewWithStation', 'placeHoldFollow', 'aoMobilize', 'aoCharacter', 'aoAdmiral', 'cmdFormMoves', 'orderMovesObeyed', 'huntDetach', 'cmdStatLeans', 'huntDetachMax', 'huntDetachWhole', 'alloysNeverIdle', 'aoPostures', 'divisionOwner', 'longMapLine', 'cmdFormRealSize', 'cmdCapShare', 'cmdCapPerWard', 'cmdCapLongGuns', 'matchupsInPlay', 'calmShips', 'calmLookEvery', 'cmRenderParts', 'simBudgetModel', 'simKeepPace', 'closeWarmAll', 'closeKeepPictures', 'allyShoveOff', 'allyNudge', 'allyNudgeEvery', 'allyNudgeChecks', 'divisionSpots', 'divisionSpotsInFight', 'allyFineGrid', 'campaignTidyLive', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftMax', 'campaignSensors', 'showBoost', 'coreLoop', 'coreLoopFleetCommand', 'coreLoopFleetDivisions', 'coreLoopRecompose', 'coreLoopAlienCommand', 'coreLoopDivisionShips', 'coreLoopDivisionMinShips', 'coreLoopStreamMinShips', 'coreLoopLine', 'coreLoopLineLooks', 'coreLoopBerths', 'divisionMergeSmall', 'mergeFarOutOfContact', 'divisionMergeSlack', 'repairOffMap', 'supplyNoteWeeks', 'divisionPaceModel', 'swarmFormations', 'campaignBuildDays', 'campaignLiveEnterShips', 'cmdMaxAbreast', 'divisionFormations', 'doctrineModel', 'doctrineAlienClose', 'facingByGuns', 'facingVsTarget', 'facingTwoSided', 'freshSide', 'crossT', 'facingDodge', 'doctrineFindBattles', 'doctrineReviewMinLosses', 'doctrineReviewWeeks', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerMinLoss', 'ledgerAssaultWeeks', 'devCapStart', 'devCapAlien', 'devMaxBuilds', 'bbBeams', 'bbHeatModel', 'bbMissiles', 'bbPointDefence', 'bbBeamTicks', 'bbMissileRetries', 'bbPdFlakMax', 'bbLineOfFire', 'lineMinRanks', 'lineDeepRanks', 'lineDeepAbove', 'squadronMaxShips', 'tightOrbit', 'stationRebuild', 'radioMaxPerMinute', 'cmdReviewBattles', 'huntMaxShips', 'commandModel', 'cmdPassThrough', 'cmdSquadronBudget', 'cmdSquadronMax', 'cmdFleetMax', 'cmdRankBumpShips', 'cmdDivisionsMin', 'cmdDivisionsPerFleet', 'cmdDivisionsMax', 'orgScale', 'orgSquadronBudget', 'orgSquadronMax', 'orgDivisionTarget', 'orgDivisionMax', 'campaignLateAdmiral', 'campaignStartKit', 'placesFacilityApart', 'campaignFacilityApart', 'campaignStragglerShips', 'alienGarrisonCap', 'alienGatherMinShips', 'alienFirstPool', 'campaignFallenMax', 'placesHoldClear', 'campaignHoldClear', 'campaignPoolCap', 'campaignGarrisonCap', 'minLaunchShips', 'campaignYardShips', 'campaignModel', 'officerCarryOver', 'campaignAutosave', 'campaignLogMax', 'placesRetry', 'placesSweep', 'placesDecisive', 'siegeYardSlowdown', 'placesModel', 'placesAllowAbandon', 'placesTheatre', 'placesMaxOpposite', 'designModel', 'bureauBattle', 'moduleDamage', 'pressModel', 'partLossCall', 'crewRuleSquares', 'supplyReach', 'heatReach', 'exhaustLane', 'designMinSquares', 'designMaxSquares', 'survivalModel', 'allowAbandon', 'flankMinSquadrons', 'weaponModel', 'maxMissiles', 'pdSlugMaxMounts', 'missileInboundCall', 'formationModel', 'lockStep', 'columnMaxFile', 'wedgeMaxArm', 'reorgModel', 'disbandAt', 'fallenKeep', 'stagingModel', 'entrySegments', 'minNewSquadron', 'successionMode', 'woundedBattles', 'divisionTier', 'divisionTargetSize', 'divisionMinSize', 'divisionMaxSize', 'divisionMinSquadrons', 'rosterHistoryKeep', 'repertoireSize', 'aceKills', 'scarShakenBattles', 'maxShipsTotal', 'maxGridCells', 'targetCandidates', 'maxSalvosPerStep', 'maxShots', 'maxFlashes', 'formationMatchMaxShips', 'defaultSquadronSize',
   'farGoalBlocksAcross', 'debugMaxLines', 'maxTriangleShips', 'sectorsAcross', 'eventLogMax', 'logPanelLines', 'logBatchDetail', 'lineOrderRetries',
   'reportSquadronRows', 'reportPacketRows', 'reinforceMaxSquadrons', 'flankMaxSquadrons', 'counterMaxSquadrons', 'withdrawSamples', 'versionLogMax', 'serviceLastMax', 'serviceHistoryMax', 'serviceEventsMax', 'dossierLastActions', 'reportOfficerRows',
   'movementModel', 'hitModel', 'tacticsModel', 'flightAssist', 'retreatFiring', 'simultaneousFire', 'officerModel', 'strengthMapSteps', 'oddsCellsPerRadius', 'oddsMaxCells', 'maxRouts', 'maxBreakOffs', 'overheatFallback', 'smartTargetCandidates'];
 // The switches (section 1b, "The rules in force"): the values each may have, and the names the code uses for them.
-const SETTING_CHOICES = { swarmLine: [0, 1], warValves: [0, 1], bombardShield: [0, 1, 2], stationCrewWithStation: [0, 1], placeHoldFollow: [0, 1], aoMobilize: [0, 1], aoCharacter: [0, 1], aoAdmiral: [0, 1], cmdFormMoves: [0, 1], orderMovesObeyed: [0, 1], huntDetach: [0, 1], cmdStatLeans: [0, 1], huntDetachWhole: [0, 1], aoPostures: [0, 1], divisionOwner: [0, 1], admiralNeedsModel: [0, 1], longMapLine: [0, 1], cmdFormRealSize: [0, 1], cmdCapShare: [0, 1], cmdCapLongGuns: [0, 1], moonOrbits: [0, 1], dockModel: [0, 1], dockSpareModel: [0, 1], dockSpareSwarm: [0, 1], scuttleOnLedger: [0, 1], swarmDockModel: [0, 1], dockEvoModel: [0, 1], dockEvoSwarmSplit: [0, 1], matchupsInPlay: [0, 1], calmShips: [0, 1], cmRenderParts: [0, 1], simBudgetModel: [0, 1], simKeepPace: [0, 1], closeWarmAll: [0, 1], closeKeepPictures: [0, 1], allyShoveOff: [0, 1], allyNudge: [0, 1], divisionSpots: [0, 1], divisionSpotsInFight: [0, 1], campaignSensors: [0, 1], showBoost: [0, 1], coreLoop: [0, 1], coreLoopLine: [0, 1], coreLoopFleetCommand: [0, 1], coreLoopFleetDivisions: [0, 1], coreLoopRecompose: [0, 1], coreLoopAlienCommand: [0, 1], divisionMergeSmall: [0, 1], mergeFarOutOfContact: [0, 1], berthPairingModel: [0, 1], swarmNestModel: [0, 1], swarmGrowUpModel: [0, 1], swarmOpeningSpread: [0, 1], swarmLifeModel: [0, 1], swarmSurfaceModel: [0, 1], swarmEatsEnemies: [0, 1], swarmEatsHatchlings: [0, 1], fighterHangarModel: [0, 1], fighterLaunchModel: [0, 1], hangarRefillFromFleet: [0, 1], hangarOrphansStay: [0, 1], tenderDocking: [0, 1], supplyRuns: [0, 1], cargoKept: [0, 1], ferryRuns: [0, 1], stationFighterGuard: [0, 1], stationNoSquadron: [0, 1], stationCrewSquad: [0, 1], stationPass: [0, 1], droneJamModel: [0, 1], divisionPaceModel: [0, 1], swarmFormations: [0, 1], facingVsTarget: [0, 1], facingTwoSided: [0, 1], freshSide: [0, 1], crossT: [0, 1], facingDodge: [0, 1], placesPicket: [0, 1], placesPicketSwarm: [0, 1], campaignStandoffPark: [0, 1], placesWithdrawOrder: [0, 1], placesWithdrawGuardDry: [0, 1], campaignLiveYardDawn: [0, 1], longMapReach: [0, 1], longMapLeash: [0, 1], longMapFog: [0, 1], sleepShips: [0, 1, 2], campaignResourceGate: [0, 1], bbAcid: [0, 1], bbRegrow: [0, 1], bbBurst: [0, 1], bbMissileStoreBySize: [0, 1], bbBeams: [0, 1], bbHeatModel: [0, 1], bbMissiles: [0, 1], bbPointDefence: [0, 1], bbLineOfFire: [0, 1], tightOrbit: [0, 1], campaignStartAtEarth: [0, 1], placesCrush: [0, 1], placesMassAttack: [0, 1], assaultSendAll: [0, 1], assaultReachOnly: [0, 1], frontReachOnly: [0, 1], placesNoLeapfrog: [0, 1], placesClaimKeeps: [0, 1], enemyWaitTurnBack: [0, 1], placesClaimFirm: [0, 1], placesSwarmPress: [0, 1], campaignSupplyLine: [0, 1], commandModel: [0, 1], stationRebuild: [0, 1], stationHullMend: [0, 1], cmdHelpMarches: [0, 1], cmdOpCommit: [0, 1, 2], cmdPassThrough: [0, 1, 2], orgScale: [0, 1], campaignLateAdmiral: [0, 1], campaignStartKit: [0, 1], placesFacilityApart: [0, 1], campaignFacilityApart: [0, 1], placesHoldClear: [0, 1], campaignHoldClear: [0, 1], campaignModel: [0, 1], officerCarryOver: [0, 1], campaignAutosave: [0, 1], placesRetry: [0, 1], placesSweep: [0, 1], placesDecisive: [0, 1], siegeYardSlowdown: [0, 1], placesModel: [0, 1], placesAllowAbandon: [0, 1], placesTheatre: [0, 1], designModel: [0, 1, 2], bureauBattle: [0, 1], moduleDamage: [0, 1], pressModel: [0, 1], partLossCall: [0, 1], survivalModel: [0, 1], allowAbandon: [0, 1], weaponModel: [0, 1], formationModel: [0, 1], lockStep: [0, 1], reorgModel: [0, 1], movementModel: [0, 1], hitModel: [0, 1, 2], tacticsModel: [0, 1], flightAssist: [0, 1], retreatFiring: [0, 1], overheatFallback: [0, 1], newSetupDefaults: [0, 1], unmannedRearGuard: [0, 1], simultaneousFire: [0, 1], officerModel: [0, 1], promoteNeedsVacancy: [0, 1], divisionTier: [0, 1], successionMode: [0, 1, 2], stagingModel: [0, 1] };
+const SETTING_CHOICES = { lineRanks: [0, 1], swarmSpread: [0, 1], longSolarReach: [0, 1], longDockModel: [0, 1], swarmLine: [0, 1], warValves: [0, 1], bombardShield: [0, 1, 2], stationCrewWithStation: [0, 1], placeHoldFollow: [0, 1], aoMobilize: [0, 1], aoCharacter: [0, 1], aoAdmiral: [0, 1], cmdFormMoves: [0, 1], orderMovesObeyed: [0, 1], huntDetach: [0, 1], cmdStatLeans: [0, 1], huntDetachWhole: [0, 1], aoPostures: [0, 1], divisionOwner: [0, 1], admiralNeedsModel: [0, 1], longMapLine: [0, 1], cmdFormRealSize: [0, 1], cmdCapShare: [0, 1], cmdCapLongGuns: [0, 1], moonOrbits: [0, 1], dockModel: [0, 1], dockSpareModel: [0, 1], dockSpareSwarm: [0, 1], scuttleOnLedger: [0, 1], swarmDockModel: [0, 1], dockEvoModel: [0, 1], dockEvoSwarmSplit: [0, 1], matchupsInPlay: [0, 1], calmShips: [0, 1], cmRenderParts: [0, 1], simBudgetModel: [0, 1], simKeepPace: [0, 1], closeWarmAll: [0, 1], closeKeepPictures: [0, 1], allyShoveOff: [0, 1], allyNudge: [0, 1], divisionSpots: [0, 1], divisionSpotsInFight: [0, 1], campaignSensors: [0, 1], showBoost: [0, 1], coreLoop: [0, 1], coreLoopLine: [0, 1], coreLoopFleetCommand: [0, 1], coreLoopFleetDivisions: [0, 1], coreLoopRecompose: [0, 1], coreLoopAlienCommand: [0, 1], divisionMergeSmall: [0, 1], mergeFarOutOfContact: [0, 1], berthPairingModel: [0, 1], swarmNestModel: [0, 1], swarmGrowUpModel: [0, 1], swarmOpeningSpread: [0, 1], swarmLifeModel: [0, 1], swarmSurfaceModel: [0, 1], swarmEatsEnemies: [0, 1], swarmEatsHatchlings: [0, 1], fighterHangarModel: [0, 1], fighterLaunchModel: [0, 1], hangarRefillFromFleet: [0, 1], hangarOrphansStay: [0, 1], tenderDocking: [0, 1], supplyRuns: [0, 1], cargoKept: [0, 1], ferryRuns: [0, 1], stationFighterGuard: [0, 1], stationNoSquadron: [0, 1], stationCrewSquad: [0, 1], stationPass: [0, 1], droneJamModel: [0, 1], divisionPaceModel: [0, 1], swarmFormations: [0, 1], facingVsTarget: [0, 1], facingTwoSided: [0, 1], freshSide: [0, 1], crossT: [0, 1], facingDodge: [0, 1], placesPicket: [0, 1], placesPicketSwarm: [0, 1], campaignStandoffPark: [0, 1], placesWithdrawOrder: [0, 1], placesWithdrawGuardDry: [0, 1], campaignLiveYardDawn: [0, 1], longMapReach: [0, 1], longMapLeash: [0, 1], longMapFog: [0, 1], sleepShips: [0, 1, 2], campaignResourceGate: [0, 1], bbAcid: [0, 1], bbRegrow: [0, 1], bbBurst: [0, 1], bbMissileStoreBySize: [0, 1], bbBeams: [0, 1], bbHeatModel: [0, 1], bbMissiles: [0, 1], bbPointDefence: [0, 1], bbLineOfFire: [0, 1], tightOrbit: [0, 1], campaignStartAtEarth: [0, 1], placesCrush: [0, 1], placesMassAttack: [0, 1], assaultSendAll: [0, 1], assaultReachOnly: [0, 1], frontReachOnly: [0, 1], placesNoLeapfrog: [0, 1], placesClaimKeeps: [0, 1], enemyWaitTurnBack: [0, 1], placesClaimFirm: [0, 1], placesSwarmPress: [0, 1], campaignSupplyLine: [0, 1], commandModel: [0, 1], stationRebuild: [0, 1], stationHullMend: [0, 1], cmdHelpMarches: [0, 1], cmdOpCommit: [0, 1, 2], cmdPassThrough: [0, 1, 2], orgScale: [0, 1], campaignLateAdmiral: [0, 1], campaignStartKit: [0, 1], placesFacilityApart: [0, 1], campaignFacilityApart: [0, 1], placesHoldClear: [0, 1], campaignHoldClear: [0, 1], campaignModel: [0, 1], officerCarryOver: [0, 1], campaignAutosave: [0, 1], placesRetry: [0, 1], placesSweep: [0, 1], placesDecisive: [0, 1], siegeYardSlowdown: [0, 1], placesModel: [0, 1], placesAllowAbandon: [0, 1], placesTheatre: [0, 1], designModel: [0, 1, 2], bureauBattle: [0, 1], moduleDamage: [0, 1], pressModel: [0, 1], partLossCall: [0, 1], survivalModel: [0, 1], allowAbandon: [0, 1], weaponModel: [0, 1], formationModel: [0, 1], lockStep: [0, 1], reorgModel: [0, 1], movementModel: [0, 1], hitModel: [0, 1, 2], tacticsModel: [0, 1], flightAssist: [0, 1], retreatFiring: [0, 1], overheatFallback: [0, 1], newSetupDefaults: [0, 1], unmannedRearGuard: [0, 1], simultaneousFire: [0, 1], officerModel: [0, 1], promoteNeedsVacancy: [0, 1], divisionTier: [0, 1], successionMode: [0, 1, 2], stagingModel: [0, 1] };
 // Rule switches that an imported file may lack: a missing one is read as 0 (the file was made before the rule existed), not as this version's default (stage 12).
 const SETTING_SWITCHES_OLD_FILES = ['commandModel', 'orgScale', 'movementModel', 'hitModel', 'tacticsModel', 'newSetupDefaults', 'simultaneousFire', 'officerModel', 'divisionTier', 'stagingModel', 'reorgModel', 'formationModel', 'lockStep', 'weaponModel', 'survivalModel', 'designModel', 'moduleDamage', 'pressModel', 'placesModel'];
 const MOVE_CLASSIC = 0, MOVE_THRUST = 1;
@@ -13460,7 +13583,7 @@ const HIT_ALWAYS = 0, HIT_ROLL = 1, HIT_EXPECTED = 2;
 const TACTICS_CLASSIC = 0, TACTICS_SMART = 1;
 const ASSIST_SOFT = 0, ASSIST_HARD = 1;
 const RETREAT_FIRE_NONE = 0, RETREAT_FIRE_BEARING = 1;
-const SETTING_FRACTIONS = ['bombardShieldShare', 'swarmDockStallQuietShare', 'allyNudgeDeep', 'facingTieShare', 'freshSideShare', 'freshSideShareAlways', 'freshSideArmour', 'placesPicketShare', 'bbAcidAblativeShare', 'bbRegrowHull', 'bbRegrowPlate', 'bbEnergyPlateEffect', 'bbFocusPerTick', 'bbBeamFullShare', 'bbBeamMinPower', 'bbHeatHitShare', 'bbRadiatorFoldShare', 'bbPdStopCap', 'bbFlakSmallBonus', 'bbMinArmorPass', 'piercingArmourShare', 'blastNeighbourShare', 'falloffBandBar', 'tightOrbitReach', 'cmdPassSoftPush', 'cmdGiveUpLossShare', 'cmdGiveUpOdds', 'cmdHelpOdds', 'cmdWithdrawRatio', 'cmdPlacesReach', 'moraleRallyAt', 'moraleCarryOver', 'moraleFleetWithdrawShare', 'moraleAbandonAt', 'cmdRearToughShare', 'cmdRotateBelow', 'cmdStrikeLossShare', 'cmdBoundFactor', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'cmdSplitMain', 'cmdSplitSecond', 'cmdSplitThird', 'cmdSplitRaid', 'cmdFleetWornShare', 'alienWaveJitter', 'alienGatherRatio', 'alienPullBackRatio', 'alienTargetWeakest', 'alienTargetMain', 'capitalBuildShare', 'placesReachShare', 'placesContestShare', 'rotateWornShare', 'mainEffortFreeRein', 'repertoireSwapLow', 'repertoireSwapHigh', 'repertoireKeepDoctrineAbove', 'centripetalUse', 'exploreChance', 'orbitSpeedFraction', 'lineCreepFraction', 'sidestepFraction', 'faceSideGunShare', 'standoffMinShare', 'ringTieBand', 'impatienceCreep', 'anchorBetterFactor', 'routCaution', 'fallbackCalmFraction', 'fallbackBackMargin', 'minHitChance', 'maxHitChance', 'assumedEvasion', 'effectiveHitChance', 'spawnEdgeMargin', 'spawnBandWidth', 'spawnVerticalMargin', 'minArmorPassFraction', 'separationStrength', 'formationHoldFraction', 'flankAlong',
+const SETTING_FRACTIONS = ['lineRankRotateAt', 'bombardShieldShare', 'swarmDockStallQuietShare', 'allyNudgeDeep', 'facingTieShare', 'freshSideShare', 'freshSideShareAlways', 'freshSideArmour', 'placesPicketShare', 'bbAcidAblativeShare', 'bbRegrowHull', 'bbRegrowPlate', 'bbEnergyPlateEffect', 'bbFocusPerTick', 'bbBeamFullShare', 'bbBeamMinPower', 'bbHeatHitShare', 'bbRadiatorFoldShare', 'bbPdStopCap', 'bbFlakSmallBonus', 'bbMinArmorPass', 'piercingArmourShare', 'blastNeighbourShare', 'falloffBandBar', 'tightOrbitReach', 'cmdPassSoftPush', 'cmdGiveUpLossShare', 'cmdGiveUpOdds', 'cmdHelpOdds', 'cmdWithdrawRatio', 'cmdPlacesReach', 'moraleRallyAt', 'moraleCarryOver', 'moraleFleetWithdrawShare', 'moraleAbandonAt', 'cmdRearToughShare', 'cmdRotateBelow', 'cmdStrikeLossShare', 'cmdBoundFactor', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'cmdSplitMain', 'cmdSplitSecond', 'cmdSplitThird', 'cmdSplitRaid', 'cmdFleetWornShare', 'alienWaveJitter', 'alienGatherRatio', 'alienPullBackRatio', 'alienTargetWeakest', 'alienTargetMain', 'capitalBuildShare', 'placesReachShare', 'placesContestShare', 'rotateWornShare', 'mainEffortFreeRein', 'repertoireSwapLow', 'repertoireSwapHigh', 'repertoireKeepDoctrineAbove', 'centripetalUse', 'exploreChance', 'orbitSpeedFraction', 'lineCreepFraction', 'sidestepFraction', 'faceSideGunShare', 'standoffMinShare', 'ringTieBand', 'impatienceCreep', 'anchorBetterFactor', 'routCaution', 'fallbackCalmFraction', 'fallbackBackMargin', 'minHitChance', 'maxHitChance', 'assumedEvasion', 'effectiveHitChance', 'spawnEdgeMargin', 'spawnBandWidth', 'spawnVerticalMargin', 'minArmorPassFraction', 'separationStrength', 'formationHoldFraction', 'flankAlong',
   'lineMaxGapFraction', 'roleHeavyNorm', 'roleFastNorm', 'reserveMaxDepthFraction', 'arrivalEdgeMargin', 'arrivalEdgeHeight', 'repairForwardSetback',
   'learningSoftZone', 'learningMaxRoomShare', 'learningMinWindow', 'learningMinActivity', 'adaptabilityMin', 'successScore', 'notableScore', 'objectiveMinShare'];   // normally 0 to 1 (a warning, not an error, outside)
 
@@ -22184,6 +22307,8 @@ function sleepReset() { shipSleep.fill(0); sleepCursor = 0; sleepStats.looks = 0
 let shipLeash = new Uint8Array(0);          // per ship: 1 = over the line, flying back
 let shipLeashX = new Float64Array(0), shipLeashY = new Float64Array(0), shipLeashR = new Float64Array(0);   // where it flies back to, and how close it must get
 let leashCursor = 0;
+let shipLeashSolar = new Uint8Array(0);     // (v237.0) per ship: 1 = flying back from past its solar panels' reach
+let longSolarReachLive = false;
 let leashActive = false;                    // this step: the rule is on
 const leashStats = { looks: 0, now: 0 };
 
@@ -22191,18 +22316,20 @@ function leashOn() {
   return SETTINGS.longMapLeash === 1 && typeof theatreLongReachOn === 'function' && theatreLongReachOn() && SETTINGS.campaignModel === 1 && !!campaign && campaign.battle.state === 'live' &&
          typeof battlePlaces !== 'undefined' && battlePlaces.length > 0;
 }
-function leashReset() { shipLeash.fill(0); leashCursor = 0; leashActive = false; leashStats.looks = 0; leashStats.now = 0; }
+function leashReset() { shipLeash.fill(0); shipLeashSolar.fill(0); leashCursor = 0; leashActive = false; leashStats.looks = 0; leashStats.now = 0; }
 // Once a step: the rolling look.
 function leashLook() {
   leashActive = leashOn();
   if (!leashActive) return;
+  longSolarReachLive = typeof longSolarOn === 'function' && longSolarOn();
+  if (shipLeashSolar.length < shipLeash.length || shipLeash.length < highWater) shipLeashSolar = new Uint8Array(Math.max(highWater, MAX_SHIPS, shipLeash.length));
   if (shipLeash.length < highWater) { const n = Math.max(highWater, MAX_SHIPS); shipLeash = new Uint8Array(n); shipLeashX = new Float64Array(n); shipLeashY = new Float64Array(n); shipLeashR = new Float64Array(n); }
   const every = Math.max(1, Math.floor(SETTINGS.sleepLookEvery)), n = Math.ceil(highWater / every);
   const back = Math.min(0.98, Math.max(0.1, SETTINGS.longMapLeashBack));
   const anchors = [theatreAnchors(0), theatreAnchors(1)];
   for (let k = 0; k < n; k++) {
     const i = leashCursor; leashCursor = leashCursor + 1 >= highWater ? 0 : leashCursor + 1;
-    if (shipAlive[i] !== 1) { shipLeash[i] = 0; continue; }
+    if (shipAlive[i] !== 1) { shipLeash[i] = 0; shipLeashSolar[i] = 0; continue; }
     const side = shipSide[i], type = shipType[i], st = side * TYPE_COUNT + type;
     if (stImmobile[st] === 1 || shipSquad[i] <= 0) { shipLeash[i] = 0; continue; }
     const list = anchors[side];
@@ -22216,6 +22343,12 @@ function leashLook() {
     if (shipLeash[i] === 1) {
       if (d <= reach * back) shipLeash[i] = 0; else { shipLeashX[i] = bx; shipLeashY[i] = by; shipLeashR[i] = reach * back; }
     } else if (d > reach) { shipLeash[i] = 1; shipLeashX[i] = bx; shipLeashY[i] = by; shipLeashR[i] = reach * back; }
+    // (v237.0) a solar ship also flies back from past its panels' reach, to our nearest station inside it (06f5 longSolarLeash)
+    if (longSolarReachLive) {
+      const sl = longSolarLeash(i, shipLeashSolar[i] === 1);
+      if (sl) { shipLeash[i] = 1; shipLeashSolar[i] = 1; shipLeashX[i] = sl.x; shipLeashY[i] = sl.y; shipLeashR[i] = sl.r; }
+      else if (shipLeashSolar[i] === 1) { shipLeashSolar[i] = 0; if (d <= reach) shipLeash[i] = 0; }
+    }
     // (v189.1) a held ship on escort duty: the ship it guards has gone where this one's fuel cannot follow, and the escort post pulled it back out
     // over the line for good (about 30 of our pickets sat there all war). The squadron gives the escort up and goes back to its own orders.
     if (shipLeash[i] === 1) {
@@ -27561,8 +27694,9 @@ function pulseTypeOf(t) {
         drives.push({ k: k, id: u.m.id, every: u.m.pulse.every || 1.5, gx: u.rec.x - L.x0, gy0: u.rec.y - L.y0, gy1: u.rec.y - L.y0 + th, depth: tw,
                       dmg: PULSE_RULES.damage[u.m.id] || PULSE_RULES.damage.pulsedrive, heavy: u.m.id === 'pulsedrive_h' || u.m.id === 'fusionpulse_h', fusion: !!u.m.pulse.fusion, r: rr });
       }
+      const tf = typeof titanSuperOfDesign === 'function' ? titanSuperOfDesign(rec.design) : null;
       if (drives.length) out = { drives: drives, gridW: L.x1 - L.x0 + 1, gridH: L.y1 - L.y0 + 1,
-                                 titan: typeof titanSuperOfDesign === 'function' && !!titanSuperOfDesign(rec.design) };
+                                 titan: !!tf, titanKey: tf ? tf.titanSuper : '', titanW: tf ? tf.w : 0, titanH: tf ? tf.h : 0 };
     }
   } catch (e) { out = null; }
   pulseTypeCache.set(rec, out);
@@ -27599,7 +27733,17 @@ function pulseSquash(ph) { if (ph < 0.06) return ph / 0.06; if (ph > 0.66) retur
 function pulseGeom(i, pt, d) {
   const c = shipCos[i], s = shipSin[i];
   const len = typeof shipDrawLenOf === 'function' ? shipDrawLenOf(shipType[i]) : typeSize[shipType[i]];
-  if (pt.titan || d.r !== 0) {                      // a titan is drawn far bigger than its grid: the plate sits on its art's stern, on the centre line
+  // (v239.0) a titan is drawn far bigger than its grid: its art shows the pulse drive across its own drive bank at the stern (UI/titan-art.js fitPulse),
+  // and the plate moves exactly there. Before, the plate sat half the drawn length behind the middle, which for most titans was out in space behind the art.
+  // The wake keeps its old size (wakeHw), so this changes only where the pulses go off, not how far they reach.
+  const st = pt.titan && pt.titanKey && typeof window.TITAN_ART !== 'undefined' && window.TITAN_ART.stern ? window.TITAN_ART.stern(pt.titanKey, pt.titanW, pt.titanH) : null;
+  const box = st ? window.TITAN_ART.box(pt.titanKey) : null, k = box && box.w > 0 ? len / box.w : 0;
+  if (st && k > 0) {
+    const lx = st.x * k, ly = st.y * k;
+    return { ox: shipX[i] + lx * c - ly * s, oy: shipY[i] + lx * s + ly * c, c: c, s: s, hw: st.hw * k, hb: st.hb * k, depth: st.depth * k, sq: st.th * k / 0.9,
+             wakeHw: len * PULSE_RULES.hwShare };
+  }
+  if (pt.titan || d.r !== 0) {                      // a titan without a drive bank in its art, or a turned drive: the plate on the stern, on the centre line
     const hw = len * PULSE_RULES.hwShare;
     return { ox: shipX[i] - c * len * 0.5, oy: shipY[i] - s * len * 0.5, c: c, s: s, hw: hw, hb: hw * 0.62, depth: hw * 0.5, sq: hw / 8 };
   }
@@ -27629,7 +27773,7 @@ function pulseWakeStep(deferred) {
     if (was === undefined) continue;                // the first look at a ship only starts her count
     if (shipSide[i] === 0 && !d.fusion && gameWarHere() && campaign.battle && campaign.battle.ao) pulseLitWeek[campaign.battle.ao] = 1;
     const pt = pulseTypeOf(shipType[i]), g = pulseGeom(i, pt, d);
-    const reach = g.hw * PULSE_RULES.wakeLen, bx = -g.c, by = -g.s;   // straight astern
+    const reach = (g.wakeHw || g.hw) * PULSE_RULES.wakeLen, bx = -g.c, by = -g.s;   // straight astern ((v239.0) a titan's wake keeps its old reach)
     for (let j = 0; j < highWater; j++) {
       if (shipAlive[j] !== 1 || shipSide[j] === shipSide[i]) continue;   // enemies only (Alex: no friendly fire for now)
       const dx = shipX[j] - g.ox, dy = shipY[j] - g.oy, r = typeSize[shipType[j]] * 0.5;
@@ -31433,6 +31577,7 @@ function theatreDivisionReach(dv) {
 function theatreReachOk(side, dv, k) {
   if (!(k >= 0) || !theatreLongReachOn()) return true;
   const p = battlePlaces[k], reach = theatreDivisionReach(dv), anchors = theatreAnchors(side);
+  if (typeof longSolarDivisionX === 'function' && p.x > longSolarDivisionX(dv)) return false;   // (v237.0) never past its solar panels' reach (06f5)
   if (longCmdOn()) return longDivisionRoadOk(side, dv, p.x, p.y);                                // (v189.0) ... and it must be able to fly there without leaving its fuel line on the way (06c3)
   for (let i = 0; i < anchors.length; i++) { const q = battlePlaces[anchors[i]]; if (longMapFuelDist(side, p.x, p.y, q.x, q.y) <= reach) return true; }   // (v164.0: the outer gaps count longer, 06d2)
   return false;
@@ -32133,6 +32278,7 @@ function theatrePicket(a, th, v, live) {
       for (const k of anchors) { const q = battlePlaces[k], d = theatreDist(q.x, q.y, spot.x, spot.y); if (d < nd) { nd = d; near = k; } }
       if (near >= 0 && isFinite(reach) && nd > 0.5 * reach) { const q = battlePlaces[near], f = 0.5 * reach / nd; spot.x = q.x + (spot.x - q.x) * f; spot.y = q.y + (spot.y - q.y) * f; }
     }
+    if (typeof longSwarmJitterSpot === 'function') longSwarmJitterSpot(a, dv, spot);   // (v236.0, 06c3) the Swarm's pickets stand ragged, not in neat slots
     const moved = !(dv.picketAt >= 0) || theatreDist(spot.x, spot.y, dv.picketX, dv.picketY) > S.placesPicketMove;
     const retasked = dv.picketAt >= 0 && dv.taskGiven && dv.taskGiven.at > dv.picketAt;
     if (!moved && !retasked) continue;
@@ -32209,6 +32355,7 @@ function theatreSwarmPress(a, th, v, live) {
     dv.pressAim = e;
     admiralTask(a, dv, 'counter', { enemy: e, x: pic.cX[e], y: pic.cY[e], place: k }, battlePlaces[k].name + ': press the attack on the nearest enemy ships');
   }
+  if (line && mass >= 0) longSwarmSpread(a, th, live, mass);                                    // (v236.0, 06c3) the Divisions at the mass spread across a ragged front
 }
 
 // ---- Abandoning the field on a places map (placesAllowAbandon) ----
@@ -32693,6 +32840,58 @@ function longSwarmMassPlace(a) {
     if (d < bestD) { bestD = d; best = k; }
   }
   return best;
+}
+// (v236.0) THE SWARM SPREADS (SETTINGS.swarmSpread; Alex 12 Nov: the Swarm covers a front too, but "blobby, unorganized", leaning on one part of it for a while).
+// The Divisions standing at the mass place (not in an attack, not pressing) are posted along a ragged front through the place facing the enemy's nearest
+// place in play: swarmSpreadWidth x the sum of their frontages long, each Division a little off its slot sideways and forward or back (swarmSpreadDepth),
+// and the part of the front nearest this while's bulge pushed forward. The spread is reshuffled every swarmSpreadRejig battle seconds. A Division keeps
+// its place record (dv.place = the mass), so the press and the floor's bookkeeping see it standing at the mass as before.
+function longSwarmSpread(a, th, live, mass) {
+  const S = SETTINGS;
+  if (S.swarmSpread !== 1 || !(mass >= 0)) return;
+  const M = longPlayOf(a.side), p = battlePlaces[mass];
+  let tx = -1, td = Infinity;
+  for (const j of M.other) if (M.play[j] === 1) { const d = theatreDist(battlePlaces[j].x, battlePlaces[j].y, p.x, p.y); if (d < td) { td = d; tx = j; } }
+  if (tx < 0) return;
+  let gx = battlePlaces[tx].x - p.x, gy = battlePlaces[tx].y - p.y;
+  const g = Math.sqrt(gx * gx + gy * gy); if (g < 1) return;
+  gx /= g; gy /= g;
+  const nx = -gy, ny = gx;
+  // only the Divisions standing idle at the mass: a picket (the Swarm's forward line, step 6c of 06c, jittered below), a claim, a Division moving up or one in an
+  // attack keeps its own order (the first spread took the pickets too: each look pulled a picket back to the mass and the picket step sent it out again, so on the
+  // seed-202 war the Swarm's 116 ships shuttled between Phobos and their picket spot for weeks and never fought)
+  const divs = live.filter(function (dv) { return dv.place === mass && (dv.placeTask === 'reserve' || dv.placeTask === 'hold' || dv.placeTask === 'garrison') && !theatreInOp(th, dv) && divisionAliveSquads(dv).length > 0; });
+  if (divs.length === 0) return;
+  divs.sort(function (p, q) { return p.id - q.id; });
+  const wide = Math.max(1, +S.swarmSpreadWidth || 1), widthOf = function (dv) { return Math.max(600, coreDivisionFrontage(dv)) * wide; };
+  let W = 0; for (const dv of divs) W += widthOf(dv);
+  const epoch = Math.floor(simTime / Math.max(30, +S.swarmSpreadRejig || 300));
+  const r01 = function (k, salt) { return ((hash32((k * 7919 + salt * 104729 + epoch * 31 + mass * 7) | 0) >>> 0) % 10000) / 10000; };
+  const bulge = (r01(0, 1) - 0.5) * W, depth = Math.max(0, +S.swarmSpreadDepth || 0), WW = S.worldWidth, WH = S.worldHeight;
+  let at = -W / 2;
+  for (const dv of divs) {
+    const w = widthOf(dv), lat = at + w / 2 + (r01(dv.id, 2) - 0.5) * 0.6 * w;
+    at += w;
+    const near = Math.max(0, 1 - Math.abs(lat - bulge) / Math.max(1, 0.35 * W));
+    const fwd = (r01(dv.id, 3) - 0.5) * depth + near * 0.8 * depth;
+    const x = clampNumber(p.x + gx * fwd + nx * lat, 0, WW), y = clampNumber(p.y + gy * fwd + ny * lat, 0, WH);
+    if (dv.spreadEpoch === epoch && dv.spreadMass === mass && theatreDist(x, y, dv.spreadX, dv.spreadY) < 400 && divisionTaskId(dv) === 'hold') continue;
+    dv.spreadEpoch = epoch; dv.spreadMass = mass; dv.spreadX = x; dv.spreadY = y;
+    admiralTask(a, dv, 'hold', { x: x, y: y, gx: gx, gy: gy, place: mass }, p.name + ': the Swarm spreads across its front' + (near > 0.5 ? ', leaning forward here' : ''));
+  }
+}
+// (v236.0) The Swarm's pickets are its forward line (06c step 6c: neat slots placesPicketSpread apart, halfway to our nearest place). With swarmSpread on each
+// picket's spot is pushed about by a seeded jitter, sideways up to half a slot and forward or back up to swarmSpreadDepth, re-rolled every swarmSpreadRejig
+// seconds: the Swarm's front is ragged and some of it leans forward, as Alex asked (blobby, not a formation). The picket step re-posts a picket only when its
+// spot has moved more than placesPicketMove, so most reshuffles move only a few Divisions.
+function longSwarmJitterSpot(a, dv, spot) {
+  const S = SETTINGS;
+  if (S.swarmSpread !== 1 || a.side !== RED || !swarmLineOn(a) || spot === null) return spot;
+  const epoch = Math.floor(simTime / Math.max(30, +S.swarmSpreadRejig || 300));
+  const r01 = function (salt) { return ((hash32((dv.id * 7919 + salt * 104729 + epoch * 31) | 0) >>> 0) % 10000) / 10000; };
+  const side = (r01(4) - 0.5) * S.placesPicketSpread, fwd = (r01(5) - 0.5) * 2 * Math.max(0, +S.swarmSpreadDepth || 0);
+  spot.x = clampNumber(spot.x + spot.gx * fwd - spot.gy * side, 0, S.worldWidth); spot.y = clampNumber(spot.y + spot.gy * fwd + spot.gx * side, 0, S.worldHeight);
+  return spot;
 }
 function longSwarmBar(a) {
   if (swarmLineOn(a)) return Math.max(0.05, SETTINGS.swarmPressOdds);   // (v232.0) the Swarm's line presses at swarmPressOdds, and the bar does not fall as the front stands
@@ -33544,7 +33743,7 @@ function aoLineStep(a, th, v, ao, D, look) {
     const moved = aoAssaultPosture(ao, L, D);
     L.assaultIn = D.assault.length > 0;                                                          // (v210.0: the plan line only says the Assault Fleet is in the line when it has ships here)
     if (moved) logEvent(a.side, 'Admiral: ' + ao.name + ': the Assault Fleet ' + (L.posture === 'committed' ? 'goes into the line: it is pressed' : 'is pulled back behind the line: it holds') + '.');
-    const fighters = D.line.concat(L.posture === 'committed' ? D.assault : []);
+    const fighters = D.line.filter(function (dv) { return !(lineRanksOn(a) && dv.rank === 'reserve'); }).concat(L.posture === 'committed' ? D.assault : []);   // (v236.0, 06e part 8) the reserve ranks keep their spots: only the front rank meets or retakes
     if (ao.posture === 'meet') aoEngage(a, ao, fighters, ao.enemyList);
     else if (ao.posture === 'retake' && ao.target >= 0 && battlePlaces[ao.target].owner !== a.side) aoRetake(a, th, v, ao, fighters);
     let unposted = false;
@@ -33602,6 +33801,7 @@ function aoPlanText(a, th, S) {
     if (ao.theirs > 0) s += ', ' + (isFinite(ao.odds) ? ao.odds.toFixed(2) : '99') + ' to 1 against ' + plural(ao.theirShips, 'enemy ship');
     if (ao.posture === 'fallback') s += ' to ' + battlePlaces[ao.top].name;                      // (kept short: the HUD's plan is one line)
     if (ao.line && ao.line.posture === 'committed' && ao.line.assaultIn) s += ' · the Assault Fleet is in the line';
+    if (ao.line) s += lineRanksText(ao.line);                                                      // (v236.0) the ranks: so many in front, so many behind
     parts.push(s);
   });
   let s = parts.join(' · ');
@@ -38006,17 +38206,21 @@ function coreLineLayout(a, th, live, post, look) {
   const behind = coreFleetDivsOn(side);                                                          // (v84) the Defence Fleet's reserve Division (vaTag 'reserve', 06e part 6) stands behind the line, at the reserve spot
   const onLine = live.filter(function (dv) { return (dv.coreRole === 'line' && !(behind && dv.vaTag === 'reserve')) || (dv.coreRole === 'assault' && L.posture === 'committed'); });
   const latOf = function (dv) { const c = divisionCentre(dv); return (c.x - P0.x) * nx + (c.y - P0.y) * ny; };
+  const buildUnits = function (list) {   // (v236.0) the units from a list of Divisions (all of them, or the front rank only)
   let units = [];
   if (cmdActive(side)) {
     const byFleet = new Map();
-    for (const dv of onLine) { const F = cmdFleetOfDivision(dv), id = F ? F.id : 0; if (!byFleet.has(id)) byFleet.set(id, { id: id, F: F, divs: [], strength: 0, lat: 0, assault: !!(F && F.purpose === 'assault') }); const u = byFleet.get(id); u.divs.push(dv); u.strength += dv.strength; }
+    for (const dv of list) { const F = cmdFleetOfDivision(dv), id = F ? F.id : 0; if (!byFleet.has(id)) byFleet.set(id, { id: id, F: F, divs: [], strength: 0, lat: 0, assault: !!(F && F.purpose === 'assault') }); const u = byFleet.get(id); u.divs.push(dv); u.strength += dv.strength; }
     units = Array.from(byFleet.values());
   } else {
-    const assault = onLine.filter(function (dv) { return dv.coreRole === 'assault'; }), line = onLine.filter(function (dv) { return dv.coreRole === 'line'; });
+    const assault = list.filter(function (dv) { return dv.coreRole === 'assault'; }), line = list.filter(function (dv) { return dv.coreRole === 'line'; });
     for (const dv of line) units.push({ id: dv.id, F: null, divs: [dv], strength: dv.strength, lat: 0, assault: false });
     if (assault.length > 0) units.push({ id: -1, F: null, divs: assault, strength: assault.reduce(function (s, dv) { return s + dv.strength; }, 0), lat: 0, assault: true });
   }
   for (const u of units) { let s = 0, l = 0; for (const dv of u.divs) { s += dv.strength; l += latOf(dv) * dv.strength; } u.lat = s > 0 ? l / s : 0; }
+  return units;
+  };
+  let units = buildUnits(onLine);
   if (L.ao) { depthU = aoLineDepth(a, L, P0, dist, depthU); L.depthU = depthU; }              // (v207.0, 06c6) an AO's line: its depth is its posture's
   else if (longLineOn(side)) { depthU = longLineDepthFor(a, L, P0, units, Math.min(depthU, longLineMaxDepth(P0))); L.depthU = depthU; }   // (v197.0, v201.0, 06c4) never out of a Local ship's fuel; out to meet an enemy in our region, or close in
   // the approach point of each defended place: `depthU` out from it toward the threat (less when the threat is nearer than that)
@@ -38042,6 +38246,18 @@ function coreLineLayout(a, th, live, post, look) {
   frontage *= dsOn() ? 1 : L.width;                                          // (v103.0, section 5sp: a tightened line never squeezes Divisions onto each other)
   let lo = pts[0].lat, hi = pts[pts.length - 1].lat;
   L.covered = frontage * 1.5 >= hi - lo;                                                        // (can the Divisions cover every approach? the tighten step reads it)
+  // (v236.0, 06e part 8) THE RANKS: the front has a fixed length (the approach span, at least lineRankMinWidth); the Divisions that fill it are the front
+  // rank and the rest stand behind. A committed assault Fleet is always in front (it plugs the weakest stretch, below).
+  let ranks = null;
+  if (lineRanksOn(a)) {
+    const minW = Math.max(0, +SETTINGS.lineRankMinWidth || 0);
+    if (hi - lo < minW) { const extra = (minW - (hi - lo)) / 2; lo -= extra; hi += extra; }
+    ranks = lineRanksPick(a, L, onLine.filter(function (dv) { return dv.coreRole === 'line'; }), hi - lo);
+    const frontList = ranks.front.concat(onLine.filter(function (dv) { return dv.coreRole !== 'line'; }));
+    units = buildUnits(frontList);
+    frontage = 0; for (const u of units) for (const dv of u.divs) frontage += coreDivisionFrontage(dv);
+    frontage *= dsOn() ? 1 : L.width;
+  } else { L.ranks = null; L.rankFront = []; for (const dv of onLine) dv.rank = 'front'; }
   if (frontage > hi - lo) { const extra = (frontage - (hi - lo)) / 2; lo -= extra; hi += extra; }
   L.poly = [];
   for (let i = 0; i <= 24; i++) L.poly.push(pointAt(lo + (hi - lo) * i / 24));
@@ -38067,7 +38283,7 @@ function coreLineLayout(a, th, live, post, look) {
   L.stretches = [];
   let s0 = lo;
   // (v103.0, section 5sp) by width first: every Division gets at least its own formed-up width, and only the length left over is shared out by strength
-  const spotsOn = dsOn(), needOf = new Map();
+  const spotsOn = dsOn() && ranks === null, needOf = new Map();                              // (v236.0) with the ranks on the front's length is fixed: it is cut by strength alone, and each Division forms rows to fit its stretch (15b)
   let needAll = 0;
   if (spotsOn) for (const u of ordered) { let n = 0; for (const dv of u.divs) { const w = coreDivisionFrontage(dv); needOf.set(dv.id, w); n += w; } needOf.set('u' + u.id, n); needAll += n; }
   const spare = Math.max(0, (hi - lo) - needAll);
@@ -38085,12 +38301,13 @@ function coreLineLayout(a, th, live, post, look) {
                          : (u.strength > 0 ? d0 + (s1 - s0) * dv.strength / u.strength : s1);
       const pt = pointAt((d0 + d1) / 2), g = faceAt(pt);
       st.divs.push({ dv: dv, x: pt.x, y: pt.y, s0: d0, s1: d1 });
-      if (post) coreLinePost(a, dv, pt.x, pt.y, g.gx, g.gy, (u.F ? u.F.name + ': ' : '') + 'the stretch of the line ' + (u.assault ? 'the assault fleet plugs' : 'it holds'));
+      if (post) coreLinePost(a, dv, pt.x, pt.y, g.gx, g.gy, (u.F ? u.F.name + ': ' : '') + 'the stretch of the line ' + (u.assault ? 'the assault fleet plugs' : 'it holds'), d1 - d0);
       d0 = d1;
     }
     L.stretches.push(st);
     s0 = s1;
   }
+  if (ranks !== null) lineRanksPostReserve(a, L, ranks.reserve, { lo: lo, hi: hi, fwdAt: fwdAt, P0: P0, ux: ux, uy: uy, nx: nx, ny: ny, post: post });   // (v236.0) the reserve ranks behind the front
   // the assault fleet in reserve: behind the line near the top place, side by side, facing the threat
   if (post) {
     const res = live.filter(function (dv) { return (dv.coreRole === 'assault' && L.posture !== 'committed') || (behind && dv.coreRole === 'line' && dv.vaTag === 'reserve'); });   // (v84) and the defence's reserve
@@ -38104,8 +38321,9 @@ function coreLineLayout(a, th, live, post, look) {
 }
 // Gives a Division its hold at a spot of the line (or the reserve) when it needs it: its first, the spot moved (more than 600 u or half its frontage: the cut
 // shifts a little as ships are hit and repaired), squadrons came or went, or its task ended.
-function coreLinePost(a, dv, x, y, gx, gy, why) {
+function coreLinePost(a, dv, x, y, gx, gy, why, w) {
   if (dv.aoBusy) return;                                                   // (v207.0, 06c6) in a fight its AO's posture ordered (meeting the enemy, retaking a place): the line leaves it alone
+  dv.lineW = w > 0 ? w : 0;                                                // (v236.0) the length of its stretch: with the ranks on its rows are no wider than this (15b cmdFormationPlaces)
   const n = divisionAliveSquads(dv).length, moved = !(dv.lineAt >= 0) || theatreDist(x, y, dv.lineX, dv.lineY) > Math.max(600, 0.5 * coreDivisionFrontage(dv));
   const ended = divisionTaskId(dv) !== 'hold';
   if (!moved && !ended && dv.lineN === n) return;
@@ -39474,6 +39692,110 @@ function frontEnemyTurnBack(front, calls, homeId) {
     }
   }
 }
+// ---- (v236.0) THE RANKS OF THE LINE (SETTINGS.lineRanks; step 3 of "The front, third pass"; Alex, 12 Nov) ----
+//   Before this every Division of ours got its own stretch of the Admiral's line, so the line grew longer with every Division and every ship fired at once:
+//   each clash was a brawl over within the hour. Alex's rule: THE FRONT HAS A FIXED LENGTH, set by the ground (the span of the places the line covers,
+//   at least lineRankMinWidth), each Division covers a part of it, and the rest stand BEHIND in ranks. More ships make squadrons bigger and the line
+//   deeper, not longer, and the ships dying per second stay about the same: a persistent front.
+//   * THE FRONT RANK (lineRanksPick): the Divisions that fill the front's length, each by its formed-up frontage, kept where they are from look to look.
+//     Those that do not fit are the RESERVE RANKS, posted behind the front (lineRanksPostReserve) at lineRankDepth a rank, spread along it: beyond the
+//     typical gun, so a reserve Division fires only when an enemy reaches it and never moves to a fight (its hold order's short leash, section 5mk).
+//   * ROTATION: a front-rank Division's READINESS is the strength of the LINE SHIPS really standing with it against what it had when it took the stretch
+//     (lineShipStrength: the squadrons whose job is the line or PD cover, with the ships present; a battery, an escort or a ship away at the docks does
+//     not count, so a Division half made of soft ships reads as half gone when it has lost half its line ships, not three quarters). Under
+//     lineRankRotateAt it changes places with the freshest reserve Division (a Commodore strong in Readiness rotates its own squadrons earlier, as before).
+//   * RANKS BY GUN, NEVER BY HULL (15b cmdSquadJobs / cmdFormationPlaces): a squadron whose guns reach well past the Division's average is its battery
+//     whatever its hull (a small ship with a big gun stands at the back firing over; a big hull with small guns is a tank and stands in front), set
+//     batteryDepthFactor x the front row's widest squadron back, never beyond 60% of its own reach. Nothing blocks a shot (Alex: not for now).
+//   * THE SWARM is not here: its idle Divisions spread as a blob at its mass place and its pickets stand ragged (06c3 longSwarmSpread / longSwarmJitterSpot, SETTINGS.swarmSpread).
+//   The postures' fights (MEET, RETAKE: 06c6) take only the front rank; the tipping point (coreLineHunt) takes everyone. With lineRanks 0 every
+//   Division gets a stretch, as v235.0.
+function lineRanksOn(a) { return SETTINGS.lineRanks === 1 && !!a && a.side === BLUE && coreLoopOn(); }
+// The strength of a Division's line ships that are really there (see above).
+function lineShipStrength(dv) {
+  const a = admirals[dv.side]; if (!a) return 0;
+  const pic = a.picture, alive = divisionAliveSquads(dv);
+  if (alive.length === 0) return 0;
+  const jobs = typeof cmdSquadJobs === 'function' ? cmdSquadJobs(dv, a, alive) : null;
+  let s = 0;
+  for (const sq of alive) {
+    const job = jobs ? jobs.get(sq) : 'line';
+    if (job !== 'line' && job !== 'pd') continue;
+    const away = typeof sqAway !== 'undefined' && sqAway[sq] > 0 ? sqAway[sq] : 0, here = sqActive[sq];
+    s += (pic.pStrength[sq] || 0) * (here + away > 0 ? here / (here + away) : 1);
+  }
+  return s;
+}
+// Readiness: the line ships here against what the Division had when it last stood in reserve or took its stretch (1 = all of them).
+function lineRankReady(dv) {
+  const now = lineShipStrength(dv);
+  if (!(dv.rankFull > 0)) { dv.rankFull = now; return 1; }
+  return Math.min(1, now / dv.rankFull);
+}
+// Which Divisions stand in the front rank and which behind, for a front `width` units long. Keeps last look's front where it can; rotates a worn front
+// Division out for the freshest reserve one; fills the front with the readiest reserve Divisions while there is room. Returns { front, reserve }.
+function lineRanksPick(a, L, onLine, width) {
+  const S = SETTINGS, rotateAt = clampNumber(+S.lineRankRotateAt || 0, 0, 1);
+  const byId = new Map(); for (const dv of onLine) byId.set(dv.id, dv);
+  let front = (L.rankFront || []).map(function (id) { return byId.get(id); }).filter(function (dv) { return !!dv; });
+  const inFront = new Set(front.map(function (dv) { return dv.id; }));
+  let reserve = onLine.filter(function (dv) { return !inFront.has(dv.id); });
+  const ready = new Map(); for (const dv of onLine) ready.set(dv.id, lineRankReady(dv));
+  for (const dv of reserve) if (!(dv.rankFull > 0) || lineShipStrength(dv) > dv.rankFull) dv.rankFull = lineShipStrength(dv);   // (a reserve Division's full is what it has now, so repairs and new squadrons count)
+  const widthOf = function (dv) { return Math.max(300, coreDivisionFrontage(dv)); };
+  const sumW = function (list) { let w = 0; for (const dv of list) w += widthOf(dv); return w; };
+  const freshest = function () { let best = null; for (const dv of reserve) if (best === null || ready.get(dv.id) > ready.get(best.id)) best = dv; return best; };
+  // 1. rotation: a worn front Division out, the freshest reserve one in (one swap a look, so the line does not churn)
+  let worn = null;
+  for (const dv of front) if (ready.get(dv.id) < rotateAt && (worn === null || ready.get(dv.id) < ready.get(worn.id))) worn = dv;
+  if (worn !== null) {
+    const fresh = freshest();
+    if (fresh !== null && ready.get(fresh.id) >= ready.get(worn.id) + 0.2) {
+      front = front.map(function (dv) { return dv === worn ? fresh : dv; });
+      reserve = reserve.filter(function (dv) { return dv !== fresh; }); reserve.push(worn);
+      worn.rankFull = lineShipStrength(worn);
+      logEvent(a.side, 'Admiral: the ' + divisionLabel(worn) + ' (' + Math.round(100 * ready.get(worn.id)) + '% of its line ships standing) falls back to the reserve rank; the ' + divisionLabel(fresh) + ' takes its stretch.');
+      L.rankRotations = (L.rankRotations || 0) + 1;
+    }
+  }
+  // 2. the front grew too long (the front shrank, or its squadrons grew): the least ready Division steps back while the front rank is more than half a
+  //    Division over the length (the mirror of the fill rule below, so the two never fight; never the last one). (v241.0: before this it stepped back only
+  //    once the front WITHOUT it already filled the length, so a front that had grown a Division and a half too long stayed as it was.)
+  for (;;) {
+    if (front.length <= 1) break;
+    let least = front[0]; for (const dv of front) if (ready.get(dv.id) < ready.get(least.id)) least = dv;
+    if (!(sumW(front) - 0.5 * widthOf(least) > width)) break;
+    front = front.filter(function (dv) { return dv !== least; }); reserve.push(least); least.rankFull = lineShipStrength(least);
+  }
+  // 3. room left: the readiest reserve Divisions fill it (a Division half over the end still counts as fitting)
+  while (reserve.length > 0 && sumW(front) + 0.5 * widthOf(freshest()) <= width) { const f = freshest(); front.push(f); reserve = reserve.filter(function (dv) { return dv !== f; }); }
+  if (front.length === 0 && reserve.length > 0) { const f = freshest(); front.push(f); reserve = reserve.filter(function (dv) { return dv !== f; }); }
+  for (const dv of front) dv.rank = 'front';
+  for (const dv of reserve) dv.rank = 'reserve';
+  L.rankFront = front.map(function (dv) { return dv.id; });
+  L.ranks = { front: front.length, reserve: reserve.length, width: Math.round(width), depth: reserve.length > 0 ? 1 + Math.floor((reserve.length - 1) / Math.max(1, front.length)) : 0 };
+  return { front: front, reserve: reserve };
+}
+// Posts the reserve Divisions behind the front: rank by rank (as many a rank as the front has Divisions), each rank lineRankDepth further back, spread
+// evenly along the front's length and facing the threat. g: the line's geometry from coreLineLayout.
+function lineRanksPostReserve(a, L, reserve, g) {
+  if (reserve.length === 0) return;
+  const S = SETTINGS, perRank = Math.max(1, L.ranks ? L.ranks.front : 1), depth = Math.max(500, +S.lineRankDepth || 0);
+  const W = S.worldWidth, H = S.worldHeight;
+  for (let i = 0; i < reserve.length; i++) {
+    const dv = reserve[i], r = Math.floor(i / perRank), inRank = Math.min(perRank, reserve.length - r * perRank), j = i - r * perRank;
+    const lat = g.lo + (g.hi - g.lo) * (j + 0.5) / inRank;
+    const f = g.fwdAt(lat) - depth * (r + 1);
+    const x = clampNumber(g.P0.x + g.ux * f + g.nx * lat, 0, W), y = clampNumber(g.P0.y + g.uy * f + g.ny * lat, 0, H);
+    if (g.post) coreLinePost(a, dv, x, y, g.ux, g.uy, 'the reserve rank behind the line (rank ' + (r + 2) + '): it fires only when reached', (g.hi - g.lo) / inRank);
+  }
+}
+// The ranks in a few words for the plan line ('' when off or nothing stands behind).
+function lineRanksText(L) {
+  if (!L || !L.ranks || SETTINGS.lineRanks !== 1) return '';
+  const R = L.ranks;
+  return R.reserve > 0 ? ' · the line: ' + plural(R.front, 'Division') + ' in front, ' + R.reserve + ' behind in ' + plural(R.depth, 'rank') : '';
+}
 // ---- (v98.5) LONG BATTLES: THE RECORDS KEPT TRUE, THE BATTLE'S LISTS KEPT SHORT ----
 // Alex, 1 Nov, on hearing that the war's fleet records still listed ships that had died in Earth's battle: "sounds like we need to do some clear out of
 // dead ships stored. if the battle never ends for a long time, and thousands of ships die, we could get some slow down if we dont".
@@ -39652,6 +39974,7 @@ function campaignYardName(yardId) {
   const hit = campaignLocationById(yardId);
   if (!hit) return yardId;
   if (swarmNestWords(yardId)) return swarmNestName(yardId);   // (v53) a Swarm yard is a nest: "the Ceres nest" (06q)
+  if (hit.loc.job !== 'yard' && hit.loc.id !== hit.ao.id) return hit.loc.name;   // (v237.0) a forward station with Local docks is no yard (06f5)
   return hit.loc.id === hit.ao.id ? hit.loc.name : 'the ' + hit.loc.name + ' Yard';
 }
 // A side's HOME YARD: the yard of its home AO (Earth's for us, the Kuiper Belt's for the aliens), '' when it has none.
@@ -41191,6 +41514,8 @@ function campaignYardsDay(atDawn) {
         if (!(amount > 1e-9)) continue;
         const r = campaignProduceWeek(id, side, amount, room);          // (stop 4: a full pool, or a full garrison at the front, starts no new ship)
         left -= r.spent;
+        // (v237.0) on the long map, Local ships paid for here may belong at a forward station of ours in the front region: their docks and ships go there (06f5)
+        if (Object.keys(r.built).length > 0 && typeof longLocalSplit === 'function') { const fob = longLocalSplit(id, side, r.built); for (const pl in fob) { if (typeof campaignDockOnBuilt === 'function') campaignDockOnBuilt(pl, side, fob[pl]); campaignDeliver(pl, side, fob[pl]); } }
         if (Object.keys(r.built).length > 0 && typeof campaignDockOnBuilt === 'function') campaignDockOnBuilt(id, side, r.built);   // (v170.0) with docks on, each finished ship is a new dock here (06f2)
         if (Object.keys(r.built).length > 0) campaignDeliver(id, side, r.built);
       }
@@ -41510,15 +41835,18 @@ function campaignShipsAliveCount(side) { const a = campaignShipsAliveByDesign(si
 // Is a dock awake: its place is its side's with the station (or the Swarm's infestation) standing: 06f campaignYardSide says who builds there now.
 function campaignDockActive(r) {
   if (typeIndexById(r.design) < 0 || !campaignDockSideOn(r.side)) return false;
-  return campaignYardSide(r.place) === r.side;
+  return campaignDockPlaceSide(r.place) === r.side;
 }
+// (v237.0) The side a dock's place builds for: its yard's (06f campaignYardSide); on the long map also a forward station of ours that stands, where
+// Local docks may be (06f5 longDockPlaceSide).
+function campaignDockPlaceSide(place) { return typeof longDockOn === 'function' && longDockOn() ? longDockPlaceSide(place) : campaignYardSide(place); }
 // A side's awake docks grouped by design: { designId: { n, places: { placeId: n } } }.
 function campaignDocksByDesign(side) {
   const out = {}, list = campaign.docks.list, awake = {};
   for (let k = 0; k < list.length; k++) {
     const r = list[k];
     if (r.side !== side) continue;
-    if (awake[r.place] === undefined) awake[r.place] = campaignYardSide(r.place) === side;
+    if (awake[r.place] === undefined) awake[r.place] = campaignDockPlaceSide(r.place) === side;
     if (!awake[r.place] || typeIndexById(r.design) < 0) continue;
     const e = out[r.design] || (out[r.design] = { n: 0, places: {} });
     e.n++; e.places[r.place] = (e.places[r.place] || 0) + 1;
@@ -41528,11 +41856,11 @@ function campaignDocksByDesign(side) {
 // A side's awake docks, counted.
 function campaignDocksAwake(side) { const by = campaignDocksByDesign(side); let n = 0; for (const id in by) n += by[id].n; return n; }
 // (v172.0) the same in ships' worth: a combined Swarm hatchery (r.worth) counts for the hatcheries it was made from, so the match floor is not fooled by combining.
-function campaignDocksWorth(side) { let n = 0; const awake = {}; for (const r of campaign.docks.list) { if (r.side !== side) continue; if (awake[r.place] === undefined) awake[r.place] = campaignYardSide(r.place) === side; if (awake[r.place]) n += r.worth > 0 ? r.worth : 1; } return n; }
+function campaignDocksWorth(side) { let n = 0; const awake = {}; for (const r of campaign.docks.list) { if (r.side !== side) continue; if (awake[r.place] === undefined) awake[r.place] = campaignDockPlaceSide(r.place) === side; if (awake[r.place]) n += r.worth > 0 ? r.worth : 1; } return n; }
 // (v218.0) A dock's worth as it would be with the testing sliders at x1 (r.x1, kept only when a slider was up; 24l campaignDebugX1Share), and a side's awake
 // docks added up that way.
 function campaignDockX1(r) { return typeof r.x1 === 'number' && r.x1 >= 0 ? r.x1 : (r.worth > 0 ? r.worth : 1); }
-function campaignDocksWorthX1(side) { let n = 0; const awake = {}; for (const r of campaign.docks.list) { if (r.side !== side) continue; if (awake[r.place] === undefined) awake[r.place] = campaignYardSide(r.place) === side; if (awake[r.place]) n += campaignDockX1(r); } return n; }
+function campaignDocksWorthX1(side) { let n = 0; const awake = {}; for (const r of campaign.docks.list) { if (r.side !== side) continue; if (awake[r.place] === undefined) awake[r.place] = campaignDockPlaceSide(r.place) === side; if (awake[r.place]) n += campaignDockX1(r); } return n; }
 
 // ---- Where a dock goes ----
 const campaignDockYardCache = { key: '', per: {} };
@@ -41563,6 +41891,7 @@ function campaignDockYardsFor(side, id) {
   const info = campaignShipInfo(id), S = SETTINGS, fa = aoById(front), yards = campaignYardsOf(side), home = side === 0 ? campaignHomeYard(0) : campaignV3AlienMainYard();
   const cls = info && info.berth ? info.berth : (info ? info.sizeClass : 'small'), local = !!(info && info.local), jumps = info ? info.jumps : 1;
   const long = typeof longMapOn === 'function' && longMapOn();
+  if (side === 0 && typeof longDockOn === 'function' && longDockOn()) { const lr = longDockRows(id, info, cls, yards); campaignDockYardCache.per[ck] = lr; return lr; }   // (v237.0) on the long map: weighed by development and safety (06f5)
   let rows = [];
   for (const y of yards) {
     const a = aoById(campaignAoOf(y));
@@ -41585,6 +41914,7 @@ function campaignDockYardsFor(side, id) {
 function campaignDockBuildsAt(yardId, id) {
   if (campaignEvoBenched(id)) return false;                    // (v172.0) a benched design gets no new docks (06f3)
   const rows = campaignDockYardsFor(0, id);
+  if (typeof longDockOn === 'function' && longDockOn()) return longDockBuildsAt(yardId, id, rows);   // (v237.0, 06f5)
   if (!rows.length) return false;
   const best = rows[0].score, spread = Math.max(0, SETTINGS.dockScoreSpread || 0);
   for (let k = 0; k < rows.length; k++) if (rows[k].id === yardId) return rows[k].score >= best - spread - 1e-9;
@@ -41649,7 +41979,7 @@ function campaignDockReadyByDesign(side, now) {
   for (let k = 0; k < list.length; k++) {
     const r = list[k];
     if (r.side !== side) continue;
-    if (awake[r.place] === undefined) awake[r.place] = campaignYardSide(r.place) === side;
+    if (awake[r.place] === undefined) awake[r.place] = campaignDockPlaceSide(r.place) === side;
     if (!awake[r.place] || typeIndexById(r.design) < 0) continue;
     const e = out[r.design] || (out[r.design] = { all: 0, n: 0, places: {}, recs: {} });
     e.all++;
@@ -41664,7 +41994,7 @@ function campaignDockSpareCount(side) {
   let n = 0, soon = Infinity;
   for (const r of campaign.docks.list) {
     if (r.side !== side) continue;
-    if (awake[r.place] === undefined) awake[r.place] = campaignYardSide(r.place) === side;
+    if (awake[r.place] === undefined) awake[r.place] = campaignDockPlaceSide(r.place) === side;
     if (!awake[r.place] || campaignDockSpareReady(r, now)) continue;
     n++; soon = Math.min(soon, r.spare - now);
   }
@@ -41754,6 +42084,7 @@ function campaignDockDawn(pot) {
   if (!campaign.docks.seeded) campaignDockSeed();              // (a war started with docks on: the few ships it starts with get docks at the first dawn)
   if (swarmDocksOn()) campaignSwarmDockStall();
   if (dockEvoOn()) { campaignEvoWeek(); campaignEvoBench(); }   // (v172.0) the ledgers decay, poor designs are benched (06f3)
+  if (typeof longDockMoveBack === 'function') longDockMoveBack();   // (v237.0) docks caught in the front region move back (06f5)
   const d = campaign.docks, S = SETTINGS, today = Math.floor(campaign.week + 1e-9), list = d.list;
   const mix = swarmDocksOn() ? campaignAlienMix() : null;
   for (let side = 0; side < 2; side++) {
@@ -41807,7 +42138,7 @@ function campaignDockUpkeepCount(side) {
   const list = campaign.docks.list, awake = {};
   for (const r of list) {
     if (r.side !== side) continue;
-    if (awake[r.place] === undefined) awake[r.place] = campaignYardSide(r.place) === side;
+    if (awake[r.place] === undefined) awake[r.place] = campaignDockPlaceSide(r.place) === side;
     const t = typeIndexById(r.design);
     if (!awake[r.place] || t < 0) continue;
     out.ships++; out.alloys += campaignUpkeepOfType(t);
@@ -41824,7 +42155,7 @@ function campaignDockResUpkeep() {
   const out = {}, share = Math.max(0, +SETTINGS.dockResUpkeepShare || 0), awake = {};
   if (share > 0) for (const r of campaign.docks.list) {
     if (r.side !== 0) continue;
-    if (awake[r.place] === undefined) awake[r.place] = campaignYardSide(r.place) === 0;
+    if (awake[r.place] === undefined) awake[r.place] = campaignDockPlaceSide(r.place) === 0;
     if (!awake[r.place] || typeIndexById(r.design) < 0) continue;
     const needs = campaignDesignNeeds(r.design);
     for (const res in needs) if (needs[res] > 0) out[res] = (out[res] || 0) + needs[res] * share;
@@ -41860,7 +42191,7 @@ function campaignDockSummary(side) {
   for (const r of d.list) {
     if (r.side !== side) continue;
     out.docks++;
-    if (awake[r.place] === undefined) awake[r.place] = campaignV3() && campaignYardSide(r.place) === side;
+    if (awake[r.place] === undefined) awake[r.place] = campaignV3() && campaignDockPlaceSide(r.place) === side;
     if (awake[r.place]) out.awake++;
     out.byClass[r.cls] = (out.byClass[r.cls] || 0) + 1; out.byPlace[r.place] = (out.byPlace[r.place] || 0) + 1; out.byDesign[r.design] = (out.byDesign[r.design] || 0) + 1;
     if (r.refit) out.refits++; if (r.upgrade) out.upgrades++;
@@ -42455,6 +42786,241 @@ function campaignNeedsIdleFor(week) {
 function campaignNeedsIdleWords(last) {
   if (!last || !last.idle || !(last.idle.alloys > 0.5) || !last.idle.why) return '';
   return fmtWhole(Math.round(last.idle.alloys)) + ' Alloys went unused because ' + last.idle.why + '.';
+}
+// =====================================================================
+// 5z (continued). (v237.0) SHIPS ON THE LONG MAP: SOLAR RANGE, WHERE OUR DOCKS GO, LOCAL DOCKS AT FORWARD STATIONS  (Alex 12 Nov; plan doc
+// "v169.0 plan, second pass: ships on the long map")
+//
+//   1. SOLAR RANGE (SETTINGS.longSolarReach). A ship that runs on solar panels gets less power the farther it goes from the Sun, and the Bureau already
+//      shows how far out its panels reach (the design's fuel.solar.reachPos: an old AO's position, so a region of the long map). On the old war map the
+//      planners kept such ships at home (v58, v158); on the long map only fuel counted, so solar Sarissas ended up at Uranus. Now a solar ship has a
+//      furthest-out line, the right edge of its last region (longSolarMaxX): the fuel line (4b6 leashLook) pulls a ship that strays over it back to our
+//      nearest station inside it, and the Admiral never sends a Division past it (06c theatreReachOk). A ship with a reactor has no such line.
+//
+//   2. WHERE OUR DOCKS GO (SETTINGS.longDockModel). On the long map the whole war is one AO, so the old dock picker (06f2 campaignDockScore) saw every
+//      yard at the same distance from the front and picked by development alone; nothing kept docks out of the fighting. Alex: "spread the docks out,
+//      build more docks at more developed places, avoid conflict regions, but it does make sense for the humans to try to build up say Mars while
+//      fighting in the Belt" - and no hard rule. So each yard of ours has a WEIGHT for docks (longDockWeight):
+//        development  (tier + 1), times how long we have held it (half weight when new, full at dockHeldFullWeeks),
+//        times its SAFETY: 0 in the front region or beyond it; in the region just behind the front, full from longDockBehindTier, half one tier
+//        lower, nothing below that; full farther back; and times longDockBesieged while enemy ships are in its region.
+//      Earth always weighs at least a little, so a war whose front is Earth's own region still builds. A design is built at every allowed yard
+//      weighing at least longDockShareMin of the best one, so the docks spread, and a better-developed yard (more berths, a bigger share of the
+//      Alloys, 06f campaignYardShare) builds more of them. A dock caught in the front region (the front fell back onto it) moves back to the best
+//      allowed yard at dawn; its next ship waits longDockMoveWeeks (longDockMoveBack).
+//
+//   3. LOCAL DOCKS AT FORWARD STATIONS. A Local ship never leaves its region, so it is only any use at the front. Alex: "allow a few, smaller docks to
+//      be built in FOB stations in the front ... be conservative ... where and how many should be based on how long the station has been held and its
+//      development tier, but throw a few of the smallest docks on a FOB right away." So a Local design's docks are paid for at our rear yards (the
+//      weighed yards above) and placed at our standing stations in the front region (longLocalFobs), each with room for longLocalDockStart docks at
+//      once, one more every longLocalDockWeeks held, longLocalDockPerTier more per tier above 1, at most longLocalDockMax; and only small craft at a
+//      tier 1 station, one size more per tier above (longLocalMaxRank). Their ships appear at that station and defend it. While the front is Earth's
+//      own region, Earth builds its Local ships itself with no cap (the opening). With no room anywhere and no other design to build, Earth builds
+//      them too, so no Alloys go unused (v205.0, Alex's rule).
+//
+//   With longMapOn() false, or the switches at 0, nothing here changes anything.
+// =====================================================================
+
+function longSolarOn() { return SETTINGS.longSolarReach === 1 && typeof longMapOn === 'function' && longMapOn(); }
+function longDockOn() { return SETTINGS.longDockModel === 1 && typeof longMapOn === 'function' && longMapOn() && typeof dockModelOn === 'function' && dockModelOn(); }
+
+// ---- 1. Solar range ----
+const longSolarCache = { campaign: null, perType: [] };
+// The furthest-out x a ship type may be at for its solar panels (Infinity: no limit, a reactor ship, or off the long map).
+function longSolarMaxX(t) {
+  if (!longSolarOn() || !(t >= 0)) return Infinity;
+  if (longSolarCache.campaign !== campaign || longSolarCache.n !== SHIP_TYPES.length) { longSolarCache.campaign = campaign; longSolarCache.n = SHIP_TYPES.length; longSolarCache.perType = []; }
+  const hit = longSolarCache.perType[t];
+  if (hit !== undefined) return hit;
+  let x = Infinity;
+  const rec = SHIP_TYPES[t], info = rec && rec.design && typeof campaignShipInfo === 'function' ? campaignShipInfo(rec.id) : null;
+  if (info && typeof info.reachPos === 'number') {
+    const regs = longMapRegions();
+    if (regs.length) { const col = Math.max(0, Math.min(regs.length - 1, Math.round(info.reachPos - regs[0].pos))); x = longMapRegionLeft(col) + longMapSlotWidth(); }
+  }
+  longSolarCache.perType[t] = x;
+  return x;
+}
+// A Division's solar line: its shortest-reaching squadron's.
+function longSolarDivisionX(dv) {
+  let x = Infinity;
+  if (!longSolarOn() || typeof divisionAliveSquads !== 'function') return x;
+  for (const sq of divisionAliveSquads(dv)) { const v = longSolarMaxX(sqType[sq]); if (v < x) x = v; }
+  return x;
+}
+// (4b6 leashLook) A solar ship over its line: where to fly back to (our nearest anchor inside the line, else straight back in), or null when it is fine.
+// `held` = it was already flying back (it is let go only once a little inside the line, so it never flaps at it).
+function longSolarLeash(i, held) {
+  const mx = longSolarMaxX(shipType[i]);
+  if (mx === Infinity) return null;
+  const margin = 0.15 * longMapSlotWidth();
+  if (shipX[i] <= mx - (held ? margin : -1e-6)) return null;
+  const list = theatreAnchors(shipSide[i]);
+  let best = Infinity, bx = mx - 2 * margin, by = shipY[i];
+  for (const a of list) { const p = battlePlaces[a]; if (p.x > mx - margin) continue; const d = Math.hypot(p.x - shipX[i], p.y - shipY[i]); if (d < best) { best = d; bx = p.x; by = p.y; } }
+  return { x: bx, y: by, r: margin };
+}
+// Is a place (a campaign location id) inside a design's solar line? (the dock picker: a solar ship is never docked where it may not stay)
+function longSolarPlaceOk(id, placeId) {
+  if (!longSolarOn()) return true;
+  const t = typeIndexById(id);
+  const mx = longSolarMaxX(t);
+  if (mx === Infinity) return true;
+  const col = longPlaceCol(placeId);
+  return col < 0 || longMapRegionLeft(col) < mx;
+}
+
+// ---- Places and regions ----
+// The long map's region column of a campaign location (-1 when unknown).
+function longPlaceCol(placeId) {
+  const hit = campaignLocationById(placeId);
+  if (!hit || !hit.loc || !hit.loc.regionId) return -1;
+  const r = longMapRegionById(hit.loc.regionId);
+  return r ? r.col : -1;
+}
+// The front region's column (the first region from Earth out that we do not hold whole, 06d2 longFrontRegion).
+function longFrontCol() { const r = longFrontRegion(); return r ? r.col : -1; }
+// Is a place's region besieged (enemy ships in it) right now?
+function longPlaceBesieged(placeId) { const s = typeof longRegionStateAt === 'function' ? longRegionStateAt(placeId) : null; return !!(s && s.besieged); }
+// Does our side hold this place with a standing station (or is it Earth's surface)?
+function longPlaceOurs(placeId) {
+  const row = campaignPlaceRow(campaignAoOf(placeId), placeId);
+  return !!row && row.owner === 0 && row.facility === 'standing';
+}
+
+// ---- 2. Where our docks go ----
+// How much a yard of ours weighs for docks now (0 = none here). Earth (our home yard) never weighs nothing.
+function longDockWeight(yardId) {
+  const S = SETTINGS, home = campaignHomeYard(0), tier = campaignDevTier(yardId);
+  const held = 0.5 + 0.5 * Math.min(1, campaignDevHeldWeeks(yardId) / Math.max(1, S.dockHeldFullWeeks || 1));
+  const fc = longFrontCol(), col = longPlaceCol(yardId), gap = fc >= 0 && col >= 0 ? fc - col : 99;
+  let safety = 1;
+  if (gap <= 0) safety = 0;
+  else if (gap === 1) { const need = Math.max(1, S.longDockBehindTier || 2); safety = tier >= need ? 1 : (tier === need - 1 ? 0.5 : 0); }
+  if (safety > 0 && longPlaceBesieged(yardId)) safety *= Math.max(0, Math.min(1, S.longDockBesieged));
+  let w = (tier + 1) * held * safety;
+  if (yardId === home && w < 0.25) w = 0.25;
+  return w;
+}
+// (06f2 campaignDockYardsFor, on the long map) the yards a design's docks may be paid at, best first: [{ id, score }] where score is the weight.
+function longDockRows(id, info, cls, yards) {
+  const rows = [];
+  for (const y of yards) {
+    if (!campaignDockSlotOk(0, y, cls)) continue;
+    if (!(info && info.local) && !longSolarPlaceOk(id, y)) continue;
+    const w = longDockWeight(y);
+    if (w > 0) rows.push({ id: y, score: w });
+  }
+  rows.sort(function (p, q) { return q.score - p.score; });
+  return rows;
+}
+// (06f2 campaignDockBuildsAt) Does a yard pay for a design's docks today: within longDockShareMin of the best weight. A Local design only while one of
+// our forward stations has room for it (or Earth builds it itself: the opening, or nothing else to build).
+function longDockBuildsAt(yardId, id, rows) {
+  const info = campaignShipInfo(id);
+  if (info && info.local) {
+    const plan = longLocalPlan(id);
+    if (plan.at === 'earth') return yardId === campaignHomeYard(0);
+    if (plan.at === 'none') return false;
+  }
+  if (!rows.length) return false;
+  const best = rows[0].score, min = Math.max(0, Math.min(1, SETTINGS.longDockShareMin || 0));
+  for (const r of rows) if (r.id === yardId) return r.score >= best * min - 1e-9;
+  return false;
+}
+// (06f2 campaignDockDawn, first) Docks of ours caught in the front region (the front fell back onto them, or they were placed before v237) move back to
+// the best allowed yard; their next ship waits longDockMoveWeeks. Local docks stay: they belong at the front. Earth's never move.
+function longDockMoveBack() {
+  if (!longDockOn()) return;
+  const home = campaignHomeYard(0), yards = campaignYardsOf(0), moved = {};
+  let n = 0;
+  for (const r of campaign.docks.list) {
+    if (r.side !== 0 || r.place === home || !campaign.yards[r.place]) continue;
+    const info = campaignShipInfo(r.design);
+    if (info && info.local) continue;
+    if (longDockWeight(r.place) > 0 || !longPlaceOurs(r.place)) continue;   // (safe enough, or lost: a lost place's dock sleeps as before)
+    const rows = longDockRows(r.design, info, r.cls, yards).filter(function (q) { return q.id !== r.place; });
+    if (!rows.length) continue;
+    const from = r.place;
+    r.place = rows[0].id;
+    r.spare = campaign.week + Math.max(0, SETTINGS.longDockMoveWeeks || 0);
+    moved[from + '>' + r.place] = (moved[from + '>' + r.place] || 0) + 1; n++;
+  }
+  if (n > 0) campaignLog('dock', pluralV3(n, 'dock', 'docks') + ' moved back out of the fighting: ' + Object.keys(moved).map(function (k) { const p = k.split('>'); return moved[k] + ' from ' + campaignLocName(p[0]) + ' to ' + campaignLocName(p[1]); }).join(', ') + '. Their next ships come from there.');
+}
+
+// ---- 3. Local docks at forward stations ----
+// The largest size class a Local dock at this station may be: small craft at tier 1, one size more per tier above.
+function longLocalMaxRank(placeId) { return berthRank('small') + Math.max(0, campaignDevTier(placeId) - 1); }
+// How many Local docks a station in the front region has room for now.
+function longLocalCap(placeId) {
+  const S = SETTINGS, tier = campaignDevTier(placeId), held = campaignDevHeldWeeks(placeId);
+  const n = Math.floor(S.longLocalDockStart || 0) + Math.floor(held / Math.max(1, S.longLocalDockWeeks || 1)) + Math.max(0, tier - 1) * Math.floor(S.longLocalDockPerTier || 0);
+  return Math.max(0, Math.min(Math.floor(S.longLocalDockMax || 0), n));
+}
+// Our standing stations in the front region with their Local docks: [{ id, cap, have, rank }].
+function longLocalFobs() {
+  const fc = longFrontCol(), out = [];
+  if (fc < 0) return out;
+  const st = campaign.ao[campaignAos()[0].id], have = {};
+  if (!st || !st.places) return out;
+  for (const r of campaign.docks.list) { if (r.side !== 0) continue; const info = campaignShipInfo(r.design); if (info && info.local) have[r.place] = (have[r.place] || 0) + 1; }
+  for (const p of st.places) {
+    if (p.owner !== 0 || p.facility !== 'standing' || longPlaceCol(p.id) !== fc) continue;
+    out.push({ id: p.id, cap: longLocalCap(p.id), have: have[p.id] || 0, rank: longLocalMaxRank(p.id) });
+  }
+  out.sort(function (a, b) { return (b.cap - b.have) - (a.cap - a.have); });
+  return out;
+}
+// Where a Local design's next dock goes: { at: 'fob', place } at a forward station with room; { at: 'earth' } while the front is Earth's region (or
+// when nothing else could use the Alloys); { at: 'none' } otherwise. Worked out once per building day.
+const longLocalCache = { key: '', per: {} };
+function longLocalPlan(id) {
+  const key = (typeof campaignDayIndex === 'function' ? campaignDayIndex(campaign.week) : Math.floor(campaign.week)) + '|' + campaign.docks.list.length;
+  if (longLocalCache.key !== key) { longLocalCache.key = key; longLocalCache.per = {}; }
+  if (longLocalCache.per[id]) return longLocalCache.per[id];
+  const info = campaignShipInfo(id), cls = info && info.berth ? info.berth : (info ? info.sizeClass : 'small'), rank = berthRank(cls);
+  const home = campaignHomeYard(0), fc = longFrontCol(), homeCol = longPlaceCol(home);
+  let plan = { at: 'none' };
+  if (fc < 0 || fc <= homeCol) plan = { at: 'earth' };
+  else {
+    for (const f of longLocalFobs()) if (f.have < f.cap && rank <= f.rank) { plan = { at: 'fob', place: f.id }; break; }
+    if (plan.at === 'none') {
+      // nothing else on the yards that could take the Alloys: Earth builds it (no Alloys unused, v205.0)
+      const other = campaignV3ActiveRecs().some(function (t) { const v = campaignShipInfo(t.id); return v && !v.local; });
+      if (!other) plan = { at: 'earth' };
+    }
+  }
+  longLocalCache.per[id] = plan;
+  return plan;
+}
+// (06f campaignYardsDay) The Local ships a yard finished today that belong at a forward station: taken out of `built` and returned as
+// { placeId: { designId: n } }, one ship at a time so no station goes over its room.
+function longLocalSplit(yardId, side, built) {
+  const out = {};
+  if (side !== 0 || !longDockOn()) return out;
+  for (const id in built) {
+    const info = campaignShipInfo(id);
+    if (!info || !info.local) continue;
+    const cls = info.berth || info.sizeClass || 'small', rank = berthRank(cls);
+    let n = built[id];
+    const fobs = longLocalFobs().map(function (f) { return Object.assign({}, f); });
+    while (n > 0) {
+      fobs.sort(function (a, b) { return (b.cap - b.have) - (a.cap - a.have); });
+      const f = fobs.find(function (q) { return q.have < q.cap && rank <= q.rank; });
+      if (!f || f.id === yardId) break;
+      (out[f.id] || (out[f.id] = {}))[id] = ((out[f.id] || {})[id] || 0) + 1;
+      f.have++; n--; built[id]--;
+    }
+    if (!(built[id] > 0)) delete built[id];
+  }
+  longLocalCache.key = '';                                       // (the stations' room changed)
+  return out;
+}
+// Is this dock place awake for its side: a yard as before (06f campaignYardSide), or a forward station of ours that stands.
+function longDockPlaceSide(placeId) {
+  if (campaign.yards[placeId]) return campaignYardSide(placeId);
+  return longMapOn() && longPlaceOurs(placeId) ? 0 : -1;
 }
 // =====================================================================
 // 5z (continued). THE CAMPAIGN'S TWO BRAINS  (v24, Mars plan stop 4; SETTINGS.campaignModel, and campaign.ai.on)
@@ -58695,7 +59261,8 @@ function cmdSquadJobs(dv, a, squads) {
   if (!cmdFormationOn() || squads.length < 2) { for (const sq of squads) jobs.set(sq, 'line'); return jobs; }
   // the Division's averages, one squadron one vote (a strength-weighted mean would let two capitals set the bar for everyone), fighters left out
   const pdOf = function (st) { return Math.max(0, stPdMounts[st]) * Math.max(0, stPdRange[st]); };
-  const isCap = function (sq) { return typeUnmanned[sqType[sq]] === 1 || typeClass[sqType[sq]] === 0; };
+  let maxClass = 0; for (const sq of squads) maxClass = Math.max(maxClass, typeClass[sqType[sq]]);
+  const isCap = function (sq) { return typeUnmanned[sqType[sq]] === 1 || (typeClass[sqType[sq]] === 0 && (SETTINGS.lineRanks !== 1 || maxClass > 0)); };   // (v236.0) a Division of nothing but small craft: they are its line and its batteries by their guns, not all CAP (Alex: gun size, never hull size)
   const ships = squads.filter(function (sq) { return !isCap(sq); });
   if (ships.length === 0) { for (const sq of squads) jobs.set(sq, 'line'); return jobs; }   // (a Division of nothing but fighters has no one to escort: they are the line)
   let n = 0, sRange = 0, sSpeed = 0, sTough = 0, sPd = 0;
@@ -58711,7 +59278,7 @@ function cmdSquadJobs(dv, a, squads) {
     let job = 'line';
     if (isCap(sq)) job = (longGunCap(sq) ? 'artillery' : 'cap');
     else if (stPdMounts[st] > 0 && midPd > 0 && pdOf(st) > SETTINGS.cmdPdCoverFactor * midPd) job = 'pd';
-    else if (midRange > 0 && cmdTypeRange(st) > SETTINGS.cmdLongRangeFactor * midRange) job = (stSpeed[st] > midSpeed && (stHull[st] + stShield[st]) < midTough) ? 'skirmisher' : 'artillery';
+    else if (midRange > 0 && cmdTypeRange(st) > SETTINGS.cmdLongRangeFactor * midRange) job = (SETTINGS.lineRanks !== 1 && stSpeed[st] > midSpeed && (stHull[st] + stShield[st]) < midTough) ? 'skirmisher' : 'artillery';   // (v236.0) with the ranks on, a long gun is a battery whatever its hull (Alex: gun size, never hull size); the doctrine's Skirmish style still makes a skirmisher below
     // (v37) the design's doctrine (the Bureau's Doctrine tab) overrules the guess: its Style first, then its Duties (Auto leaves the guess as it is)
     const B = docBattleOf(st);
     if (B) {
@@ -58725,7 +59292,10 @@ function cmdSquadJobs(dv, a, squads) {
   // PD cover is a few squadrons, not half the line: at most one in four of the Division's squadrons (the strongest point defence first); the rest are line squadrons.
   // (The player's own PD ships, by Style or Duty, are left out of the count: the player asked for them.)
   const pds = squads.filter(function (sq) { return jobs.get(sq) === 'pd' && !chosen.has(sq); }).sort(function (p, q) { return pdOf(side * TYPE_COUNT + sqType[q]) - pdOf(side * TYPE_COUNT + sqType[p]) || (p - q); });
-  for (let k = Math.max(1, Math.floor(ships.length / 4)); k < pds.length; k++) jobs.set(pds[k], 'line');
+  for (let k = Math.max(1, Math.floor(ships.length / 4)); k < pds.length; k++) {
+    const st = side * TYPE_COUNT + sqType[pds[k]];
+    jobs.set(pds[k], SETTINGS.lineRanks === 1 && midRange > 0 && cmdTypeRange(st) > SETTINGS.cmdLongRangeFactor * midRange ? 'artillery' : 'line');   // (v236.0) a spare PD squadron with long guns is a battery, not a line ship
+  }
   return jobs;
 }
 // The squadron most at risk from missiles and fighters: big, slow, weak point defence of its own; a battery type first.
@@ -58881,14 +59451,24 @@ function cmdFormationPlaces(dv, a, squads, cx, cy, gx, gy, opt) {
   if (list.length === 0) { list = pds.splice(0); }
   let flankers = [];
   if (F.flankers > 0 && list.length > F.rows[0]) {
-    const cands = list.slice(F.rows[0]).sort(function (p, q) { return (stSpeed[dv.side * TYPE_COUNT + sqType[q]] - stSpeed[dv.side * TYPE_COUNT + sqType[p]]) || (p - q); });
+    const cands = list.slice(F.rows[0]).filter(function (sq) { return !(SETTINGS.lineRanks === 1 && jobs.get(sq) === 'artillery'); }).sort(function (p, q) { return (stSpeed[dv.side * TYPE_COUNT + sqType[q]] - stSpeed[dv.side * TYPE_COUNT + sqType[p]]) || (p - q); });   // (v236.0) a battery is never a flanker: it stands set back
     flankers = cands.slice(0, F.flankers);
     list = list.filter(function (sq) { return flankers.indexOf(sq) < 0; });
   }
   // 2. the rows: the table's widths (capped), then rows of the cap for whatever is left
-  const cap = cmdMaxAbreast(), rows = [];
+  let cap = cmdMaxAbreast();
+  if (opt.width > 0 && list.length > 0) {                                      // (v236.0) the front has a fixed length: as many abreast as fit the Division's stretch (at least 1), the rest in rows behind
+    let avg = 0; for (const sq of list) avg += lenOf(sq); avg /= list.length;
+    cap = Math.max(1, Math.min(cap, Math.floor(opt.width / Math.max(1, avg))));
+  }
+  const rows = [];
   let k = 0;
+  // (v236.0) with the ranks on, the battery never shares a row with the line squadrons: the line squadrons fill their rows first, then the battery
+  // starts its own row(s) behind them (set back below), so a Division with a few squadrons still stands its big guns at the back firing over
+  const battery = SETTINGS.lineRanks === 1 ? list.filter(function (sq) { return jobs.get(sq) === 'artillery'; }) : [];
+  if (battery.length > 0 && battery.length < list.length) list = list.filter(function (sq) { return jobs.get(sq) !== 'artillery'; });
   while (k < list.length) { const want = Math.min(cap, rows.length < F.rows.length ? F.rows[rows.length] : cap); rows.push(list.slice(k, k + want).map(function (sq) { return { sq: sq, key: latOf(sq), about: '' }; })); k += want; }
+  if (battery.length > 0 && battery.length < list.length + battery.length) { k = 0; while (k < battery.length) { rows.push(battery.slice(k, k + cap).map(function (sq) { return { sq: sq, key: latOf(sq), about: '' }; })); k += cap; } }
   // PD cover: next to the most vulnerable squadron when it stands in the front rank, else in the row ahead of it at its place
   const vul = pds.length > 0 ? cmdMostVulnerable(dv, list, jobs) : -1;
   if (vul >= 0) {
@@ -58904,7 +59484,14 @@ function cmdFormationPlaces(dv, a, squads, cx, cy, gx, gy, opt) {
     const items = rows[r].slice().sort(function (p, q) { return (p.key - q.key) || (p.sq - q.sq); });
     let total = 0; for (const it of items) total += lenOf(it.sq);
     if (r === 0) frontHalf = total / 2;
-    const bx = cx - gx * rowGap * r, by = cy - gy * rowGap * r;
+    let back = rowGap * r;
+    if (SETTINGS.lineRanks === 1 && r > 0 && items.every(function (it) { return jobs.get(it.sq) === 'artillery'; })) {   // (v236.0) a battery row stands batteryDepthFactor x the front row's widest squadron back, never beyond 60% of its reach
+      let frontWide = 0, reach = Infinity;
+      for (const it of rows[0]) frontWide = Math.max(frontWide, pic.pWidth[it.sq]);
+      for (const it of items) reach = Math.min(reach, cmdReach(dv, a, [it.sq]));
+      back = Math.max(back, Math.min(Math.max(0, SETTINGS.batteryDepthFactor) * Math.max(frontWide, 100), 0.6 * (isFinite(reach) ? reach : 0)));
+    }
+    const bx = cx - gx * back, by = cy - gy * back;
     let at = -total / 2;
     for (const it of items) {
       const len = lenOf(it.sq), lat = at + len / 2;
@@ -59023,7 +59610,8 @@ cmdDivHandlers.hold_line = { owns: true, standing: true, run: function (dv, a, o
     if (longLineMarchOn() && isFinite(o.params.gx) && isFinite(o.params.gy) && !cmdInContact(dv)) u = cmdUnit(o.params.gx, o.params.gy, dv.side);   // (v197.0, 06c4) the line's own facing until the enemy comes
   }
   cmdRotateRanks(dv, a, squads);
-  const at = cmdHoldRow(dv, a, squads, cx, cy, u.x, u.y, longLineMarchOn() ? { abreast: abreast, pace: 'hold' } : { abreast: abreast });   // (v197.0, 06c4) the long map: it marches to its spot together, in shape
+  const width = SETTINGS.lineRanks === 1 && dv.placeTask === 'line' && dv.lineW > 0 ? dv.lineW : 0;   // (v236.0, 06e part 8) on the line its rows are no wider than its stretch: the rest stand in rows behind
+  const at = cmdHoldRow(dv, a, squads, cx, cy, u.x, u.y, longLineMarchOn() ? { abreast: abreast, pace: 'hold', width: width } : { abreast: abreast, width: width });   // (v197.0, 06c4) the long map: it marches to its spot together, in shape
   if (at === squads.length) c.arrivedAt = Math.max(c.arrivedAt, o.startedAt + 0.001);
   cmdClearShapes(squads, SHAPE_COLUMN);
 } };
@@ -74481,13 +75069,32 @@ function closeAlienInfo(rec) {
   // (v97) a titan on a super frame is drawn whole from UI/titan-art.js (TITAN_ART), far bigger than its build grid: W and H are the grid's size
   const tf = titanSuperOfDesign(rec.design);
   if (tf && typeof window.TITAN_ART !== 'undefined' && window.TITAN_ART.keys.indexOf(tf.titanSuper) >= 0)
-    return { alien: 'titan', name: tf.titanSuper, W: tf.w, H: tf.h, centre: [tf.w / 2, tf.h / 2], parts: [], turrets: [], radiators: [], bells: [], tracks: [] };
+    return { alien: 'titan', name: tf.titanSuper, W: tf.w, H: tf.h, centre: [tf.w / 2, tf.h / 2], parts: [], turrets: [], radiators: [], bells: [], tracks: [],
+             fit: closeTitanFit(rec), rec: rec };   // (v239.0) fit: the fitted drive the art shows; rec: for the module cutaway (closeTitanCutBuild)
   let f = rec.faction, A = typeof window.ALIEN_ART !== 'undefined' ? window.ALIEN_ART : null;
   if (!f && rec.alienStock && typeof window.SWARM_ART !== 'undefined') { f = 'swarm'; A = { swarm: window.SWARM_ART }; }
   const name = CLOSE_ALIEN_ART_NAME[rec.name] || rec.name;
   if ((f !== 'delver' && f !== 'sylph' && f !== 'swarm') || !A || !A[f] || !A[f].designs || !A[f].designs[name]) return null;
   const d = A[f].designs[name], W = d.W || 10, H = d.H || 6;
   return { alien: f, name: name, W: W, H: H, centre: [W / 2, H / 2], parts: [], turrets: [], radiators: [], bells: [], tracks: [] };
+}
+// (v239.0) What a titan's design carries that its outer art shows (UI/titan-art.js draws it): a pulse drive, { drive: 'pulse' } (fission) or
+// { drive: 'pulsef' } (fusion), the biggest one fitted, in place of the art's drive bells; or else the colour of its biggest main drive's plume,
+// { plume: '#rrggbb' }, the same colours the battle's engines burn in (section 6w FX_ENGINE_LOOK). null: no main drive (the art as drawn).
+function closeTitanFit(rec) {
+  let pulse = null, pArea = 0, plume = '', dArea = 0;
+  try {
+    const a = bbAnalysisOf(rec), L = a && a.layout;
+    if (L) for (let k = 0; k < L.parts.length; k++) {
+      const m = L.parts[k].m;
+      if (!m || m.cat !== 'drives' || m.dir !== 'push') continue;
+      const area = (m.w || 1) * (m.h || 1);
+      if (m.pulse) { if (area > pArea) { pArea = area; pulse = { drive: m.pulse.fusion ? 'pulsef' : 'pulse' }; } continue; }
+      if (area <= dArea || typeof FX_ENGINE_OF_DRIVE === 'undefined') continue;
+      for (const pair of FX_ENGINE_OF_DRIVE) if (m.id.indexOf(pair[0]) === 0) { dArea = area; plume = FX_ENGINE_LOOK[pair[1]].col; break; }
+    }
+  } catch (err) { return null; }
+  return pulse || (plume ? { plume: plume } : null);
 }
 // A number for each design object (the pictures are filed under it)
 function closeDesignKey(rec) {
@@ -74730,12 +75337,15 @@ function closeArtEntry(t, look, house, modules) {
   const race = info0 && (info0.alien === 'delver' || info0.alien === 'sylph' || info0.alien === 'swarm') ? info0.alien : '';
   const lv = house === 'echo-mine' ? echoMyLivery() : house ? null : race ? livRaceInPlay(race) : (rec.livery || null);
   const titan = !!(info0 && info0.alien === 'titan');
+  // (v239.0) a titan in the module view (the Modules button or key H, or the Selected squadron close-up) is drawn as a cutaway: its art with the hull cut
+  // open over its build grid, and the design's real parts inside (closeTitanCutBuild). The Echo's titans keep their look.
+  const cut = titan && (!house || house === 'echo-mine') && (modules || UI_SETTINGS.closeHull !== 1);
   const lvk = !lv ? '' : race ? livRaceKey(lv, race) : (hull || titan || house === 'echo-mine') ? livKey(lv) : '';
-  const key = closeDesignKey(rec) + '|' + (hull ? 'hull' : look) + (lvk ? '|lv:' + lvk : '') + (house ? '|' + house : '');   // (v78.1) a Sylph ship has one picture per house colour; (v217.0) a new livery makes a new hull picture
+  const key = closeDesignKey(rec) + '|' + (hull ? 'hull' : look) + (cut ? '|cut' : '') + (lvk ? '|lv:' + lvk : '') + (house ? '|' + house : '');   // (v78.1) a Sylph ship has one picture per house colour; (v217.0) a new livery makes a new hull picture
   let e = closeArt.get(key);
   if (e) return e;
   const info = info0;
-  e = { state: info ? 'wait' : 'none', info: info, t: t, look: look, key: key, house: house || '', hull: hull, livery: lv };
+  e = { state: info ? 'wait' : 'none', info: info, t: t, look: look, key: key, house: house || '', hull: hull, livery: lv, cut: cut };
   closeArt.set(key, e);
   if (info) { closeArtQueue.push(e); closeArtPump(); }
   return e;
@@ -74756,8 +75366,9 @@ function closeArtBuild(e, done) {
   if (e.hull) { closeHullBuild(e, done); return; }
   const A = SHIP_ART, info = e.info, f = info.frame;
   e.state = 'busy';
-  // pixels a square: the longest side at most pictureLongest, between squareMin and squareMax
-  const s = Math.max(CLOSE_LOOK.squareMin, Math.min(CLOSE_LOOK.squareMax, Math.floor(CLOSE_LOOK.pictureLongest / (info.W + 16))));
+  // pixels a square: the longest side at most pictureLongest, between squareMin and squareMax ((v239.0) or e.sq when asked: a titan cutaway's modules
+  // are drawn at its art's scale)
+  const s = e.sq > 0 ? e.sq : Math.max(CLOSE_LOOK.squareMin, Math.min(CLOSE_LOOK.squareMax, Math.floor(CLOSE_LOOK.pictureLongest / (info.W + 16))));
   let svg = '', gunSvgs = {}, plainSvg = '';
   const echo = e.house.indexOf('echo-') === 0 ? e.house.slice(5) : '';   // (v126.0) an Echo look (section 6v2), or ''
   try {
@@ -74963,11 +75574,12 @@ function closeAlienBuild(e, done) {
     if (info.alien === 'titan') {
       // (v97) a titan: one still picture of its art; the build grid's middle is the turning point; (v110.0) its painted length is its drawn length (section 6b)
       // (v221.0) in its livery (the player's own Echo: in the Echo livery, its look laid on by the art itself)
-      const pic = window.TITAN_ART.picture(info.name, CLOSE_LOOK.pictureLongest * 2, info.W, info.H, e.livery || null);
+      const pic = window.TITAN_ART.picture(info.name, CLOSE_LOOK.pictureLongest * 2, info.W, info.H, e.livery || null, info.fit || null);   // (v239.0) with its fitted pulse drive
       if (!pic) { finish(null); return; }
       s = pic.s; e.s = s;
       const box = window.TITAN_ART.box ? window.TITAN_ART.box(info.name) : null;
       e.inkLen = box && box.w > 0 ? box.w * s : pic.canvas.width;   // (v110.0) not the build grid's length any more: the six titans' art was 3 to 7 times it
+      if (e.cut) { closeTitanCutBuild(e, pic, function (c) { finish(c || pic.canvas, pic.pivX, pic.pivY); }); return; }   // (v239.0) the module cutaway
       const echo = e.house.indexOf('echo-') === 0 && e.house !== 'echo-mine' ? e.house.slice(5) : '';
       if (echo) {
         // (v126.0) an Echo titan: its painted art put through the Echo look (section 6v2) as a picture inside an SVG; its painted length stays the art's
@@ -74999,6 +75611,148 @@ function closeAlienBuild(e, done) {
     const svg = SHIP_ART.wrapSVG(r.svg, r.x, r.y, r.w, r.h);
     closeSvgToCanvas(svg, function (c) { finish(c, -r.x + info.W * s / 2, -r.y + info.H * s / 2); });
   } catch (err) { e.state = 'none'; done(); }
+}
+// ---------------------------------------------------------------------
+// (v239.0) THE TITAN MODULE CUTAWAY. Alex 12 Nov 2026: "we need to do module cutaway art for titans".
+// A titan's art is far bigger than its build grid: the grid is the skeleton inside the body (UI/titan-art.js: one art square = one grid square, the
+// grid's top-left at the art's gx, gy). So the cutaway is the titan's own art (in its livery, with its fitted pulse drive) with the hull plating cut open
+// over the frame's squares, and the design's REAL parts drawn inside, from the same module drawings as every other ship's module view
+// ((v243.0) the grid stretched evenly to fill the body, closeTitanCutFit; v239.0 drew it at true size, about a quarter of the ship's length)
+// (closeArtBuild, in the look picked: Workhorse, Hull paint or Blueprint). The opening has a dark bulkhead rim and an amber cut line, so it reads as
+// the hull sawn open. In the Blueprint look the outer art is ghosted to blueprint blue around the opening. The same for all six titans and any new one:
+// nothing here is drawn per titan. Used by the battle's Modules view (key H), the Selected squadron close-up and the Bureau's Module cutaway and Blueprint.
+// cb(canvas): the finished picture, the same size as the art's (so its turning point is the art's), or null to keep the plain art.
+// ---------------------------------------------------------------------
+// (v243.0) Alex 12 Nov 2026, asked whether the parts should stay at true size or be stretched to fill the body: "yes stretch the parts".
+// Where a titan's build grid goes in its cutaway: scaled up evenly (never squashed) as far as it will go while nearly all of its squares still land on
+// the painted ship, found by trying sizes from the biggest that could fit down, and for each a spread of places round the middle of the paint.
+// Worked out once per titan, frame and fitted drive from a small picture of the art. Returns { k: art squares a grid square, dx, dy: the grid's middle
+// in art squares from the ship's turning point }; { k: 1, dx: 0, dy: 0 } is the true-size place on the art's own grid (v239.0's).
+const CLOSE_TITAN_CUT = {
+  onShip: 0.9,      // at least this share of the grid's squares must land on the painted ship
+  shrink: 0.95,     // each try is this much smaller than the last
+  margin: 0.94,     // the biggest size tried: the paint's box this much over the grid's
+  squareMax: 24     // the parts are drawn at most this many pixels a square, then stretched the rest (picture memory)
+};
+const closeTitanCutFits = new Map();
+function closeTitanCutFit(key, tf, fitDrive) {
+  const ck = key + '|' + tf.id + '|' + (fitDrive ? fitDrive.drive || fitDrive.plume || '' : '');
+  if (closeTitanCutFits.has(ck)) return closeTitanCutFits.get(ck);
+  let out = { k: 1, dx: 0, dy: 0 };
+  try {
+    const W = tf.w, H = tf.h, pm = window.TITAN_ART.picture(key, 500, W, H, null, fitDrive);
+    const cw = pm.canvas.width, ch = pm.canvas.height, A = pm.canvas.getContext('2d').getImageData(0, 0, cw, ch).data;
+    const painted = function (ax, ay) { const px = Math.round(pm.pivX + ax * pm.s), py = Math.round(pm.pivY + ay * pm.s); return px >= 0 && py >= 0 && px < cw && py < ch && A[(py * cw + px) * 4 + 3] > 120; };
+    // the paint's box and middle, in art squares from the turning point
+    let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9, sx = 0, sy = 0, n = 0;
+    for (let py = 0; py < ch; py += 2) for (let px = 0; px < cw; px += 2) if (A[(py * cw + px) * 4 + 3] > 120) {
+      const ax = (px - pm.pivX) / pm.s, ay = (py - pm.pivY) / pm.s; x0 = Math.min(x0, ax); x1 = Math.max(x1, ax); y0 = Math.min(y0, ay); y1 = Math.max(y1, ay); sx += ax; sy += ay; n++;
+    }
+    if (n === 0) { closeTitanCutFits.set(ck, out); return out; }
+    const mx = sx / n, my = sy / n, bw = x1 - x0, bh = y1 - y0;
+    // the grid's squares (every one on a small frame, a spread of them on a big one), as offsets from the grid's middle
+    const cells = [];
+    let all = 0; for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (tf.rows[y].charAt(x) !== ' ') all++;
+    const step = Math.max(1, Math.round(Math.sqrt(all / 1500)));
+    for (let y = 0; y < H; y += step) for (let x = 0; x < W; x += step) if (tf.rows[y].charAt(x) !== ' ') cells.push([x + 0.5 - W / 2, y + 0.5 - H / 2]);
+    let gx0 = 1e9, gx1 = -1e9, gy0 = 1e9, gy1 = -1e9; cells.forEach(function (c) { gx0 = Math.min(gx0, c[0]); gx1 = Math.max(gx1, c[0]); gy0 = Math.min(gy0, c[1]); gy1 = Math.max(gy1, c[1]); });
+    const gw = gx1 - gx0 + 1, gh = gy1 - gy0 + 1, gmx = (gx0 + gx1) / 2, gmy = (gy0 + gy1) / 2;
+    for (let k = Math.min(bw / gw, bh / gh) * CLOSE_TITAN_CUT.margin; k > 1; k *= CLOSE_TITAN_CUT.shrink) {
+      let best = null;
+      for (let oy = -3; oy <= 3; oy++) for (let ox = -3; ox <= 3; ox++) {
+        // the grid's middle placed on the paint's middle, then nudged each way by up to half the room to spare (or a twelfth of the paint, if more)
+        const cx = mx + ox / 3 * Math.max((bw - gw * k) * 0.5, bw / 12), cy = my + oy / 3 * Math.max((bh - gh * k) * 0.5, bh / 12);
+        const dx = cx - gmx * k, dy = cy - gmy * k;
+        let hit = 0; for (let c = 0; c < cells.length; c++) if (painted(dx + cells[c][0] * k, dy + cells[c][1] * k)) hit++;
+        const sc = hit / cells.length;
+        if (!best || sc > best.sc) best = { sc: sc, dx: dx, dy: dy };
+      }
+      if (best.sc >= CLOSE_TITAN_CUT.onShip) { out = { k: k, dx: best.dx, dy: best.dy }; break; }
+    }
+  } catch (err) { out = { k: 1, dx: 0, dy: 0 }; }
+  closeTitanCutFits.set(ck, out);
+  return out;
+}
+function closeTitanCutBuild(e, pic, cb) {
+  const info = e.info, s = pic.s;
+  let mi = null, L = null;
+  try { mi = info.rec ? closeMakeInfo(info.rec) : null; const a = mi ? bbAnalysisOf(info.rec) : null; L = a && a.layout; } catch (err) { mi = null; }
+  const tf = info.rec && info.rec.design ? titanSuperOfDesign(info.rec.design) : null;
+  if (!mi || !L || !tf) { cb(null); return; }
+  // where the parts' grid starts in the frame's own picture of squares (its rows)
+  let fx0 = 1e9, fy0 = 1e9;
+  for (let y = 0; y < tf.rows.length; y++) for (let x = 0; x < tf.rows[y].length; x++) if (tf.rows[y].charAt(x) !== ' ') { if (x < fx0) fx0 = x; if (y < fy0) fy0 = y; }
+  if (fx0 > 1e8) { cb(null); return; }
+  // (v243.0) the grid stretched to fill the body (closeTitanCutFit): k art squares a grid square, its middle at (dx, dy) art squares from the turning point
+  const fit = closeTitanCutFit(info.name, tf, info.fit || null);
+  const S = fit.k * s;                                                        // the art picture's pixels a grid square
+  const OX = pic.pivX + (fit.dx + (fx0 - info.W / 2) * fit.k) * s, OY = pic.pivY + (fit.dy + (fy0 - info.H / 2) * fit.k) * s;   // the art picture's pixel of the parts' grid square (0, 0)
+  const look = e.look === 'hull' ? 'grit' : e.look;
+  const sq = Math.max(2, Math.min(CLOSE_TITAN_CUT.squareMax, Math.round(S)));  // the module drawing's pixels a square; stretched the last bit (f) when S is bigger
+  const f = S / sq;
+  const m = { state: 'wait', info: mi, t: e.t, look: look, key: e.key + '|mods', house: '', hull: false, livery: null, sq: sq };
+  closeArtBuild(m, function () {
+    if (m.state !== 'ready' || !m.canvas) { cb(null); return; }
+    try {
+      const out = pmWatch(document.createElement('canvas'));
+      out.width = pic.canvas.width; out.height = pic.canvas.height;
+      const g = out.getContext('2d');
+      if (look === 'blue') {
+        // the outer art ghosted to blueprint blue: its shape in blue, its light and shade laid over faintly in grey
+        g.drawImage(pic.canvas, 0, 0);
+        g.globalCompositeOperation = 'source-in'; g.fillStyle = '#1E5288'; g.fillRect(0, 0, out.width, out.height);
+        g.globalCompositeOperation = 'screen'; g.globalAlpha = 0.45; g.filter = 'grayscale(1)'; g.drawImage(pic.canvas, 0, 0);
+        g.filter = 'none'; g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+      } else g.drawImage(pic.canvas, 0, 0);
+      // the opening: the frame's squares, row by row (hole, to fill and cut by), and its outline only (rim, to stroke: the edges of a frame square
+      // with no frame square beside it)
+      const on = function (x, y) { return x >= 0 && y >= 0 && x < mi.W && y < mi.H && L.cellFrame[(L.y0 + y) * L.W + L.x0 + x] >= 0; };
+      const hole = new Path2D(), rim = new Path2D();
+      for (let y = 0; y < mi.H; y++) {
+        let x0 = -1;
+        for (let x = 0; x <= mi.W; x++) {
+          const here = on(x, y);
+          if (here && x0 < 0) x0 = x;
+          if (!here && x0 >= 0) { hole.rect(OX + x0 * S, OY + y * S, (x - x0) * S, S); x0 = -1; }
+        }
+      }
+      for (let y = 0; y <= mi.H; y++) {   // the edges along the rows (between row y - 1 and row y), joined into runs
+        let x0 = -1;
+        for (let x = 0; x <= mi.W; x++) {
+          const edge = x < mi.W && on(x, y) !== on(x, y - 1);
+          if (edge && x0 < 0) x0 = x;
+          if (!edge && x0 >= 0) { rim.moveTo(OX + x0 * S, OY + y * S); rim.lineTo(OX + x * S, OY + y * S); x0 = -1; }
+        }
+      }
+      for (let x = 0; x <= mi.W; x++) {   // and down the columns
+        let y0 = -1;
+        for (let y = 0; y <= mi.H; y++) {
+          const edge = y < mi.H && on(x, y) !== on(x - 1, y);
+          if (edge && y0 < 0) y0 = y;
+          if (!edge && y0 >= 0) { rim.moveTo(OX + x * S, OY + y0 * S); rim.lineTo(OX + x * S, OY + y * S); y0 = -1; }
+        }
+      }
+      // the bulkhead rim round the opening, then the inside: dark, the parts, the turning guns at rest, and a shadow under the cut edge
+      g.lineJoin = 'round'; g.lineCap = 'round';
+      g.strokeStyle = look === 'blue' ? 'rgba(10,30,60,.9)' : 'rgba(8,8,7,.92)'; g.lineWidth = s * 2.6; g.stroke(rim);
+      g.strokeStyle = look === 'blue' ? 'rgba(230,240,255,.85)' : '#5d5e55'; g.lineWidth = s * 1.1; g.stroke(rim);
+      g.save(); g.clip(hole);
+      g.fillStyle = look === 'blue' ? '#123A63' : '#0A0B0C'; g.fill(hole);
+      g.drawImage(m.canvas, OX + m.x0 * f, OY + m.y0 * f, m.w * f, m.h * f);
+      for (let n = 0; n < mi.turrets.length; n++) {
+        const tu = mi.turrets[n], gun = m.guns && m.guns[tu.key];
+        if (!gun) continue;
+        const ca = Math.cos(tu.rest), sa = Math.sin(tu.rest);
+        g.setTransform(ca * f, sa * f, -sa * f, ca * f, OX + tu.cx * sq * f, OY + tu.cy * sq * f);
+        g.drawImage(gun.canvas, -gun.piv[0], -gun.piv[1]);
+        g.setTransform(1, 0, 0, 1, 0, 0);
+      }
+      g.strokeStyle = 'rgba(0,0,0,.5)'; g.lineWidth = s * 2.2; g.stroke(rim);
+      g.restore();
+      g.strokeStyle = look === 'blue' ? 'rgba(230,240,255,.95)' : '#D9A62C'; g.lineWidth = Math.max(1, s * 0.35); g.stroke(rim);   // the cut line
+      cb(out);
+    } catch (err) { cb(null); }
+  });
 }
 // (v110.0) How long the painted ship is in its picture (picture pixels, nose to tail): the columns of the quarter-size copy with any paint in them.
 // Falls back to the whole picture's length if the browser will not let the picture be read.
@@ -75547,7 +76301,8 @@ function closeShipWorld(i) {
 //   view 'hull'    the outer hull art (closeHullBuild, UI/hull-art.js)
 //   view 'grit'    the module view in the Workhorse look, 'paint' in the Hull paint look
 //   view 'blue'    the module view in the Blueprint look
-// Titans and the aliens' ships have only their own whole-body art: every view shows that.
+// The aliens' ships have only their own whole-body art: every view shows that. (v239.0) A titan shows its art in the Livery view and its module cutaway
+// (the art cut open over its build grid, the real parts inside) in the module and Blueprint views.
 // done(e) gets the finished picture (e.state 'ready'), or null when the design has nothing to draw yet (no frame, or a part with no art).
 // (v217.0) livery: the design's livery (section 10e-9c), or null for the plain look.
 function closeDesignPicture(design, name, view, livery, done) {
@@ -75556,7 +76311,8 @@ function closeDesignPicture(design, name, view, livery, done) {
   try { if (design && design.v === 3 && typeof window.SHIP_ART !== 'undefined') info = closeAlienInfo(rec) || closeMakeInfo(rec); } catch (err) { info = null; }
   if (!info) { done(null); return; }
   const hull = view === 'hull' && !info.alien && typeof window.HULL_ART !== 'undefined';
-  const e = { state: 'wait', info: info, t: undefined, look: view === 'hull' ? 'grit' : view, key: 'bureau|' + view, house: '', hull: hull, livery: livery || null };
+  const cut = info.alien === 'titan' && view !== 'hull';   // (v239.0) a titan's module views are its cutaway (closeTitanCutBuild)
+  const e = { state: 'wait', info: info, t: undefined, look: view === 'hull' ? 'grit' : view, key: 'bureau|' + view, house: '', hull: hull, livery: livery || null, cut: cut };
   try { closeArtBuild(e, function () { done(e.state === 'ready' ? e : null); }); } catch (err) { done(null); }
 }
 // (v222.0) A repeatable number from a ship's name (so the material's flecks fall the same way every time)
@@ -77559,10 +78315,16 @@ function fogHidesDivision(dv) {
 //   Display only: nothing here is read by the battle or uses its random numbers.
 // =====================================================================
 const UNIT_MARKERS = {
+  farPixelsScale: 0.7,  // (v242.0, Alex: switch to far markers "a bit more zoomed out") ships count as big enough for an icon from this share of the usual icon
+                        // sizes (iconSilhouettePixels, or DOTS_UNTIL_PIXELS when crowded): 0.7 = the switch comes when ships are 30% smaller on screen than before
   enterShare: 0.45,     // far mode starts when less than this share of the ships on screen (by drawn length) is big enough for an icon ...
   leaveShare: 0.55,     // ... and ends when more than this share is (the gap stops it flickering)
   faint: 0.38,          // the faint ships: how much of their colour shows over the map's background (0 to 1)
   layoutSeconds: 0.25,  // which units are chips, plates or Fleet counters is worked out again this often (real seconds), or at once on a zoom change
+  groupGap: 800,        // (v240.0) squadrons in no Division closer than this (map units) are drawn as one group ...
+  groupMostSquadrons: 12, groupMostShips: 60,
+  detachShare: 3, detachLeast: 1500,   // (v242.0) a squadron further from its Division's main body than this many times the usual distance (and at least this
+                                       // many map units) is cut off from it: it shows as a chip of its own, with no link, and does not move the counter   // ... and a group bigger than this is cut into stretches along its longest side (about a Division's size)
   joinPixels: 70,       // a Division plate joins two of its squadrons into one shape when they are closer than this on screen; further apart, a thin dashed line
   chipH: 13,            // a squadron chip's height in screen pixels (its width grows with the digits of its count)
   divW: 56, divH: 30,   // a Division counter's size
@@ -77575,7 +78337,8 @@ let unitLenAll = 0, unitLenMid = 0, unitLenBig = 0;
 function unitCountShip(t, z) {
   const L = typeDrawLen[t];
   unitLenAll += L;
-  if (L * z >= UI_SETTINGS.iconSilhouettePixels) { unitLenMid += L; if (L * z >= DOTS_UNTIL_PIXELS) unitLenBig += L; }
+  const px = L * z / UNIT_MARKERS.farPixelsScale;
+  if (px >= UI_SETTINGS.iconSilhouettePixels) { unitLenMid += L; if (px >= DOTS_UNTIL_PIXELS) unitLenBig += L; }
 }
 function unitMarkersOn() { return UI_SETTINGS.unitMarkers === 1 && UI_SETTINGS.icons === 1; }
 
@@ -77614,6 +78377,22 @@ function unitRoundCount(n) {
   return (Math.round(n / 500) * 500).toLocaleString('en-US');
 }
 
+// ---- Which ships are in the fighting force (v242.0) ----
+//   Alex 12 Nov 2026: "exclude stragglers ... right now pretty much all fleet markers get spread out to encompass repairing ships, glitched squads, hulks".
+//   The markers (their counts, plates, links and counters) count only ships in the fight. Left out, they still show as faint dots:
+//     * ships going to a dock or being repaired, towed, towing, eating or being eaten (state Repair), running away (Retreat, or routed), or regrouping;
+//     * crippled ships (hulks fighting on, wrecks waiting for a tug);
+//     * stragglers: ships that have been away from their squadron, or are flying back to it.
+//   A squadron of the fight that sits far from the rest of its Division is cut off from it too (unitList, detachShare).
+function unitInFight(i) {
+  const st = shipState[i];
+  if (st === STATE_REPAIR || st === STATE_RETREAT || st === STATE_REGROUP) return false;
+  if (shipRouted[i] !== 0) return false;
+  if (i < cplState.length && cplState[i] !== CR_NONE) return false;
+  if (shipRejoin[i] === 1 || shipStraySince[i] >= 0) return false;
+  return true;
+}
+
 // ---- Per squadron sums, filled by one pass over the ships each frame ----
 let umX = new Float64Array(0), umY = new Float64Array(0), umN = new Int32Array(0), umHp = new Float64Array(0), umHpMax = new Float64Array(0);
 let umCos = new Float64Array(0), umSin = new Float64Array(0);
@@ -77627,6 +78406,7 @@ function unitSums() {
     if (shipAlive[i] === 0 || fogHides(i)) continue;
     const t = shipType[i];
     if (SHIP_TYPES[t].immobile) continue;                     // stations stay plain dots (bright: drawPixelLayer leaves them unfaded)
+    if (!unitInFight(i)) continue;                            // (v242.0) only the fighting force: the rest stay faint dots
     const q = shipSquad[i];
     if (q < 0 || q >= nS) continue;
     umX[q] += shipX[i]; umY[q] += shipY[i]; umN[q]++;
@@ -77645,26 +78425,112 @@ function unitFleetOf(dv) {
 function unitColorOf(side, F) { return F ? fleetShadeOf(F) : (side === BLUE ? lookColors.friendly : lookColors.alien); }
 function unitSelected(kind, id) { return bsSelectedUnit !== null && bsSelectedUnit.kind === kind && bsSelectedUnit.id === id; }
 
+// ---- Squadrons in no Division: grouped by where they are (v240.0) ----
+//   Alex 12 Nov 2026: in Last Stand the enemy showed as a wall of hundreds of tiny chips. The Swarm there has no Admiral, so its squadrons are never put in
+//   Divisions, and every squadron outside a Division got a chip of its own. The same happens anywhere squadrons sit outside a Division (a side with no
+//   Admiral, fresh arrivals, a Division's leftovers). So squadrons in no Division are now gathered, for the map only, into GROUPS by where they are:
+//   squadrons within UNIT_MARKERS.groupGap of each other are one group, and a group bigger than a Division is cut into stretches along its longest side
+//   (a wide front shows as several pieces side by side, not one counter), but only into as many stretches as fit side by side on screen without their
+//   counters sitting on each other (zoomed out, a mass is fewer, bigger groups; zoomed in, more, down to about a Division each). A group then climbs the same ladder as a Division: chips while its squadrons are
+//   apart, a plate with one counter once they crowd, and far out it folds into its side's counter. Nothing here touches the battle or the officers.
+const umLoose = { at: -1e9, zoom: 0, groups: [] };   // the groups, worked out again with the ladder (every UNIT_MARKERS.layoutSeconds, or at once on a zoom change)
+function unitLooseGroups(z) {
+  const nowS = performance.now() / 1000;
+  if (nowS - umLoose.at < UNIT_MARKERS.layoutSeconds && nowS >= umLoose.at && Math.abs(Math.log(z / (umLoose.zoom || z))) <= 0.08) return umLoose.groups;
+  umLoose.at = nowS; umLoose.zoom = z;
+  const gap = UNIT_MARKERS.groupGap, out = [];
+  for (let side = 0; side < 2; side++) {
+    const qs = [];
+    for (let q = 0; q < sqSide.length; q++) if (sqSide[q] === side && umN[q] > 0 && sqAlive[q] && !(sqDivision[q] > 0 && divisions[sqDivision[q]] && !divisions[sqDivision[q]].dissolved)) qs.push(q);
+    if (qs.length === 0) continue;
+    // squadrons closer than the gap join one group (a grid of gap-sized cells, so only neighbouring cells are compared)
+    const cell = new Map(), key = function (cx, cy) { return cx * 100003 + cy; };
+    for (let k = 0; k < qs.length; k++) { const c = key(Math.floor(umX[qs[k]] / gap), Math.floor(umY[qs[k]] / gap)); let a = cell.get(c); if (!a) { a = []; cell.set(c, a); } a.push(k); }
+    const root = new Int32Array(qs.length); for (let k = 0; k < qs.length; k++) root[k] = k;
+    const find = function (k) { while (root[k] !== k) { root[k] = root[root[k]]; k = root[k]; } return k; };
+    for (let k = 0; k < qs.length; k++) {
+      const x = umX[qs[k]], y = umY[qs[k]], cx = Math.floor(x / gap), cy = Math.floor(y / gap);
+      for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
+        const a = cell.get(key(cx + dx, cy + dy));
+        if (a) for (const j of a) if (j > k && Math.hypot(umX[qs[j]] - x, umY[qs[j]] - y) < gap) { const r1 = find(k), r2 = find(j); if (r1 !== r2) root[r1] = r2; }
+      }
+    }
+    const byRoot = new Map();
+    for (let k = 0; k < qs.length; k++) { const r = find(k); let a = byRoot.get(r); if (!a) { a = []; byRoot.set(r, a); } a.push(qs[k]); }
+    // a group bigger than a Division is cut into equal stretches along its longest side
+    for (const g of byRoot.values()) {
+      let ships = 0; for (const q of g) ships += umN[q];
+      let pieces = Math.max(1, Math.ceil(g.length / UNIT_MARKERS.groupMostSquadrons), Math.ceil(ships / UNIT_MARKERS.groupMostShips));
+      if (pieces === 1 || g.length < 2) { out.push({ side, sqs: g }); continue; }
+      let mx = 0, my = 0; for (const q of g) { mx += umX[q]; my += umY[q]; } mx /= g.length; my /= g.length;
+      let sxx = 0, syy = 0, sxy = 0; for (const q of g) { const dx = umX[q] - mx, dy = umY[q] - my; sxx += dx * dx; syy += dy * dy; sxy += dx * dy; }
+      const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy), ax = Math.cos(ang), ay = Math.sin(ang);   // the longest side's direction
+      const along = function (q) { return (umX[q] - mx) * ax + (umY[q] - my) * ay; };
+      g.sort(function (p, q) { return along(p) - along(q) || p - q; });
+      // no more stretches than there is room for their counters side by side along that side, on screen
+      const lengthPx = (along(g[g.length - 1]) - along(g[0])) * z, counterPx = Math.abs(ax) * (UNIT_MARKERS.divW + 8) + Math.abs(ay) * (UNIT_MARKERS.divH + 8);
+      pieces = Math.min(pieces, Math.max(1, Math.floor(lengthPx / counterPx) + 1));
+      if (pieces === 1) { out.push({ side, sqs: g }); continue; }
+      const per = ships / Math.min(pieces, g.length);
+      let cur = [], curN = 0;
+      for (const q of g) { cur.push(q); curN += umN[q]; if (curN >= per) { out.push({ side, sqs: cur }); cur = []; curN = 0; } }
+      if (cur.length) out.push({ side, sqs: cur });
+    }
+  }
+  // each group is named by its smallest squadron number, so the ladder remembers it from one look to the next
+  for (const g of out) { let m = Infinity; for (const q of g.sqs) if (q < m) m = q; g.id = 'g' + m; }
+  umLoose.groups = out;
+  return out;
+}
+
 // ---- The units seen this frame ----
-function unitList() {
-  const divs = [], groups = new Map(), loose = [];
+//   A unit is a Division, or a group of squadrons in no Division (above), which is drawn the same way but has no number, no Commodore and no Fleet.
+function unitList(z) {
+  const divs = [], groups = new Map();
+  const addUnit = function (dv, side, list, F) {
+    const sqs = [];
+    let n = 0, x = 0, y = 0, hp = 0, hpMax = 0;
+    for (const q of list) if (sqAlive[q] && umN[q] > 0) { sqs.push(q); n += umN[q]; x += umX[q] * umN[q]; y += umY[q] * umN[q]; hp += umHp[q]; hpMax += umHpMax[q]; }
+    if (n === 0) return;
+    const key = F ? 'f' + F.id : 's' + side;
+    const u = { dv, side, sqs, n, x: x / n, y: y / n, health: hpMax > 0 ? hp / hpMax : 1, F, key, color: unitColorOf(side, F) };
+    divs.push(u);
+    let g = groups.get(key);
+    if (!g) { g = { key, F, side, divs: [], n: 0, x: 0, y: 0, hp: 0, hpMax: 0, color: u.color }; groups.set(key, g); }
+    g.divs.push(u); g.n += n; g.x += u.x * n; g.y += u.y * n; g.hp += hp; g.hpMax += hpMax;
+  };
+  const cutOff = [];                               // squadrons cut off from their Division: [squadron, colour]
   for (let d = 1; d < divisions.length; d++) {
     const dv = divisions[d];
     if (!dv || dv.dissolved) continue;
-    const sqs = [];
-    let n = 0, x = 0, y = 0, hp = 0, hpMax = 0;
-    for (const q of dv.squads) if (sqAlive[q] && umN[q] > 0) { sqs.push(q); n += umN[q]; x += umX[q] * umN[q]; y += umY[q] * umN[q]; hp += umHp[q]; hpMax += umHpMax[q]; }
-    if (n === 0) continue;
-    const F = unitFleetOf(dv), key = F ? 'f' + F.id : 's' + dv.side;
-    const u = { dv, side: dv.side, sqs, n, x: x / n, y: y / n, health: hpMax > 0 ? hp / hpMax : 1, F, key, color: unitColorOf(dv.side, F) };
-    divs.push(u);
-    let g = groups.get(key);
-    if (!g) { g = { key, F, side: dv.side, divs: [], n: 0, x: 0, y: 0, hp: 0, hpMax: 0, color: u.color }; groups.set(key, g); }
-    g.divs.push(u); g.n += n; g.x += u.x * n; g.y += u.y * n; g.hp += hp; g.hpMax += hpMax;
+    const F = unitFleetOf(dv), body = unitMainBody(dv.squads);
+    addUnit(dv, dv.side, body.keep, F);
+    for (const q of body.cut) cutOff.push([q, unitColorOf(dv.side, F)]);
   }
+  for (const lg of unitLooseGroups(z)) addUnit({ id: lg.id, name: '', side: lg.side, group: true }, lg.side, lg.sqs, null);
   for (const g of groups.values()) { g.x /= g.n; g.y /= g.n; g.health = g.hpMax > 0 ? g.hp / g.hpMax : 1; }
-  for (let q = 0; q < sqSide.length; q++) if (umN[q] > 0 && sqAlive[q] && !(sqDivision[q] > 0 && divisions[sqDivision[q]] && !divisions[sqDivision[q]].dissolved)) loose.push(q);
-  return { divs, groups, loose };
+  return { divs, groups, cutOff };
+}
+// (v242.0) A Division's main body: its squadrons in the fight, less any far from the rest. The middle is the middle by ship count of the squadrons
+// (half the ships either side, across and up, so a few far squadrons cannot drag it); a squadron more than detachShare times the usual distance from it,
+// and more than detachLeast, is cut off.
+function unitMainBody(list) {
+  const live = [];
+  for (const q of list) if (sqAlive[q] && umN[q] > 0) live.push(q);
+  if (live.length < 3) return { keep: live, cut: [] };
+  const mid = function (key) {
+    const a = live.slice().sort(function (p, q) { return key[p] - key[q]; });
+    let tot = 0; for (const q of a) tot += umN[q];
+    let run = 0; for (const q of a) { run += umN[q]; if (run * 2 >= tot) return key[q]; }
+    return key[a[a.length - 1]];
+  };
+  const mx = mid(umX), my = mid(umY), dist = new Map();
+  for (const q of live) dist.set(q, Math.hypot(umX[q] - mx, umY[q] - my));
+  const ds = live.map(function (q) { return dist.get(q); }).sort(function (a, b) { return a - b; });
+  const limit = Math.max(UNIT_MARKERS.detachLeast, UNIT_MARKERS.detachShare * ds[ds.length >> 1]);
+  const keep = [], cut = [];
+  for (const q of live) (dist.get(q) > limit ? cut : keep).push(q);
+  return { keep, cut };
 }
 
 // ---- The ladder (worked out a few times a second) ----
@@ -77736,7 +78602,7 @@ function unitHealthBar(x, y, w, health, ink) {
   ctx.fillRect(x, y, Math.max(1, w * Math.min(1, health)), 3);
 }
 function unitDrawPlate(u, z, offX, offY) {
-  const list = umLayout.edges.get(u.dv.id) || [];
+  const list = umLayout.edges.get(u.dv.id) || [], inUnit = new Set(u.sqs);
   const r = function (q) { return Math.max(8, Math.min(22, Math.sqrt(umN[q]) * 2.2)); };
   ctx.globalAlpha = 0.16; ctx.fillStyle = u.color; ctx.strokeStyle = u.color; ctx.lineCap = 'round';
   ctx.beginPath();
@@ -77746,7 +78612,7 @@ function unitDrawPlate(u, z, offX, offY) {
   const dashed = [];
   for (let k = 0; k < list.length; k += 2) {
     const a = list[k], b = list[k + 1];
-    if (umN[a] === 0 || umN[b] === 0) continue;
+    if (umN[a] === 0 || umN[b] === 0 || !inUnit.has(a) || !inUnit.has(b)) continue;   // (v242.0: never a link to a squadron that left the unit since the last layout)
     const ax = umX[a] * z + offX, ay = umY[a] * z + offY, bx = umX[b] * z + offX, by = umY[b] * z + offY;
     if (Math.hypot(bx - ax, by - ay) < UNIT_MARKERS.joinPixels) { ctx.moveTo(ax, ay); ctx.lineTo(bx, by); } else dashed.push(ax, ay, bx, by);
   }
@@ -77772,7 +78638,7 @@ function unitDrawDivCounter(u, X, Y) {
   ctx.strokeStyle = unitSelected('division', u.dv.id) ? lookColors.select : u.color; ctx.lineWidth = unitSelected('division', u.dv.id) ? 2.5 : 1.5;
   ctx.strokeRect(X - w / 2, Y - h / 2, w, h);
   ctx.fillStyle = ink;
-  ctx.font = '600 9px "IBM Plex Mono", ui-monospace, monospace'; ctx.fillText('XX', X, Y - h / 2 + 7);
+  ctx.font = '600 9px "IBM Plex Mono", ui-monospace, monospace'; ctx.fillText(u.dv.group ? 'GROUP' : 'XX', X, Y - h / 2 + 7);   // (v240.0) a group of squadrons in no Division is no Division
   const no = parseInt(u.dv.name, 10);
   ctx.font = '800 13px "Big Shoulders Display", "Arial Narrow", sans-serif'; ctx.fillText((no > 0 ? no + ' · ' : '') + unitRoundCount(u.n), X, Y + 3);
   unitHealthBar(X - w / 2 + 4, Y + h / 2 - 6, w - 8, u.health, ink);
@@ -77789,7 +78655,8 @@ function unitDrawFleetCounter(g, X, Y) {
   ctx.fillStyle = ink;
   ctx.font = '600 10px "IBM Plex Mono", ui-monospace, monospace'; ctx.fillText('XXX', X, Y - h / 2 + 8);
   ctx.font = '800 16px "Big Shoulders Display", "Arial Narrow", sans-serif'; ctx.fillText(unitShortName(g), X, Y - 1);
-  ctx.font = '600 10px "IBM Plex Mono", ui-monospace, monospace'; ctx.fillText(unitRoundCount(g.n) + ' SHIPS · ' + g.divs.length + ' DIV', X, Y + h / 2 - 11);
+  ctx.font = '600 10px "IBM Plex Mono", ui-monospace, monospace'; const nDiv = g.divs.filter(function (u) { return !u.dv.group; }).length;
+  ctx.fillText(unitRoundCount(g.n) + ' SHIPS' + (nDiv > 0 ? ' · ' + nDiv + ' DIV' : ''), X, Y + h / 2 - 11);   // (v240.0: groups of squadrons in no Division are not counted as Divisions)
   unitHealthBar(X - w / 2 + 6, Y + h / 2 - 5, w - 12, g.health, ink);
 }
 // Counters that would sit on each other are nudged apart (pins on a war-room table); a pin line marks a counter's real spot when it moved
@@ -77812,9 +78679,9 @@ function drawUnitMarkers(w, h, z) {
   const offX = w / 2 - camera.x * z, offY = h / 2 - camera.y * z;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   unitSums();
-  const U = unitList();
+  const U = unitList(z);
   const nowS = performance.now() / 1000;
-  if (nowS - umLayout.at > UNIT_MARKERS.layoutSeconds || nowS < umLayout.at || Math.abs(Math.log(z / (umLayout.zoom || z))) > 0.08 || U.divs.length !== umLayout.divCount) {
+  if (nowS - umLayout.at > UNIT_MARKERS.layoutSeconds || nowS < umLayout.at || Math.abs(Math.log(z / (umLayout.zoom || z))) > 0.08 || U.divs.length !== umLayout.divCount || U.divs.some(function (u) { return !umLayout.level.has(u.dv.id); })) {   // (v240.0: or a unit the ladder has not placed yet)
     unitLayout(U, z, offX, offY);
     umLayout.at = nowS; umLayout.zoom = z; umLayout.divCount = U.divs.length;
   }
@@ -77829,11 +78696,11 @@ function drawUnitMarkers(w, h, z) {
     for (const u of g.divs) { ctx.moveTo(X, Y); ctx.lineTo(u.x * z + offX, u.y * z + offY); }
     ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
   }
-  // 2. chips: squadrons of Divisions on the bottom rung, and squadrons in no Division
+  // 2. chips: squadrons of Divisions and groups on the bottom rung
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '600 10px "IBM Plex Mono", ui-monospace, monospace';
   let drawn = 0;
   for (const u of U.divs) if (lvl.get(u.dv.id) === 0 && !up.has(u.key)) for (const q of u.sqs) drawn += unitDrawChip(q, u.color, u.side, z, offX, offY, w, h);
-  for (const q of U.loose) drawn += unitDrawChip(q, sqSide[q] === BLUE ? lookColors.friendly : lookColors.alien, sqSide[q], z, offX, offY, w, h);
+  for (const c of U.cutOff) drawn += unitDrawChip(c[0], c[1], sqSide[c[0]], z, offX, offY, w, h);   // (v242.0) squadrons cut off from their Division: a chip, no link
   // 3. counters, pinned apart where they would overlap. A unit strung out past the screen edge puts its counter in the middle of its part on screen.
   const items = [];
   const seenMiddle = function (pts) {             // pts: [x, y, weight] in map units; the weighted middle of those on screen, or null
@@ -90524,7 +91391,8 @@ const LAST_STAND = {
   waveFormations: { on: 1, factions: ['delver', 'echo'], artilleryReach: 1.4, artilleryMinReach: 1500, flankerSpeed: 1.3, minForFlanks: 6, divisionSquads: 3, fleetSquads: 12,
                     squadGap: 40, divisionGap: 220, rowGap: 350, flankAhead: 250, paceShare: 0.85, paceFloor: 0.6, lagFree: 300, lagStop: 600, turnRate: 0.15, haltReach: 0.9, echelonGap: 400,
                     leashLine: 0.6, leashArtillery: 0.3, leashFlank: 1.0, leashMin: 500, leashMarch: 300, droneAhead: 300 },
-  guardLine: { on: 1, ahead: 1200, maxAhead: 5000, reachShare: 0.7, lastAhead: 500, divisionGap: 250, rowGap: 60, lineGap: 300, bandShare: 1, overflow: 1.3, leashMin: 500, leashRange: 0.4, huntSeconds: 6 },
+  guardLine: { on: 1, ahead: 1200, maxAhead: 5000, reachShare: 0.7, lastAhead: 500, divisionGap: 250, rowGap: 60, lineGap: 300, bandShare: 1, overflow: 1.3, leashMin: 500, leashRange: 0.4, huntSeconds: 6,
+               ranks: 1, rankDepth: 2000 },   // (v241.0) the ranks of the guard line (31c2): the front has the Fleet's share of the map, the rest stand rankDepth behind it, firing only when reached
   waveGrowth: 0.15,                           // (v101.4) with each new wave every squadron grows by this share of its size (at least one ship), up to its cap: the fleet grows as the waves do
   biggerShare: 0.5,                           // (v101.4) a Bigger squadron card adds this share of the squadron (at least its hull's starting size)
   biggerCapShare: 0.5,                        // (v128.0, Alex 8 Nov) and raises that squadron's cap by this share of its hull's cap (each card again), so it keeps growing
@@ -92146,7 +93014,7 @@ let lsLineAt = -1;            // when the line was last laid out
 function lsLineOn() { return lastStand !== null && LAST_STAND.guardLine && LAST_STAND.guardLine.on === 1; }
 
 // (lsStart) a new run: no spots yet.
-function lsLineReset() { lsLineSpot.length = 0; lsLineHuntUntil.length = 0; lsLineAt = -1; }
+function lsLineReset() { lsLineSpot.length = 0; lsLineHuntUntil.length = 0; lsLineAt = -1; lsRankFull.length = 0; lsRankFront.length = 0; }
 
 // The height of the map this station's Fleet has to itself: a third of it in version 2 (three Fleet bands), all of it in version 1.
 function lsLineBand() { return SETTINGS.worldHeight / (lastStand && lastStand.v2 ? 3 : 1); }
@@ -92163,9 +93031,43 @@ function lsLineLayout() {
 // ships, not from its formation of the moment (that changes shape in a fight, and the line would twitch with it).
 function lsLineSquadSize(sq) { const n = Math.max(1, sqAlive[sq] + (sqAway[sq] || 0)); return (Math.ceil(Math.sqrt(n)) + 1) * formationSpacingFor(sqType[sq], sqOfficer[sq]); }
 
+// (v241.0) THE RANKS OF THE GUARD LINE (LAST_STAND.guardLine.ranks 1): the same rules as the campaign's line (v236.0, 06e-5z-campaign-8-line-ranks.js), for
+// Alex's "make sure this works for Last Stand":
+//  - THE FRONT HAS A FIXED LENGTH: the Fleet's share of the map (lsLineBand x bandShare). The Divisions that fit it stand in the FRONT RANK, each by its
+//    formed-up frontage (a front Division stands fewer squadrons abreast, deeper, only when the front rank still does not fit); the rest are the RESERVE
+//    RANKS, posted guardLine.rankDepth behind the front, as many a rank as the front has Divisions, spread evenly along the Fleet's share. That is beyond
+//    the typical gun, and a guard squadron's leash is short (lsLineLeash), so a reserve Division fires only when the enemy reaches it. More ships make
+//    squadrons bigger and the line deeper, not longer.
+//  - ROTATION: a front Division's READINESS is the ships really standing in its LINE squadrons (not its battery, not ships away) against what it had when it
+//    took the front. Under SETTINGS.lineRankRotateAt it changes places with the freshest reserve Division (one swap a look, a swap only for a clearly fresher
+//    one), and its full is counted again from what it has.
+//  - BATTERIES BY GUN, NEVER BY HULL: a squadron whose weapon reach is cmdLongRangeFactor x the Division's average or more is its battery whatever its hull. It
+//    never shares a row with the line squadrons: it stands in its own row SETTINGS.batteryDepthFactor x the front row's widest squadron behind them, never
+//    beyond 60% of its own reach, so it fires over the line. Nothing blocks a shot.
+// The Divisions are the card tree's (sqDivision); a squadron in no Division counts as a Division of its own. With ranks 0 the line is as v131.0: one line of
+// every Division, folding into a second line only when even one abreast does not fit.
+const lsRankFull = [];        // per Division key (+id, or -squadron): the line ships it had when it last took the front or stood in reserve
+const lsRankFront = [];       // per station slot: the Division keys standing in its front rank last look
+function lsRanksOn() { return lsLineOn() && LAST_STAND.guardLine.ranks === 1; }
+// A squadron's weapon reach, for the jobs and the battery's set-back.
+function lsLineReach(sq, side) { return stRange[side * TYPE_COUNT + sqType[sq]] || 0; }
+// The jobs of a Division's squadrons by gun: 'artillery' for a reach cmdLongRangeFactor x the ships-weighted average or more (never every squadron), else 'line'.
+function lsLineJobs(sqs, side) {
+  const jobs = new Map();
+  let sum = 0, n = 0;
+  for (const sq of sqs) { const k = Math.max(1, sqAlive[sq]); sum += lsLineReach(sq, side) * k; n += k; }
+  const avg = n > 0 ? sum / n : 0, f = Math.max(1, SETTINGS.cmdLongRangeFactor || 1.3);
+  let lineN = 0;
+  for (const sq of sqs) { const art = sqs.length > 1 && lsLineReach(sq, side) >= f * avg; jobs.set(sq, art ? 'artillery' : 'line'); if (!art) lineN++; }
+  if (lineN === 0) for (const sq of sqs) jobs.set(sq, 'line');
+  return jobs;
+}
+// The ships standing in a Division's line squadrons now (its battery and ships away at the station do not count).
+function lsLineShips(sqs, jobs) { let n = 0; for (const sq of sqs) if (jobs.get(sq) === 'line') n += Math.max(0, sqAlive[sq]); return n; }
+
 // One station's line.
 function lsLineLayoutOne(c) {
-  const G = LAST_STAND.guardLine;
+  const G = LAST_STAND.guardLine, ranksOn = G.ranks === 1;
   const groups = new Map();                       // Division id (or -squadron for a squadron in no Division) -> its squadrons, in launch order
   for (const sq of c.guard) {
     if (!(sqAlive[sq] > 0) || sqRetired[sq] === 1) continue;
@@ -92175,61 +93077,140 @@ function lsLineLayoutOne(c) {
   }
   if (groups.size === 0) return;
   // the Divisions in the order they were formed (1st, 2nd, 3rd ...), loose squadrons after them
-  const keys = Array.from(groups.keys()).sort(function (p, q) { return (p < 0) - (q < 0) || Math.abs(p) - Math.abs(q); });
-  // each Division's rows: up to `abreast` squadrons shoulder to shoulder, more rows behind
+  let keys = Array.from(groups.keys()).sort(function (p, q) { return (p < 0) - (q < 0) || Math.abs(p) - Math.abs(q); });
+  // the jobs (v241.0: with the ranks on, a long-gunned squadron is the Division's battery and takes its own row behind the line squadrons)
+  const jobsOf = new Map(); for (const k of keys) jobsOf.set(k, ranksOn ? lsLineJobs(groups.get(k), c.side) : null);
+  // each Division's rows: up to `abreast` squadrons shoulder to shoulder, more rows behind; the battery's row(s) last
   const len = function (sq) { return lsLineSquadSize(sq) + SETTINGS.lineGapFactor * typeSpacing[sqType[sq]]; };
-  const makeBlocks = function (abreast) {
-    return keys.map(function (k) {
-      const sqs = groups.get(k);
-      const rows = [];
-      for (let i = 0; i < sqs.length; i += abreast) rows.push(sqs.slice(i, i + abreast));
-      const rowDepth = rows.map(function (r) { let d = 0; for (const sq of r) d = Math.max(d, lsLineSquadSize(sq)); return d; });
-      let w = 0, depth = 0;
-      for (const r of rows) { let t = 0; for (const sq of r) t += len(sq); w = Math.max(w, t); }
-      for (let i = 0; i < rows.length; i++) depth += rowDepth[i] * (i === 0 ? 1 : SETTINGS.cmdRankGapFactor) + (i > 0 ? G.rowGap : 0);
-      return { rows: rows, rowDepth: rowDepth, len: len, w: w, depth: depth };
-    });
+  const makeBlock = function (k, abreast) {
+    const sqs = groups.get(k), jobs = jobsOf.get(k);
+    const line = jobs ? sqs.filter(function (sq) { return jobs.get(sq) !== 'artillery'; }) : sqs, art = jobs ? sqs.filter(function (sq) { return jobs.get(sq) === 'artillery'; }) : [];
+    const rows = [], battery = [];
+    for (let i = 0; i < line.length; i += abreast) rows.push(line.slice(i, i + abreast));
+    for (let i = 0; i < art.length; i += abreast) { rows.push(art.slice(i, i + abreast)); battery.push(rows.length - 1); }
+    const rowDepth = rows.map(function (r) { let d = 0; for (const sq of r) d = Math.max(d, lsLineSquadSize(sq)); return d; });
+    let w = 0, depth = 0;
+    for (const r of rows) { let t = 0; for (const sq of r) t += len(sq); w = Math.max(w, t); }
+    for (let i = 0; i < rows.length; i++) depth += rowDepth[i] * (i === 0 ? 1 : SETTINGS.cmdRankGapFactor) + (i > 0 ? G.rowGap : 0);
+    // the battery's set-back from the front row (v241.0): batteryDepthFactor x the front row's widest squadron, never beyond 60% of its reach
+    let back = 0;
+    if (battery.length > 0 && rows.length > battery[0]) {
+      let wide = 0, reach = Infinity;
+      for (const sq of rows[0]) wide = Math.max(wide, lsLineSquadSize(sq));
+      for (const bi of battery) for (const sq of rows[bi]) reach = Math.min(reach, lsLineReach(sq, c.side));
+      back = Math.min(Math.max(0, SETTINGS.batteryDepthFactor) * Math.max(wide, 100), 0.6 * (isFinite(reach) ? reach : 0));
+      depth = Math.max(depth, back + rowDepth[rows.length - 1]);
+    }
+    return { key: k, rows: rows, rowDepth: rowDepth, battery: battery, back: back, len: len, w: w, depth: depth };
   };
-  // the Fleet keeps ONE line of Divisions side by side if it can: when the line is too long for the Fleet's share of the map, each Division stands
-  // fewer squadrons abreast (deeper) first; only when even one abreast does not fit do the last Divisions fold back into a second line
+  const makeBlocks = function (list, abreast) { return list.map(function (k) { return makeBlock(k, abreast); }); };
   const room = lsLineBand() * G.bandShare;
-  let blocks = null, total = 0;
-  for (let abreast = cmdMaxAbreast(); abreast >= 1; abreast--) {
-    blocks = makeBlocks(abreast);
-    total = G.divisionGap * Math.max(0, blocks.length - 1); for (const b of blocks) total += b.w;
-    if (total <= room) break;
-  }
-  const lineRoom = total <= room * G.overflow ? Infinity : room;   // (a line a little too long stays one line: it may reach into the next Fleet's share)
-  // the Divisions into lines: each line as long as the Fleet's share of the map allows (at least one Division a line)
-  const lines = [[]];
-  let used = 0;
-  for (const b of blocks) {
-    const add = b.w + (lines[lines.length - 1].length > 0 ? G.divisionGap : 0);
-    if (lines[lines.length - 1].length > 0 && used + add > lineRoom) { lines.push([]); used = 0; }
-    used += b.w + (lines[lines.length - 1].length > 0 ? G.divisionGap : 0);
-    lines[lines.length - 1].push(b);
-  }
-  // facing the enemy: our side looks right (+x), the line runs up and down the map
   const fx = c.side === BLUE ? 1 : -1;
   const H = SETTINGS.worldHeight, margin = 200;
-  // the lines' depths
-  const deep = lines.map(function (line) { let d = 0; for (const b of line) d = Math.max(d, b.depth); return d; });
-  let back = 0; for (let k = 1; k < lines.length; k++) back += deep[k - 1] + G.lineGap;
-  let x = shipX[c.slot] + fx * Math.max(lsLineAhead(c, blocks), G.lastAhead + back);   // (the last line still stands guardLine.lastAhead in front of the station)
-  for (const line of lines) {
-    // the 1st Division in the middle, then one each side in turn, outwards
+  let lines, gaps;                                 // the lines of blocks, front first; the gap behind each line (to the next one)
+  let frontBlocks;
+  if (ranksOn) {
+    // 1. the ranks: which Divisions stand in front (lineRanksPick's rules), by their frontage at the full width
+    const widthOf = function (k) { return makeBlock(k, cmdMaxAbreast()).w; };
+    const ready = new Map();
+    for (const k of keys) {
+      const now = lsLineShips(groups.get(k), jobsOf.get(k));
+      if (!(lsRankFull[k + 1e6] > 0)) lsRankFull[k + 1e6] = now;      // (keys may be negative: stored at an offset)
+      ready.set(k, Math.min(1, now / Math.max(1, lsRankFull[k + 1e6])));
+    }
+    const rotateAt = Math.max(0, Math.min(1, +SETTINGS.lineRankRotateAt || 0));
+    let front = (lsRankFront[c.slot] || []).filter(function (k) { return groups.has(k); });
+    let reserve = keys.filter(function (k) { return front.indexOf(k) < 0; });
+    for (const k of reserve) { const now = lsLineShips(groups.get(k), jobsOf.get(k)); if (now > lsRankFull[k + 1e6]) lsRankFull[k + 1e6] = now; ready.set(k, Math.min(1, now / Math.max(1, lsRankFull[k + 1e6]))); }   // (a reserve Division's full is what it has now)
+    const sumW = function (list) { let w = 0; for (const k of list) w += widthOf(k) + G.divisionGap; return Math.max(0, w - G.divisionGap); };
+    const freshest = function () { let best = null; for (const k of reserve) if (best === null || ready.get(k) > ready.get(best)) best = k; return best; };
+    // rotation: the most worn front Division out for a clearly fresher reserve one (one swap a look)
+    let worn = null;
+    for (const k of front) if (ready.get(k) < rotateAt && (worn === null || ready.get(k) < ready.get(worn))) worn = k;
+    if (worn !== null) {
+      const fresh = freshest();
+      if (fresh !== null && ready.get(fresh) >= ready.get(worn) + 0.2) {
+        front = front.map(function (k) { return k === worn ? fresh : k; });
+        reserve = reserve.filter(function (k) { return k !== fresh; }); reserve.push(worn);
+        lsRankFull[worn + 1e6] = lsLineShips(groups.get(worn), jobsOf.get(worn));
+        const name = function (k) { return k > 0 && divisions[k] ? divisions[k].name : 'Squadron ' + squadronLabel(-k); };
+        logEvent(c.side, name(worn) + ' (' + Math.round(100 * ready.get(worn)) + '% of its line ships standing) falls back to the reserve rank; ' + name(fresh) + ' takes its stretch.');
+      }
+    }
+    // the front grew too long (squadrons grow as ships arrive): the least ready Division steps back while the front rank is more than half a Division over its length (never the last one)
+    for (;;) {
+      if (front.length <= 1) break;
+      let least = front[0]; for (const k of front) if (ready.get(k) < ready.get(least)) least = k;
+      if (!(sumW(front) - 0.5 * widthOf(least) > room)) break;
+      front = front.filter(function (k) { return k !== least; }); reserve.push(least); lsRankFull[least + 1e6] = lsLineShips(groups.get(least), jobsOf.get(least));
+    }
+    // room left: the readiest reserve Divisions fill it (a Division half over the end still counts as fitting)
+    while (reserve.length > 0 && sumW(front) + 0.5 * widthOf(freshest()) + (front.length > 0 ? G.divisionGap : 0) <= room) { const f = freshest(); front.push(f); reserve = reserve.filter(function (k) { return k !== f; }); }
+    if (front.length === 0) { const f = freshest(); front.push(f); reserve = reserve.filter(function (k) { return k !== f; }); }
+    lsRankFront[c.slot] = front.slice();
+    // 2. the front rank's blocks: fewer squadrons abreast (deeper) only while the front rank does not fit its length
+    let total = 0;
+    for (let abreast = cmdMaxAbreast(); abreast >= 1; abreast--) {
+      frontBlocks = makeBlocks(front, abreast);
+      total = G.divisionGap * Math.max(0, frontBlocks.length - 1); for (const b of frontBlocks) total += b.w;
+      if (total <= room) break;
+    }
+    // 3. the reserve ranks: as many a rank as the front has Divisions, in readiness order, each rank rankDepth behind the one in front of it
+    const perRank = Math.max(1, front.length), depth = Math.max(300, +G.rankDepth || 0);
+    reserve.sort(function (p, q) { return ready.get(q) - ready.get(p) || p - q; });
+    lines = [frontBlocks]; gaps = [];
+    for (let i = 0; i < reserve.length; i += perRank) { lines.push(makeBlocks(reserve.slice(i, i + perRank), cmdMaxAbreast())); gaps.push(depth); }
+    gaps.push(depth);
+    c.lsRanks = { front: front.slice(), reserve: reserve.slice(), ready: ready, room: room, width: total };
+  } else {
+    // the Fleet keeps ONE line of Divisions side by side if it can: when the line is too long for the Fleet's share of the map, each Division stands
+    // fewer squadrons abreast (deeper) first; only when even one abreast does not fit do the last Divisions fold back into a second line
+    let blocks = null, total = 0;
+    for (let abreast = cmdMaxAbreast(); abreast >= 1; abreast--) {
+      blocks = makeBlocks(keys, abreast);
+      total = G.divisionGap * Math.max(0, blocks.length - 1); for (const b of blocks) total += b.w;
+      if (total <= room) break;
+    }
+    const lineRoom = total <= room * G.overflow ? Infinity : room;   // (a line a little too long stays one line: it may reach into the next Fleet's share)
+    // the Divisions into lines: each line as long as the Fleet's share of the map allows (at least one Division a line)
+    lines = [[]];
+    let used = 0;
+    for (const b of blocks) {
+      const add = b.w + (lines[lines.length - 1].length > 0 ? G.divisionGap : 0);
+      if (lines[lines.length - 1].length > 0 && used + add > lineRoom) { lines.push([]); used = 0; }
+      used += b.w + (lines[lines.length - 1].length > 0 ? G.divisionGap : 0);
+      lines[lines.length - 1].push(b);
+    }
+    frontBlocks = blocks;
+    gaps = lines.map(function (line) { let d = 0; for (const b of line) d = Math.max(d, b.depth); return d + G.lineGap; });
+    c.lsRanks = null;
+  }
+  // facing the enemy: our side looks right (+x), the line runs up and down the map
+  // the lines' depths: the last line still stands guardLine.lastAhead in front of the station
+  let back = 0; for (let k = 1; k < lines.length; k++) back += gaps[k - 1];
+  if (ranksOn) { let d = 0; for (const b of lines[lines.length - 1]) d = Math.max(d, b.depth); back += d; }
+  let x = shipX[c.slot] + fx * Math.max(lsLineAhead(c, frontBlocks), G.lastAhead + back);
+  for (let li = 0; li < lines.length; li++) {
+    const line = lines[li];
+    // the 1st Division in the middle, then one each side in turn, outwards (a reserve rank: spread evenly along the Fleet's share)
     const order = [];
     for (let k = 0; k < line.length; k++) { if (k % 2 === 0) order.push(line[k]); else order.unshift(line[k]); }
     let total = 0; for (const b of order) total += b.w; total += G.divisionGap * Math.max(0, order.length - 1);
-    let y0 = shipY[c.slot] - total / 2;
-    y0 = Math.max(margin, Math.min(H - margin - total, y0));   // (kept on the map; a line longer than the map just starts at its top)
+    const spreadOut = ranksOn && li > 0;
+    const share = spreadOut ? Math.max(total, room) : total;
+    let y0 = shipY[c.slot] - share / 2;
+    y0 = Math.max(margin, Math.min(H - margin - share, y0));   // (kept on the map; a line longer than the map just starts at its top)
+    const cell = spreadOut ? share / order.length : 0;
     let deepest = 0;
-    for (const b of order) {
+    for (let bi = 0; bi < order.length; bi++) {
+      const b = order[bi];
+      const top = spreadOut ? y0 + cell * bi + (cell - b.w) / 2 : y0;
       let rx = x;
       for (let r = 0; r < b.rows.length; r++) {
         const row = b.rows[r];
+        if (b.battery.indexOf(r) === 0 && b.back > 0) rx = Math.min(fx * rx, fx * (x - fx * b.back)) * fx;   // (v241.0) the battery row stands its set-back behind the front row (or further, if the rows before it already reach that far)
         let rowW = 0; for (const sq of row) rowW += b.len(sq);
-        let y = y0 + (b.w - rowW) / 2;            // (a short back row stands in the middle)
+        let y = top + (b.w - rowW) / 2;            // (a short back row stands in the middle)
         for (const sq of row) {
           const l = b.len(sq);
           lsLineSpot[sq] = { x: rx, y: y + l / 2 };
@@ -92238,9 +93219,9 @@ function lsLineLayoutOne(c) {
         if (r + 1 < b.rows.length) rx -= fx * (b.rowDepth[r] / 2 + SETTINGS.cmdRankGapFactor * b.rowDepth[r + 1] / 2 + G.rowGap);
       }
       deepest = Math.max(deepest, b.depth);
-      y0 += b.w + G.divisionGap;
+      if (!spreadOut) y0 += b.w + G.divisionGap;
     }
-    x -= fx * (deepest + G.lineGap);              // (the next line stands behind this one)
+    x -= fx * (ranksOn ? gaps[li] : deepest + G.lineGap);   // (the next line stands behind this one: a reserve rank rankDepth back, else a line gap)
   }
 }
 
@@ -100954,7 +101935,7 @@ function b2Build() {
     '<section class="draw" aria-label="Drawing">' +
       '<div class="dhead"><div class="ttl"><span class="no" id="b2Dno"></span><input id="b2Name" type="text" value="New design" aria-label="Design name" title="The design\'s name. Saving under a name already in use makes a new version of it."></div>' +
         '<div class="ptabs" role="group" aria-label="Design pages"><button type="button" data-page="bp">Blueprint</button><button type="button" data-page="cmp">Compare</button><button type="button" data-page="test">Test range</button>' +
-        '<button type="button" data-page="art" title="Ship art: the design as the battle draws it up close, with its outer hull, as a module cutaway, or as a blueprint (v216.0, section 10e-9b)">Ship art</button>' +
+        '<button type="button" data-page="art" title="Ship art: the design as the battle draws it up close, with its outer hull and livery, as a module cutaway, or as a blueprint (v216.0, section 10e-9b)">Ship art</button>' +
         '<button type="button" data-page="doc" title="Doctrine: the design\'s standing orders, how every squadron of it fights (v37, section 10i)">Doctrine</button></div>' +
         '<div class="sp"><span class="vtag" id="b2Vtag"></span><span id="b2ApproveBox"></span><button class="btn" type="button" id="b2NewBtn" title="Start a new design: pick a ship size, then its frames">New design</button><button class="btn" type="button" id="b2Save">Save version</button></div></div>' +
       '<div id="b2Bp" style="display:contents">' +
@@ -104706,34 +105687,36 @@ function b2PerWeekWords(n) {
 //   Alex 11 Nov 2026: "the designer needs the ability to pull up the top art, module cutout art, and blueprint art inside that screen."
 //   A page of the Design Bureau beside Blueprint, Compare, Test range and Doctrine. It shows the design on the sheet as the battle draws it up close,
 //   in one of three views, picked with the buttons at its top:
-//     - Outer hull:      the top-down hull art (v180.0, UI/hull-art.js), our ships' default look up close;
+//     - Outer hull:      the top-down hull art (v180.0, UI/hull-art.js), our ships' default look up close (v238.0: gone, the Livery view shows it);
 //     - Module cutaway:  every part showing (the battle's Modules view), in the Workhorse look, or Hull paint if that is the Display box's look;
 //     - Blueprint:       the module view in the Blueprint look, white lines on blue.
 //   No new art: the pictures come from the close look's own code (section 6v, closeDesignPicture), so what you see here is what the battle shows.
 //   Radiator and solar panels are drawn folded out, turning guns at rest. Mouse wheel zooms, dragging moves the picture, Fit (or F) fits it again.
-//   Titans and alien ships have only their own whole-body art, so all three views show that.
+//   Alien ships have only their own whole-body art, so all three views show that. (v239.0) A titan's Module cutaway and Blueprint views show it cut
+//   open: its art with the hull sawn away over the build grid and its real parts inside (section 6v, closeTitanCutBuild).
 //   Looks only: nothing here changes the design.
 //   (v217.0) A fourth view, Livery: the outer hull with the ship art customizer beside it (section 10e-9c, 35e-10e-bureau-screen-9c-livery.js).
 //   (v220.0) Its "Our Echo" side shows the design as one of the player's own Echo ships; (v222.0) its race sides show one of that race's ships.
+//   (v238.0) Alex 12 Nov 2026: "the outer hull tab can be removed, as its just the livery view without the buttons." So the Outer hull view is gone:
+//   Livery is now the first button and the view the page opens on. Anyone whose browser remembered Outer hull opens on Livery instead.
 // =====================================================================
 const b2art = {
-  view: 'hull',       // the view picked: 'hull', 'mods', 'blue' or (v217.0) 'livery' (kept between visits, in this browser)
+  view: 'livery',     // the view picked: 'livery', 'mods' or 'blue' (kept between visits, in this browser). (v238.0) Livery is the default; Outer hull is gone
   pic: null,          // the picture on show: { key, e } (e = the close look's finished picture, or null when there is nothing to draw)
   want: '',           // the picture being made (its key), so a slow one that finishes late is not shown over a newer one
   zoom: 0, panX: 0, panY: 0, drag: null, fitFor: ''   // fitFor: the design the zoom was last fitted to
 };
 const B2ART_PREF = 'ew-bureau-art-view';
 const B2ART_VIEWS = [
-  { id: 'hull', name: 'Outer hull', tip: 'The ship with its outer hull on: how our ships look zoomed right in on the battle map' },
+  { id: 'livery', name: 'Livery', tip: 'The ship with its outer hull on, as our ships look zoomed right in on the battle map, with the paint tools beside it: colours, material, pattern, wear, markings, and the nose, bridge, drives, deck and fins it shows. Looks only' },
   { id: 'mods', name: 'Module cutaway', tip: 'Every part showing, the hull cut away: the battle\'s Modules view (key H in battle)' },
-  { id: 'blue', name: 'Blueprint', tip: 'The module view drawn as a blueprint: white lines on blue' },
-  { id: 'livery', name: 'Livery', tip: 'Paint this design: colours, material, pattern, wear, markings, and the nose, bridge, drives, deck and fins it shows. Looks only' }
+  { id: 'blue', name: 'Blueprint', tip: 'The module view drawn as a blueprint: white lines on blue' }
 ];
-try { const v = window.localStorage ? window.localStorage.getItem(B2ART_PREF) : null; if (v === 'hull' || v === 'mods' || v === 'blue' || v === 'livery') b2art.view = v; } catch (e) { /* (private window: starts on Outer hull) */ }
+try { const v = window.localStorage ? window.localStorage.getItem(B2ART_PREF) : null; if (v === 'mods' || v === 'blue' || v === 'livery') b2art.view = v; } catch (e) { /* (private window: starts on Livery) */ }   // (v238.0) a remembered 'hull' (the old Outer hull view) opens on Livery
 
 // The close look's name for the view picked
 function b2ArtLook() {
-  if (b2art.view === 'hull' || b2art.view === 'livery') return 'hull';   // (v217.0) the Livery view shows the outer hull
+  if (b2art.view === 'livery') return 'hull';   // (v217.0) the Livery view shows the outer hull
   if (b2art.view === 'blue') return 'blue';
   return typeof UI_SETTINGS !== 'undefined' && UI_SETTINGS.closeLook === 'paint' ? 'paint' : 'grit';
 }
@@ -104816,10 +105799,10 @@ function b2ArtNote(text) {
   const race = b2art.view === 'livery' && typeof b2LvRace === 'function' ? b2LvRace() : '';   // (v222.0)
   if (race) { n.textContent = race === 'sylph' ? 'A Sylph ship in your Sylph livery (for when you play the Sylph). Looks only.' : 'A ' + livRaceOf(race).one + ' ship in your livery for them. Looks only.'; return; }
   if (e.info.alien === 'titan' && b2art.view === 'livery') { n.textContent = 'A titan wears the livery\'s colours, material, pattern, wear and markings on its own art (the pieces are for smaller ships). Looks only.'; return; }   // (v221.0)
-  if (e.info.alien) { n.textContent = e.info.alien === 'titan' ? 'A titan has its own whole-body art: every view shows it.' : 'An alien ship has its own art: every view shows it.'; return; }
+  if (e.info.alien === 'titan') { n.textContent = b2art.view === 'blue' ? 'The titan cut open, as a blueprint: its real parts inside the build grid, the hull around it ghosted.' : 'The titan cut open: its hull sawn away over the build grid, every part showing at true size inside. Turning guns at rest.'; return; }   // (v239.0) the cutaway
+  if (e.info.alien) { n.textContent = 'An alien ship has its own art: every view shows it.'; return; }
   n.textContent = b2art.view === 'livery' && typeof b2LvEcho === 'function' && b2LvEcho() ? 'This design as one of our Echo\'s ships, in our Echo livery. Looks only.'   // (v220.0)
                 : b2art.view === 'livery' ? 'Paint this design: every ship of it wears this livery up close in battle. Looks only.'
-                : b2art.view === 'hull' ? 'As our ships look zoomed right in on the battle map. Panels folded out, guns at rest.'
                 : b2art.view === 'blue' ? 'Every part, as a blueprint. Panels folded out, guns at rest.'
                 : 'Every part showing, the hull cut away (the battle\'s Modules view). Panels folded out, guns at rest.';
 }
@@ -104838,7 +105821,7 @@ function b2ArtDraw() {
   const g = cv.getContext('2d');
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   // the backdrop: blueprint paper for the Blueprint view (a fine grid on blue), deep space for the others
-  const blue = b2art.view === 'blue' && !(b2art.pic && b2art.pic.e && b2art.pic.e.info.alien);
+  const blue = b2art.view === 'blue' && !(b2art.pic && b2art.pic.e && b2art.pic.e.info.alien && b2art.pic.e.info.alien !== 'titan');   // (v239.0) a titan has a blueprint too
   g.fillStyle = blue ? '#123A63' : '#0B0E12'; g.fillRect(0, 0, W, H);
   g.strokeStyle = blue ? 'rgba(220,235,255,.10)' : 'rgba(200,210,220,.05)'; g.lineWidth = 1;
   const step = 24, cx = W / 2 + b2art.panX, cy = H / 2 + b2art.panY;
@@ -106563,7 +107546,7 @@ BUREAU2_SCREEN_API.testRange = { run: testRangeRun, state: testRange, plan: func
 //   adopted habits come along in its copy code and into every new campaign. A doctrine changed in the Bureau after the save updates the plan's copy.
 //   DOCTRINE TEMPLATES (LIBRARY.templates: [{ name, doctrine, savedAt }]) live here too, so they carry over as well. A plan from before v37 has no doctrine: Auto.
 // =====================================================================
-const GAME_VERSION = 'v235.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
+const GAME_VERSION = 'v243.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
 const LIBRARY_KEY = 'engineersWar.library';
 const LIBRARY_FORMAT = 1;
 const LIBRARY_CODE_SHIP = 'EW-SHIP-1:', LIBRARY_CODE_LIB = 'EW-LIB-1:';
@@ -107463,7 +108446,7 @@ if (typeof window !== 'undefined') {
 //   just like the campaign has, so that designs and livery can be tweaked right from the main menu, without needing to load a campaign game")
 //
 //   The main menu's Design library opens the very same Design Bureau the war uses (section 10e: the sheet, the Designs list, the Doctrine page,
-//   the Ship art page with its outer hull, cutaway, blueprint and Livery views, "Save for this ship", "Make faction default", "Apply to all
+//   the Ship art page with its Livery (outer hull), cutaway and blueprint views, "Save for this ship", "Make faction default", "Apply to all
 //   ships"). There is no second copy of the Bureau: this section only decides WHAT the Bureau works on while it is open from the main menu.
 //
 //   What it works on: your design library, and nothing else.
