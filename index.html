@@ -3687,7 +3687,7 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
     <section class="panel hidden" id="mmPanel"><div class="panel-head" id="mmPanelHead"></div><div class="panel-body" id="mmPanelBody"></div></section>
     <input type="file" id="mmFile" accept=".json,application/json,text/plain" class="hidden">
   </div>
-  <div class="mm-version" title="The version of the game you are playing">Version v243.0</div>
+  <div class="mm-version" title="The version of the game you are playing">Version v244.0</div>
 </div>
 
 <!-- (v31 A2, section 7l) the end of the war: the game-over screen (Earth's people are gone) or the victory screen (the aliens' home secured). It lies over
@@ -12496,6 +12496,10 @@ const SETTINGS = {
   stationPassMassShare: 0.4,      // (v148.0, with placesMassAttack, while crushing) a pass is judged only once the ships at the station are this share of our strength here
   stationPassNearMargin: 300,   // a ship of ours is "at" the station within the longer of the two weapon ranges plus this (u)
   hangarRefillFromFleet: 1,   // (v94.6) 1 = an empty hangar of a carrier in the fight takes a yard-built ship of the same design that is already fighting (5jf); 0 = it waits for the dock
+  hangarRestock: 1,           // (v244.0, Alex 12 Nov: "make sure carriers are actually regrowing and sending out fighters") 1 = lost craft count like spent ammunition: a
+                              // carrier whose hangars are mostly empty goes to a dock (or its own carrier's bay) to restock, and a dock refills its empty hangars along with the repairs
+                              // (5jf fgRestock; we pay the craft's Alloys at the next dawn, the aliens and Last Stand pay nothing); 0 = hangars refill only between battles (v243)
+  hangarRestockShare: 0.5,    // (v244.0) the share of a carrier's hangars that must stand empty before it goes to restock
   hangarOrphansStay: 1,       // (v94.6) 1 = when a carrier is lost, its launched yard-buildable ships (a Picket, not a fighter) become ordinary ships of the fleet; 0 = lost when the battle ends
   // (v95, Alex 31 Oct: "make tenders and hangars a bit more robust, and make sure the ai can use them intelligently"; section 5jt and 06u)
   tenderDocking: 1,           // 1 = a ship out of ammunition with no station to rearm at flies to the nearest friendly tender that still has supplies, docks alongside and is filled from its holds; 0 = it backs out of reach and waits (v94.7)
@@ -13553,7 +13557,7 @@ const SETTING_MUST_BE_POSITIVE = ['moonOrbitMinutes', 'moonOrbitRef', 'moonOrbit
   'serviceLastMax', 'serviceHistoryMax', 'serviceEventsMax', 'recentChangeSeconds', 'dossierLastActions', 'reportOfficerRows', 'dossierChartMinSpan',
   'orbitRateHeadroom', 'orbitMinRate', 'facingLeadFactor', 'interceptMaxLead', 'orbitRangeFraction', 'orbitTurnMargin', 'tightOrbitSizeRatio', 'tightOrbitHulls', 'tightOrbitStraySeconds', 'tightOrbitSpacings', 'tacticMinSeconds', 'chaseGiveUpSeconds', 'noChaseSeconds',
   'shapeEnterFactor', 'shapeExitFactor', 'axisTurnRate'];
-const SETTING_MUST_BE_NON_NEGATIVE = ['lineRankMinWidth', 'lineRankDepth', 'lineRankRotateAt', 'batteryDepthFactor', 'swarmSpreadWidth', 'swarmSpreadDepth', 'swarmSpreadRejig', 'swarmPressOdds', 'swarmFallBackOdds', 'bombardShieldShare', 'bombardHoldSeconds', 'swarmDockStallCap', 'swarmDockStallQuietShare', 'stationHullMendQuiet', 'alloysNeverIdleNote', 'towJobs', 'towWaitSeconds', 'towFreshSeconds', 'towLookSeconds', 'towFleetSeconds', 'towBoldSwing', 'towDangerRadius', 'towDangerOdds', 'aoMobilizeOdds', 'aoMobilizeBoldSwing', 'aoMobilizeReinSwing', 'aoMobilizeSeconds', 'aoMobilizeLossShare', 'aoMobilizeBeatenShare', 'aoMobilizeOtherShips', 'aoMobilizeEnemySpeed', 'aoMobilizeWaitSeconds', 'aoCharLineSwing', 'aoCharCommandSwing', 'aoCharMovePull', 'aoCharDisciplineSwing', 'aoPostureSeconds', 'aoPostureMinSeconds', 'aoMeetOdds', 'aoOddsOutShare', 'aoFallBackOdds', 'aoBoldLean', 'aoMeetReachSlots', 'aoMeetStandoff', 'aoEngageDist', 'aoGroupDist', 'aoEdgeSlots', 'aoInboundSlots', 'aoRetakeLooseShare', 'aoDangerDist', 'aoRetakeStayShare', 'aoRetakeGatherSeconds', 'aoDefenceSplitShips', 'aoFleetMax', 'aoGarrisonShare', 'aoForwardStationSpeed', 'aoRefitShare', 'divisionOwnerSeconds', 'divisionOwnerFirstSeconds', 'divisionOwnerCountBand', 'divisionOwnerJoinSeconds', 'admiralNeedsLean', 'admiralNeedsReachRatio', 'admiralNeedsDefenceRatio', 'admiralNeedsWorksRatio', 'admiralNeedsPdShare', 'scuttleKillShare', 'scuttleXpCost', 'campaignTidySeconds', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftPressed', 'coreLoopShiftQuiet', 'coreLoopShiftMax', 'coreLoopHiveHoldShare', 'coreLoopAssessSeconds', 'coreLoopAssaultMixShare', 'coreLoopReinSwing', 'coreLoopReserveShare', 'coreLoopStrikeShare', 'coreLoopBoldAbove', 'coreLoopVaSeconds', 'coreLoopVaSlack', 'coreLoopVaWornShare', 'coreLoopDefenceRatio', 'coreLoopFleetHoldSeconds', 'coreLoopDivisionMinShips', 'coreLoopAssaultRatio', 'coreLoopAssaultFloor', 'coreLoopPlaceDefenceWorth', 'placesHomeEdgeBias', 'placesBrokenBonus', 'coreLoopStreamWeeks', 'coreLoopStreamMinShips', 'coreLoopLineKeep', 'coreLoopLineSeconds', 'coreLoopLineLooks', 'coreLoopLineDepth', 'coreLoopLineStep', 'coreLoopLineWindow', 'coreLoopTipRatio', 'coreLoopClearSeconds', 'coreLoopBackSeconds', 'coreLoopHoldSeconds', 'coreLoopBerths', 'divisionMergeSlack', 'swarmNestRetakeKeep', 'swarmGrowWindowWeeks', 'swarmGrowLowLoss', 'swarmGrowHighLoss', 'swarmGrowFromShare', 'swarmGrowStep', 'swarmGrowSmallCut', 'swarmGrowBigGain', 'swarmSpreadWeeks', 'hangarRefillWeeks', 'fighterTurnaroundSeconds', 'fighterLaunchSeconds', 'fighterLaunchRange', 'fighterTickSeconds', 'stationFighterGuardRadius', 'droneJamReach', 'droneJamScatterMul', 'droneJamLoseChance', 'dcNoRoomSeconds', 'cmdPaceFormSeconds', 'cmdPaceMinShare', 'cmdPaceLeadSeconds', 'cmdPaceMinMarch', 'divisionSpeedSort', 'divisionSlowBelow', 'divisionFastAbove', 'swarmPaceFormSeconds', 'swarmDrift', 'swarmDivDrift', 'wreckHitShare', 'repairPartsWeeks', 'repairAutoBelow', 'dockQueueWarnSeconds', 'crippledCheckSeconds', 'towSpeedShare', 'towMaxShare', 'towHealthyHull', 'feedHullBelow', 'feedSeconds', 'feedSquadSeconds', 'feedHullShare', 'feedAmmoShare', 'feedGrabRange', 'feedHungryHull', 'feedHungryAmmo', 'feedHatchlingRange', 'swarmInfestTierGain', 'swarmInfestGrowShare', 'swarmInfestStartShare', 'swarmSurfaceInfest', 'swarmBurnPerDps', 'swarmBurnHotMul', 'swarmBurnPerKill', 'swarmRegrowSeconds', 'swarmSporeEvery', 'swarmSporeShotsPer', 'swarmSporeDpsPerInf', 'swarmBileEvery', 'swarmBileFrom', 'swarmBileDpsPerInf', 'swarmConvertCap', 'swarmConvertAimShare', 'swarmConvertFromWeek', 'swarmConvertFullWeek', 'swarmConvertDepthShare', 'swarmConvertWaste', 'facingTwoSidedAngle', 'freshSideHoldSeconds', 'crossTEdge', 'crossTCreepFraction', 'crossTWidth', 'crossTTurnEdge', 'placesPicketSpread', 'placesPicketMove', 'placesPicketMax', 'placesWithdrawGatherSeconds', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerTargetShare', 'ledgerLineMin', 'ledgerLossMargin', 'ledgerSaveFloor', 'ledgerMinLoss', 'ledgerSurplusShare', 'withdrawRatio', 'withdrawHoldWeeks', 'ledgerAssaultWeeks', 'indDevShareSave', 'indDevShareIdle', 'dirPriorityMul', 'resourceHeldShare', 'devGraceWeeks', 'devCapStart', 'devCapAlien', 'devPotShare', 'devIdleWeeks', 'devMaxBuilds', 'bbAcidSeconds', 'bbAcidMaxPatches', 'bbRegrowQuiet', 'bbRegrowHull', 'bbRegrowPlate', 'bbRegrowHeatStop', 'bbBurstTouch', 'bbBurstDeathReach', 'bbBurstSeek', 'bbVolleySpread', 'bbMissileRetries', 'bbPdRoundsPerShot', 'bbPdFlakRounds', 'bbPdReadyRounds', 'bbPdLaserHeat', 'bbRadiatorFoldSeconds', 'bbSideWeight', 'deflectRatio', 'deflectCallSeconds', 'readyRoundsPerGun', 'boostFuEarth', 'boostFuOther', 'boostGrowth', 'alloysEarthStart', 'alloysEarthRampTo', 'alloysEarthRampWeeks', 'alloysGrowth', 'fissilesGrowth', 'alienAlloysStart', 'alienAlloysGrowth', 'alienAlloysPerStep', 'alienBoostPerStep', 'alienNodeLossShare', 'shipUpkeepMaxShare', 'berthIdleWeeks', 'berthBoostWeeks', 'berthMaxGrowth', 'campaignBuildDays', 'campaignLiveEnterShips', 'civilianNoteWeeks', 'leaderNewsCooldown', 'leaderNewsCombatGap', 'stationRebuildYardBonus', 'stationRebuildSecuredBonus', 'stationRebuildNearShare', 'stationRebuildAlloys', 'cmdAttackMaxSeconds', 'cmdPaceGap', 'radioQuietSeconds', 'cmdSummaryMinutes', 'designRemarkSeconds', 'cmdReviewBattles', 'huntMaxShips', 'huntGraceSeconds', 'pursuitFleeingBonus', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'dangerConeSeconds', 'placesAttackStallSeconds', 'campaignAttackStallSeconds', 'campaignStragglerShips', 'campaignStragglerShare', 'campaignStragglerSeconds', 'campaignStandoffSeconds', 'campaignStandoffWeeks', 'campaignRetakeWeeks', 'comebackMassWeeks', 'alienGarrisonCap', 'campaignFallenMax', 'campaignPoolCap', 'campaignGarrisonCap', 'campaignStartOwnShips', 'campaignAlienGarrison', 'campaignAdvanceKeep', 'campaignAdvanceRatio', 'campaignAdvanceTake', 'campaignAdvanceAfterWaves', 'campaignAdvanceHoldWeeks', 'campaignRearKeep', 'campaignFrontMoveMinShips', 'campaignFrontMoveShare', 'executiveMassRatio', 'executiveAssaultRatio', 'executiveAssaultMin', 'campaignPriorityWeight', 'alienShoveWeeks', 'alienGatherRatio', 'alienGatherTarget', 'alienGatherMinShips', 'alienGatherMaxWeeks', 'alienPullBackRatio', 'alienStateHoldWeeks', 'alienFirstPool', 'alienWaveJitter', 'alienWarnWeeks', 'alienWaveBoostWeeks', 'alienTargetWeakest', 'alienTargetMain', 'alienFirstWaveWeek', 'minLaunchShips', 'placesHoldClearOdds', 'campaignYardEvery', 'boostPerMarker', 'campaignRefuelShare', 'capitalBuildShare', 'assaultMaxWaitWeeks', 'repairPerWeek', 'campaignDesignBoostPerMass', 'campaignDesignBuildPerCost', 'campaignDesignAlloysShare', 'campaignDesignWeight', 'placesReachShare', 'placesFailRaise', 'placesContestShare', 'aoSecureShare', 'aoLoseShare', 'siegeBoostTrickle', 'boostFootholdShare', 'siegeGrowthFactor', 'siegeResourceFactor', 'placesReportMinutes', 'placesHysteresis', 'placesMaxOpposite', 'internalChance', 'internalFresh', 'externalCover', 'deepBelowHull', 'dcSeconds', 'blastToHull', 'blastToParts', 'profileNudgeMax', 'profileNudgeTurn', 'profileNudgeFiring', 'reactorWallShare', 'trackSquareCut', 'pressDryValue', 'pressFleetRatio', 'pressOdds', 'pressHealthEdge', 'pressOddsHealthy', 'pressDangerShare', 'pressHitChance', 'pressAfter', 'pressProgress', 'pressHold', 'pressStep', 'pressRingMin', 'lockFormShare', 'looseJitter', 'looseRein', 'lockSettleSeconds', 'lockRein', 'lockBreakHull', 'lockMinShare', 'closeRanksDelay', 'mergeBelow', 'mergeMaxOdds', 'disbandAt', 'stragglerSeconds', 'divisionLeash', 'pursuitBase', 'formBeforeAttack', 'gatherSeconds', 'fallenKeep', 'topUpBelow', 'stagingContactSeconds', 'stagingMaxWait', 'minNewSquadron', 'entryDangerRatio', 'entryCheckFactor', 'entryRetrySeconds', 'rallyInset', 'joinWornBelow', 'survivorEdgeMargin', 'flagKilled', 'flagWounded', 'flagSurviveSwing', 'woundedSkillPenalty', 'woundedBattles', 'replacementDelay', 'handoverSeconds', 'standInSkill', 'pinRenewSeconds', 'divisionTaskMinSeconds', 'rotateWornShare', 'divisionRefuseOdds', 'divisionRallyOdds', 'divisionCounterPressure', 'mainEffortMinOdds', 'mainEffortFreeRein', 'pinRenewFactor', 'supportSeconds', 'supportMaxTravelSeconds', 'divisionTargetBonus', 'localAttackOdds', 'memberCompactShare', 'recruitAxisSpread', 'recruitSkillLow', 'recruitSkillHigh', 'skillPerLevel', 'readinessXpPerRepair', 'medalSkillAdd', 'scarShakenBoldness', 'repertoirePull', 'spawnEdgeMargin', 'doctrinePull', 'matchupPull', 'experimentMinSeconds', 'experimentCooldown', 'tacticLearnStep', 'tacticWeightMax', 'exploreLearnBoost', 'spawnBandWidth', 'spawnVerticalMargin', 'shieldRechargeDelay', 'minArmorPassFraction', 'separationStrength',
+const SETTING_MUST_BE_NON_NEGATIVE = ['lineRankMinWidth', 'lineRankDepth', 'lineRankRotateAt', 'batteryDepthFactor', 'swarmSpreadWidth', 'swarmSpreadDepth', 'swarmSpreadRejig', 'swarmPressOdds', 'swarmFallBackOdds', 'bombardShieldShare', 'bombardHoldSeconds', 'swarmDockStallCap', 'swarmDockStallQuietShare', 'stationHullMendQuiet', 'alloysNeverIdleNote', 'towJobs', 'towWaitSeconds', 'towFreshSeconds', 'towLookSeconds', 'towFleetSeconds', 'towBoldSwing', 'towDangerRadius', 'towDangerOdds', 'aoMobilizeOdds', 'aoMobilizeBoldSwing', 'aoMobilizeReinSwing', 'aoMobilizeSeconds', 'aoMobilizeLossShare', 'aoMobilizeBeatenShare', 'aoMobilizeOtherShips', 'aoMobilizeEnemySpeed', 'aoMobilizeWaitSeconds', 'aoCharLineSwing', 'aoCharCommandSwing', 'aoCharMovePull', 'aoCharDisciplineSwing', 'aoPostureSeconds', 'aoPostureMinSeconds', 'aoMeetOdds', 'aoOddsOutShare', 'aoFallBackOdds', 'aoBoldLean', 'aoMeetReachSlots', 'aoMeetStandoff', 'aoEngageDist', 'aoGroupDist', 'aoEdgeSlots', 'aoInboundSlots', 'aoRetakeLooseShare', 'aoDangerDist', 'aoRetakeStayShare', 'aoRetakeGatherSeconds', 'aoDefenceSplitShips', 'aoFleetMax', 'aoGarrisonShare', 'aoForwardStationSpeed', 'aoRefitShare', 'divisionOwnerSeconds', 'divisionOwnerFirstSeconds', 'divisionOwnerCountBand', 'divisionOwnerJoinSeconds', 'admiralNeedsLean', 'admiralNeedsReachRatio', 'admiralNeedsDefenceRatio', 'admiralNeedsWorksRatio', 'admiralNeedsPdShare', 'scuttleKillShare', 'scuttleXpCost', 'campaignTidySeconds', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftPressed', 'coreLoopShiftQuiet', 'coreLoopShiftMax', 'coreLoopHiveHoldShare', 'coreLoopAssessSeconds', 'coreLoopAssaultMixShare', 'coreLoopReinSwing', 'coreLoopReserveShare', 'coreLoopStrikeShare', 'coreLoopBoldAbove', 'coreLoopVaSeconds', 'coreLoopVaSlack', 'coreLoopVaWornShare', 'coreLoopDefenceRatio', 'coreLoopFleetHoldSeconds', 'coreLoopDivisionMinShips', 'coreLoopAssaultRatio', 'coreLoopAssaultFloor', 'coreLoopPlaceDefenceWorth', 'placesHomeEdgeBias', 'placesBrokenBonus', 'coreLoopStreamWeeks', 'coreLoopStreamMinShips', 'coreLoopLineKeep', 'coreLoopLineSeconds', 'coreLoopLineLooks', 'coreLoopLineDepth', 'coreLoopLineStep', 'coreLoopLineWindow', 'coreLoopTipRatio', 'coreLoopClearSeconds', 'coreLoopBackSeconds', 'coreLoopHoldSeconds', 'coreLoopBerths', 'divisionMergeSlack', 'swarmNestRetakeKeep', 'swarmGrowWindowWeeks', 'swarmGrowLowLoss', 'swarmGrowHighLoss', 'swarmGrowFromShare', 'swarmGrowStep', 'swarmGrowSmallCut', 'swarmGrowBigGain', 'swarmSpreadWeeks', 'hangarRefillWeeks', 'hangarRestockShare', 'fighterTurnaroundSeconds', 'fighterLaunchSeconds', 'fighterLaunchRange', 'fighterTickSeconds', 'stationFighterGuardRadius', 'droneJamReach', 'droneJamScatterMul', 'droneJamLoseChance', 'dcNoRoomSeconds', 'cmdPaceFormSeconds', 'cmdPaceMinShare', 'cmdPaceLeadSeconds', 'cmdPaceMinMarch', 'divisionSpeedSort', 'divisionSlowBelow', 'divisionFastAbove', 'swarmPaceFormSeconds', 'swarmDrift', 'swarmDivDrift', 'wreckHitShare', 'repairPartsWeeks', 'repairAutoBelow', 'dockQueueWarnSeconds', 'crippledCheckSeconds', 'towSpeedShare', 'towMaxShare', 'towHealthyHull', 'feedHullBelow', 'feedSeconds', 'feedSquadSeconds', 'feedHullShare', 'feedAmmoShare', 'feedGrabRange', 'feedHungryHull', 'feedHungryAmmo', 'feedHatchlingRange', 'swarmInfestTierGain', 'swarmInfestGrowShare', 'swarmInfestStartShare', 'swarmSurfaceInfest', 'swarmBurnPerDps', 'swarmBurnHotMul', 'swarmBurnPerKill', 'swarmRegrowSeconds', 'swarmSporeEvery', 'swarmSporeShotsPer', 'swarmSporeDpsPerInf', 'swarmBileEvery', 'swarmBileFrom', 'swarmBileDpsPerInf', 'swarmConvertCap', 'swarmConvertAimShare', 'swarmConvertFromWeek', 'swarmConvertFullWeek', 'swarmConvertDepthShare', 'swarmConvertWaste', 'facingTwoSidedAngle', 'freshSideHoldSeconds', 'crossTEdge', 'crossTCreepFraction', 'crossTWidth', 'crossTTurnEdge', 'placesPicketSpread', 'placesPicketMove', 'placesPicketMax', 'placesWithdrawGatherSeconds', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerTargetShare', 'ledgerLineMin', 'ledgerLossMargin', 'ledgerSaveFloor', 'ledgerMinLoss', 'ledgerSurplusShare', 'withdrawRatio', 'withdrawHoldWeeks', 'ledgerAssaultWeeks', 'indDevShareSave', 'indDevShareIdle', 'dirPriorityMul', 'resourceHeldShare', 'devGraceWeeks', 'devCapStart', 'devCapAlien', 'devPotShare', 'devIdleWeeks', 'devMaxBuilds', 'bbAcidSeconds', 'bbAcidMaxPatches', 'bbRegrowQuiet', 'bbRegrowHull', 'bbRegrowPlate', 'bbRegrowHeatStop', 'bbBurstTouch', 'bbBurstDeathReach', 'bbBurstSeek', 'bbVolleySpread', 'bbMissileRetries', 'bbPdRoundsPerShot', 'bbPdFlakRounds', 'bbPdReadyRounds', 'bbPdLaserHeat', 'bbRadiatorFoldSeconds', 'bbSideWeight', 'deflectRatio', 'deflectCallSeconds', 'readyRoundsPerGun', 'boostFuEarth', 'boostFuOther', 'boostGrowth', 'alloysEarthStart', 'alloysEarthRampTo', 'alloysEarthRampWeeks', 'alloysGrowth', 'fissilesGrowth', 'alienAlloysStart', 'alienAlloysGrowth', 'alienAlloysPerStep', 'alienBoostPerStep', 'alienNodeLossShare', 'shipUpkeepMaxShare', 'berthIdleWeeks', 'berthBoostWeeks', 'berthMaxGrowth', 'campaignBuildDays', 'campaignLiveEnterShips', 'civilianNoteWeeks', 'leaderNewsCooldown', 'leaderNewsCombatGap', 'stationRebuildYardBonus', 'stationRebuildSecuredBonus', 'stationRebuildNearShare', 'stationRebuildAlloys', 'cmdAttackMaxSeconds', 'cmdPaceGap', 'radioQuietSeconds', 'cmdSummaryMinutes', 'designRemarkSeconds', 'cmdReviewBattles', 'huntMaxShips', 'huntGraceSeconds', 'pursuitFleeingBonus', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'dangerConeSeconds', 'placesAttackStallSeconds', 'campaignAttackStallSeconds', 'campaignStragglerShips', 'campaignStragglerShare', 'campaignStragglerSeconds', 'campaignStandoffSeconds', 'campaignStandoffWeeks', 'campaignRetakeWeeks', 'comebackMassWeeks', 'alienGarrisonCap', 'campaignFallenMax', 'campaignPoolCap', 'campaignGarrisonCap', 'campaignStartOwnShips', 'campaignAlienGarrison', 'campaignAdvanceKeep', 'campaignAdvanceRatio', 'campaignAdvanceTake', 'campaignAdvanceAfterWaves', 'campaignAdvanceHoldWeeks', 'campaignRearKeep', 'campaignFrontMoveMinShips', 'campaignFrontMoveShare', 'executiveMassRatio', 'executiveAssaultRatio', 'executiveAssaultMin', 'campaignPriorityWeight', 'alienShoveWeeks', 'alienGatherRatio', 'alienGatherTarget', 'alienGatherMinShips', 'alienGatherMaxWeeks', 'alienPullBackRatio', 'alienStateHoldWeeks', 'alienFirstPool', 'alienWaveJitter', 'alienWarnWeeks', 'alienWaveBoostWeeks', 'alienTargetWeakest', 'alienTargetMain', 'alienFirstWaveWeek', 'minLaunchShips', 'placesHoldClearOdds', 'campaignYardEvery', 'boostPerMarker', 'campaignRefuelShare', 'capitalBuildShare', 'assaultMaxWaitWeeks', 'repairPerWeek', 'campaignDesignBoostPerMass', 'campaignDesignBuildPerCost', 'campaignDesignAlloysShare', 'campaignDesignWeight', 'placesReachShare', 'placesFailRaise', 'placesContestShare', 'aoSecureShare', 'aoLoseShare', 'siegeBoostTrickle', 'boostFootholdShare', 'siegeGrowthFactor', 'siegeResourceFactor', 'placesReportMinutes', 'placesHysteresis', 'placesMaxOpposite', 'internalChance', 'internalFresh', 'externalCover', 'deepBelowHull', 'dcSeconds', 'blastToHull', 'blastToParts', 'profileNudgeMax', 'profileNudgeTurn', 'profileNudgeFiring', 'reactorWallShare', 'trackSquareCut', 'pressDryValue', 'pressFleetRatio', 'pressOdds', 'pressHealthEdge', 'pressOddsHealthy', 'pressDangerShare', 'pressHitChance', 'pressAfter', 'pressProgress', 'pressHold', 'pressStep', 'pressRingMin', 'lockFormShare', 'looseJitter', 'looseRein', 'lockSettleSeconds', 'lockRein', 'lockBreakHull', 'lockMinShare', 'closeRanksDelay', 'mergeBelow', 'mergeMaxOdds', 'disbandAt', 'stragglerSeconds', 'divisionLeash', 'pursuitBase', 'formBeforeAttack', 'gatherSeconds', 'fallenKeep', 'topUpBelow', 'stagingContactSeconds', 'stagingMaxWait', 'minNewSquadron', 'entryDangerRatio', 'entryCheckFactor', 'entryRetrySeconds', 'rallyInset', 'joinWornBelow', 'survivorEdgeMargin', 'flagKilled', 'flagWounded', 'flagSurviveSwing', 'woundedSkillPenalty', 'woundedBattles', 'replacementDelay', 'handoverSeconds', 'standInSkill', 'pinRenewSeconds', 'divisionTaskMinSeconds', 'rotateWornShare', 'divisionRefuseOdds', 'divisionRallyOdds', 'divisionCounterPressure', 'mainEffortMinOdds', 'mainEffortFreeRein', 'pinRenewFactor', 'supportSeconds', 'supportMaxTravelSeconds', 'divisionTargetBonus', 'localAttackOdds', 'memberCompactShare', 'recruitAxisSpread', 'recruitSkillLow', 'recruitSkillHigh', 'skillPerLevel', 'readinessXpPerRepair', 'medalSkillAdd', 'scarShakenBoldness', 'repertoirePull', 'spawnEdgeMargin', 'doctrinePull', 'matchupPull', 'experimentMinSeconds', 'experimentCooldown', 'tacticLearnStep', 'tacticWeightMax', 'exploreLearnBoost', 'spawnBandWidth', 'spawnVerticalMargin', 'shieldRechargeDelay', 'minArmorPassFraction', 'separationStrength',
   'separationMaxStepFraction', 'reengageMinGap', 'kiteEnterFactor', 'kiteExitFactor', 'kiteBackSpeed', 'debugMaxLines', 'formationHoldFraction', 'formationPaceMin',
   'formationBreakAngle', 'formationBreakSeconds', 'formationPassBend', 'leaderCloserMin', 'escortHoldFraction', 'escortStandOff', 'flankMarginFactor', 'flankAlong', 'flankContactFactor', 'flankArriveFactor', 'flankMapMarginFactor',
   'shotLengthSizes', 'minShipScreenPixels', 'maxTriangleShips', 'defaultReengage', 'defaultSeed',
@@ -13575,7 +13579,7 @@ const SETTING_WHOLE_NUMBERS = ['lineRanks', 'swarmSpread', 'swarmLine', 'warValv
   'reportSquadronRows', 'reportPacketRows', 'reinforceMaxSquadrons', 'flankMaxSquadrons', 'counterMaxSquadrons', 'withdrawSamples', 'versionLogMax', 'serviceLastMax', 'serviceHistoryMax', 'serviceEventsMax', 'dossierLastActions', 'reportOfficerRows',
   'movementModel', 'hitModel', 'tacticsModel', 'flightAssist', 'retreatFiring', 'simultaneousFire', 'officerModel', 'strengthMapSteps', 'oddsCellsPerRadius', 'oddsMaxCells', 'maxRouts', 'maxBreakOffs', 'overheatFallback', 'smartTargetCandidates'];
 // The switches (section 1b, "The rules in force"): the values each may have, and the names the code uses for them.
-const SETTING_CHOICES = { lineRanks: [0, 1], swarmSpread: [0, 1], longSolarReach: [0, 1], longDockModel: [0, 1], swarmLine: [0, 1], warValves: [0, 1], bombardShield: [0, 1, 2], stationCrewWithStation: [0, 1], placeHoldFollow: [0, 1], aoMobilize: [0, 1], aoCharacter: [0, 1], aoAdmiral: [0, 1], cmdFormMoves: [0, 1], orderMovesObeyed: [0, 1], huntDetach: [0, 1], cmdStatLeans: [0, 1], huntDetachWhole: [0, 1], aoPostures: [0, 1], divisionOwner: [0, 1], admiralNeedsModel: [0, 1], longMapLine: [0, 1], cmdFormRealSize: [0, 1], cmdCapShare: [0, 1], cmdCapLongGuns: [0, 1], moonOrbits: [0, 1], dockModel: [0, 1], dockSpareModel: [0, 1], dockSpareSwarm: [0, 1], scuttleOnLedger: [0, 1], swarmDockModel: [0, 1], dockEvoModel: [0, 1], dockEvoSwarmSplit: [0, 1], matchupsInPlay: [0, 1], calmShips: [0, 1], cmRenderParts: [0, 1], simBudgetModel: [0, 1], simKeepPace: [0, 1], closeWarmAll: [0, 1], closeKeepPictures: [0, 1], allyShoveOff: [0, 1], allyNudge: [0, 1], divisionSpots: [0, 1], divisionSpotsInFight: [0, 1], campaignSensors: [0, 1], showBoost: [0, 1], coreLoop: [0, 1], coreLoopLine: [0, 1], coreLoopFleetCommand: [0, 1], coreLoopFleetDivisions: [0, 1], coreLoopRecompose: [0, 1], coreLoopAlienCommand: [0, 1], divisionMergeSmall: [0, 1], mergeFarOutOfContact: [0, 1], berthPairingModel: [0, 1], swarmNestModel: [0, 1], swarmGrowUpModel: [0, 1], swarmOpeningSpread: [0, 1], swarmLifeModel: [0, 1], swarmSurfaceModel: [0, 1], swarmEatsEnemies: [0, 1], swarmEatsHatchlings: [0, 1], fighterHangarModel: [0, 1], fighterLaunchModel: [0, 1], hangarRefillFromFleet: [0, 1], hangarOrphansStay: [0, 1], tenderDocking: [0, 1], supplyRuns: [0, 1], cargoKept: [0, 1], ferryRuns: [0, 1], stationFighterGuard: [0, 1], stationNoSquadron: [0, 1], stationCrewSquad: [0, 1], stationPass: [0, 1], droneJamModel: [0, 1], divisionPaceModel: [0, 1], swarmFormations: [0, 1], facingVsTarget: [0, 1], facingTwoSided: [0, 1], freshSide: [0, 1], crossT: [0, 1], facingDodge: [0, 1], placesPicket: [0, 1], placesPicketSwarm: [0, 1], campaignStandoffPark: [0, 1], placesWithdrawOrder: [0, 1], placesWithdrawGuardDry: [0, 1], campaignLiveYardDawn: [0, 1], longMapReach: [0, 1], longMapLeash: [0, 1], longMapFog: [0, 1], sleepShips: [0, 1, 2], campaignResourceGate: [0, 1], bbAcid: [0, 1], bbRegrow: [0, 1], bbBurst: [0, 1], bbMissileStoreBySize: [0, 1], bbBeams: [0, 1], bbHeatModel: [0, 1], bbMissiles: [0, 1], bbPointDefence: [0, 1], bbLineOfFire: [0, 1], tightOrbit: [0, 1], campaignStartAtEarth: [0, 1], placesCrush: [0, 1], placesMassAttack: [0, 1], assaultSendAll: [0, 1], assaultReachOnly: [0, 1], frontReachOnly: [0, 1], placesNoLeapfrog: [0, 1], placesClaimKeeps: [0, 1], enemyWaitTurnBack: [0, 1], placesClaimFirm: [0, 1], placesSwarmPress: [0, 1], campaignSupplyLine: [0, 1], commandModel: [0, 1], stationRebuild: [0, 1], stationHullMend: [0, 1], cmdHelpMarches: [0, 1], cmdOpCommit: [0, 1, 2], cmdPassThrough: [0, 1, 2], orgScale: [0, 1], campaignLateAdmiral: [0, 1], campaignStartKit: [0, 1], placesFacilityApart: [0, 1], campaignFacilityApart: [0, 1], placesHoldClear: [0, 1], campaignHoldClear: [0, 1], campaignModel: [0, 1], officerCarryOver: [0, 1], campaignAutosave: [0, 1], placesRetry: [0, 1], placesSweep: [0, 1], placesDecisive: [0, 1], siegeYardSlowdown: [0, 1], placesModel: [0, 1], placesAllowAbandon: [0, 1], placesTheatre: [0, 1], designModel: [0, 1, 2], bureauBattle: [0, 1], moduleDamage: [0, 1], pressModel: [0, 1], partLossCall: [0, 1], survivalModel: [0, 1], allowAbandon: [0, 1], weaponModel: [0, 1], formationModel: [0, 1], lockStep: [0, 1], reorgModel: [0, 1], movementModel: [0, 1], hitModel: [0, 1, 2], tacticsModel: [0, 1], flightAssist: [0, 1], retreatFiring: [0, 1], overheatFallback: [0, 1], newSetupDefaults: [0, 1], unmannedRearGuard: [0, 1], simultaneousFire: [0, 1], officerModel: [0, 1], promoteNeedsVacancy: [0, 1], divisionTier: [0, 1], successionMode: [0, 1, 2], stagingModel: [0, 1] };
+const SETTING_CHOICES = { lineRanks: [0, 1], swarmSpread: [0, 1], longSolarReach: [0, 1], longDockModel: [0, 1], swarmLine: [0, 1], warValves: [0, 1], bombardShield: [0, 1, 2], stationCrewWithStation: [0, 1], placeHoldFollow: [0, 1], aoMobilize: [0, 1], aoCharacter: [0, 1], aoAdmiral: [0, 1], cmdFormMoves: [0, 1], orderMovesObeyed: [0, 1], huntDetach: [0, 1], cmdStatLeans: [0, 1], huntDetachWhole: [0, 1], aoPostures: [0, 1], divisionOwner: [0, 1], admiralNeedsModel: [0, 1], longMapLine: [0, 1], cmdFormRealSize: [0, 1], cmdCapShare: [0, 1], cmdCapLongGuns: [0, 1], moonOrbits: [0, 1], dockModel: [0, 1], dockSpareModel: [0, 1], dockSpareSwarm: [0, 1], scuttleOnLedger: [0, 1], swarmDockModel: [0, 1], dockEvoModel: [0, 1], dockEvoSwarmSplit: [0, 1], matchupsInPlay: [0, 1], calmShips: [0, 1], cmRenderParts: [0, 1], simBudgetModel: [0, 1], simKeepPace: [0, 1], closeWarmAll: [0, 1], closeKeepPictures: [0, 1], allyShoveOff: [0, 1], allyNudge: [0, 1], divisionSpots: [0, 1], divisionSpotsInFight: [0, 1], campaignSensors: [0, 1], showBoost: [0, 1], coreLoop: [0, 1], coreLoopLine: [0, 1], coreLoopFleetCommand: [0, 1], coreLoopFleetDivisions: [0, 1], coreLoopRecompose: [0, 1], coreLoopAlienCommand: [0, 1], divisionMergeSmall: [0, 1], mergeFarOutOfContact: [0, 1], berthPairingModel: [0, 1], swarmNestModel: [0, 1], swarmGrowUpModel: [0, 1], swarmOpeningSpread: [0, 1], swarmLifeModel: [0, 1], swarmSurfaceModel: [0, 1], swarmEatsEnemies: [0, 1], swarmEatsHatchlings: [0, 1], fighterHangarModel: [0, 1], fighterLaunchModel: [0, 1], hangarRefillFromFleet: [0, 1], hangarRestock: [0, 1], hangarOrphansStay: [0, 1], tenderDocking: [0, 1], supplyRuns: [0, 1], cargoKept: [0, 1], ferryRuns: [0, 1], stationFighterGuard: [0, 1], stationNoSquadron: [0, 1], stationCrewSquad: [0, 1], stationPass: [0, 1], droneJamModel: [0, 1], divisionPaceModel: [0, 1], swarmFormations: [0, 1], facingVsTarget: [0, 1], facingTwoSided: [0, 1], freshSide: [0, 1], crossT: [0, 1], facingDodge: [0, 1], placesPicket: [0, 1], placesPicketSwarm: [0, 1], campaignStandoffPark: [0, 1], placesWithdrawOrder: [0, 1], placesWithdrawGuardDry: [0, 1], campaignLiveYardDawn: [0, 1], longMapReach: [0, 1], longMapLeash: [0, 1], longMapFog: [0, 1], sleepShips: [0, 1, 2], campaignResourceGate: [0, 1], bbAcid: [0, 1], bbRegrow: [0, 1], bbBurst: [0, 1], bbMissileStoreBySize: [0, 1], bbBeams: [0, 1], bbHeatModel: [0, 1], bbMissiles: [0, 1], bbPointDefence: [0, 1], bbLineOfFire: [0, 1], tightOrbit: [0, 1], campaignStartAtEarth: [0, 1], placesCrush: [0, 1], placesMassAttack: [0, 1], assaultSendAll: [0, 1], assaultReachOnly: [0, 1], frontReachOnly: [0, 1], placesNoLeapfrog: [0, 1], placesClaimKeeps: [0, 1], enemyWaitTurnBack: [0, 1], placesClaimFirm: [0, 1], placesSwarmPress: [0, 1], campaignSupplyLine: [0, 1], commandModel: [0, 1], stationRebuild: [0, 1], stationHullMend: [0, 1], cmdHelpMarches: [0, 1], cmdOpCommit: [0, 1, 2], cmdPassThrough: [0, 1, 2], orgScale: [0, 1], campaignLateAdmiral: [0, 1], campaignStartKit: [0, 1], placesFacilityApart: [0, 1], campaignFacilityApart: [0, 1], placesHoldClear: [0, 1], campaignHoldClear: [0, 1], campaignModel: [0, 1], officerCarryOver: [0, 1], campaignAutosave: [0, 1], placesRetry: [0, 1], placesSweep: [0, 1], placesDecisive: [0, 1], siegeYardSlowdown: [0, 1], placesModel: [0, 1], placesAllowAbandon: [0, 1], placesTheatre: [0, 1], designModel: [0, 1, 2], bureauBattle: [0, 1], moduleDamage: [0, 1], pressModel: [0, 1], partLossCall: [0, 1], survivalModel: [0, 1], allowAbandon: [0, 1], weaponModel: [0, 1], formationModel: [0, 1], lockStep: [0, 1], reorgModel: [0, 1], movementModel: [0, 1], hitModel: [0, 1, 2], tacticsModel: [0, 1], flightAssist: [0, 1], retreatFiring: [0, 1], overheatFallback: [0, 1], newSetupDefaults: [0, 1], unmannedRearGuard: [0, 1], simultaneousFire: [0, 1], officerModel: [0, 1], promoteNeedsVacancy: [0, 1], divisionTier: [0, 1], successionMode: [0, 1, 2], stagingModel: [0, 1] };
 // Rule switches that an imported file may lack: a missing one is read as 0 (the file was made before the rule existed), not as this version's default (stage 12).
 const SETTING_SWITCHES_OLD_FILES = ['commandModel', 'orgScale', 'movementModel', 'hitModel', 'tacticsModel', 'newSetupDefaults', 'simultaneousFire', 'officerModel', 'divisionTier', 'stagingModel', 'reorgModel', 'formationModel', 'lockStep', 'weaponModel', 'survivalModel', 'designModel', 'moduleDamage', 'pressModel', 'placesModel'];
 const MOVE_CLASSIC = 0, MOVE_THRUST = 1;
@@ -40053,7 +40057,7 @@ function campaignCheckLogistics(c, messages) {
 function campaignEconFields(c) {
   if (!c.econ || typeof c.econ !== 'object' || Array.isArray(c.econ)) c.econ = {};
   const e = c.econ;
-  for (const key of ['alloys', 'civ', 'civTotal', 'spent', 'idleWeeks', 'yardPot', 'weekLeft']) if (!Array.isArray(e[key]) || e[key].length !== 2) e[key] = [0, 0];
+  for (const key of ['alloys', 'civ', 'civTotal', 'spent', 'idleWeeks', 'yardPot', 'weekLeft', 'hangarBill']) if (!Array.isArray(e[key]) || e[key].length !== 2) e[key] = [0, 0];
   if (typeof e.lastDay !== 'number') e.lastDay = typeof c.week === 'number' ? campaignDayIndex(c.week) : 0;   // (v39: an older save waits for its next dawn)
   if (!Array.isArray(e.growth) || e.growth.length !== 2) e.growth = [1, 1];
   if (!Array.isArray(e.civNote) || e.civNote.length !== 2) e.civNote = [-1, -1];
@@ -48899,6 +48903,7 @@ function campaignHangarPay(side, fighter, pot) {
 // At dawn: every ship with empty hangars that has waited its weeks at a dock gets them filled, if the week's Alloys and resources stretch to it.
 function campaignHangarsDawn(pot) {
   if (!fighterHangarsOn() || !campaign) return;
+  campaignHangarBillDawn(pot);
   const weeks = Math.max(0, +SETTINGS.hangarRefillWeeks || 0), filled = [0, 0], refused = {};
   for (let k = 0; k < campaign.fleets.length; k++) {
     const f = campaign.fleets[k];
@@ -48961,6 +48966,29 @@ function campaignHangarsEmptyOf(g) {
   const K = campaignKitList(g); let n = 0, why = '';
   for (let k = 0; k < K.length; k++) { const e = K[k]; if (e && Array.isArray(e.h) && e.h.length) { n++; if (e.hw && !why) why = e.hw; } }
   return { n: n, why: why };
+}
+
+// (v244.0, 5jf fgRestock) A carrier of ours restocked at a dock in battle: the craft's Alloys go on the hangar bill, paid first thing at the next dawn (the
+// battle runs between dawns, and the week's Alloys are already handed out). A craft needing a resource we get none of a week is refused, as at dawn.
+// Returns '' when the craft is on the bill, else why not.
+function campaignHangarBill(fighter) {
+  if (!campaign || !fighter) return '';
+  campaignEconFields(campaign);
+  const needs = campaignDesignNeeds(fighter.id);
+  if (campaignResourceGateOn(0)) { const rates = campaignResourceRates(0); for (const r in needs) if (needs[r] > 0 && !(rates[r] > 0)) return 'needs ' + campaignResourceName(r); }
+  const info = campaignV3Info(fighter.id), alloys = info ? info.alloys : 0;
+  campaign.econ.hangarBill[0] += alloys;
+  campaignSupplyAlloys(fighter.id, alloys); campaignSupplyShips(fighter.id, 1);   // (a craft is a ship: it shows on the supply return, 06r)
+  return '';
+}
+// At dawn: the hangar bill comes off the week's Alloys before anything else is filled (what the pot cannot cover is forgiven, so the yards are never stuck).
+function campaignHangarBillDawn(pot) {
+  const e = campaign.econ;
+  if (!e || !Array.isArray(e.hangarBill)) return;
+  const owed = e.hangarBill[0], paid = Math.min(owed, Math.max(0, pot[0]));
+  if (paid > 0) { pot[0] -= paid; campaign.stats.alloysSpent[0] += paid; e.spent[0] += paid; }
+  if (owed > 0) campaignLog('hangar', 'Craft lost and restocked at our docks in battle cost ' + Math.round(paid) + ' Alloys' + (paid + 1e-9 < owed ? ' (' + Math.round(owed - paid) + ' more could not be paid and was written off)' : '') + '.');
+  e.hangarBill[0] = 0; e.hangarBill[1] = 0;
 }
 
 // ---- The debug API ----
@@ -51250,6 +51278,8 @@ function thinkShip(i, st) {
     keepRepairPoint(i);                                      // flying to a repair point (section 5j); if that one was destroyed, pick another
   } else if (stRepairBelow[st] > 0 && shipHp[i] < stRepairBelow[st] * stHull[st] && repairCanGo(i)) {
     startRepair(i, st);                                      // the hull is too damaged: go to be repaired (section 5j)
+  } else if (state !== STATE_RETREAT && fgWantsRestock(i)) {
+    startRepair(i, st); fgStats.restockTrips++;              // (v244.0, 5jf) a carrier whose hangars are mostly empty: to a dock to restock, as for repairs
   } else if (state === STATE_REGROUP) {
     // Out of the fight at home: go back once the shield has recovered enough (only ships with a shield can).
     if (stCanReturn[st] === 1 && strength >= shipReengageLevel(i, st)) setShipState(i, STATE_APPROACH);
@@ -51324,6 +51354,8 @@ function thinkShipSmart(i, st) {
     keepRepairPoint(i);
   } else if (stRepairBelow[st] > 0 && shipHp[i] < stRepairBelow[st] * stHull[st] && repairCanGo(i)) {
     startRepair(i, st);
+  } else if (state !== STATE_RETREAT && fgWantsRestock(i)) {
+    startRepair(i, st); fgStats.restockTrips++;              // (v244.0, 5jf) a carrier whose hangars are mostly empty: to a dock to restock, as for repairs
   } else if (state === STATE_REGROUP) {
     // Back once the shield has recovered (a routed ship without one comes back as it is), and, for a routed ship, once the odds where it will rejoin have been
     // bearable for fallbackMinSeconds (judged where it rejoins, not where it waits: otherwise it would go straight back into the fight it fled, and rout again).
@@ -63860,7 +63892,7 @@ function sendShipAway(i) {
                 bay: shipBay[i],                                                       // (v52, section 5jf) a fighter: the bay it docks in
                 ammo: typeof bbAmmoSave === 'function' ? bbAmmoSave(i) : null,          // (v95) what its stores held (a tender gives it back, then fills it: 5jt)
                 cargoShort: typeof tdCargoShort === 'function' ? tdCargoShort(i) : 0 }; // (v95) a tender whose holds are not full: it stays in the dock tenderRestockSeconds
-  fgCarrierAway(i);                                                                      // (v52) a carrier away for repairs keeps its bays for its return
+  rec.carrier = fgCarrierAway(i);                                                        // (v52) a carrier away for repairs keeps its bays for its return; (v244.0) the record it waits in
   if (sq > 0) {
     const start = sqStart[sq], n = sqSize[sq];
     for (let k = 0; k < n; k++) if (sqMembers[start + k] === i) { rec.place = k; break; }
@@ -64006,6 +64038,7 @@ function returnShip(rec, cx, cy, k, hp, why, quiet) {
     const nsq = addSquadron(side, type, [slot]);
     quietReport(nsq, 'returned', why);
   }
+  if (rec.carrier >= 0) fgCarrierBack(slot, rec.carrier, hp < 0 || why === 'rearmed');   // (v244.0, 5jf) a carrier back from a dock or a bay: its own record, its hangars refilled
   return true;
 }
 
@@ -64111,7 +64144,7 @@ function fightersOn() { return SETTINGS.fighterLaunchModel === 1; }
 //   fgJam[slot]            x the ship's scatter right now: above 1 for a drone inside an enemy jammer's reach, 1 for everything else (05f bbFire)
 //   fgCarrierOfSlot[slot]  the carrier record of this ship (an index in fgCarriers), -1 for every other ship
 function fgAllocateShipArrays(n) { shipBay = new Int32Array(n).fill(-1); fgJam = new Float32Array(n).fill(1); fgCarrierOfSlot = new Int32Array(n).fill(-1); }
-function fgResetShip(slot) { shipBay[slot] = -1; fgJam[slot] = 1; fgCarrierOfSlot[slot] = -1; if (fgKeptBySlot.size > 0) fgKeptBySlot.delete(slot); }   // (spawnShip: a slot used again starts clean)
+function fgResetShip(slot) { shipBay[slot] = -1; fgJam[slot] = 1; fgCarrierOfSlot[slot] = -1; if (fgKeptBySlot.size > 0) fgKeptBySlot.delete(slot); if (fgBackBySlot.size > 0) fgBackBySlot.delete(slot); }   // (spawnShip: a slot used again starts clean)
 
 // ---- The carriers and their bays ----
 const BAY_READY = 0, BAY_OUT = 1, BAY_TURN = 2, BAY_LOST = 3;   // a bay: its fighter waits inside / is out on the field / is inside being rearmed / was lost (knocked out)
@@ -64119,16 +64152,17 @@ const fgCarriers = [];        // { slot, side, type, station (the battleObjectiv
 const fgBays = [];            // { carrier (index in fgCarriers), part (the hangar's part index in the carrier's design, -1 for a station's), type (the fighter's ship type), state, fighter (its slot while out, else -1), readyAt, rec (the docked ship's record from sendShipAway, while inside) }
 const fgPending = [];         // slots just spawned that may be carriers (sorted out at the next step: a station's place is only known after its spawn)
 const fgKeptBySlot = new Map();   // slot -> { h, hr, hw } a campaign kit that arrived before the carrier record was made (campaignUnitMade)
+const fgBackBySlot = new Map();   // (v244.0) slot -> { ci, refill }: a carrier just back from a dock or a bay, the record it left (and whether it was restocked there)
 const fgTypeBayCache = new Map(); // ship type -> [{ part, type }] the bays a type's design gives (empty = not a carrier)
 const fgTypeJamCache = new Map(); // ship type -> its jam number
-const fgStats = { launched: 0, relaunched: 0, docked: 0, lost: 0, jammedTicks: 0, targetsLost: 0, adopted: 0, orphaned: 0, titanBuilt: 0 };   // (v94.6) adopted: yard-built ships taken into an empty hangar; orphaned: carried ships made ordinary when their carrier was lost
+const fgStats = { launched: 0, relaunched: 0, docked: 0, lost: 0, jammedTicks: 0, targetsLost: 0, adopted: 0, orphaned: 0, titanBuilt: 0, restockTrips: 0, restocked: 0, restockRefused: 0 };   // (v244.0) restockTrips: carriers sent to restock; restocked: craft put back in empty hangars at a dock or bay; restockRefused: craft a dock could not pay for   // (v94.6) adopted: yard-built ships taken into an empty hangar; orphaned: carried ships made ordinary when their carrier was lost
 let fgNextTick = 0, fgTicks = 0, fgJammerTypes = 0, fgDroneTypes = 0;
 const fgJammers = [[], []];   // per side, the slots of its ships that carry a jammer (rebuilt each tick while any jammer type is in the battle)
 const fgGuardOf = [];         // (v54) by squadron number: 1 + the carrier record (a station) its fighters guard, 0 or empty for every other squadron
 
 // At the start of a battle (resetBattleState): nothing is known yet.
 function fgReset() {
-  fgCarriers.length = 0; fgBays.length = 0; fgPending.length = 0; fgKeptBySlot.clear(); fgTypeBayCache.clear(); fgTypeJamCache.clear();
+  fgCarriers.length = 0; fgBays.length = 0; fgPending.length = 0; fgKeptBySlot.clear(); fgBackBySlot.clear(); fgTypeBayCache.clear(); fgTypeJamCache.clear();
   fgNextTick = 0; fgTicks = 0; fgJammerTypes = 0; fgDroneTypes = 0; fgJammers[0].length = 0; fgJammers[1].length = 0; fgGuardOf.length = 0;
   for (const k in fgStats) fgStats[k] = 0;
 }
@@ -64199,9 +64233,12 @@ function fgTakePending() {
       if (typeof lsCarriedBays === 'function') bays = lsCarriedBays(slot, bays);   // (v108.0, section 8i) a Last Stand carrier holds the run's version of its craft
       name = typeName[t] + ' carrier';
       // back from repairs: the record that waited for a ship of this side and type takes it (the first one waiting)
+      // (v244.0) returnShip says which record it left, and whether it was restocked while away: that one is taken (no guessing by type)
       let back = -1;
+      const bk = fgBackBySlot.get(slot);
+      if (bk) { fgBackBySlot.delete(slot); if (fgCarriers[bk.ci] && fgCarriers[bk.ci].state === 'away' && fgCarriers[bk.ci].side === side && fgCarriers[bk.ci].type === t) back = bk.ci; }
       for (let c = 0; c < fgCarriers.length && back < 0; c++) if (fgCarriers[c].state === 'away' && fgCarriers[c].side === side && fgCarriers[c].type === t) back = c;
-      if (back >= 0) { const c = fgCarriers[back]; c.slot = slot; c.state = 'live'; c.launchAt = simTime + SETTINGS.fighterLaunchSeconds; fgCarrierOfSlot[slot] = back; if (c.point >= 0) { repairPoints[c.point].alive = true; repairPoints[c.point].x = shipX[slot]; repairPoints[c.point].y = shipY[slot]; } continue; }
+      if (back >= 0) { const c = fgCarriers[back]; if (bk && bk.refill && back === bk.ci) fgRestock(c); c.slot = slot; c.state = 'live'; c.launchAt = simTime + SETTINGS.fighterLaunchSeconds; fgCarrierOfSlot[slot] = back; if (c.point >= 0) { repairPoints[c.point].alive = true; repairPoints[c.point].x = shipX[slot]; repairPoints[c.point].y = shipY[slot]; } continue; }
     }
     const c = { slot: slot, side: side, type: t, station: station, name: name, bays: [], point: -1, launchAt: simTime + SETTINGS.fighterLaunchSeconds, launched: 0, kept: null, state: 'live', guard: [] };   // (guard, v54: a station's guard squadrons)
     const ci = fgCarriers.length;
@@ -64439,13 +64476,75 @@ function fgShipGone(i) {
   if (ci >= 0) fgCarrierGone(fgCarriers[ci], 'gone');
 }
 // (17 sendShipAway) A carrier goes away for repairs: its record waits for it (its fighters out keep their bays; those inside stay inside).
+// (v244.0) Returns the record's index (the ship's away record keeps it, so the carrier takes this very record when it comes back), or -1.
 function fgCarrierAway(i) {
-  if (fgCarrierOfSlot.length <= i) return;
+  if (fgCarrierOfSlot.length <= i) return -1;
   const ci = fgCarrierOfSlot[i];
-  if (ci < 0) return;
+  if (ci < 0) return -1;
   const c = fgCarriers[ci];
   c.state = 'away'; fgCarrierOfSlot[i] = -1;
   if (c.point >= 0) repairPoints[c.point].alive = false;         // (a fighter flying home turns back to the fight: keepRepairPoint)
+  return ci;
+}
+// ---- (v244.0) Restocking: lost craft are spent ammunition ----
+// Alex, 12 Nov: "check to make sure flat tops and other carriers are actually regrowing and sending out fighters". Measured on v243: every carrier launched,
+// but only the Flattop (fgTitanRebuild) ever got a lost craft back during a battle. Every other hangar refilled only at dawn for a fleet OUT of battle
+// (06p campaignHangarsDawn), and the long map's front battle never ends; a carrier mended at a dock came back with its hangars still empty. So the rule is
+// now the ammunition's: a carrier whose hangars are mostly empty (hangarRestockShare) goes to a dock to restock, as a ship with empty magazines does
+// (07 thinkShip, beside the repair rule: a carrier of its own; fighterStep: one that is itself carried, to its carrier's or station's bay), and a dock or a bay refills every
+// empty hangar along with the repairs. In the war we pay the craft's Alloys (a bill paid first thing at the next dawn, 06p); the aliens, Last Stand and
+// test battles pay nothing. The Flattop keeps its own rebuild in the field and never goes to restock.
+// (17 returnShip) A carrier is back in the battle in `slot`: it takes record ci again, restocked when it was mended at a dock or rearmed in a bay.
+function fgCarrierBack(slot, ci, serviced) {
+  if (!fightersOn() || !(ci >= 0) || !fgCarriers[ci]) return;
+  fgBackBySlot.set(slot, { ci: ci, refill: serviced === true && SETTINGS.hangarRestock === 1 });
+}
+// Every empty hangar of carrier c gets a new craft (paid as fgPayCraft says). Returns how many were filled.
+function fgRestock(c) {
+  let n = 0, why = '';
+  for (let k = 0; k < c.bays.length; k++) {
+    const b = fgBays[c.bays[k]];
+    if (b.state !== BAY_LOST) continue;
+    const no = fgPayCraft(c.side, b.type);
+    if (no) { why = why || no; fgStats.restockRefused++; continue; }
+    b.state = BAY_READY; b.fighter = -1; b.rec = null; b.lsAt = 0; n++;
+  }
+  fgStats.restocked += n;
+  c.restockAt = simTime;                                           // (it does not go again at once: fgHangarsDry)
+  c.restockWhy = why;
+  if (why && c.side === BLUE) logEvent(BLUE, 'The ' + typeName[c.type] + ' could not restock its hangars: ' + why + '.');
+  return n;
+}
+// The price of one new craft: '' when it is paid (or free), else why not. Only our side in the war pays: the craft's Alloys go on the hangar bill (06p,
+// paid at the next dawn before the yards), and a craft needing a resource we get none of a week is refused (the hangar stays empty, as at dawn).
+function fgPayCraft(side, type) {
+  if (side !== BLUE || typeof campaignBattleActive === 'undefined' || !campaignBattleActive || typeof gameWarHere !== 'function' || !gameWarHere()) return '';
+  if (typeof fighterHangarsOn === 'function' && !fighterHangarsOn()) return '';
+  const rec = SHIP_TYPES[type];
+  if (!rec || typeof campaignHangarBill !== 'function') return '';
+  return campaignHangarBill(rec);
+}
+// Should carrier ship i go to restock? A live carrier of its own (not a station, not a Flattop that rebuilds in the field) with at least hangarRestockShare of
+// its hangars empty, that did not come back from restocking (or fail to) in the last two minutes.
+function fgHangarsDry(i) {
+  if (SETTINGS.hangarRestock !== 1 || !fightersOn() || fgCarrierOfSlot.length <= i) return false;
+  const ci = fgCarrierOfSlot[i];
+  if (ci < 0) return false;
+  const c = fgCarriers[ci];
+  if (c.state !== 'live' || c.station >= 0 || c.bays.length === 0) return false;
+  if (c.titan === undefined) fgTitanRebuild(c);                    // (works out whether it is a Flattop)
+  if (c.titan) return false;
+  if (c.restockAt !== undefined && simTime - c.restockAt < FG_RESTOCK_AGAIN) return false;
+  let lost = 0;
+  for (let k = 0; k < c.bays.length; k++) if (fgBays[c.bays[k]].state === BAY_LOST) lost++;
+  return lost > 0 && lost >= Math.max(1e-9, SETTINGS.hangarRestockShare) * c.bays.length;
+}
+const FG_RESTOCK_AGAIN = 120;   // (v244.0) seconds after a restock before a carrier may go again (so one that could not pay does not shuttle back and forth)
+// (07 thinkShip, beside the repair rule) A carrier with mostly empty hangars and a dock to go to: true when it should go now (counted once a trip).
+function fgWantsRestock(i) {
+  if (shipBay.length > i && shipBay[i] >= 0) return false;         // (one that is itself carried goes home to its carrier instead: fighterStep)
+  if (!fgHangarsDry(i)) return false;
+  return nearestRepairPointTo(shipSide[i], shipX[i], shipY[i], i) >= 0;
 }
 function fgCarrierGone(c, how) {
   if (c.state === 'gone') return;
@@ -64524,7 +64623,7 @@ function fighterStep() {
       const f = b.fighter;
       if (f < 0 || shipAlive[f] !== 1 || shipBay[f] !== c.bays[k]) { b.state = BAY_LOST; b.fighter = -1; continue; }   // (a safety net: killShip notes losses)
       const st = shipSide[f] * TYPE_COUNT + shipType[f];
-      if (c.state === 'live' && shipState[f] !== STATE_REPAIR && shipRetreating[f] !== 1 && fgOutOfAmmo(f, st)) fgSendHome(f, c);
+      if (c.state === 'live' && shipState[f] !== STATE_REPAIR && shipRetreating[f] !== 1 && (fgOutOfAmmo(f, st) || fgHangarsDry(f))) { if (fgCarrierOfSlot[f] >= 0) fgStats.restockTrips++; fgSendHome(f, c); }   // (v244.0: or a carried carrier with empty hangars, to restock)
       if (jamOn) fgJamTick(f, st);
     }
   }
@@ -107546,7 +107645,7 @@ BUREAU2_SCREEN_API.testRange = { run: testRangeRun, state: testRange, plan: func
 //   adopted habits come along in its copy code and into every new campaign. A doctrine changed in the Bureau after the save updates the plan's copy.
 //   DOCTRINE TEMPLATES (LIBRARY.templates: [{ name, doctrine, savedAt }]) live here too, so they carry over as well. A plan from before v37 has no doctrine: Auto.
 // =====================================================================
-const GAME_VERSION = 'v243.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
+const GAME_VERSION = 'v244.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
 const LIBRARY_KEY = 'engineersWar.library';
 const LIBRARY_FORMAT = 1;
 const LIBRARY_CODE_SHIP = 'EW-SHIP-1:', LIBRARY_CODE_LIB = 'EW-LIB-1:';
