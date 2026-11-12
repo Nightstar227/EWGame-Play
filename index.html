@@ -2815,6 +2815,8 @@ hr.rule { border:0; border-top:var(--line-w) solid var(--line); margin:var(--sp-
 #bureau2Screen .lvcols input[type=color] { width: 44px; height: 26px; padding: 0; border: 1px solid var(--line-strong); background: none; cursor: pointer; }
 #bureau2Screen .lvacts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; border-top: 1px solid var(--line); padding-top: 8px; }
 #bureau2Screen .lvask { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font: 500 12px var(--font-data); color: var(--text); }
+/* (v220.0) the Livery panel's side: our ships or our Echo */
+#bureau2Screen .lvside .opts button { padding: 3px 12px; font-weight: 600; }
 </style>
 <style>
 /* =====================================================================
@@ -3684,7 +3686,7 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
     <section class="panel hidden" id="mmPanel"><div class="panel-head" id="mmPanelHead"></div><div class="panel-body" id="mmPanelBody"></div></section>
     <input type="file" id="mmFile" accept=".json,application/json,text/plain" class="hidden">
   </div>
-  <div class="mm-version" title="The version of the game you are playing">Version v219.0</div>
+  <div class="mm-version" title="The version of the game you are playing">Version v223.0</div>
 </div>
 
 <!-- (v31 A2, section 7l) the end of the war: the game-over screen (Earth's people are gone) or the victory screen (the aliens' home secured). It lies over
@@ -8039,6 +8041,7 @@ window.SWARM_PART_ART = { has: has, picture: picture, ids: Object.keys(SWARM_PAR
 // The drawings are the "Titan close art" sheet's (UI and art thread, 1 Nov 2026; sources in the project files, EWGame/UI/art-src/titans/titans.js),
 // copied in word for word between the two marker lines below and wrapped so their helper names stay inside this file.
 // The game's build includes this file (src/page.html); the close look asks TITAN_ART.picture(key, longest) for a still picture of a titan.
+// (v221.0) It also carries the livery rules (the ship art customizer), put in by EWGame/UI/art-src/titans/build_game_livery.py: picture(..., livery).
 // One art unit = one build-grid square. The art is far bigger than the build grid: the grid is the skeleton inside it (top-left at gx, gy).
 // =====================================================================
 (function () {
@@ -8419,6 +8422,512 @@ TITANS.push({k:'flattop',n:'Flattop',role:'Support · super carrier',grid:'Flatt
   }});
 
 // ---- the art sheet's drawings end ----
+// ---- the livery (../livery/livery.js, livery-more.js and titans/titan-livery.js), unchanged ----
+// (v221.0) The livery files also dress the small ships' own painters (their noses, bridges, drive bells, wings and the whole-ship drawing). Titans have
+// none of those, so empty stand-ins let the livery files load here unchanged; the titans never call them.
+function htSteel() {} function htNose() {} function htBridge() {} function htBell() {} function htWing() {} function htDrives() {} function hullTop() {}
+function htSeed(s) { var h = 7; s = String(s || ''); for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 1000003; return h; }
+// =====================================================================
+// LIVERY: the ship art customizer's drawing rules (planning art, 12 Nov 2026).
+// Alex: "I want the player to have some style and color options, with some mix and matchable elements... material/texture styles
+// should also be an option." The plan: /mnt/project-files/notes/plans/art/ship-art-customizer-plan.md
+// How it works: our hull art (hull-top/hulltop.js, using titans.js helpers) is drawn by rules from one small colour list and one
+// plate painter. This file swaps those for versions that read the current livery (LIV): colours, material, pattern, wear,
+// markings and piece choices. Nothing here changes a ship's size, where its parts sit or where its turrets are.
+// =====================================================================
+var LIV_DEFAULT = { hull: '#3b3c34', trim: '#c8892e', accent: '#d9b23a', lights: '#f3dfa0', mat: 'plate', pat: 'flank', wear: 'worn',
+  nose: 'cone', bridge: 'block', drive: 'bell', deck: 'stepped', hazard: true, roundel: false, tally: false, echo: null };
+var LIV = Object.assign({}, LIV_DEFAULT), LV_PLAIN = true;
+// LV_PLAIN: the plain look, drawn by the original painters untouched (so a ship with no livery looks exactly as before)
+function livSet(L) { LIV = Object.assign({}, LIV_DEFAULT, L || {}); LV_PLAIN = !L || (!L.echo && !lvClean(L)); COL.amber = LIV.trim; COL.haz = LIV.accent; COL.win = LIV.lights; }
+
+// ---- colour helpers ----
+function lvRGB(h) { var n = parseInt(h.slice(1), 16); return [n >> 16, n >> 8 & 255, n & 255]; }
+function lvHex(a) { return '#' + a.map(function (v) { v = Math.max(0, Math.min(255, Math.round(v))); return (v < 16 ? '0' : '') + v.toString(16); }).join(''); }
+function lvMix(a, b, t) { var A = lvRGB(a), B = lvRGB(b); return lvHex([A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t, A[2] + (B[2] - A[2]) * t]); }
+function lvShade(h, t) { return t >= 0 ? lvMix(h, '#ffffff', t * .6) : lvMix(h, '#000000', -t); }
+function lvA(h, a) { var c = lvRGB(h); return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')'; }
+
+// ---- the materials: each is a base shading (stops: [place, lighter/darker]) and a surface painter ----
+function lvPlates(c, b, r, ps, alt) {   // the old riveted plate pattern
+  var x, y, row = 0;
+  for (y = b[1]; y < b[3]; y += ps * .6, row++) { var off = (row % 2) * ps * .5; for (x = b[0] - off; x < b[2]; x += ps) { var w = ps * (.6 + r() * .8);
+    if (r() < .22) { c.fillStyle = r() < .5 ? 'rgba(255,250,230,.05)' : 'rgba(0,0,0,.12)'; c.fillRect(x, y, w, ps * .6); }
+    if (alt && r() < .3) { c.fillStyle = alt[Math.floor(r() * alt.length)]; c.fillRect(x, y, ps * (.5 + r() * .6), ps * .6); } } }
+  c.strokeStyle = 'rgba(0,0,0,.33)'; c.lineWidth = PX * 1.1; c.beginPath(); row = 0;
+  for (y = b[1]; y < b[3]; y += ps * .6, row++) { c.moveTo(b[0], y); c.lineTo(b[2], y); var o2 = (row % 2) * ps * .5; for (x = b[0] - o2; x < b[2]; x += ps) { c.moveTo(x, y); c.lineTo(x, y + ps * .6); } } c.stroke();
+}
+function lvCracks(c, b, r, n, col, w, glow) {
+  c.save(); if (glow) { c.shadowColor = col; c.shadowBlur = glow; } c.strokeStyle = col; c.lineWidth = w; c.lineCap = 'round';
+  for (var i = 0; i < n; i++) { var x = b[0] + r() * (b[2] - b[0]), y = b[1] + r() * (b[3] - b[1]), a = r() * 7; c.beginPath(); c.moveTo(x, y);
+    for (var k = 0; k < 6; k++) { a += (r() - .5) * 1.4; var L = (b[3] - b[1]) * (.03 + r() * .07); x += Math.cos(a) * L; y += Math.sin(a) * L; c.lineTo(x, y);
+      if (r() < .25) { var bx = x, by = y, ba = a + (r() < .5 ? 1 : -1); c.moveTo(bx, by); c.lineTo(bx + Math.cos(ba) * L * .7, by + Math.sin(ba) * L * .7); c.moveTo(x, y); } } c.stroke(); }
+  c.restore();
+}
+var LV_MAT = {
+  plate:   { name: 'Gunmetal plate', base: function (h) { return h; }, stops: [[0, -.22], [.18, .28], [.5, 0], [.82, -.24], [1, -.5]], grain: 1,
+             paint: function (c, b, r, ps) { lvPlates(c, b, r, ps); } },
+  steel:   { name: 'Round steel', base: function (h) { return lvMix(h, '#b9bec1', .62); }, stops: [[0, -.5], [.18, .3], [.34, .75], [.5, .35], [.78, -.15], [1, -.55]], grain: .6,
+             paint: function (c, b, r, ps) { var x, s = ps * .55; for (x = b[0] + s; x < b[2]; x += s) { c.fillStyle = 'rgba(30,34,37,.35)'; c.fillRect(x, b[1], PX * 1.2, b[3] - b[1]); c.fillStyle = 'rgba(255,255,255,.25)'; c.fillRect(x + PX * 1.2, b[1], PX, b[3] - b[1]); }
+               c.strokeStyle = 'rgba(255,255,255,.05)'; c.lineWidth = PX; c.beginPath(); for (var y = b[1]; y < b[3]; y += PX * 3) { c.moveTo(b[0], y); c.lineTo(b[2], y); } c.stroke(); } },
+  tile:    { name: 'Ceramic tile', base: function (h) { return h; }, stops: [[0, -.15], [.5, .05], [1, -.35]], grain: .5,
+             paint: function (c, b, r, ps) { var s = ps * .32, x, y; for (y = b[1]; y < b[3]; y += s) for (x = b[0]; x < b[2]; x += s) { var v = r(); c.fillStyle = v < .5 ? 'rgba(255,255,255,' + v * .12 + ')' : 'rgba(0,0,0,' + (v - .5) * .3 + ')'; c.fillRect(x, y, s, s); }
+               c.strokeStyle = 'rgba(0,0,0,.45)'; c.lineWidth = PX * .9; c.beginPath(); for (y = b[1]; y < b[3]; y += s) { c.moveTo(b[0], y); c.lineTo(b[2], y); } for (x = b[0]; x < b[2]; x += s) { c.moveTo(x, b[1]); c.lineTo(x, b[3]); } c.stroke(); } },
+  panel:   { name: 'Composite panel', base: function (h) { return h; }, stops: [[0, -.1], [.15, .35], [.3, .1], [.7, 0], [1, -.35]], grain: .3,
+             paint: function (c, b, r, ps) { var pw = ps * 2.2, ph = ps * 1.1, row = 0; c.strokeStyle = 'rgba(0,0,0,.28)'; c.lineWidth = PX; c.beginPath();
+               for (var y = b[1]; y < b[3]; y += ph, row++) { c.moveTo(b[0], y); c.lineTo(b[2], y); for (var x = b[0] - (row % 2) * pw * .5; x < b[2]; x += pw) { c.moveTo(x, y); c.lineTo(x, y + ph); } } c.stroke();
+               c.fillStyle = 'rgba(255,255,255,.06)'; c.fillRect(b[0], b[1] + (b[3] - b[1]) * .12, b[2] - b[0], (b[3] - b[1]) * .1); } },
+  stealth: { name: 'Stealth matte', base: function (h) { return lvMix(h, '#0c0d0f', .72); }, stops: [[0, -.1], [.5, .06], [1, -.2]], grain: 0,
+             paint: function (c, b, r, ps) { var s = ps * 1.4; for (var y = b[1]; y < b[3]; y += s) for (var x = b[0]; x < b[2]; x += s) { for (var k = 0; k < 2; k++) { c.fillStyle = r() < .5 ? 'rgba(255,255,255,' + r() * .05 + ')' : 'rgba(0,0,0,' + r() * .25 + ')';
+               c.beginPath(); if (k) { c.moveTo(x, y); c.lineTo(x + s, y); c.lineTo(x + s, y + s); } else { c.moveTo(x, y); c.lineTo(x, y + s); c.lineTo(x + s, y + s); } c.closePath(); c.fill(); } }
+               c.strokeStyle = 'rgba(255,255,255,.04)'; c.lineWidth = PX; c.beginPath(); for (y = b[1]; y < b[3]; y += s) { c.moveTo(b[0], y); c.lineTo(b[2], y); } c.stroke(); } },
+  polish:  { name: 'Polished hull', base: function (h) { return h; }, stops: [[0, -.55], [.14, .9], [.26, .25], [.5, -.15], [.72, .5], [1, -.6]], grain: .15,
+             paint: function (c, b, r, ps) { var w = b[2] - b[0], h = b[3] - b[1]; c.strokeStyle = 'rgba(0,0,0,.18)'; c.lineWidth = PX; c.beginPath(); for (var x = b[0] + ps * 3; x < b[2]; x += ps * 3) { c.moveTo(x, b[1]); c.lineTo(x, b[3]); } c.stroke();
+               var g = c.createLinearGradient(b[0], b[1], b[0] + h * .8, b[3]); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.5, 'rgba(255,255,255,.22)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+               for (var k = 0; k < w / h * 1.2; k++) { c.save(); c.translate(b[0] + k * h * 1.4, 0); c.fillStyle = g; c.fillRect(0, b[1], h * .8, h); c.restore(); } } },
+  rust:    { name: 'Rust bucket', base: function (h) { return lvMix(h, '#4a3a2c', .25); }, stops: [[0, -.25], [.18, .2], [.5, 0], [.82, -.25], [1, -.5]], grain: 1.4,
+             paint: function (c, b, r, ps) { lvPlates(c, b, r, ps, ['rgba(122,62,28,.45)', 'rgba(90,46,20,.5)', 'rgba(150,150,140,.18)']);
+               for (var i = 0; i < (b[2] - b[0]) * .8; i++) { var y = b[1] + r() * (b[3] - b[1]), x = b[0] + r() * (b[2] - b[0]); c.fillStyle = 'rgba(140,70,30,' + (.1 + r() * .2) + ')'; c.fillRect(x - ps * (1 + r() * 2), y, ps * (1 + r() * 2), PX * (1 + r() * 2)); } } },
+  // the Echo's materials (their glow colour comes from LIV.echo.glow)
+  obsidian:{ name: 'Obsidian glass', echo: 1, base: function (h) { return lvMix(h, '#07060b', .8); }, stops: [[0, -.2], [.3, .25], [.55, -.1], [1, -.4]], grain: 0,
+             paint: function (c, b, r, ps, L) { var h = b[3] - b[1]; for (var k = 0; k < 6; k++) { var x = b[0] + r() * (b[2] - b[0]); c.fillStyle = 'rgba(255,255,255,' + (.03 + r() * .06) + ')'; c.beginPath(); c.moveTo(x, b[1]); c.lineTo(x + h * .3, b[1]); c.lineTo(x + h * .9, b[3]); c.lineTo(x + h * .6, b[3]); c.fill(); }
+               lvCracks(c, b, r, 4, lvA(L.echo.glow, .35), PX * 1.2, 0); } },
+  scrap:   { name: 'Scrap weld', echo: 1, base: function (h) { return lvMix(h, '#2a2420', .5); }, stops: [[0, -.25], [.2, .15], [.5, 0], [1, -.5]], grain: 1.5,
+             paint: function (c, b, r, ps, L) { var x, y; for (y = b[1]; y < b[3]; y += ps * .7) for (x = b[0]; x < b[2]; x += ps * (.7 + r())) { c.fillStyle = ['rgba(110,60,30,.45)', 'rgba(70,72,66,.5)', 'rgba(20,18,16,.5)', 'rgba(120,100,60,.3)'][Math.floor(r() * 4)]; c.save(); c.translate(x, y); c.rotate((r() - .5) * .25); c.fillRect(0, 0, ps * (.7 + r() * .8), ps * .7); c.restore(); }
+               c.save(); c.shadowColor = L.echo.glow; c.shadowBlur = 4; c.strokeStyle = lvA(L.echo.glow, .55); c.lineWidth = PX * 1.1; c.setLineDash([PX * 2, PX * 2]); c.beginPath(); for (y = b[1] + ps * .7; y < b[3]; y += ps * 1.4) { c.moveTo(b[0], y + (r() - .5) * ps * .3); c.lineTo(b[2], y + (r() - .5) * ps * .3); } c.stroke(); c.restore(); } },
+  bone:    { name: 'Bone pale', echo: 1, base: function (h) { return lvMix(h, '#cbc2a8', .78); }, stops: [[0, -.35], [.2, .15], [.5, 0], [1, -.45]], grain: 1,
+             paint: function (c, b, r, ps) { lvCracks(c, b, r, Math.round((b[2] - b[0]) / ps * 2), 'rgba(40,32,22,.45)', PX * .9, 0);
+               for (var i = 0; i < (b[2] - b[0]) * 2; i++) { c.fillStyle = 'rgba(50,40,30,' + r() * .25 + ')'; c.beginPath(); c.arc(b[0] + r() * (b[2] - b[0]), b[1] + r() * (b[3] - b[1]), PX * (1 + r() * 2), 0, 7); c.fill(); } } },
+  oil:     { name: 'Oil slick', echo: 1, base: function (h) { return lvMix(h, '#0b0b10', .8); }, stops: [[0, -.2], [.5, .1], [1, -.3]], grain: 0,
+             paint: function (c, b, r, ps) { var g = c.createLinearGradient(b[0], b[1], b[2], b[3]); for (var k = 0; k <= 8; k++) g.addColorStop(k / 8, 'hsla(' + (k * 45 + 200) % 360 + ',80%,55%,.2)'); c.fillStyle = g; c.fillRect(b[0], b[1], b[2] - b[0], b[3] - b[1]);
+               c.strokeStyle = 'rgba(255,255,255,.08)'; c.lineWidth = PX * 1.5; for (var i = 0; i < 5; i++) { c.beginPath(); c.ellipse(b[0] + r() * (b[2] - b[0]), b[1] + r() * (b[3] - b[1]), ps * (1 + r() * 2), ps * (.4 + r()), r() * 3, 0, 4); c.stroke(); } } },
+  ember:   { name: 'Ember cracked', echo: 1, base: function (h) { return lvMix(h, '#0d0a09', .85); }, stops: [[0, -.2], [.5, .1], [1, -.3]], grain: .6,
+             paint: function (c, b, r, ps, L) { lvCracks(c, b, r, Math.round((b[2] - b[0]) / ps * 1.6), lvA(L.echo.glow, .85), PX * 1.6, 6); } }
+};
+
+// ---- the patterns: how the trim colour goes on the main hull ----
+var LV_PAT = { flank: 'Flank stripes', spine: 'Spine stripe', chevron: 'Chevrons', edge: 'Edge band', dazzle: 'Dazzle camo', bow: 'Bow band', none: 'Plain' };
+function lvPattern(c, p, b, r, L) {
+  var w = b[2] - b[0], h = b[3] - b[1], mid = (b[1] + b[3]) / 2, col = L.trim;
+  if (L.pat === 'spine') { c.fillStyle = col; c.fillRect(b[0] + w * .08, mid - h * .06, w * .82, h * .12); c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(b[0] + w * .08, mid - h * .015, w * .82, h * .03); }
+  else if (L.pat === 'chevron') { c.strokeStyle = col; c.lineWidth = h * .07; c.lineJoin = 'miter'; [.5, .6, .7].forEach(function (k) { var x = b[0] + w * k; c.beginPath(); c.moveTo(x - h * .35, b[1]); c.lineTo(x, mid); c.lineTo(x - h * .35, b[3]); c.stroke(); }); }
+  else if (L.pat === 'edge') { c.strokeStyle = col; c.lineWidth = Math.min(h * .26, 3.2); c.stroke(p); }
+  else if (L.pat === 'dazzle') { var dark = lvShade(L.hull, -.55); for (var x = b[0] - h; x < b[2]; x += h * .32) { c.fillStyle = r() < .5 ? lvA(col, .85) : lvA(dark, .8); var sk = (r() < .5 ? 1 : -1) * h * (.3 + r() * .5), ww = h * (.08 + r() * .14);
+      c.beginPath(); c.moveTo(x, b[1]); c.lineTo(x + ww, b[1]); c.lineTo(x + ww + sk, b[3]); c.lineTo(x + sk, b[3]); c.closePath(); c.fill(); } }
+  else if (L.pat === 'bow') { c.fillStyle = col; c.fillRect(b[0] + w * .8, b[1], w * .06, h); c.fillRect(b[0] + w * .88, b[1], w * .02, h); }
+}
+// ---- wear and markings (main hull only) ----
+function lvWear(c, b, r, L) {
+  var w = b[2] - b[0], h = b[3] - b[1], i;
+  if (L.wear === 'fresh') return;
+  for (i = 0; i < h * .4; i++) { c.fillStyle = 'rgba(20,16,10,' + (.05 + r() * .12) + ')'; c.beginPath(); c.ellipse(b[0] + r() * w, b[1] + r() * h, 1 + r() * 6, .5 + r() * 2, 0, 0, 7); c.fill(); }
+  if (L.wear !== 'scarred') return;
+  for (i = 0; i < 3 + w * .08; i++) { var x = b[0] + r() * w, y = b[1] + r() * h, rr = h * (.06 + r() * .12), g = c.createRadialGradient(x, y, 0, x, y, rr);
+    g.addColorStop(0, 'rgba(0,0,0,.75)'); g.addColorStop(.4, 'rgba(20,12,6,.45)'); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.beginPath(); c.arc(x, y, rr, 0, 7); c.fill(); }
+  for (i = 0; i < 2 + w * .05; i++) { var px = b[0] + r() * w, py = b[1] + r() * h, s = h * (.08 + r() * .08); c.fillStyle = lvA(lvShade(L.hull, .25), .9); c.fillRect(px, py, s * 1.4, s); c.strokeStyle = 'rgba(0,0,0,.5)'; c.lineWidth = PX; c.strokeRect(px, py, s * 1.4, s);
+    c.fillStyle = 'rgba(220,215,190,.5)'; [[0, 0], [1, 0], [0, 1], [1, 1]].forEach(function (q) { c.fillRect(px + q[0] * s * 1.3, py + q[1] * s * .9, PX * 1.4, PX * 1.4); }); }
+  c.strokeStyle = 'rgba(220,215,190,.18)'; c.lineWidth = PX; for (i = 0; i < 6 + w * .1; i++) { var sx = b[0] + r() * w, sy = b[1] + r() * h; c.beginPath(); c.moveTo(sx, sy); c.lineTo(sx + (r() - .3) * h * .4, sy + (r() - .5) * h * .15); c.stroke(); }
+}
+function lvMarks(c, b, L) {
+  var w = b[2] - b[0], h = b[3] - b[1];
+  if (L.roundel) [b[1] + h * .2, b[3] - h * .2].forEach(function (y) { var x = b[0] + w * .22, rr = Math.min(h * .1, 2.4);
+    c.fillStyle = L.lights; c.beginPath(); c.arc(x, y, rr, 0, 7); c.fill(); c.fillStyle = L.trim; c.beginPath(); c.arc(x, y, rr * .68, 0, 7); c.fill(); c.fillStyle = L.accent; c.beginPath(); c.arc(x, y, rr * .32, 0, 7); c.fill(); });
+  if (L.tally) { var k = Math.min(h * .05, 1); c.fillStyle = L.lights; for (var i = 0; i < 7; i++) c.fillRect(b[0] + w * .62 + i * k * 1.8, b[1] + h * .12, k, k * 2.6); }
+}
+
+// ---- the plate painter, now reading the livery ----
+var _lvHull = hull;
+hull = function (c, pts, o) {
+  if (LV_PLAIN) return _lvHull(c, pts, o);
+  o = o || {}; var L = LIV, M = LV_MAT[L.mat] || LV_MAT.plate;
+  var p = poly(pts), b = bbox(pts), r = dice(o.seed || 1), h = b[3] - b[1], t = o.tone || 0;
+  var main = o.main || o.tone === -.12 || (o.tone === -.04 && o.wear === 3);
+  var deck = (o.shadow || 0) >= 10 && t > .08;
+  if (deck && L.deck === 'smooth') { t = -.06; o = Object.assign({}, o, { shadow: 2 }); }
+  var base = M.base(L.hull);
+  c.save(); if (o.shadow !== false) { c.shadowColor = 'rgba(0,0,0,.7)'; c.shadowBlur = o.shadow || 10; c.shadowOffsetY = 3; }
+  var g = c.createLinearGradient(0, b[1], 0, b[3]); M.stops.forEach(function (s) { g.addColorStop(s[0], lvShade(base, s[1] + t * .9)); });
+  c.fillStyle = g; c.fill(p); c.restore();
+  c.save(); c.clip(p);
+  M.paint(c, b, r, o.plate || 7, L);
+  if (deck && L.deck === 'ribbed') { var s = (o.plate || 7) * .45; for (var x = b[0] + s; x < b[2]; x += s) { c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(x, b[1], PX * 2, h); c.fillStyle = 'rgba(255,250,230,.12)'; c.fillRect(x + PX * 2, b[1], PX, h); } }
+  if (main) { lvPattern(c, p, b, r, L); lvWear(c, b, r, L); lvMarks(c, b, L); }
+  else if (L.wear !== 'fresh') for (var i = 0; i < (o.wear || h * .4) * (L.wear === 'scarred' ? 2 : 1); i++) { c.fillStyle = 'rgba(20,16,10,' + (.05 + r() * .12) + ')'; c.beginPath(); c.ellipse(b[0] + r() * (b[2] - b[0]), b[1] + r() * h, 1 + r() * 6, .5 + r() * 2, 0, 0, 7); c.fill(); }
+  if (M.grain) { c.globalAlpha = Math.min(1, M.grain * (L.wear === 'fresh' ? .4 : 1)); c.fillStyle = grain(c); c.fill(p); c.globalAlpha = 1; }
+  c.restore();
+  c.strokeStyle = 'rgba(225,220,195,.22)'; c.lineWidth = PX * 1.4; c.save(); c.translate(0, PX * 1.2); c.clip(p); c.stroke(p); c.restore();
+  // very dark hulls keep a faint lit edge so they never vanish against space (plan, section 6)
+  var lum = lvRGB(base).reduce(function (a, v) { return a + v; }, 0) / 765;
+  if (lum < .12) { c.strokeStyle = 'rgba(200,210,230,.18)'; c.lineWidth = PX * 1.6; c.stroke(p); }
+  if (L.echo && main) { c.save(); c.shadowColor = L.echo.glow; c.shadowBlur = 6; c.strokeStyle = lvA(L.echo.glow, .6); c.lineWidth = PX * 1.4; c.stroke(p); c.restore(); }
+  c.strokeStyle = COL.line; c.lineWidth = PX * 2; c.stroke(p); return p;
+};
+// small craft: the round steel body is now just the 'Round steel' material when the livery leaves the default plate on
+var _lvSteel = htSteel;
+htSteel = function (c, pts, o) {
+  if (LV_PLAIN) return _lvSteel(c, pts, o);
+  var keep = LIV.mat; if (keep === 'plate') LIV.mat = 'steel';
+  var P = hull(c, pts, { seed: o.seed, plate: (o.ring || 1.2) * 1.8, tone: 0, shadow: o.shadow || 8, main: true, wear: 1 });
+  LIV.mat = keep; return P;
+};
+// stripes and hazard bands follow the pattern and markings
+var _lvStripe = stripe, _lvHazard = hazard;
+stripe = function (c, x0, x1, y, w) { if (LIV.pat === 'flank') _lvStripe(c, x0, x1, y, w); };
+hazard = function (c, x, y, w, h) { if (LIV.hazard) _lvHazard(c, x, y, w, h); };
+// the Echo's lettering: unreadable script in place of our registry
+var _lvStencil = stencil;
+stencil = function (c, txt, x, y, size, a) {
+  if (!LIV.echo) return _lvStencil(c, txt, x, y, size, a);
+  var r = dice(htSeed(txt)); c.save(); c.strokeStyle = lvA(LIV.echo.glow, .55); c.lineWidth = size * .09; c.lineCap = 'round';
+  for (var i = 0; i < txt.length + 2; i++) { var gx = x + i * size * .7; c.beginPath(); for (var k = 0; k < 3; k++) { var ax = gx + r() * size * .5, ay = y + (r() - .5) * size * .8; k ? c.lineTo(ax, ay) : c.moveTo(ax, ay); } c.stroke(); if (r() < .5) { c.beginPath(); c.arc(gx + size * .25, y - size * .3, size * .08, 0, 7); c.stroke(); } }
+  c.restore();
+};
+
+// ---- mix-and-match pieces ----
+var LV_NOSE = { cone: 'Pointed cone', ram: 'Blunt ram', split: 'Split prow', wedge: 'Armoured wedge' };
+var _lvNose = htNose;
+htNose = function (pts, len, keep) {
+  var n = LIV.nose;
+  if (n === 'ram') return _lvNose(pts, len * .4, .86);
+  if (n === 'wedge') return _lvNose(pts, len * 2.2, 0);
+  if (n === 'split') {
+    var R = _lvNose(pts, len * 1.15, .55); if (!R.tip || Math.abs(R.tip.y1 - R.tip.y0) < .5) return R;
+    for (var i = 0; i < R.pts.length - 1; i++) { var a = R.pts[i], b = R.pts[i + 1];
+      if (Math.abs(a[0] - R.tip.x) < 1e-6 && Math.abs(b[0] - R.tip.x) < 1e-6) { R.pts.splice(i + 1, 0, [R.tip.x - (R.tip.x - R.tip.x0) * .6, (a[1] + b[1]) / 2]); break; } }
+    return R;
+  }
+  return _lvNose(pts, len, keep);
+};
+var LV_BRIDGE = { block: 'Armoured block', tower: 'Tall tower', dome: 'Sunken dome' };
+var _lvBridge = htBridge;
+htBridge = function (c, p, seed, u) {
+  if (LIV.bridge === 'tower') {
+    _lvBridge(c, p, seed, u);
+    var x = p.x + p.w * .18, y = p.y + p.h * .26, w = p.w * .5, h = p.h * .48;
+    htBlock(c, x, y, w, h, seed + 3, .34, u);
+    c.fillStyle = 'rgba(8,10,12,.95)'; c.fillRect(x + w * .74, y + h * .18, w * .12, h * .64);
+    for (var i = 0; i < 3; i++) { c.fillStyle = COL.win; c.fillRect(x + w * .77, y + h * (.24 + i * .2), w * .06, h * .12); }
+    var cx = x + w * .3, cy = y + h * .5, rr = Math.min(w, h) * .22; c.strokeStyle = '#8a8b7f'; c.lineWidth = PX * 1.4; c.beginPath(); c.arc(cx, cy, rr, 0, 7); c.stroke(); c.beginPath(); c.moveTo(cx - rr, cy); c.lineTo(cx + rr, cy); c.stroke();
+    return;
+  }
+  if (LIV.bridge === 'dome') {
+    var cx2 = p.x + p.w / 2, cy2 = p.y + p.h / 2, R = Math.min(p.w, p.h) * .44;
+    c.save(); c.shadowColor = 'rgba(0,0,0,.7)'; c.shadowBlur = 6; var g = c.createRadialGradient(cx2 - R * .35, cy2 - R * .35, 0, cx2, cy2, R);
+    g.addColorStop(0, lvShade(LIV.hull, .6)); g.addColorStop(.6, lvShade(LIV.hull, 0)); g.addColorStop(1, lvShade(LIV.hull, -.6)); c.fillStyle = g; c.beginPath(); c.arc(cx2, cy2, R, 0, 7); c.fill(); c.restore();
+    c.strokeStyle = COL.line; c.lineWidth = PX * 1.6; c.stroke();
+    var n = Math.max(8, Math.round(R * 6)); for (var k = 0; k < n; k++) { var a = -1.1 + k / (n - 1) * 2.2; c.fillStyle = k % 3 ? '#bfe3ff' : COL.win; c.fillRect(cx2 + Math.cos(a) * R * .72 - PX, cy2 + Math.sin(a) * R * .72 - PX, PX * 2.2, PX * 2.2); }
+    c.fillStyle = '#ff4a3a'; c.fillRect(cx2 - R * .2 - PX, cy2 - PX, PX * 2, PX * 2);
+    return;
+  }
+  _lvBridge(c, p, seed, u);
+};
+var LV_DRIVE = { bell: 'Plain bell', shroud: 'Shrouded', ring: 'Ringed bell' };
+var _lvEngine = engine;   // (the drive looks themselves are in livery-more.js, lvDriveWrap: they wrap both this and the game's plain bell)
+
+// ---- the Echo looks, laid over a finished drawing (like the game's v126.0 echo looks, but taking the player's glow colour) ----
+var LV_ECHO = { E1: 'Dark Mirror', E2: 'Scrap Twist', E3: 'Negative', E4: 'Afterimage', E5: 'Black Root' };
+function lvTint(cv, col, a) { var o = document.createElement('canvas'); o.width = cv.width; o.height = cv.height; var c = o.getContext('2d'); c.drawImage(cv, 0, 0); c.globalCompositeOperation = 'source-in'; c.fillStyle = col; c.globalAlpha = a == null ? 1 : a; c.fillRect(0, 0, o.width, o.height); return o; }
+function lvEchoLook(cv, look, glow, seed) {
+  var o = document.createElement('canvas'); o.width = cv.width; o.height = cv.height; var c = o.getContext('2d'), k = cv.width / 400;
+  var halo = lvTint(cv, glow);
+  c.filter = 'blur(' + Math.max(2, 4 * k) + 'px)'; c.globalAlpha = look === 'E3' ? .35 : .75; c.drawImage(halo, 0, 0); c.globalAlpha = 1; c.filter = 'none';
+  if (look === 'E1') { c.filter = 'grayscale(.9) brightness(.75) contrast(1.35)'; c.drawImage(cv, 0, 0); c.filter = 'none'; c.globalCompositeOperation = 'overlay'; c.globalAlpha = .35; c.drawImage(halo, 0, 0); }
+  else if (look === 'E2') { c.save(); c.translate(o.width / 2, o.height / 2); c.transform(1, .05, -.04, 1, 0, 0); c.translate(-o.width / 2, -o.height / 2); c.filter = 'sepia(.9) saturate(1.5) hue-rotate(-18deg) brightness(.55) contrast(1.35)'; c.drawImage(cv, 0, 0); c.restore(); }
+  else if (look === 'E3') { c.filter = 'invert(1) hue-rotate(180deg) brightness(.85) contrast(1.1)'; c.drawImage(cv, 0, 0); }
+  else if (look === 'E4') { var other = '#ff4a5a'; c.globalAlpha = .4; c.drawImage(halo, -10 * k, -4 * k); c.drawImage(lvTint(cv, other), 10 * k, 4 * k); c.globalAlpha = 1; c.filter = 'brightness(.75) saturate(.5)'; c.drawImage(cv, 0, 0); }
+  else if (look === 'E5') { c.filter = 'brightness(.6) saturate(.35)'; c.drawImage(cv, 0, 0); c.filter = 'none';
+    var rt = document.createElement('canvas'); rt.width = o.width; rt.height = o.height; var q = rt.getContext('2d'), r = dice(seed || 5);
+    q.drawImage(cv, 0, 0); q.globalCompositeOperation = 'source-in'; q.fillStyle = 'rgba(0,0,0,0)'; q.fillRect(0, 0, 1, 1);
+    var R = document.createElement('canvas'); R.width = o.width; R.height = o.height; var rc = R.getContext('2d'); rc.strokeStyle = glow; rc.shadowColor = glow; rc.shadowBlur = 5 * k; rc.lineCap = 'round';
+    for (var i = 0; i < 14; i++) { var x = o.width * r(), y = o.height * r(), a = r() * 7; rc.lineWidth = (1.5 + r() * 2) * k; rc.beginPath(); rc.moveTo(x, y); for (var s = 0; s < 9; s++) { a += (r() - .5) * 1.2; x += Math.cos(a) * 14 * k; y += Math.sin(a) * 14 * k; rc.lineTo(x, y); } rc.stroke(); }
+    var M = document.createElement('canvas'); M.width = o.width; M.height = o.height; var mc = M.getContext('2d'); mc.drawImage(cv, 0, 0); mc.globalCompositeOperation = 'source-in'; mc.drawImage(R, 0, 0);
+    c.globalCompositeOperation = 'lighter'; c.globalAlpha = .8; c.drawImage(M, 0, 0); }
+  c.filter = 'none'; c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
+  return o;
+}
+
+// ---- alien ships: the same colour wheel and a material overlay on their own art ----
+var LV_ALIEN_MAT = {
+  delver: { basalt: 'Basalt', ironore: 'Iron ore', crystal: 'Crystal veined', polished: 'Polished stone' },
+  sylph:  { chrome: 'Mirror chrome', lacquer: 'Black lacquer', pearl: 'Pearl', gilt: 'Brushed gold' },
+  swarm:  { wet: 'Wet gloss', leather: 'Leathery hide', glass: 'Glass sac', bonearmour: 'Bone armour' }
+};
+function lvAlienMat(cv, mat, L, seed) {
+  var o = document.createElement('canvas'); o.width = cv.width; o.height = cv.height; var c = o.getContext('2d'), W = o.width, H = o.height, r = dice(seed || 3), i, s = Math.max(1, W / 300);
+  c.drawImage(cv, 0, 0); c.globalCompositeOperation = 'source-atop';
+  if (mat === 'basalt') { for (i = 0; i < W * H / 30; i++) { c.fillStyle = r() < .5 ? 'rgba(0,0,0,.25)' : 'rgba(255,255,255,.08)'; c.fillRect(r() * W, r() * H, s, s); } c.fillStyle = 'rgba(10,10,14,.25)'; c.fillRect(0, 0, W, H); }
+  else if (mat === 'ironore') { for (i = 0; i < W * H / 2400; i++) { c.fillStyle = 'rgba(' + (150 + r() * 60) + ',' + (60 + r() * 40) + ',20,' + (.15 + r() * .3) + ')'; c.beginPath(); c.arc(r() * W, r() * H, s * (1 + r() * 2.5), 0, 7); c.fill(); } }
+  else if (mat === 'crystal') { lvCracks(c, [0, 0, W, H], r, 18, lvA(L.lights, .8), s * 1.4, 6 * s); }
+  else if (mat === 'polished') { var g = c.createLinearGradient(0, 0, W, H); g.addColorStop(.3, 'rgba(255,255,255,0)'); g.addColorStop(.5, 'rgba(255,255,255,.28)'); g.addColorStop(.7, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(0, 0, W, H); }
+  else if (mat === 'chrome') { var gc = c.createLinearGradient(0, 0, W * .25, H); gc.addColorStop(0, 'rgba(255,255,255,.4)'); gc.addColorStop(.3, 'rgba(255,255,255,.05)'); gc.addColorStop(.48, 'rgba(10,14,20,.4)'); gc.addColorStop(.6, 'rgba(255,255,255,.12)'); gc.addColorStop(.75, 'rgba(255,255,255,.45)'); gc.addColorStop(1, 'rgba(30,34,40,.25)'); c.fillStyle = gc; c.fillRect(0, 0, W, H); }   // (v222.0) it had no recipe yet
+  else if (mat === 'lacquer') { c.globalCompositeOperation = 'source-atop'; c.fillStyle = 'rgba(5,5,8,.55)'; c.fillRect(0, 0, W, H); var g2 = c.createLinearGradient(0, 0, 0, H); g2.addColorStop(.2, 'rgba(255,255,255,.18)'); g2.addColorStop(.32, 'rgba(255,255,255,0)'); c.fillStyle = g2; c.fillRect(0, 0, W, H); }
+  else if (mat === 'pearl') { var g3 = c.createLinearGradient(0, 0, W, H); ['rgba(255,230,240,.35)', 'rgba(220,240,255,.35)', 'rgba(240,255,230,.35)', 'rgba(255,240,220,.35)'].forEach(function (col, k) { g3.addColorStop(k / 3, col); }); c.fillStyle = g3; c.fillRect(0, 0, W, H); }
+  else if (mat === 'gilt') { c.globalCompositeOperation = 'source-atop'; c.fillStyle = 'rgba(200,150,60,.35)'; c.fillRect(0, 0, W, H); c.strokeStyle = 'rgba(255,230,170,.12)'; c.lineWidth = s; for (i = 0; i < H; i += 2 * s) { c.beginPath(); c.moveTo(0, i); c.lineTo(W, i); c.stroke(); } }
+  else if (mat === 'wet') { for (i = 0; i < 40; i++) { var x = r() * W, y = r() * H, rr = s * (2 + r() * 6), g4 = c.createRadialGradient(x, y, 0, x, y, rr); g4.addColorStop(0, 'rgba(255,255,255,.5)'); g4.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g4; c.beginPath(); c.arc(x, y, rr, 0, 7); c.fill(); } }
+  else if (mat === 'leather') { for (i = 0; i < W * H / 120; i++) { c.fillStyle = 'rgba(20,10,5,' + r() * .3 + ')'; c.beginPath(); c.ellipse(r() * W, r() * H, s * (2 + r() * 5), s * (1 + r() * 3), r() * 3, 0, 7); c.fill(); } }
+  else if (mat === 'glass') { c.globalCompositeOperation = 'destination-out'; c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(0, 0, W, H); c.globalCompositeOperation = 'source-atop'; c.fillStyle = lvA(L.lights, .18); c.fillRect(0, 0, W, H); }
+  else if (mat === 'bonearmour') { for (i = 0; i < 26; i++) { c.fillStyle = 'rgba(220,210,185,' + (.25 + r() * .3) + ')'; c.beginPath(); c.ellipse(r() * W, r() * H, s * (4 + r() * 8), s * (2 + r() * 4), r() * 3, 0, 7); c.fill(); } }
+  c.globalCompositeOperation = 'source-over'; return o;
+}
+// recolour a finished alien picture toward a hull colour, keeping its light and shade (used for the Swarm, whose colours are not yet a list)
+function lvRecolour(cv, hullCol, amount) {
+  var o = document.createElement('canvas'); o.width = cv.width; o.height = cv.height; var c = o.getContext('2d');
+  c.drawImage(cv, 0, 0); c.globalCompositeOperation = 'color'; c.globalAlpha = amount == null ? .85 : amount; c.fillStyle = hullCol; c.fillRect(0, 0, o.width, o.height);
+  c.globalAlpha = 1; c.globalCompositeOperation = 'destination-in'; c.drawImage(cv, 0, 0); return o;
+}
+
+// =====================================================================
+// LIVERY, round 2 (12 Nov 2026). Alex: "lets add a few more options for the patterns and for the pieces to mix and match.
+// you can really push the style and shape of alternate pieces. lets add alternate fins as well (especially for the 3 smallest ship types)."
+// Loaded after livery.js; adds to its lists and wraps its painters.
+// =====================================================================
+LIV_DEFAULT.fins = 'stock';
+var LV_CUR = null;   // the ship being drawn now (so fins can find the hull's edges)
+var _lvHullTop = hullTop;
+hullTop = function (c, info, opts) { LV_CUR = info; return _lvHullTop(c, info, opts); };
+
+// ---- more patterns ----
+Object.assign(LV_PAT, { invasion: 'Invasion bands', splinter: 'Splinter camo', tiger: 'Tiger stripes', checker: 'Checker nose', twin: 'Racing stripes', quartered: 'Quartered', bolt: 'Lightning flash' });
+var _lvPattern2 = lvPattern;
+lvPattern = function (c, p, b, r, L) {
+  var w = b[2] - b[0], h = b[3] - b[1], mid = (b[1] + b[3]) / 2, col = L.trim, dark = lvShade(L.hull, -.7), light = lvShade(L.hull, .45), i, x;
+  if (L.pat === 'invasion') { var bw = Math.max(w * .03, h * .09); for (i = 0; i < 5; i++) { c.fillStyle = i % 2 ? dark : col; c.fillRect(b[0] + w * .3 + i * bw, b[1], bw, h); } }
+  else if (L.pat === 'splinter') { var s = h * .45; for (x = b[0] - s; x < b[2]; x += s * .55) for (var y = b[1] - s * .3; y < b[3]; y += s * .5) { var t = r(); if (t < .3) continue; c.fillStyle = t < .55 ? lvA(col, .8) : t < .8 ? lvA(dark, .75) : lvA(light, .6);
+      c.beginPath(); c.moveTo(x + r() * s * .3, y); c.lineTo(x + s * (.5 + r() * .5), y + r() * s * .2); c.lineTo(x + s * (.3 + r() * .5), y + s * (.4 + r() * .3)); if (r() < .5) c.lineTo(x, y + s * (.3 + r() * .3)); c.closePath(); c.fill(); } }
+  else if (L.pat === 'tiger') { c.fillStyle = lvA(dark, .85); for (x = b[0] + w * .05; x < b[2] - w * .1; x += h * (.25 + r() * .2)) [b[1], b[3]].forEach(function (ey, k) { var sd = k ? -1 : 1, len = h * (.25 + r() * .25), ww = h * (.05 + r() * .05);
+      c.beginPath(); c.moveTo(x, ey); c.lineTo(x + ww * 2, ey); c.lineTo(x + ww * 3 + len * .3, ey + sd * len * .5); c.lineTo(x + ww * 1.2 + len * .5, ey + sd * len); c.lineTo(x + ww + len * .25, ey + sd * len * .45); c.closePath(); c.fill(); }); }
+  else if (L.pat === 'checker') { var q = h / 8; for (x = 0; x < 4; x++) for (var yy = 0; yy < 8; yy++) { c.fillStyle = (x + yy) % 2 ? col : dark; c.fillRect(b[0] + w * .74 + x * q, b[1] + yy * q, q, q); } }
+  else if (L.pat === 'twin') { var sw = h * .07; c.fillStyle = col; c.fillRect(b[0], mid - sw * 2.2, w, sw); c.fillRect(b[0], mid + sw * 1.2, w, sw); c.fillStyle = L.accent; c.fillRect(b[0], mid - sw * .25, w, sw * .5); }
+  else if (L.pat === 'quartered') { c.fillStyle = lvA(col, .85); c.fillRect(b[0], b[1], w / 2, h / 2); c.fillRect(b[0] + w / 2, mid, w / 2, h / 2); }
+  else if (L.pat === 'bolt') { c.strokeStyle = col; c.lineWidth = h * .07; c.lineJoin = 'miter'; [b[1] + h * .2, b[3] - h * .2].forEach(function (y0) { c.beginPath(); c.moveTo(b[0] + w * .08, y0); var n = 6;
+      for (var k = 1; k <= n; k++) c.lineTo(b[0] + w * (.08 + .7 * k / n), y0 + (k % 2 ? 1 : -1) * h * .07 * (y0 < mid ? 1 : -1)); c.stroke(); }); }
+  else _lvPattern2(c, p, b, r, L);
+};
+
+// ---- bolder noses ----
+Object.assign(LV_NOSE, { needle: 'Needle lance', claw: 'Forked claw', hammer: 'Hammerhead', bulb: 'Bulb bow', ziggurat: 'Stepped prow' });
+function lvAtTip(R, ins) {   // put new points between the nose's two front corners
+  for (var i = 0; i < R.pts.length - 1; i++) { var a = R.pts[i], b = R.pts[i + 1];
+    if (Math.abs(a[0] - R.tip.x) < 1e-6 && Math.abs(b[0] - R.tip.x) < 1e-6) { R.pts.splice.apply(R.pts, [i + 1, 0].concat(ins)); return R; } }
+  for (i = 0; i < R.pts.length; i++) if (Math.abs(R.pts[i][0] - R.tip.x) < 1e-6) { R.pts.splice.apply(R.pts, [i + 1, 0].concat(ins)); return R; }
+  return R;
+}
+var _lvNose2 = htNose;
+htNose = function (pts, len, keep) {
+  var n = LIV.nose, R, tx, y0, y1, m, hh;
+  if (n === 'needle') { R = _lvNose(pts, len * .6, .3); if (!R.tip) return R; tx = R.tip.x; m = (R.tip.y0 + R.tip.y1) / 2; hh = Math.max(.12, (R.tip.y1 - R.tip.y0) * .18);
+    var sp = Math.max(1.6, len * 1.4); lvAtTip(R, [[tx, m - hh], [tx + sp, m - .03], [tx + sp, m + .03], [tx, m + hh]]); return R; }
+  if (n === 'claw') { R = _lvNose(pts, len * .35, .9); if (!R.tip) return R; tx = R.tip.x; y0 = R.tip.y0; y1 = R.tip.y1; hh = y1 - y0; var cl = Math.max(1.2, len * 1.1);
+    lvAtTip(R, [[tx + cl, y0 + hh * .08], [tx + cl * .85, y0 + hh * .2], [tx + cl * .15, y0 + hh * .34], [tx - cl * .25, y0 + hh * .5], [tx + cl * .15, y1 - hh * .34], [tx + cl * .85, y1 - hh * .2], [tx + cl, y1 - hh * .08]]); return R; }
+  if (n === 'hammer') { R = _lvNose(pts, len * .4, .9); if (!R.tip) return R; tx = R.tip.x; y0 = R.tip.y0; y1 = R.tip.y1; hh = (y1 - y0) * .3; var hl = Math.max(.8, len * .6);
+    lvAtTip(R, [[tx, y0 - hh], [tx + hl * .7, y0 - hh], [tx + hl, y0 - hh * .4], [tx + hl, y1 + hh * .4], [tx + hl * .7, y1 + hh], [tx, y1 + hh]]); return R; }
+  if (n === 'bulb') { R = _lvNose(pts, len * .25, .92); if (!R.tip) return R; tx = R.tip.x; m = (R.tip.y0 + R.tip.y1) / 2; var rr = (R.tip.y1 - R.tip.y0) / 2 * 1.08, arc = [];
+    for (var k = 1; k < 12; k++) { var a = -Math.PI / 2 + k / 12 * Math.PI; arc.push([tx + Math.cos(a) * rr * 1.1, m + Math.sin(a) * rr]); } lvAtTip(R, arc); return R; }
+  if (n === 'ziggurat') { R = _lvNose(pts, len * .2, .95); if (!R.tip) return R; tx = R.tip.x; y0 = R.tip.y0; y1 = R.tip.y1; hh = (y1 - y0); var st = Math.max(.5, len * .45);
+    lvAtTip(R, [[tx + st, y0], [tx + st, y0 + hh * .2], [tx + st * 2, y0 + hh * .2], [tx + st * 2, y0 + hh * .38], [tx + st * 2.8, y0 + hh * .38], [tx + st * 2.8, y1 - hh * .38], [tx + st * 2, y1 - hh * .38], [tx + st * 2, y1 - hh * .2], [tx + st, y1 - hh * .2], [tx + st, y1]]); return R; }
+  return _lvNose2(pts, len, keep);
+};
+// (v223.0) the fit rule for noses (see lvFitFins): a nose that reaches into a panel's strip is drawn shorter, at worst as the stock cone
+var _lvNoseFit = htNose;
+htNose = function (pts, len, keep) {
+  var R = _lvNoseFit(pts, len, keep), info = LV_CUR;
+  if (!info || !info.keep || !info.keep.length || !LIV.nose || LIV.nose === 'cone') return R;
+  var stock = _lvNose(pts, len, keep), clash = function (Q) { return info.keep.some(function (B) { return lvHits(Q.pts, B) && !lvHits(stock.pts, B); }); };
+  if (!clash(R)) return R;
+  var fs = [.75, .5, .3];
+  for (var i = 0; i < fs.length; i++) { var Q = _lvNoseFit(pts, len * fs[i], keep); if (!clash(Q)) return Q; }
+  return stock;
+};
+
+// ---- bolder bridges ----
+Object.assign(LV_BRIDGE, { citadel: 'Stacked citadel', spire: 'Sensor spire', canopy: 'Glass canopy', twin: 'Twin pods' });
+function lvWinRow(c, x, y0, y1, w, n) { c.fillStyle = 'rgba(8,10,12,.95)'; c.fillRect(x, y0, w, y1 - y0); for (var i = 0; i < n; i++) { c.fillStyle = i % 3 ? '#bfe3ff' : COL.win; c.fillRect(x + w * .2, y0 + (i + .2) * (y1 - y0) / n, w * .6, (y1 - y0) / n * .6); } }
+var _lvBridge2 = htBridge;
+htBridge = function (c, p, seed, u) {
+  var b = LIV.bridge, x = p.x, y = p.y, w = p.w, h = p.h, i;
+  if (b === 'citadel') { for (i = 0; i < 3; i++) { var k = i * .16, bx = x + w * k * .6, by = y + h * k, bw = w * (1 - k * 1.6), bh = h * (1 - k * 2); htBlock(c, bx, by, bw, bh, seed + i, .14 + i * .14, u); lvWinRow(c, bx + bw * .8, by + bh * .2, by + bh * .8, bw * .08, Math.max(3, Math.round(bh))); }
+    c.fillStyle = '#ff4a3a'; c.fillRect(x + w * .3 - PX, y + h * .5 - PX, PX * 2, PX * 2); return; }
+  if (b === 'spire') { var m = y + h / 2; htBlock(c, x + w * .1, y + h * .3, w * .45, h * .4, seed, .2, u);
+    c.strokeStyle = '#9a9b8f'; c.lineWidth = Math.max(PX * 1.5, h * .06); c.beginPath(); c.moveTo(x + w * .02, m); c.lineTo(x + w * .98, m); c.stroke();   // (v223.0) the mast stays on its own part (it used to reach over its neighbours)
+    c.lineWidth = Math.max(PX, h * .035); for (i = 0; i < 4; i++) { var cx = x + w * (.12 + i * .25), sp = h * (.45 - i * .07); c.beginPath(); c.moveTo(cx, m - sp); c.lineTo(cx, m + sp); c.stroke(); c.fillStyle = i % 2 ? '#ff4a3a' : LIV.lights; c.fillRect(cx - PX * 1.2, m - sp - PX * 1.2, PX * 2.4, PX * 2.4); c.fillRect(cx - PX * 1.2, m + sp - PX * 1.2, PX * 2.4, PX * 2.4); }
+    lvWinRow(c, x + w * .45, y + h * .36, y + h * .64, w * .07, 3); return; }
+  if (b === 'canopy') { var P = cut(x + w * .05, y + h * .1, x + w * .95, y + h * .9, Math.min(w, h) * .4); c.save(); c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = 5;
+    var g = c.createLinearGradient(x, y, x + w, y + h); g.addColorStop(0, '#5a8aa8'); g.addColorStop(.4, '#10202c'); g.addColorStop(1, '#1d3442'); c.fillStyle = g; c.fill(poly(P)); c.restore();
+    c.save(); c.clip(poly(P)); c.strokeStyle = lvShade(LIV.hull, .1); c.lineWidth = Math.max(PX * 1.5, w * .04); c.beginPath(); for (i = 1; i < 4; i++) { c.moveTo(x + w * i / 4, y); c.lineTo(x + w * i / 4, y + h); } c.moveTo(x, y + h / 2); c.lineTo(x + w, y + h / 2); c.stroke();
+    c.fillStyle = 'rgba(220,240,255,.25)'; c.beginPath(); c.moveTo(x + w * .15, y + h * .15); c.lineTo(x + w * .5, y + h * .15); c.lineTo(x + w * .2, y + h * .5); c.fill(); c.restore();
+    c.strokeStyle = COL.line; c.lineWidth = PX * 2; c.stroke(poly(P)); return; }
+  if (b === 'twin') { var ph = h * .36; [y + h * .04, y + h - ph - h * .04].forEach(function (py, j) { htBlock(c, x + w * .1, py, w * .8, ph, seed + j, .2, u); lvWinRow(c, x + w * .74, py + ph * .2, py + ph * .8, w * .07, 3); });
+    c.fillStyle = lvShade(LIV.hull, -.2); c.fillRect(x + w * .4, y + h * .38, w * .2, h * .24); c.strokeStyle = COL.line; c.lineWidth = PX; c.strokeRect(x + w * .4, y + h * .38, w * .2, h * .24); return; }
+  _lvBridge2(c, p, seed, u);
+};
+
+// ---- bolder drives ----
+Object.assign(LV_DRIVE, { cluster: 'Nozzle cluster', flared: 'Flared trumpet', square: 'Square vectored', spike: 'Aerospike' });
+// lvDriveWrap draws one drive in the livery's look. base(c, x, y, h, k) draws a plain bell (with its plume on the art sheet; the game draws plumes
+// itself, so there base is the plume-less htBell). k numbers the nozzles of a cluster.
+function lvDriveWrap(c, x, y, h, base) {
+  var d = LIV.drive, len = h * 1.1, P, g, k;
+  if (d === 'cluster') { for (k = -1; k <= 1; k++) base(c, x, y + k * h * .34, h * .36, k + 1); return; }
+  base(c, x, y, h, 0);
+  if (d === 'shroud') { P = poly([[x + h * .15, y - h * .62], [x - len * 1.05, y - h * .62], [x - len * 1.15, y - h * .5], [x - len * 1.15, y + h * .5], [x - len * 1.05, y + h * .62], [x + h * .15, y + h * .62]]);
+    g = c.createLinearGradient(0, y - h * .62, 0, y + h * .62); g.addColorStop(0, lvShade(LIV.hull, -.3)); g.addColorStop(.35, lvShade(LIV.hull, .35)); g.addColorStop(1, lvShade(LIV.hull, -.55)); c.fillStyle = g; c.fill(P); c.strokeStyle = COL.line; c.lineWidth = PX * 1.5; c.stroke(P);
+    c.fillStyle = '#07080a'; c.fillRect(x - len * 1.15, y - h * .38, PX * 3, h * .76); c.fillStyle = LIV.trim; c.fillRect(x - len * .6, y - h * .62, len * .12, h * 1.24); }
+  else if (d === 'ring') { c.strokeStyle = LIV.accent; c.lineWidth = h * .09; for (k = 1; k <= 3; k++) { var xr = x - len * k / 3.6; c.beginPath(); c.moveTo(xr, y - h * (.32 + .18 * k / 3.6) - h * .06); c.lineTo(xr, y + h * (.32 + .18 * k / 3.6) + h * .06); c.stroke(); } }
+  else if (d === 'flared') { P = poly([[x, y - h * .28], [x - len * .7, y - h * .4], [x - len * 1.2, y - h * .8], [x - len * 1.2, y + h * .8], [x - len * .7, y + h * .4], [x, y + h * .28]]);
+    g = c.createLinearGradient(0, y - h * .8, 0, y + h * .8); g.addColorStop(0, '#2a2b27'); g.addColorStop(.4, '#9a9b8f'); g.addColorStop(1, '#151613'); c.fillStyle = g; c.fill(P); c.strokeStyle = COL.line; c.lineWidth = PX * 1.5; c.stroke(P);
+    c.fillStyle = 'rgba(120,190,255,.55)'; c.fillRect(x - len * 1.2, y - h * .7, PX * 3, h * 1.4); }
+  else if (d === 'square') { c.fillStyle = lvShade(LIV.hull, -.15); c.fillRect(x - len * 1.05, y - h * .55, len * 1.15, h * 1.1); c.strokeStyle = COL.line; c.lineWidth = PX * 1.5; c.strokeRect(x - len * 1.05, y - h * .55, len * 1.15, h * 1.1);
+    c.fillStyle = '#07080a'; c.fillRect(x - len * 1.05, y - h * .42, len * .25, h * .84); c.strokeStyle = '#8a8b7f'; c.lineWidth = PX * 1.4; for (var v = 0; v < 4; v++) { var vy = y - h * .32 + v * h * .21; c.beginPath(); c.moveTo(x - len * 1.05, vy); c.lineTo(x - len * .8, vy + h * .05); c.stroke(); }
+    c.fillStyle = LIV.accent; c.fillRect(x - len * .5, y - h * .55, len * .08, h * 1.1); }
+  else if (d === 'spike') { P = poly([[x, y - h * .5], [x - len * 1.6, y - h * .06], [x - len * 1.6, y + h * .06], [x, y + h * .5]]); g = c.createLinearGradient(0, y - h * .5, 0, y + h * .5); g.addColorStop(0, '#3a3b35'); g.addColorStop(.5, '#d0d0c4'); g.addColorStop(1, '#2a2b27');
+    c.fillStyle = g; c.fill(P); c.strokeStyle = COL.line; c.lineWidth = PX * 1.4; c.stroke(P); c.strokeStyle = 'rgba(140,200,255,.8)'; c.lineWidth = PX * 2; c.beginPath(); c.moveTo(x - len * .1, y - h * .5); c.lineTo(x - len * 1.6, y - h * .1); c.moveTo(x - len * .1, y + h * .5); c.lineTo(x - len * 1.6, y + h * .1); c.stroke(); }
+}
+engine = function (c, x, y, h, t, i) { lvDriveWrap(c, x, y, h, function (cc, xx, yy, hh, k) { _lvEngine(cc, xx, yy, hh, t, k ? (i || 0) * 3 + k : i); }); };   // (v221.0) the first bell keeps its own flicker (the titans' plain drives unchanged)
+var _lvBell = htBell;
+htBell = function (c, x, y, h) { lvDriveWrap(c, x, y, h, function (cc, xx, yy, hh) { _lvBell(cc, xx, yy, hh); }); };
+
+// ---- more deck styles (drawn by the plate painter on the raised decks) ----
+var LV_DECK = { stepped: 'Stepped slabs', smooth: 'Smooth deck', ribbed: 'Ribbed spine', trench: 'Centre trench', casemate: 'Casemates' };
+var _lvHull2 = hull;
+hull = function (c, pts, o) {
+  var P = _lvHull2(c, pts, o); o = o || {};
+  var deck = (o.shadow || 0) >= 10 && (o.tone || 0) > .08;
+  if (deck && (LIV.deck === 'trench' || LIV.deck === 'casemate')) {
+    var b = bbox(pts), h = b[3] - b[1], w = b[2] - b[0], m = (b[1] + b[3]) / 2; c.save(); c.clip(P);
+    if (LIV.deck === 'trench') { c.fillStyle = 'rgba(5,6,7,.92)'; c.fillRect(b[0], m - h * .11, w, h * .22); c.fillStyle = 'rgba(255,255,255,.08)'; c.fillRect(b[0], m + h * .11 - PX, w, PX);
+      for (var x = b[0] + h * .2; x < b[2]; x += h * .35) { c.fillStyle = LIV.lights; c.fillRect(x, m - PX, PX * 2, PX * 2); } }
+    else { var s = Math.max(1, h * .2); for (var x2 = b[0] + s; x2 < b[2] - s * 2; x2 += s * 2.2) [b[1] + h * .1, b[3] - h * .1 - s * .8].forEach(function (yy, j) { htBlock(c, x2, yy, s * 1.6, s * .8, x2 * 7 + j, .3, s * .3); }); }
+    c.restore();
+  }
+  return P;
+};
+
+// ---- fins (Alex: especially for the 3 smallest ship types) ----
+var LV_FIN = { stock: 'Stock', none: 'No fins', delta: 'Swept delta', canard: 'Canards', forward: 'Forward swept', cranked: 'Cranked arrow', vtail: 'Splayed tail', cross: 'Cross fins', heat: 'Heat fins', spikes: 'Spike vanes', ring: 'Tail bar' };
+// each fin: points as [share of the ship's length from the stern, share of the fin span out from the hull edge]
+var LV_FIN_SHAPES = {
+  delta:   [[[.58, 0], [.14, 1], [.04, 1], [.06, 0]]],
+  canard:  [[[.8, 0], [.7, .5], [.65, .5], [.68, 0]], [[.2, 0], [.08, .55], [.03, .55], [.05, 0]]],
+  forward: [[[.36, 0], [.46, .85], [.4, .9], [.14, 0]]],
+  cranked: [[[.52, 0], [.3, .5], [.16, 1.1], [.06, 1.1], [.09, .5], [.08, 0]]],
+  vtail:   [[[.2, 0], [.02, .95], [-.05, .95], [.08, 0]]],
+  cross:   [[[.22, 0], [.1, .85], [.05, .85], [.1, 0]], [[.46, 0], [.37, .6], [.33, .6], [.36, 0]]],
+  spikes:  [[[.26, 0], [.14, .75], [.2, 0]], [[.44, 0], [.32, .75], [.38, 0]], [[.62, 0], [.5, .75], [.56, 0]]],
+  ring:    [[[.13, -.1], [.13, .65], [.035, .65], [.035, -.1]]]
+};
+function lvEdge(info, fx, sd) { var x = Math.max(0, Math.min(info.W - 1, Math.floor(fx * info.W))), y;
+  if (sd < 0) { for (y = 0; y < info.H; y++) if (info.cells[y][x] === '#') return y; return 0; }
+  for (y = info.H - 1; y >= 0; y--) if (info.cells[y][x] === '#') return y + 1; return info.H; }
+function lvFinSpan(info) { var k = { tiny: 1, small: .8, corvette: .55, frigate: .4, destroyer: .32 }[info.cls] || .22; return Math.max(1, info.H * k); }
+// ---- (v223.0) THE FIT RULE. Alex 12 Nov: "there are a few clipping/fit issues ... try to find a subtle fix". A piece that reaches past the hull (fins, the
+// bigger noses) must keep out of the strips where the ship's radiator and solar panels fold out (the game draws those over the picture, so a fin there
+// had a panel and its boom drawn across it). The game passes those strips as info.keep: boxes [x0, y0, x1, y1] in grid squares. A fin that would sit
+// in one slides along the hull to the nearest clear place, and is drawn smaller if it must be (both sides together when it can, so the pair stays
+// even); only a fin with no clear place at half size is left off;
+// a nose that would reach into one is drawn shorter, and at worst as the stock cone (which is where the hull always ends).
+function lvInPoly(P, x, y) { var o = false; for (var i = 0, j = P.length - 1; i < P.length; j = i++) { var a = P[i], b = P[j]; if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) o = !o; } return o; }
+function lvHits(P, B) {   // does polygon P overlap box B (shrunk a little, so only a real overlap counts)?
+  var x0 = B[0] + .12, y0 = B[1] + .12, x1 = B[2] - .12, y1 = B[3] - .12, i, k;
+  if (x1 <= x0 || y1 <= y0) return false;
+  for (i = 0; i < P.length; i++) { var a = P[i], b = P[(i + 1) % P.length]; for (k = 0; k <= 10; k++) { var x = a[0] + (b[0] - a[0]) * k / 10, y = a[1] + (b[1] - a[1]) * k / 10; if (x > x0 && x < x1 && y > y0 && y < y1) return true; } }
+  return [[x0, y0], [x1, y0], [x0, y1], [x1, y1], [(x0 + x1) / 2, (y0 + y1) / 2]].some(function (q) { return lvInPoly(P, q[0], q[1]); });
+}
+function lvClear(P, info) { return !(info.keep && info.keep.some(function (B) { return lvHits(P, B); })); }
+// one fin's outline on side sd, moved along the hull by dx squares and made smaller by sc (1 = full size; its stern end stays put)
+function lvFinPts(info, f, shape, sd, dx, S, sc) {
+  var W = info.W; sc = sc || 1;
+  if (f === 'heat') { var x0 = shape * W + dx, ey = lvEdge(info, x0 / W, sd), ww = Math.max(.25, W * .025); return [[x0, ey - sd * .3], [x0, ey + sd * S * .6 * sc], [x0 + ww, ey + sd * S * .6 * sc], [x0 + ww, ey - sd * .3]]; }
+  var back = Math.min.apply(null, shape.map(function (q) { return q[0]; })), sx = function (v) { return (back + (v - back) * sc) * W + dx; };
+  var roots = shape.filter(function (q) { return q[1] <= 0; }), rx = roots.reduce(function (a, q) { return a + q[0]; }, 0) / Math.max(1, roots.length), ey2 = lvEdge(info, sx(rx) / W, sd);
+  return shape.map(function (q) { return [sx(q[0]), ey2 + sd * (q[1] <= 0 ? q[1] * S - .35 : q[1] * S * sc)]; });
+}
+// where each fin goes: { j: [outline on side -1, outline on side 1] } (null on a side where it does not fit)
+function lvFitFins(info, f, S) {
+  var W = info.W, list = f === 'heat' ? [.22, .31, .4, .49] : (LV_FIN_SHAPES[f] || []), out = [], steps = [0];
+  for (var k = 1; k <= 12; k++) steps.push(-k * W * .025, k * W * .025);   // nearest first, back toward the stern before forward
+  list.forEach(function (shape) {
+    var ok = function (dx, sd, sc) { var P = lvFinPts(info, f, shape, sd, dx, S, sc), xs = P.map(function (q) { return q[0]; }); return Math.min.apply(null, xs) >= -W * .08 && Math.max.apply(null, xs) <= W * .85 && lvClear(P, info) ? P : null; };
+    // full size first (moved as little as it can be), then smaller; the pair together first, then each side on its own
+    var sizes = [1, .8, .65, .5], pair = null, z, i;
+    for (z = 0; z < sizes.length && !pair; z++) for (i = 0; i < steps.length && !pair; i++) { var a = ok(steps[i], -1, sizes[z]), b = a && ok(steps[i], 1, sizes[z]); if (a && b) pair = [a, b]; }
+    if (!pair) pair = [-1, 1].map(function (sd) { for (var z = 0; z < sizes.length; z++) for (var i = 0; i < steps.length; i++) { var P = ok(steps[i], sd, sizes[z]); if (P) return P; } return null; });
+    out.push(pair);
+  });
+  return out;
+}
+function lvDrawFins(c, info) {
+  var f = LIV.fins, S = lvFinSpan(info), seed = htSeed(info.name), fits = lvFitFins(info, f, S);
+  fits.forEach(function (pair, j) {
+    [-1, 1].forEach(function (sd, si) {
+      var pts = pair[si]; if (!pts) return;
+      if (f === 'heat') { var P = poly(pts), x0 = pts[0][0], ww = pts[2][0] - x0;
+        var g = c.createLinearGradient(x0, 0, x0 + ww, 0); g.addColorStop(0, '#4a1a14'); g.addColorStop(.5, '#b8452e'); g.addColorStop(1, '#3a120e'); c.fillStyle = g; c.fill(P); c.strokeStyle = COL.line; c.lineWidth = PX * 1.2; c.stroke(P); return; }
+      hull(c, pts, { seed: seed + j * 5 + (sd > 0 ? 1 : 0), plate: Math.max(.8, S * .5), tone: .05, shadow: 5, wear: 2 }); bevel(c, pts, Math.max(.15, S * .06));
+      if (j === 0 && f !== 'ring' && f !== 'spikes') { var tip = pts[1]; c.fillStyle = LIV.trim; c.fillRect(tip[0] - S * .06, tip[1] - S * .06, S * .12, S * .12); }
+    });
+  });
+}
+var _lvWing = htWing;
+htWing = function (c, x0, x1, y, span, sweep, tipC, o) { if (LIV.fins !== 'stock') return [[x0, y], [x1, y], [x1, y], [x0, y]]; return _lvWing(c, x0, x1, y, span, sweep, tipC, o); };
+var _lvDrives = htDrives;
+htDrives = function (c, parts, opts) { _lvDrives(c, parts, opts); if (LV_CUR && LIV.fins !== 'stock' && LIV.fins !== 'none') lvDrawFins(c, LV_CUR); };
+
+// ---- for the game: the named presets, the wear names, and a cleaner that keeps only known picks ----
+var LV_WEAR = { fresh: 'Factory fresh', worn: 'Service worn', scarred: 'Battle scarred' };
+var LV_PRESETS = [
+  ['Navy service', {}],
+  ['Arctic', { hull: '#c4c8cb', trim: '#b0262a', accent: '#22252a', lights: '#ffe9b0' }],
+  ['Desert', { hull: '#9c8458', trim: '#2a2620', accent: '#e2c98a', lights: '#ffd98a' }],
+  ['Black and gold', { hull: '#1c1c1f', trim: '#c9a227', accent: '#c9a227', lights: '#ffe6a0' }],
+  ['Olive drab', { hull: '#4b5233', trim: '#e6e1cf', accent: '#d9b23a', lights: '#f3dfa0' }],
+  ['Crimson guard', { hull: '#5e1c1e', trim: '#e8e2cf', accent: '#c9a227', lights: '#ffd0a0' }]
+];
+// A livery as the game keeps it: only the picks that differ from the plain look, each checked against the lists (anything unknown is dropped).
+// Returns null for the plain look.
+// (v220.0) echoOk: an Echo livery, which may also carry the Echo's own look and glow ({ echo: { look: 'E1'..'E5', glow: '#rrggbb' } }) and the Echo materials.
+function lvClean(o, echoOk) {
+  if (!o || typeof o !== 'object') return null;
+  var out = {}, n = 0, hex = /^#[0-9a-fA-F]{6}$/;
+  ['hull', 'trim', 'accent', 'lights'].forEach(function (k) { if (typeof o[k] === 'string' && hex.test(o[k]) && o[k].toLowerCase() !== LIV_DEFAULT[k]) { out[k] = o[k].toLowerCase(); n++; } });
+  var lists = { mat: LV_MAT, pat: LV_PAT, wear: LV_WEAR, nose: LV_NOSE, bridge: LV_BRIDGE, drive: LV_DRIVE, deck: LV_DECK, fins: LV_FIN };
+  Object.keys(lists).forEach(function (k) { var v = o[k]; if (typeof v === 'string' && lists[k][v] && !(k === 'mat' && LV_MAT[v].echo && !echoOk) && v !== LIV_DEFAULT[k]) { out[k] = v; n++; } });
+  ['hazard', 'roundel', 'tally'].forEach(function (k) { if (typeof o[k] === 'boolean' && o[k] !== LIV_DEFAULT[k]) { out[k] = o[k]; n++; } });
+  if (echoOk && o.echo && typeof o.echo === 'object' && LV_ECHO[o.echo.look]) { out.echo = { look: o.echo.look, glow: typeof o.echo.glow === 'string' && hex.test(o.echo.glow) ? o.echo.glow.toLowerCase() : '#b28cff' }; n++; }
+  return n ? out : null;
+}
+// A short name for a livery, for picture keys ('' for the plain look)
+function lvKey(o) { var c = lvClean(o, true); if (!c) return ''; return Object.keys(c).sort().map(function (k) { return k + '=' + (k === 'echo' ? c.echo.look + c.echo.glow : c[k]); }).join(','); }
+// (v220.0) the Echo livery a player starts with: the Dark Mirror look, a violet glow, obsidian glass
+var LV_ECHO_DEFAULT = { echo: { look: 'E1', glow: '#b28cff' }, mat: 'obsidian' };
+
+// (v221.0) THE TITANS' LIVERY. Alex 12 Nov 2026: titans get liveries too. A titan wears the livery's colours, material, pattern, wear and markings
+// (and, for the player's own Echo, its Echo look); the pieces (nose, bridge, drives, deck, fins) are the small ships' own and stay off a titan,
+// whose whole body is its own drawing. The main hull (the plates the pattern, wear and markings go on) is each titan's big stacked plates: the ones
+// drawn with a deep shadow (each tier, so the pattern shows on the top one too), and the Halo's and Wheel's great rings.
+var LV_TITAN_NO = ['nose', 'bridge', 'drive', 'deck', 'fins'];
+function lvTitanClean(o, echoOk) {
+  var c = lvClean(o, echoOk); if (!c) return null;
+  LV_TITAN_NO.forEach(function (k) { delete c[k]; });
+  return Object.keys(c).length ? c : null;
+}
+var _lvTitanHull = hull;
+hull = function (c, pts, o) {
+  if (!LV_PLAIN && o && !o.main && (o.shadow || 0) >= 14) o = Object.assign({}, o, { main: true });
+  return _lvTitanHull(c, pts, o);
+};
+// the great rings (the Halo, the Wheel's rim) have their own painter: the plain ring first (its shadow and spokes), then the livery's plate over it
+var _lvTitanRing = ringHull;
+ringHull = function (c, cx, R, r, o) {
+  var p = _lvTitanRing(c, cx, R, r, o);
+  if (LV_PLAIN) return p;
+  o = o || {};
+  c.save(); c.clip(p, 'evenodd');
+  hull(c, ngon(cx, 0, R, o.n1 || 16), { seed: o.seed || 1, plate: 6, tone: o.tone || 0, shadow: false, main: true });
+  c.restore();
+  c.strokeStyle = COL.line; c.lineWidth = PX * 2.2; c.stroke(poly(ngon(cx, 0, r, o.n2 || 12)));
+  return p;
+};
+// ---- the livery ends ----
 
 // What the game calls: one still picture of a titan (its frame's key: colossus, halo, rake, wheel, slip, flattop).
 // longest: the picture's longest side at most this many pixels. Returns { canvas, s (pixels an art square), pivX, pivY (the build grid's middle, the
@@ -8429,15 +8938,22 @@ var STILL_AT = 2.2;   // the moment of the art's animation the still picture sho
 window.TITAN_ART = {
   version: '1.0',
   keys: TITANS.map(function (T) { return T.k; }),
-  picture: function (key, longest, gridW, gridH) {
+  // (v221.0) the livery a titan can wear: the same picks as our ships' minus the pieces (HULL_ART.livery has the lists); clean(o) keeps those
+  livery: { pieces: false, clean: function (o) { return lvTitanClean(o, true); } },
+  // (v221.0) livery (optional): the titan drawn in it (colours, material, pattern, wear, markings; an Echo livery's look laid over it too).
+  //   Leave it out, or a livery with nothing in it, and the titan is drawn exactly as before.
+  picture: function (key, longest, gridW, gridH, livery) {
     var T = BYKEY[key]; if (!T) return null;
+    var L = lvTitanClean(livery, true);
     var x0 = T.span[0], x1 = T.span[1], cy = T.cy || 0, y0 = cy - T.tall / 2, y1 = cy + T.tall / 2;
     var s = Math.min(6, longest / Math.max(x1 - x0, y1 - y0));
     var cv = document.createElement('canvas'); cv.width = Math.ceil((x1 - x0) * s); cv.height = Math.ceil((y1 - y0) * s);
     var c = cv.getContext('2d');
     PX = 1 / s;
     c.setTransform(s, 0, 0, s, -x0 * s, -y0 * s);
-    T.draw(c, STILL_AT);
+    livSet(L);
+    try { T.draw(c, STILL_AT); } finally { livSet({}); }
+    if (L && L.echo) cv = lvEchoLook(cv, L.echo.look, L.echo.glow, htSeed(key));   // (v221.0) the player's own Echo: its look over the finished titan (the same size)
     var gw = gridW || 0, gh = gridH || 0;
     return { canvas: cv, s: s, pivX: (T.gx + gw / 2 - x0) * s, pivY: (T.gy + gh / 2 - y0) * s, bodyW: gw > 0 ? gw * s : cv.width };
   },
@@ -9381,6 +9897,7 @@ function lvAlienMat(cv, mat, L, seed) {
   else if (mat === 'ironore') { for (i = 0; i < W * H / 2400; i++) { c.fillStyle = 'rgba(' + (150 + r() * 60) + ',' + (60 + r() * 40) + ',20,' + (.15 + r() * .3) + ')'; c.beginPath(); c.arc(r() * W, r() * H, s * (1 + r() * 2.5), 0, 7); c.fill(); } }
   else if (mat === 'crystal') { lvCracks(c, [0, 0, W, H], r, 18, lvA(L.lights, .8), s * 1.4, 6 * s); }
   else if (mat === 'polished') { var g = c.createLinearGradient(0, 0, W, H); g.addColorStop(.3, 'rgba(255,255,255,0)'); g.addColorStop(.5, 'rgba(255,255,255,.28)'); g.addColorStop(.7, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(0, 0, W, H); }
+  else if (mat === 'chrome') { var gc = c.createLinearGradient(0, 0, W * .25, H); gc.addColorStop(0, 'rgba(255,255,255,.4)'); gc.addColorStop(.3, 'rgba(255,255,255,.05)'); gc.addColorStop(.48, 'rgba(10,14,20,.4)'); gc.addColorStop(.6, 'rgba(255,255,255,.12)'); gc.addColorStop(.75, 'rgba(255,255,255,.45)'); gc.addColorStop(1, 'rgba(30,34,40,.25)'); c.fillStyle = gc; c.fillRect(0, 0, W, H); }   // (v222.0) it had no recipe yet
   else if (mat === 'lacquer') { c.globalCompositeOperation = 'source-atop'; c.fillStyle = 'rgba(5,5,8,.55)'; c.fillRect(0, 0, W, H); var g2 = c.createLinearGradient(0, 0, 0, H); g2.addColorStop(.2, 'rgba(255,255,255,.18)'); g2.addColorStop(.32, 'rgba(255,255,255,0)'); c.fillStyle = g2; c.fillRect(0, 0, W, H); }
   else if (mat === 'pearl') { var g3 = c.createLinearGradient(0, 0, W, H); ['rgba(255,230,240,.35)', 'rgba(220,240,255,.35)', 'rgba(240,255,230,.35)', 'rgba(255,240,220,.35)'].forEach(function (col, k) { g3.addColorStop(k / 3, col); }); c.fillStyle = g3; c.fillRect(0, 0, W, H); }
   else if (mat === 'gilt') { c.globalCompositeOperation = 'source-atop'; c.fillStyle = 'rgba(200,150,60,.35)'; c.fillRect(0, 0, W, H); c.strokeStyle = 'rgba(255,230,170,.12)'; c.lineWidth = s; for (i = 0; i < H; i += 2 * s) { c.beginPath(); c.moveTo(0, i); c.lineTo(W, i); c.stroke(); } }
@@ -9448,6 +9965,17 @@ htNose = function (pts, len, keep) {
     lvAtTip(R, [[tx + st, y0], [tx + st, y0 + hh * .2], [tx + st * 2, y0 + hh * .2], [tx + st * 2, y0 + hh * .38], [tx + st * 2.8, y0 + hh * .38], [tx + st * 2.8, y1 - hh * .38], [tx + st * 2, y1 - hh * .38], [tx + st * 2, y1 - hh * .2], [tx + st, y1 - hh * .2], [tx + st, y1]]); return R; }
   return _lvNose2(pts, len, keep);
 };
+// (v223.0) the fit rule for noses (see lvFitFins): a nose that reaches into a panel's strip is drawn shorter, at worst as the stock cone
+var _lvNoseFit = htNose;
+htNose = function (pts, len, keep) {
+  var R = _lvNoseFit(pts, len, keep), info = LV_CUR;
+  if (!info || !info.keep || !info.keep.length || !LIV.nose || LIV.nose === 'cone') return R;
+  var stock = _lvNose(pts, len, keep), clash = function (Q) { return info.keep.some(function (B) { return lvHits(Q.pts, B) && !lvHits(stock.pts, B); }); };
+  if (!clash(R)) return R;
+  var fs = [.75, .5, .3];
+  for (var i = 0; i < fs.length; i++) { var Q = _lvNoseFit(pts, len * fs[i], keep); if (!clash(Q)) return Q; }
+  return stock;
+};
 
 // ---- bolder bridges ----
 Object.assign(LV_BRIDGE, { citadel: 'Stacked citadel', spire: 'Sensor spire', canopy: 'Glass canopy', twin: 'Twin pods' });
@@ -9458,8 +9986,8 @@ htBridge = function (c, p, seed, u) {
   if (b === 'citadel') { for (i = 0; i < 3; i++) { var k = i * .16, bx = x + w * k * .6, by = y + h * k, bw = w * (1 - k * 1.6), bh = h * (1 - k * 2); htBlock(c, bx, by, bw, bh, seed + i, .14 + i * .14, u); lvWinRow(c, bx + bw * .8, by + bh * .2, by + bh * .8, bw * .08, Math.max(3, Math.round(bh))); }
     c.fillStyle = '#ff4a3a'; c.fillRect(x + w * .3 - PX, y + h * .5 - PX, PX * 2, PX * 2); return; }
   if (b === 'spire') { var m = y + h / 2; htBlock(c, x + w * .1, y + h * .3, w * .45, h * .4, seed, .2, u);
-    c.strokeStyle = '#9a9b8f'; c.lineWidth = Math.max(PX * 1.5, h * .06); c.beginPath(); c.moveTo(x - w * .4, m); c.lineTo(x + w * 1.1, m); c.stroke();
-    c.lineWidth = Math.max(PX, h * .035); for (i = 0; i < 4; i++) { var cx = x - w * .25 + i * w * .38, sp = h * (.45 - i * .07); c.beginPath(); c.moveTo(cx, m - sp); c.lineTo(cx, m + sp); c.stroke(); c.fillStyle = i % 2 ? '#ff4a3a' : LIV.lights; c.fillRect(cx - PX * 1.2, m - sp - PX * 1.2, PX * 2.4, PX * 2.4); c.fillRect(cx - PX * 1.2, m + sp - PX * 1.2, PX * 2.4, PX * 2.4); }
+    c.strokeStyle = '#9a9b8f'; c.lineWidth = Math.max(PX * 1.5, h * .06); c.beginPath(); c.moveTo(x + w * .02, m); c.lineTo(x + w * .98, m); c.stroke();   // (v223.0) the mast stays on its own part (it used to reach over its neighbours)
+    c.lineWidth = Math.max(PX, h * .035); for (i = 0; i < 4; i++) { var cx = x + w * (.12 + i * .25), sp = h * (.45 - i * .07); c.beginPath(); c.moveTo(cx, m - sp); c.lineTo(cx, m + sp); c.stroke(); c.fillStyle = i % 2 ? '#ff4a3a' : LIV.lights; c.fillRect(cx - PX * 1.2, m - sp - PX * 1.2, PX * 2.4, PX * 2.4); c.fillRect(cx - PX * 1.2, m + sp - PX * 1.2, PX * 2.4, PX * 2.4); }
     lvWinRow(c, x + w * .45, y + h * .36, y + h * .64, w * .07, 3); return; }
   if (b === 'canopy') { var P = cut(x + w * .05, y + h * .1, x + w * .95, y + h * .9, Math.min(w, h) * .4); c.save(); c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = 5;
     var g = c.createLinearGradient(x, y, x + w, y + h); g.addColorStop(0, '#5a8aa8'); g.addColorStop(.4, '#10202c'); g.addColorStop(1, '#1d3442'); c.fillStyle = g; c.fill(poly(P)); c.restore();
@@ -9492,7 +10020,7 @@ function lvDriveWrap(c, x, y, h, base) {
   else if (d === 'spike') { P = poly([[x, y - h * .5], [x - len * 1.6, y - h * .06], [x - len * 1.6, y + h * .06], [x, y + h * .5]]); g = c.createLinearGradient(0, y - h * .5, 0, y + h * .5); g.addColorStop(0, '#3a3b35'); g.addColorStop(.5, '#d0d0c4'); g.addColorStop(1, '#2a2b27');
     c.fillStyle = g; c.fill(P); c.strokeStyle = COL.line; c.lineWidth = PX * 1.4; c.stroke(P); c.strokeStyle = 'rgba(140,200,255,.8)'; c.lineWidth = PX * 2; c.beginPath(); c.moveTo(x - len * .1, y - h * .5); c.lineTo(x - len * 1.6, y - h * .1); c.moveTo(x - len * .1, y + h * .5); c.lineTo(x - len * 1.6, y + h * .1); c.stroke(); }
 }
-engine = function (c, x, y, h, t, i) { lvDriveWrap(c, x, y, h, function (cc, xx, yy, hh, k) { _lvEngine(cc, xx, yy, hh, t, (i || 0) * 3 + k); }); };
+engine = function (c, x, y, h, t, i) { lvDriveWrap(c, x, y, h, function (cc, xx, yy, hh, k) { _lvEngine(cc, xx, yy, hh, t, k ? (i || 0) * 3 + k : i); }); };   // (v221.0) the first bell keeps its own flicker (the titans' plain drives unchanged)
 var _lvBell = htBell;
 htBell = function (c, x, y, h) { lvDriveWrap(c, x, y, h, function (cc, xx, yy, hh) { _lvBell(cc, xx, yy, hh); }); };
 
@@ -9529,14 +10057,49 @@ function lvEdge(info, fx, sd) { var x = Math.max(0, Math.min(info.W - 1, Math.fl
   if (sd < 0) { for (y = 0; y < info.H; y++) if (info.cells[y][x] === '#') return y; return 0; }
   for (y = info.H - 1; y >= 0; y--) if (info.cells[y][x] === '#') return y + 1; return info.H; }
 function lvFinSpan(info) { var k = { tiny: 1, small: .8, corvette: .55, frigate: .4, destroyer: .32 }[info.cls] || .22; return Math.max(1, info.H * k); }
+// ---- (v223.0) THE FIT RULE. Alex 12 Nov: "there are a few clipping/fit issues ... try to find a subtle fix". A piece that reaches past the hull (fins, the
+// bigger noses) must keep out of the strips where the ship's radiator and solar panels fold out (the game draws those over the picture, so a fin there
+// had a panel and its boom drawn across it). The game passes those strips as info.keep: boxes [x0, y0, x1, y1] in grid squares. A fin that would sit
+// in one slides along the hull to the nearest clear place, and is drawn smaller if it must be (both sides together when it can, so the pair stays
+// even); only a fin with no clear place at half size is left off;
+// a nose that would reach into one is drawn shorter, and at worst as the stock cone (which is where the hull always ends).
+function lvInPoly(P, x, y) { var o = false; for (var i = 0, j = P.length - 1; i < P.length; j = i++) { var a = P[i], b = P[j]; if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) o = !o; } return o; }
+function lvHits(P, B) {   // does polygon P overlap box B (shrunk a little, so only a real overlap counts)?
+  var x0 = B[0] + .12, y0 = B[1] + .12, x1 = B[2] - .12, y1 = B[3] - .12, i, k;
+  if (x1 <= x0 || y1 <= y0) return false;
+  for (i = 0; i < P.length; i++) { var a = P[i], b = P[(i + 1) % P.length]; for (k = 0; k <= 10; k++) { var x = a[0] + (b[0] - a[0]) * k / 10, y = a[1] + (b[1] - a[1]) * k / 10; if (x > x0 && x < x1 && y > y0 && y < y1) return true; } }
+  return [[x0, y0], [x1, y0], [x0, y1], [x1, y1], [(x0 + x1) / 2, (y0 + y1) / 2]].some(function (q) { return lvInPoly(P, q[0], q[1]); });
+}
+function lvClear(P, info) { return !(info.keep && info.keep.some(function (B) { return lvHits(P, B); })); }
+// one fin's outline on side sd, moved along the hull by dx squares and made smaller by sc (1 = full size; its stern end stays put)
+function lvFinPts(info, f, shape, sd, dx, S, sc) {
+  var W = info.W; sc = sc || 1;
+  if (f === 'heat') { var x0 = shape * W + dx, ey = lvEdge(info, x0 / W, sd), ww = Math.max(.25, W * .025); return [[x0, ey - sd * .3], [x0, ey + sd * S * .6 * sc], [x0 + ww, ey + sd * S * .6 * sc], [x0 + ww, ey - sd * .3]]; }
+  var back = Math.min.apply(null, shape.map(function (q) { return q[0]; })), sx = function (v) { return (back + (v - back) * sc) * W + dx; };
+  var roots = shape.filter(function (q) { return q[1] <= 0; }), rx = roots.reduce(function (a, q) { return a + q[0]; }, 0) / Math.max(1, roots.length), ey2 = lvEdge(info, sx(rx) / W, sd);
+  return shape.map(function (q) { return [sx(q[0]), ey2 + sd * (q[1] <= 0 ? q[1] * S - .35 : q[1] * S * sc)]; });
+}
+// where each fin goes: { j: [outline on side -1, outline on side 1] } (null on a side where it does not fit)
+function lvFitFins(info, f, S) {
+  var W = info.W, list = f === 'heat' ? [.22, .31, .4, .49] : (LV_FIN_SHAPES[f] || []), out = [], steps = [0];
+  for (var k = 1; k <= 12; k++) steps.push(-k * W * .025, k * W * .025);   // nearest first, back toward the stern before forward
+  list.forEach(function (shape) {
+    var ok = function (dx, sd, sc) { var P = lvFinPts(info, f, shape, sd, dx, S, sc), xs = P.map(function (q) { return q[0]; }); return Math.min.apply(null, xs) >= -W * .08 && Math.max.apply(null, xs) <= W * .85 && lvClear(P, info) ? P : null; };
+    // full size first (moved as little as it can be), then smaller; the pair together first, then each side on its own
+    var sizes = [1, .8, .65, .5], pair = null, z, i;
+    for (z = 0; z < sizes.length && !pair; z++) for (i = 0; i < steps.length && !pair; i++) { var a = ok(steps[i], -1, sizes[z]), b = a && ok(steps[i], 1, sizes[z]); if (a && b) pair = [a, b]; }
+    if (!pair) pair = [-1, 1].map(function (sd) { for (var z = 0; z < sizes.length; z++) for (var i = 0; i < steps.length; i++) { var P = ok(steps[i], sd, sizes[z]); if (P) return P; } return null; });
+    out.push(pair);
+  });
+  return out;
+}
 function lvDrawFins(c, info) {
-  var f = LIV.fins, S = lvFinSpan(info), W = info.W, seed = htSeed(info.name);
-  [-1, 1].forEach(function (sd) {
-    if (f === 'heat') { for (var k = 0; k < 4; k++) { var fx = .22 + k * .09, ey = lvEdge(info, fx, sd), x0 = fx * W, ww = Math.max(.25, W * .025), P = poly([[x0, ey - sd * .3], [x0, ey + sd * S * .6], [x0 + ww, ey + sd * S * .6], [x0 + ww, ey - sd * .3]]);
-        var g = c.createLinearGradient(x0, 0, x0 + ww, 0); g.addColorStop(0, '#4a1a14'); g.addColorStop(.5, '#b8452e'); g.addColorStop(1, '#3a120e'); c.fillStyle = g; c.fill(P); c.strokeStyle = COL.line; c.lineWidth = PX * 1.2; c.stroke(P); } return; }
-    (LV_FIN_SHAPES[f] || []).forEach(function (shape, j) {
-      var roots = shape.filter(function (q) { return q[1] <= 0; }), rx = roots.reduce(function (a, q) { return a + q[0]; }, 0) / Math.max(1, roots.length), ey = lvEdge(info, rx, sd);
-      var pts = shape.map(function (q) { return [q[0] * W, ey + sd * (q[1] <= 0 ? q[1] * S - .35 : q[1] * S)]; });
+  var f = LIV.fins, S = lvFinSpan(info), seed = htSeed(info.name), fits = lvFitFins(info, f, S);
+  fits.forEach(function (pair, j) {
+    [-1, 1].forEach(function (sd, si) {
+      var pts = pair[si]; if (!pts) return;
+      if (f === 'heat') { var P = poly(pts), x0 = pts[0][0], ww = pts[2][0] - x0;
+        var g = c.createLinearGradient(x0, 0, x0 + ww, 0); g.addColorStop(0, '#4a1a14'); g.addColorStop(.5, '#b8452e'); g.addColorStop(1, '#3a120e'); c.fillStyle = g; c.fill(P); c.strokeStyle = COL.line; c.lineWidth = PX * 1.2; c.stroke(P); return; }
       hull(c, pts, { seed: seed + j * 5 + (sd > 0 ? 1 : 0), plate: Math.max(.8, S * .5), tone: .05, shadow: 5, wear: 2 }); bevel(c, pts, Math.max(.15, S * .06));
       if (j === 0 && f !== 'ring' && f !== 'spikes') { var tip = pts[1]; c.fillStyle = LIV.trim; c.fillRect(tip[0] - S * .06, tip[1] - S * .06, S * .12, S * .12); }
     });
@@ -9559,17 +10122,21 @@ var LV_PRESETS = [
 ];
 // A livery as the game keeps it: only the picks that differ from the plain look, each checked against the lists (anything unknown is dropped).
 // Returns null for the plain look.
-function lvClean(o) {
+// (v220.0) echoOk: an Echo livery, which may also carry the Echo's own look and glow ({ echo: { look: 'E1'..'E5', glow: '#rrggbb' } }) and the Echo materials.
+function lvClean(o, echoOk) {
   if (!o || typeof o !== 'object') return null;
   var out = {}, n = 0, hex = /^#[0-9a-fA-F]{6}$/;
   ['hull', 'trim', 'accent', 'lights'].forEach(function (k) { if (typeof o[k] === 'string' && hex.test(o[k]) && o[k].toLowerCase() !== LIV_DEFAULT[k]) { out[k] = o[k].toLowerCase(); n++; } });
   var lists = { mat: LV_MAT, pat: LV_PAT, wear: LV_WEAR, nose: LV_NOSE, bridge: LV_BRIDGE, drive: LV_DRIVE, deck: LV_DECK, fins: LV_FIN };
-  Object.keys(lists).forEach(function (k) { var v = o[k]; if (typeof v === 'string' && lists[k][v] && !(k === 'mat' && LV_MAT[v].echo) && v !== LIV_DEFAULT[k]) { out[k] = v; n++; } });
+  Object.keys(lists).forEach(function (k) { var v = o[k]; if (typeof v === 'string' && lists[k][v] && !(k === 'mat' && LV_MAT[v].echo && !echoOk) && v !== LIV_DEFAULT[k]) { out[k] = v; n++; } });
   ['hazard', 'roundel', 'tally'].forEach(function (k) { if (typeof o[k] === 'boolean' && o[k] !== LIV_DEFAULT[k]) { out[k] = o[k]; n++; } });
+  if (echoOk && o.echo && typeof o.echo === 'object' && LV_ECHO[o.echo.look]) { out.echo = { look: o.echo.look, glow: typeof o.echo.glow === 'string' && hex.test(o.echo.glow) ? o.echo.glow.toLowerCase() : '#b28cff' }; n++; }
   return n ? out : null;
 }
 // A short name for a livery, for picture keys ('' for the plain look)
-function lvKey(o) { var c = lvClean(o); if (!c) return ''; return Object.keys(c).sort().map(function (k) { return k + '=' + c[k]; }).join(','); }
+function lvKey(o) { var c = lvClean(o, true); if (!c) return ''; return Object.keys(c).sort().map(function (k) { return k + '=' + (k === 'echo' ? c.echo.look + c.echo.glow : c[k]); }).join(','); }
+// (v220.0) the Echo livery a player starts with: the Dark Mirror look, a violet glow, obsidian glass
+var LV_ECHO_DEFAULT = { echo: { look: 'E1', glow: '#b28cff' }, mat: 'obsidian' };
 
 // ---- the livery ends ----
 // What the game calls (section 6v, closeHullBuild):
@@ -9583,6 +10150,17 @@ function lvKey(o) { var c = lvClean(o); if (!c) return ''; return Object.keys(c)
 //   (v217.0) THE LIVERY (the ship art customizer): info.livery = { hull, trim, accent, lights (colours '#rrggbb'), mat, pat, wear, nose, bridge, drive,
 //     deck, fins (names from the lists below), hazard, roundel, tally (true/false) }, any of them left out = the plain look. Looks only.
 //   HULL_ART.livery: { defaults, lists (each pick's choices and their names), presets, clean(o), key(o) } for the Bureau's Livery page.
+//   (v220.0) An ECHO livery also carries echo: { look: 'E1'..'E5', glow: '#rrggbb' } and may use the Echo materials: the hull is drawn in it and the
+//     Echo look laid over the finished picture. HULL_ART.livery.echoLooks, echoMats, echoDefault, cleanEcho(o).
+//   (v222.0) HULL_ART.alien: the aliens' colours and materials, laid over their own finished pictures (see below).
+// (v222.0) an alien livery: only a hull colour, a glow colour and that race's own materials
+function lvAlienClean(o, race) {
+  if (!o || typeof o !== 'object' || !LV_ALIEN_MAT[race]) return null;
+  var out = {}, n = 0, hex = /^#[0-9a-fA-F]{6}$/;
+  ['hull', 'lights'].forEach(function (k) { if (typeof o[k] === 'string' && hex.test(o[k])) { out[k] = o[k].toLowerCase(); n++; } });
+  if (typeof o.mat === 'string' && LV_ALIEN_MAT[race][o.mat]) { out.mat = o.mat; n++; }
+  return n ? out : null;
+}
 window.HULL_ART = {
   version: '1.2',
   livery: {
@@ -9591,11 +10169,31 @@ window.HULL_ART = {
       return { mat: mats, pat: LV_PAT, wear: LV_WEAR, nose: LV_NOSE, bridge: LV_BRIDGE, drive: LV_DRIVE, deck: LV_DECK, fins: LV_FIN }; })(),
     presets: LV_PRESETS,
     clean: lvClean,
-    key: lvKey
+    key: lvKey,
+    // (v220.0) the Echo customizer: the Echo's looks, its own materials, the livery a player starts with, and a cleaner that keeps the Echo picks
+    echoLooks: LV_ECHO,
+    echoMats: (function () { var m = {}; Object.keys(LV_MAT).forEach(function (k) { if (LV_MAT[k].echo) m[k] = LV_MAT[k].name; }); return m; })(),
+    echoDefault: LV_ECHO_DEFAULT,
+    cleanEcho: function (o) { return lvClean(o, true); }
+  },
+  // (v222.0) THE ALIENS' COLOURS AND MATERIALS. Their ships are hand-drawn per ship name (UI/alien-art.js, UI/swarm-art.js), so their livery is laid
+  //   over the finished picture: a hull colour (the picture recoloured toward it, keeping its light and shade), a glow colour (lights) and one of the
+  //   race's own materials. alien.mats: { delver: {...}, sylph: {...}, swarm: {...} }; clean(o, race) keeps only those picks (null = their own look);
+  //   key(o, race) a short name for picture keys; paint(canvas, race, o, seed) gives back a new canvas the same size (the same canvas when plain).
+  alien: {
+    mats: LV_ALIEN_MAT,
+    clean: lvAlienClean,
+    key: function (o, race) { var c = lvAlienClean(o, race); return c ? Object.keys(c).sort().map(function (k) { return k + '=' + c[k]; }).join(',') : ''; },
+    paint: function (cv, race, o, seed) {
+      var c = lvAlienClean(o, race); if (!c || !cv) return cv;
+      if (c.hull) cv = lvRecolour(cv, c.hull, .8);
+      if (c.mat) cv = lvAlienMat(cv, c.mat, Object.assign({}, LIV_DEFAULT, c), seed || 3);
+      return cv;
+    }
   },
   picture: function (info, s) {
     // (v217.0) a livery with bigger noses or fins reaches further out, so its picture has wider margins; the plain look keeps the old ones
-    var L = lvClean(info.livery), wide = !!(L && ((L.fins && L.fins !== 'none') || L.nose));
+    var L = lvClean(info.livery, true), wide = !!(L && ((L.fins && L.fins !== 'none') || L.nose));
     var mx = wide ? Math.max(4, info.W * .08 + 2) : 4, x0 = -mx, x1 = info.W + Math.max(4, info.H * (wide ? 1.5 : .9) + 2);
     var y0 = wide ? -info.H * 1.2 - 1.5 : -info.H * .6 - 1, y1 = wide ? info.H * 2.2 + 1.5 : info.H * 1.6 + 1;
     var cv = document.createElement('canvas'); cv.width = Math.ceil((x1 - x0) * s); cv.height = Math.ceil((y1 - y0) * s);
@@ -9605,6 +10203,7 @@ window.HULL_ART = {
     c.setTransform(s, 0, 0, s, -x0 * s, -y0 * s);
     livSet(L);
     try { hullTop(c, info, { t: 0, aim: 0, game: true }); } finally { livSet({}); }
+    if (L && L.echo) cv = lvEchoLook(cv, L.echo.look, L.echo.glow, htSeed(info.name));   // (v220.0) an Echo livery: its look laid over the finished hull (the same size)
     return { canvas: cv, x0: x0 * s, y0: y0 * s };
   },
   rackMissile: function (p, info, s) {
@@ -9617,14 +10216,18 @@ window.HULL_ART = {
     htRack(c, p, info, true, true);
     return { canvas: cv, x0: x0 * s, y0: y0 * s };
   },
-  turret: function (p, s) {
+  // (v220.0) livery (optional): the turret drawn in it (an Echo livery's look laid over it too)
+  turret: function (p, s, livery) {
     var r = Math.min(p.w, p.h) * .46, half = r * 2.1 + .2, w = Math.ceil(half * 2 * s), cv = document.createElement('canvas');
     cv.width = w; cv.height = w;
     var c = cv.getContext('2d');
     if (!c) return null;
     PX = 1 / s;
     c.setTransform(s, 0, 0, s, w / 2, w / 2);
-    htTurretTop(c, p, 0, 0, 0);
+    var L = lvClean(livery, true);
+    livSet(L);
+    try { htTurretTop(c, p, 0, 0, 0); } finally { livSet({}); }
+    if (L && L.echo) cv = lvEchoLook(cv, L.echo.look, L.echo.glow, 7);
     return { canvas: cv, w: w, h: w, piv: [w / 2, w / 2] };
   }
 };
@@ -73952,11 +74555,18 @@ function closeArtEntry(t, look, house, modules) {
   if (!rec || !rec.design) return null;
   const info0 = closeInfoOf(t);
   const hull = !modules && closeHullWanted(info0, house);                                    // (v180.0) our ship with its outer hull on (the look does not change it)
-  const key = closeDesignKey(rec) + '|' + (hull ? 'hull' + (rec.livery ? '|lv:' + livKey(rec.livery) : '') : look) + (house ? '|' + house : '');   // (v78.1) a Sylph ship has one picture per house colour; (v217.0) a new livery makes a new hull picture
+  // (v220.0) the player's own Echo ('echo-mine') wears the player's Echo livery: a change to it makes new pictures (hull or modules); the other Echo looks
+  // and the Sylph houses wear none. (v221.0) A titan wears its livery too (its own art, painted). (v222.0) A Delver or Swarm ship wears the player's
+  // livery for its race when the fight asks for it (livRaceInPlay, section 10e-9c); never a Sylph pilot's ship, which keeps its house's colours.
+  const race = info0 && (info0.alien === 'delver' || info0.alien === 'sylph' || info0.alien === 'swarm') ? info0.alien : '';
+  const lv = house === 'echo-mine' ? echoMyLivery() : house ? null : race ? livRaceInPlay(race) : (rec.livery || null);
+  const titan = !!(info0 && info0.alien === 'titan');
+  const lvk = !lv ? '' : race ? livRaceKey(lv, race) : (hull || titan || house === 'echo-mine') ? livKey(lv) : '';
+  const key = closeDesignKey(rec) + '|' + (hull ? 'hull' : look) + (lvk ? '|lv:' + lvk : '') + (house ? '|' + house : '');   // (v78.1) a Sylph ship has one picture per house colour; (v217.0) a new livery makes a new hull picture
   let e = closeArt.get(key);
   if (e) return e;
   const info = info0;
-  e = { state: info ? 'wait' : 'none', info: info, t: t, look: look, key: key, house: house || '', hull: hull };
+  e = { state: info ? 'wait' : 'none', info: info, t: t, look: look, key: key, house: house || '', hull: hull, livery: lv };
   closeArt.set(key, e);
   if (info) { closeArtQueue.push(e); closeArtPump(); }
   return e;
@@ -74061,13 +74671,16 @@ function closeArtBuild(e, done) {
 // frame squares and the parts that show from outside. The battle still draws, every frame and exactly as before: the turning guns (as hull art turrets),
 // the drive plumes, the radiator and solar panels folding out and back, the pulse drive's plate, the damage marks and the smoke.
 // UI_SETTINGS.closeHull 0 (key H, the Modules button, or the Display box) puts back the module view: every part showing, in the chosen look.
-// Titans and the aliens keep their own whole-body art; the Echo's ships keep their look (drawn over the module view).
+// Titans and the aliens keep their own whole-body art; the Echo's ships keep their look (drawn over the module view), except (v220.0) the player's own Echo,
+// which wears the outer hull in the player's Echo livery (section 6v2, echoMyLivery).
 // ---------------------------------------------------------------------
+// (v220.0) the player's own Echo ('echo-mine') wears the outer hull too, in the player's Echo livery; the other Echo looks keep the module view
 function closeHullWanted(info, house) {
-  return !!(info && !info.alien && UI_SETTINGS.closeHull === 1 && !house && typeof window.HULL_ART !== 'undefined');
+  return !!(info && !info.alien && UI_SETTINGS.closeHull === 1 && (!house || house === 'echo-mine') && typeof window.HULL_ART !== 'undefined');
 }
 // The art's own record of a design: its frame squares, and each part's art kind, place, size and facing (closeMakeInfo's parts)
-function closeHullInfo(info) {
+// (v220.0) livery: the livery to draw it in, when not the design's own (the player's Echo livery for their own Echo's ships)
+function closeHullInfo(info, livery) {
   const rec = info.rec, a = bbAnalysisOf(rec), L = a.layout, cells = [];
   for (let y = 0; y < info.H; y++) { let row = ''; for (let x = 0; x < info.W; x++) row += L.cellFrame[(L.y0 + y) * L.W + L.x0 + x] >= 0 ? '#' : '.'; cells.push(row); }
   // (v188.2) a launcher also says its type (standard, rapid, torpedo or rack): the hull art draws its port by type and by the way it faces.
@@ -74077,21 +74690,29 @@ function closeHullInfo(info) {
     return { d: p.spec.d, id: L.parts[p.k].m.id, x: p.x, y: p.y, w: p.w, h: p.h, ang: p.ang, turning: p.turning || '', role: p.spec.role || '', kind: kind, loaded: kind === 'rack' ? false : undefined };
   });
   // (v217.0) the design's livery (the ship art customizer, section 10e-9c): the hull art draws it in those colours and pieces
-  return { name: rec.name || String(rec.id || ''), cls: rec.design.hull || info.cls, W: info.W, H: info.H, cells: cells, parts: parts, reg: info.frame.reg, livery: rec.livery || null };
+  // (v223.0) the strips the radiator and solar panels fold out into (as closeDrawPanels opens them, a little wider along the hull): the livery's fins and
+  // bigger noses keep out of them, since the panels are drawn over the picture
+  const keep = (info.radiators || []).filter(function (r) { return r.edge; }).map(function (r) {
+    const out = Math.max(18, Math.max(r.w, r.h) * 7.8), sd = r.edge.side, m = .5;
+    return sd === 0 ? [r.x - m, r.y - out, r.x + r.w + m, r.y] : sd === 1 ? [r.x - m, r.y + r.h, r.x + r.w + m, r.y + r.h + out]
+         : sd === 2 ? [r.x - out, r.y - m, r.x, r.y + r.h + m] : [r.x + r.w, r.y - m, r.x + r.w + out, r.y + r.h + m];
+  });
+  return { name: rec.name || String(rec.id || ''), cls: rec.design.hull || info.cls, W: info.W, H: info.H, cells: cells, parts: parts, reg: info.frame.reg, livery: livery !== undefined ? livery : (rec.livery || null), keep: keep };
 }
 function closeHullBuild(e, done) {
   const info = e.info, A = SHIP_ART;
   e.state = 'busy'; e.guns = {};
   const s = Math.max(CLOSE_LOOK.squareMin, Math.min(CLOSE_LOOK.squareMax, Math.floor(CLOSE_LOOK.pictureLongest / (info.W + 16))));
   let pic = null, hi = null;
-  try { hi = closeHullInfo(info); pic = window.HULL_ART.picture(hi, s); } catch (err) { pic = null; }
+  // (v221.0) in the entry's livery: the design's, the player's Echo's, or none
+  try { hi = closeHullInfo(info, e.livery); pic = window.HULL_ART.picture(hi, s); } catch (err) { pic = null; }
   if (!pic) { e.state = 'none'; done(); return; }
   e.s = s; e.x0 = pic.x0; e.y0 = pic.y0; e.w = pic.canvas.width; e.h = pic.canvas.height; e.canvas = pmWatch(pic.canvas);
   // the turning guns: hull art turrets, one small picture each (the battle turns them toward the target)
   for (let k = 0; k < info.turrets.length; k++) {
     const tu = info.turrets[k], p = hi.parts[tu.k];
     if (e.guns[tu.key]) continue;
-    try { const g = window.HULL_ART.turret(p, s); if (g) e.guns[tu.key] = { canvas: pmWatch(g.canvas), w: g.w, h: g.h, piv: g.piv }; } catch (err) { /* that gun stays as the still picture's mount */ }
+    try { const g = window.HULL_ART.turret(p, s, hi.livery); if (g) e.guns[tu.key] = { canvas: pmWatch(g.canvas), w: g.w, h: g.h, piv: g.piv }; } catch (err) { /* that gun stays as the still picture's mount */ }
   }
   // (v188.2) each Torpedo rack's missile, one small picture each, drawn on top while the rack still holds it
   e.racks = [];
@@ -74154,6 +74775,8 @@ function closeAlienBuild(e, done) {
   const finish = function (canvas, pivX, pivY) { try { finishOn(canvas, pivX, pivY); } catch (err) { e.state = 'none'; done(); } };
   const finishOn = function (canvas, pivX, pivY) {
     if (!canvas) { e.state = 'none'; done(); return; }
+    // (v222.0) an alien ship in the player's livery for its race: its colours and material laid over the finished picture (the same size)
+    if (e.livery && info.alien !== 'titan' && window.HULL_ART && window.HULL_ART.alien) canvas = window.HULL_ART.alien.paint(canvas, info.alien, e.livery, closeSeedOf(info.name));
     e.canvas = canvas; e.w = canvas.width; e.h = canvas.height;
     const sm = pmWatch(document.createElement('canvas'));
     sm.width = Math.max(1, Math.round(e.w / 4)); sm.height = Math.max(1, Math.round(e.h / 4));
@@ -74170,12 +74793,13 @@ function closeAlienBuild(e, done) {
   try {
     if (info.alien === 'titan') {
       // (v97) a titan: one still picture of its art; the build grid's middle is the turning point; (v110.0) its painted length is its drawn length (section 6b)
-      const pic = window.TITAN_ART.picture(info.name, CLOSE_LOOK.pictureLongest * 2, info.W, info.H);
+      // (v221.0) in its livery (the player's own Echo: in the Echo livery, its look laid on by the art itself)
+      const pic = window.TITAN_ART.picture(info.name, CLOSE_LOOK.pictureLongest * 2, info.W, info.H, e.livery || null);
       if (!pic) { finish(null); return; }
       s = pic.s; e.s = s;
       const box = window.TITAN_ART.box ? window.TITAN_ART.box(info.name) : null;
       e.inkLen = box && box.w > 0 ? box.w * s : pic.canvas.width;   // (v110.0) not the build grid's length any more: the six titans' art was 3 to 7 times it
-      const echo = e.house.indexOf('echo-') === 0 ? e.house.slice(5) : '';
+      const echo = e.house.indexOf('echo-') === 0 && e.house !== 'echo-mine' ? e.house.slice(5) : '';
       if (echo) {
         // (v126.0) an Echo titan: its painted art put through the Echo look (section 6v2) as a picture inside an SVG; its painted length stays the art's
         const W = pic.canvas.width, H = pic.canvas.height;
@@ -74763,7 +75387,19 @@ function closeDesignPicture(design, name, view, livery, done) {
   try { if (design && design.v === 3 && typeof window.SHIP_ART !== 'undefined') info = closeAlienInfo(rec) || closeMakeInfo(rec); } catch (err) { info = null; }
   if (!info) { done(null); return; }
   const hull = view === 'hull' && !info.alien && typeof window.HULL_ART !== 'undefined';
-  const e = { state: 'wait', info: info, t: undefined, look: view === 'hull' ? 'grit' : view, key: 'bureau|' + view, house: '', hull: hull };
+  const e = { state: 'wait', info: info, t: undefined, look: view === 'hull' ? 'grit' : view, key: 'bureau|' + view, house: '', hull: hull, livery: livery || null };
+  try { closeArtBuild(e, function () { done(e.state === 'ready' ? e : null); }); } catch (err) { done(null); }
+}
+// (v222.0) A repeatable number from a ship's name (so the material's flecks fall the same way every time)
+function closeSeedOf(name) { let h = 7; const t = String(name || ''); for (let k = 0; k < t.length; k++) h = (h * 31 + t.charCodeAt(k)) % 1000003; return h || 3; }
+// (v222.0) The picture of one alien ship by its art name (race 'delver', 'sylph' or 'swarm'), in a livery for its race (or null: their own look),
+// for the Bureau's Livery view. done(entry) as closeDesignPicture's, or done(null).
+function closeRacePicture(race, name, livery, done) {
+  let info = null;
+  const rec = race === 'swarm' ? { alienStock: true, name: name, design: { v: 3, frames: [], parts: [] } } : { faction: race, name: name, design: { v: 3, frames: [], parts: [] } };
+  try { info = closeAlienInfo(rec); } catch (err) { info = null; }
+  if (!info) { done(null); return; }
+  const e = { state: 'wait', info: info, t: undefined, look: 'grit', key: 'bureau|race', house: '', hull: false, livery: livery || null };
   try { closeArtBuild(e, function () { done(e.state === 'ready' ? e : null); }); } catch (err) { done(null); }
 }
 // The picture's reach, in its own pixels round its turning point, with the radiator and solar panels folded right out: { x0, y0, x1, y1 }
@@ -74872,7 +75508,39 @@ const ECHO_LOOKS = [
   { id: 'E4', name: 'Afterimage' },
   { id: 'E5', name: 'Black Root' }
 ];
-function echoLookById(id) { for (const L of ECHO_LOOKS) if (L.id === id) return L; return null; }
+function echoLookById(id) { if (id === 'mine') return ECHO_MINE; for (const L of ECHO_LOOKS) if (L.id === id) return L; return null; }
+// (v220.0) THE PLAYER'S OWN ECHO LOOK. Alex 11 Nov 2026: "later, this same system should be used when the player beats the echo for themselves, and gets
+// to customize the way their evil ships will look when played against by other players." The Echo look 'mine' is the player's own Echo livery,
+// made on the Bureau's Ship art page (the Livery view's "Our Echo" side, section 10e-9c) and kept in this browser: one of the five looks above as its
+// base, a glow colour, a material (the Echo's own: obsidian, scrap, bone, oil, ember, or ours) and the same pieces our designs can wear.
+// Zoomed right in, Echo ships in it wear the outer hull painted that way with the base look laid over it; in the module view and on the icons they
+// show the base look. Never picked at random: a fight uses it only when asked for (the Last Stand menu's "Echo look" choice).
+// Looks only, like every livery: never a ship's numbers or size, never the friend and foe colours.
+const ECHO_MINE = { id: 'mine', name: 'Your own Echo' };
+const ECHO_LIVERY_PREF = 'ew-echo-livery';
+function echoLiveryApi() { return typeof window.HULL_ART !== 'undefined' && window.HULL_ART.livery && window.HULL_ART.livery.cleanEcho ? window.HULL_ART.livery : null; }
+// The player's Echo livery (always with an Echo look in it: the starting one when nothing is kept yet)
+let echoMyLiveryKept = null;                                              // (read once, then kept until the player changes it)
+function echoMyLivery() {
+  if (echoMyLiveryKept) return echoMyLiveryKept;
+  const A = echoLiveryApi(); if (!A) return { echo: { look: 'E1', glow: '#b28cff' } };
+  let L = null;
+  try { const v = window.localStorage ? window.localStorage.getItem(ECHO_LIVERY_PREF) : null; if (v) L = A.cleanEcho(JSON.parse(v)); } catch (e) { L = null; }
+  if (!L || !L.echo) L = A.cleanEcho(Object.assign({}, A.echoDefault, L || {}));
+  echoMyLiveryKept = L;
+  return L;
+}
+// Keeps a new Echo livery (false when this browser would not keep it)
+function echoSetMyLivery(L) {
+  const A = echoLiveryApi(); if (!A) return false;
+  const c = A.cleanEcho(L);
+  echoMyLiveryKept = c && c.echo ? c : null;
+  if (typeof clearShipSprites === 'function') clearShipSprites();         // the icons show its base look: drawn again
+  try { if (!window.localStorage) return false; if (c && c.echo) window.localStorage.setItem(ECHO_LIVERY_PREF, JSON.stringify(c)); else window.localStorage.removeItem(ECHO_LIVERY_PREF); } catch (e) { return false; }
+  return true;
+}
+// The one of the five looks a look id draws as: 'mine' draws as the player's Echo livery's base look
+function echoLookBase(id) { if (id !== 'mine') return id; const L = echoMyLivery(); return L.echo && echoLookById(L.echo.look) ? L.echo.look : 'E1'; }
 // A look for a new fight: at random, or (seed > 0) always the same one for the same seed.
 function echoPickLook(seed) {
   const r = seed > 0 ? ((seed * 40503 + 977) >>> 0) % 1000 / 1000 : Math.random();
@@ -74980,6 +75648,7 @@ function echoRootsSVG(hull, u, rnd) {
 // pixels), seedText makes the plates and roots the same every time for this design. Gives back the new inside and the new box (bigger for the
 // Afterimage's trailing copies and for the bending filters' reach).
 function echoCloseSVG(inner, look, box, hull, seedText) {
+  look = echoLookBase(look);                                               // (v220.0) the player's own Echo: its base look
   const rnd = echoRng(seedText + '|' + look);
   const u = Math.max(0.3, Math.min(3, (hull.maxX - hull.minX) / 520));     // the picture's scale against the art sheet's corvette (about 520 long)
   const body = echoLetters(inner, rnd);
@@ -75001,6 +75670,7 @@ function echoCloseSVG(inner, look, box, hull, seedText) {
 }
 // A turning gun's small drawing in the same look (its colours only: it turns, so no bending or trailing copies).
 function echoGunSVG(inner, look) {
+  look = echoLookBase(look);
   return '<defs>' + echoFilterDefs(look, 1, true) + '</defs><g filter="url(#ecLook)">' + inner + '</g>';
 }
 
@@ -75019,6 +75689,7 @@ function drawIconEcho(g, p, id, color, k, plain, look) {
     g.globalCompositeOperation = 'source-over';
   };
   if (plain) { g.fillStyle = color; g.fill(p.body, 'nonzero'); g.restore(); return; }
+  look = echoLookBase(look);                                               // (v220.0) the player's own Echo: its base look
   const rnd = echoRng(id + look), U = p.unit;
   const edge = function (col, w) { g.strokeStyle = col; g.lineWidth = w; g.stroke(p.body); };
   if (look === 'E4') {                                                     // Afterimage: a teal and a red copy trailing (towards the stern, down)
@@ -89446,7 +90117,8 @@ function lsType(name) {
 // (v100.8, stage 7) opts: the test options, { wave, level, allTech, seed } (all optional): start at wave N, start at level N (the cards of the
 //   levels before it are dealt at once), every research project done, and a fixed seed (the same seed gives the same visitors and card deals).
 function lsStart(enemy, opts) {
-  const wantLook = opts && typeof echoLookById === 'function' && echoLookById(opts.echoLook) ? opts.echoLook : '';   // (v126.0) a check tool may name the Echo look
+  const wantRaceLv = !!(opts && opts.raceLivery === true);   // (v222.0) the Delvers and Swarm in the player's livery for them (the menu's Enemy look)
+  const wantLook = opts && typeof echoLookById === 'function' && echoLookById(opts.echoLook) ? opts.echoLook : '';   // (v126.0) a check tool may name the Echo look; (v220.0) the menu may ask for 'mine', the player's own Echo livery
   opts = lsCleanOpts(opts);
   if (lastStand !== null) lsLeave();
   // (v124.0) the menu starts a run against one race: lsStart('random') picks one of LAST_STAND.enemyChoices (with the run's seed when one is fixed, so the
@@ -89518,7 +90190,7 @@ function lsStart(enemy, opts) {
                 // (v104.1) the weapon set's designs, by name
                 setTypes: setTypes,
                 // (v126.0, section 6v2) the look the Echo's ships wear this run: one of the five at random (the same for the same fixed seed)
-                echoLook: wantLook || echoPickLook(opts.seed) };
+                echoLook: wantLook || echoPickLook(opts.seed), raceLivery: wantRaceLv };
   if (lastStand.v2) lastStand.tree = ls2NewTree();
   for (const t of pool) lastStand.versions.set(t, t);
   if (opts.allTech) lsAllResearch();                      // (v100.8) test option: every project done from the start
@@ -90736,6 +91408,12 @@ let lsTestOpts = { wave: 1, level: 1, allTech: false, seed: 0 };
 // (v124.0) the menu's Enemy choice: 'random' (the default) or one of LAST_STAND.enemyChoices, kept in this browser
 let lsEnemyPick = 'random';
 try { const k = localStorage.getItem('ewLastStandEnemy'); if (k && LAST_STAND.enemyChoices.indexOf(k) >= 0) lsEnemyPick = k; } catch (e) { /* (no storage: Random) */ }
+// (v220.0) the menu's Echo look choice: 'random' (one of the five looks each run, as before) or 'mine' (the player's own Echo livery, section 6v2)
+let lsEchoPick = 'random';
+try { if (localStorage.getItem('ewLastStandEchoLook') === 'mine') lsEchoPick = 'mine'; } catch (e) { /* (no storage: Random) */ }
+// (v222.0) the menu's Enemy look choice for the Delvers and the Swarm: 'own' (their own colours) or 'mine' (the player's livery for them, section 10e-9c)
+let lsRaceLvPick = 'own';
+try { if (localStorage.getItem('ewLastStandRaceLivery') === 'mine') lsRaceLvPick = 'mine'; } catch (e) { /* (no storage: their own) */ }
 try { const k = localStorage.getItem('ewLastStandTest'); if (k) lsTestOpts = lsCleanOpts(JSON.parse(k)); } catch (e) { /* (no storage: the defaults) */ }
 // The test options, made safe (whole numbers in range, a tick on or off).
 function lsCleanOpts(o) {
@@ -90767,7 +91445,7 @@ function lsRenderMenu(body) {
   body.appendChild(ul);
   // (v102.5) version 2 (the card tree, a station for each Fleet) replaces version 1 on the menu (Alex). Version 1 is still there for the check tools: lsStart without v2.
   const go = el('button', 'btn btn-primary', 'Start the run'); go.type = 'button'; go.id = 'lsGo';
-  go.addEventListener('click', function () { hideMainMenu(); lsStart(lsEnemyPick, Object.assign({}, lsTestOpts, { v2: true, officers: olLsOn === 1 })); });
+  go.addEventListener('click', function () { hideMainMenu(); lsStart(lsEnemyPick, Object.assign({}, lsTestOpts, { v2: true, officers: olLsOn === 1 }, lsEchoPick === 'mine' ? { echoLook: 'mine' } : {}, lsRaceLvPick === 'mine' ? { raceLivery: true } : {})); });
   const row = el('div', 'mm-row'); row.appendChild(go);
   const on = lsOptsText(lsTestOpts);
   if (on) row.appendChild(el('span', 'mm-msg', 'Test options on: ' + on + '.'));
@@ -90785,6 +91463,32 @@ function lsRenderMenu(body) {
   enr.appendChild(eseg);
   enr.appendChild(el('span', 'mm-msg', ENEMY_HINT[lsEnemyPick] + ' Sylph ships may still drop in from wave ' + LAST_STAND.visitors.from + '.'));
   body.appendChild(enr);
+  // (v220.0) THE ECHO'S LOOK, when the Echo may come: one of their five at random, or the player's own Echo livery (made on the Bureau's Ship art page)
+  if (lsEnemyPick === 'echo' || lsEnemyPick === 'random') {
+    const ecr = el('div', 'mm-row'); ecr.appendChild(el('span', 'label', 'Echo look'));
+    const ecs = el('span', 'seg'); ecs.id = 'lsEchoLook';
+    [['random', 'Random look'], ['mine', 'My Echo livery']].forEach(function (o) {
+      const b = el('button', lsEchoPick === o[0] ? 'on' : '', o[1]); b.type = 'button'; b.id = 'lsEchoLook_' + o[0];
+      b.addEventListener('click', function () { lsEchoPick = o[0]; try { localStorage.setItem('ewLastStandEchoLook', o[0]); } catch (e) { /* (no storage) */ } mmRender(); });
+      ecs.appendChild(b);
+    });
+    ecr.appendChild(ecs);
+    ecr.appendChild(el('span', 'mm-msg', lsEchoPick === 'mine' ? 'The Echo wear the livery you made for them (Design Bureau, Ship art, Livery, Our Echo).' : 'Each run the Echo wear one of their five looks.'));
+    body.appendChild(ecr);
+  }
+  // (v222.0) THE DELVERS' AND SWARM'S LOOK: their own colours, or the player's livery for them (made on the Bureau's Ship art page)
+  if (lsEnemyPick === 'delver' || lsEnemyPick === 'swarm' || lsEnemyPick === 'random') {
+    const rlr = el('div', 'mm-row'); rlr.appendChild(el('span', 'label', 'Enemy look'));
+    const rls = el('span', 'seg'); rls.id = 'lsRaceLivery';
+    [['own', 'Their own'], ['mine', 'My livery']].forEach(function (o) {
+      const b = el('button', lsRaceLvPick === o[0] ? 'on' : '', o[1]); b.type = 'button'; b.id = 'lsRaceLivery_' + o[0];
+      b.addEventListener('click', function () { lsRaceLvPick = o[0]; try { localStorage.setItem('ewLastStandRaceLivery', o[0]); } catch (e) { /* (no storage) */ } mmRender(); });
+      rls.appendChild(b);
+    });
+    rlr.appendChild(rls);
+    rlr.appendChild(el('span', 'mm-msg', lsRaceLvPick === 'mine' ? 'Delver and Swarm ships wear the livery you made for them (Design Bureau, Ship art, Livery). Sylph visitors keep their houses\' colours.' : 'Delver and Swarm ships in their own colours.'));
+    body.appendChild(rlr);
+  }
   // (v106.1, section 10j) the officer library: its on-duty officers lead your squadrons, Divisions and Fleets in the run
   const nDuty = olEntries().filter(function (e) { return e.duty; }).length;
   const ofr = el('div', 'mm-row'); ofr.appendChild(el('span', 'label', 'Officer library'));
@@ -90845,7 +91549,7 @@ function lsResultsData() {
     destroyed: lsKills(), visitorsDown: lsVisitorsKilled(), visitorsCome: L.visitorsCome, cards: L.picks.length, packages: L.owned.size, squadrons: L.hangars.length,
     test: lsOptsText(L.test), seed: L.seed,
     enemy: (L.enemy === 'mixed' ? 'Mixed' : LAST_STAND.factions[L.enemy].name + (L.pick === 'random' ? ' (random)' : '')) +   // (v124.0) the race this run was against
-           (L.enemy === 'echo' || L.enemy === 'mixed' ? ', ' + echoLookById(L.echoLook).name + ' look' : ''),          // (v126.0) and the Echo's look
+           (L.enemy === 'echo' || L.enemy === 'mixed' ? (L.echoLook === 'mine' ? ', in your own Echo livery' : ', ' + echoLookById(L.echoLook).name + ' look') : '') + (L.raceLivery && (L.enemy === 'delver' || L.enemy === 'swarm') ? ', in your livery' : ''),   // (v222.0)          // (v126.0) and the Echo's look (v220.0: or the player's own)
     ours: Array.from(ours.values()).sort(byDealt), theirs: Array.from(theirs.values()).sort(function (a, b) { return b.sent - a.sent; })
   };
 }
@@ -103529,6 +104233,7 @@ function b2PerWeekWords(n) {
 //   Titans and alien ships have only their own whole-body art, so all three views show that.
 //   Looks only: nothing here changes the design.
 //   (v217.0) A fourth view, Livery: the outer hull with the ship art customizer beside it (section 10e-9c, 35e-10e-bureau-screen-9c-livery.js).
+//   (v220.0) Its "Our Echo" side shows the design as one of the player's own Echo ships; (v222.0) its race sides show one of that race's ships.
 // =====================================================================
 const b2art = {
   view: 'hull',       // the view picked: 'hull', 'mods', 'blue' or (v217.0) 'livery' (kept between visits, in this browser)
@@ -103594,14 +104299,24 @@ function b2ArtWire() {
 // Makes the picture of the design on the sheet in the view picked (once per design state and view; the same one again is not made twice)
 function b2ArtMake() {
   if (!b2.d) return;
-  const d = copyDesignV3(b2.d), look = b2ArtLook(), name = (b2El('b2Name') && b2El('b2Name').value) || b2.name || 'New design';
-  const lv = typeof b2LvWorking === 'function' ? b2LvWorking() : null;   // (v217.0) the design's livery (section 10e-9c): the hull is drawn in it
-  const key = look + '|' + name + '|' + JSON.stringify(d) + (lv ? '|lv:' + livKey(lv) : '');
+  // (v222.0) the Livery view's race sides show one of that race's ships in the player's livery for it, not the design on the sheet
+  const race = b2art.view === 'livery' && typeof b2LvRace === 'function' ? b2LvRace() : '';
+  let key, make;
+  if (race) {
+    const ship = b2LvRaceShip(race), rl = b2LvRaceWorking();
+    key = 'race|' + race + '|' + ship + (rl ? '|lv:' + livRaceKey(rl, race) : '');
+    make = function (cb) { closeRacePicture(race, ship, rl, cb); };
+  } else {
+    const d = copyDesignV3(b2.d), look = b2ArtLook(), name = (b2El('b2Name') && b2El('b2Name').value) || b2.name || 'New design';
+    const lv = typeof b2LvWorking === 'function' ? b2LvWorking() : null;   // (v217.0) the design's livery (section 10e-9c): the hull is drawn in it
+    key = look + '|' + name + '|' + JSON.stringify(d) + (lv ? '|lv:' + livKey(lv) : '');
+    make = function (cb) { closeDesignPicture(d, name, look, lv, cb); };
+  }
   if (b2art.pic && b2art.pic.key === key) { if (b2art.zoom <= 0) b2ArtFit(); b2ArtNote(); b2ArtDraw(); return; }
   if (b2art.want === key) return;
   b2art.want = key;
   b2ArtNote('Drawing...');
-  closeDesignPicture(d, name, look, lv, function (e) {
+  make(function (e) {
     if (b2art.want !== key) return;                     // a newer picture was asked for meanwhile
     b2art.want = '';
     // fitted again for a different design (or one that changed); switching views of the same design keeps the zoom
@@ -103617,8 +104332,12 @@ function b2ArtNote(text) {
   if (text) { n.textContent = text; return; }
   const e = b2art.pic && b2art.pic.e;
   if (!e) { n.textContent = 'Nothing to draw yet: the design needs its frames (and a part on the art sheet) first.'; return; }
+  const race = b2art.view === 'livery' && typeof b2LvRace === 'function' ? b2LvRace() : '';   // (v222.0)
+  if (race) { n.textContent = race === 'sylph' ? 'A Sylph ship in your Sylph livery (for when you play the Sylph). Looks only.' : 'A ' + livRaceOf(race).one + ' ship in your livery for them. Looks only.'; return; }
+  if (e.info.alien === 'titan' && b2art.view === 'livery') { n.textContent = 'A titan wears the livery\'s colours, material, pattern, wear and markings on its own art (the pieces are for smaller ships). Looks only.'; return; }   // (v221.0)
   if (e.info.alien) { n.textContent = e.info.alien === 'titan' ? 'A titan has its own whole-body art: every view shows it.' : 'An alien ship has its own art: every view shows it.'; return; }
-  n.textContent = b2art.view === 'livery' ? 'Paint this design: every ship of it wears this livery up close in battle. Looks only.'
+  n.textContent = b2art.view === 'livery' && typeof b2LvEcho === 'function' && b2LvEcho() ? 'This design as one of our Echo\'s ships, in our Echo livery. Looks only.'   // (v220.0)
+                : b2art.view === 'livery' ? 'Paint this design: every ship of it wears this livery up close in battle. Looks only.'
                 : b2art.view === 'hull' ? 'As our ships look zoomed right in on the battle map. Panels folded out, guns at rest.'
                 : b2art.view === 'blue' ? 'Every part, as a blueprint. Panels folded out, guns at rest.'
                 : 'Every part showing, the hull cut away (the battle\'s Modules view). Panels folded out, guns at rest.';
@@ -103676,8 +104395,22 @@ function b2ArtDraw() {
 //     - "Apply to all ships": after a yes, every one of our designs (and the library's plans) gets these picks.
 //     - A new version of a design starts with its parent's livery.
 //   It travels with the campaign save (campaign.v3.designs[].livery, campaign.v3.stockLivery) and the design library (entry.livery, copy codes).
+//
+//   (v221.0) TITANS wear a livery too, on their own art (UI/titan-art.js): its colours, material, pattern, wear and markings; the piece rows are
+//   hidden for a titan (its whole body is its own drawing). A titan in the player's Echo livery wears that, its Echo look laid on by the art.
+//
+//   (v220.0) OUR ECHO. The panel's second side, "Our Echo", paints the player's own Echo (section 6v2): how every Echo ship looks when the player's
+//   Echo livery is the Echo's look (the Last Stand menu's "Echo look: My Echo livery"; later, when other players fight the Echo the player became).
+//   It is one livery for all of them, not one per design: an Echo look as its base (Dark Mirror, Scrap Twist, Negative, Afterimage, Black Root), a glow
+//   colour, the Echo's own materials as well as ours, and the same colours, patterns, markings and pieces. The picture shows the design on the sheet
+//   as an Echo ship. Kept in this browser (echoSetMyLivery).
+//
+//   (v222.0) THE ALIENS. Three more sides, Delvers, Sylphs and Swarm: the player's livery for each race (a hull colour, a glow colour and one of the
+//   race's own materials, laid over their hand-drawn ships; their shapes stay their own). Kept in this browser, one per race. It shows in a Last Stand
+//   against the Delvers or the Swarm when the menu's "Enemy look" is "My livery" (livRaceInPlay), and later on the race the player plays. Enemy Sylph
+//   ships always keep their houses' colours (they tell you which house you are fighting), so the Sylph livery waits for a playable Sylph.
 // =====================================================================
-const b2lv = { key: '', L: null, draft: null, msg: '', askAll: false };
+const b2lv = { key: '', L: null, draft: null, msg: '', askAll: false, side: 'ours', ship: {} };   // side: 'ours' (this design), (v220.0) 'echo' (our Echo), (v222.0) 'delver', 'sylph', 'swarm'; ship: the race's ship shown
 const LIVERY_DEFAULT_PREF = 'ew-livery-default';
 
 // ---- the livery's data: cleaning, comparing, the faction default ----
@@ -103687,7 +104420,7 @@ function livClean(o) { return livHave() ? window.HULL_ART.livery.clean(o) : null
 function livKey(o) { return livHave() ? window.HULL_ART.livery.key(o) : ''; }
 function livCopy(o) { const c = livClean(o); return c ? JSON.parse(JSON.stringify(c)) : null; }
 function livSame(a, b) { return livKey(a) === livKey(b); }
-// Does this design wear a livery at all? Our own Bureau designs (not the aliens', not the Echo's copies; titans keep their own art for now).
+// Does this design wear a livery at all? Our own Bureau designs (not the aliens', not the Echo's copies). (v221.0) Titans too, on their own art.
 function livFor(rec) { return !!(rec && rec.design && !(typeof campaignV3IsAlien === 'function' && campaignV3IsAlien(rec))); }
 // The faction default: the picks a new design starts with (this browser, every campaign)
 function livFactionDefault() { try { const v = window.localStorage ? window.localStorage.getItem(LIVERY_DEFAULT_PREF) : null; return v ? livClean(JSON.parse(v)) : null; } catch (e) { return null; } }
@@ -103716,23 +104449,70 @@ function livApplyAll(L) {
   return n;
 }
 
+// ---- (v222.0) the aliens' liveries: one per race, kept in this browser ----
+const RACE_LIVERY_PREF = 'ew-race-livery';
+const LIV_RACES = [
+  { id: 'delver', name: 'Delvers', one: 'Delver', hull: '#7a6a55', ship: 'Breaker' },
+  { id: 'sylph', name: 'Sylphs', one: 'Sylph', hull: '#c9b27a', ship: 'Courser' },
+  { id: 'swarm', name: 'Swarm', one: 'Swarm', hull: '#6a3a4a', ship: 'Ravager' }
+];
+function livRaceOf(id) { for (const r of LIV_RACES) if (r.id === id) return r; return null; }
+function livRaceHave() { return livHave() && !!window.HULL_ART.alien; }
+let livRaceKept = null;                                                   // (read once, then kept until the player changes one)
+function livRaceAll() {
+  if (livRaceKept) return livRaceKept;
+  let o = {}; const out = {};
+  try { const v = window.localStorage ? window.localStorage.getItem(RACE_LIVERY_PREF) : null; if (v) o = JSON.parse(v) || {}; } catch (e) { o = {}; }
+  if (livRaceHave()) LIV_RACES.forEach(function (r) { const c = window.HULL_ART.alien.clean(o[r.id], r.id); if (c) out[r.id] = c; });
+  livRaceKept = out;
+  return out;
+}
+// The player's livery for a race, or null (their own look)
+function livRace(race) { return livRaceAll()[race] || null; }
+function livSetRace(race, L) {
+  if (!livRaceHave()) return false;
+  const all = Object.assign({}, livRaceAll()), c = window.HULL_ART.alien.clean(L, race);
+  if (c) all[race] = c; else delete all[race];
+  livRaceKept = all;
+  try { if (!window.localStorage) return false; window.localStorage.setItem(RACE_LIVERY_PREF, JSON.stringify(all)); return true; } catch (e) { return false; }
+}
+function livRaceKey(L, race) { return livRaceHave() ? window.HULL_ART.alien.key(L, race) : ''; }
+// (23g closeArtEntry) the livery a race's ships wear in the fight on now: the player's, when a Last Stand run asked for it; never on the Sylph
+function livRaceInPlay(race) {
+  if (race === 'sylph') return null;
+  return typeof lastStand !== 'undefined' && lastStand && lastStand.raceLivery ? livRace(race) : null;
+}
+// The race's ship names, for the panel's "Ship" row
+function livRaceShips(race) {
+  try { if (race === 'swarm') return window.SWARM_ART ? Object.keys(window.SWARM_ART.designs || {}) : []; return window.ALIEN_ART && window.ALIEN_ART[race] ? window.ALIEN_ART[race].ships.slice() : []; } catch (e) { return []; }
+}
+
 // ---- the Bureau's Livery panel ----
 // The saved design on the sheet (null = not saved yet) and the working copy that follows it
 function b2LvRec() { return typeof b2DocRec === 'function' ? b2DocRec() : null; }
+function b2LvEcho() { return b2lv.side === 'echo' && typeof echoMyLivery === 'function' && !!window.HULL_ART.livery.cleanEcho; }
+// (v222.0) the race the panel paints, or '' (ours or our Echo); the race's ship it shows; the race livery as it stands
+function b2LvRace() { return livRaceOf(b2lv.side) && livRaceHave() ? b2lv.side : ''; }
+function b2LvRaceShip(race) { const list = livRaceShips(race), want = b2lv.ship[race] || livRaceOf(race).ship; return list.indexOf(want) >= 0 ? want : (list[0] || want); }
+function b2LvRaceWorking() { const race = b2LvRace(); if (!race) return null; b2LvSync(); return window.HULL_ART.alien.clean(b2lv.L, race); }
 function b2LvSync() {
-  const rec = b2LvRec(), key = rec ? 'rec:' + rec.id : 'draft';
+  const race = b2LvRace(), rec = b2LvRec(), key = race ? 'race:' + race : b2LvEcho() ? 'echo' : rec ? 'rec:' + rec.id : 'draft';
   if (b2lv.key === key && b2lv.L) return;
   b2lv.key = key; b2lv.askAll = false; b2lv.msg = '';
+  if (race) { b2lv.L = Object.assign({}, livRace(race) || {}); return; }   // (v222.0) a race
+  if (key === 'echo') { b2lv.L = Object.assign({}, window.HULL_ART.livery.defaults, JSON.parse(JSON.stringify(echoMyLivery()))); return; }   // (v220.0) our Echo
   b2lv.L = Object.assign({}, livHave() ? window.HULL_ART.livery.defaults : {}, rec ? (rec.livery || {}) : (b2lv.draft || livFactionDefault() || {}));
 }
 // (10e-9b) the livery the design on the sheet wears now, or null for the plain look
-function b2LvWorking() { if (!livHave() || !b2.d) return null; b2LvSync(); return livClean(b2lv.L); }
+function b2LvWorking() { if (!livHave() || !b2.d) return null; b2LvSync(); return b2LvEcho() ? window.HULL_ART.livery.cleanEcho(b2lv.L) : livClean(b2lv.L); }
 // (10e b2Load) a design opened: the panel starts again from its record
-function b2LvLoaded() { b2lv.key = ''; b2lv.draft = null; b2lv.askAll = false; }
+function b2LvLoaded() { b2lv.key = b2LvRace() ? 'race:' + b2LvRace() : b2LvEcho() ? 'echo' : ''; b2lv.draft = null; b2lv.askAll = false; }
 // A change: into the working copy, then onto the design (every version of it), and the picture again
 function b2LvCommit(msg) {
-  const rec = b2LvRec();
-  if (rec) { const recs = livSetFor(rec, b2lv.L); b2lv.msg = (msg ? msg + ' ' : '') + (recs.length > 1 ? 'On all ' + recs.length + ' versions of ' + designFamily(rec) + '.' : 'On ' + rec.name + '.'); }
+  const rec = b2LvRec(), race = b2LvRace();
+  if (race) { const ok = livSetRace(race, b2lv.L); b2lv.msg = (msg ? msg + ' ' : '') + (ok ? (window.HULL_ART.alien.clean(b2lv.L, race) ? 'Every ' + livRaceOf(race).one + ' ship wearing your livery looks like this.' : livRaceOf(race).name + ' in their own look.') : 'This browser would not keep it (a private window?).'); }
+  else if (b2LvEcho()) { const ok = echoSetMyLivery(b2lv.L); b2lv.msg = (msg ? msg + ' ' : '') + (ok ? 'Every Echo ship wearing your Echo livery looks like this.' : 'This browser would not keep it (a private window?).'); }
+  else if (rec) { const recs = livSetFor(rec, b2lv.L); b2lv.msg = (msg ? msg + ' ' : '') + (recs.length > 1 ? 'On all ' + recs.length + ' versions of ' + designFamily(rec) + '.' : 'On ' + rec.name + '.'); }
   else { b2lv.draft = livCopy(b2lv.L); b2lv.msg = (msg ? msg + ' ' : '') + 'Kept with the design: saving it puts this livery on it.'; }
   b2RenderLivery(); b2ArtMake();
 }
@@ -103747,6 +104527,7 @@ const B2LV_ROWS = [
   { k: 'deck', name: 'Deck', tip: 'The raised decks of the bigger hulls' },
   { k: 'fins', name: 'Fins', tip: 'Fins and vanes: big on fighters, small craft and corvettes, smaller on bigger ships. Stock keeps today\'s' }
 ];
+const B2LV_PIECES = ['nose', 'bridge', 'drive', 'deck', 'fins'];   // (v221.0) the rows a titan does not show
 const B2LV_COLOURS = [['hull', 'Hull'], ['trim', 'Trim'], ['accent', 'Accent'], ['lights', 'Lights']];
 const B2LV_MARKS = [['hazard', 'Hazard bands', 'Black and yellow bands at the nose'], ['roundel', 'Roundels', 'A roundel on each flank'], ['tally', 'Kill tally', 'A row of kill marks near the bow']];
 function b2RenderLivery() {
@@ -103754,24 +104535,52 @@ function b2RenderLivery() {
   if (!livHave()) { el.innerHTML = '<p class="lvnote">The hull art is not loaded, so there is nothing to paint.</p>'; return; }
   b2LvSync();
   const A = window.HULL_ART.livery, L = b2lv.L, rec = b2LvRec();
-  if (rec && rec.design && typeof bbAnalysisOf === 'function' && b2art.pic && b2art.pic.e && b2art.pic.e.info.alien) { el.innerHTML = '<p class="lvnote">' + (b2art.pic.e.info.alien === 'titan' ? 'A titan keeps its own art for now: liveries for titans come in a later update.' : 'Alien ships keep their own art.') + '</p>'; return; }
-  let h = '<h4>Livery' + (rec ? ' &middot; ' + esc(designFamily(rec)) : '') + '</h4>';
-  if (!rec) h += '<p class="lvnote">Not saved yet: this livery goes on the design when you save it.</p>';
+  // (v221.0) a titan wears a livery on its own art: colours, material, pattern, wear and markings (no pieces: its whole body is its own drawing)
+  const race = b2LvRace();
+  const titan = !race && !!(b2.d && typeof titanSuperOfDesign === 'function' && titanSuperOfDesign(b2.d)), alien = race ? '' : titan ? 'titan' : (b2art.pic && b2art.pic.e ? b2art.pic.e.info.alien : '');
+  if (alien && !titan) { el.innerHTML = '<p class="lvnote">Alien ships keep their own art.</p>'; return; }
+  const echo = b2LvEcho();
+  let h = '';
+  if (A.cleanEcho && typeof echoMyLivery === 'function') {   // (v220.0) which livery the panel paints: this design, or our Echo
+    h += '<div class="lvrow lvside"><div class="opts" role="group" aria-label="Paint">' +
+         '<button type="button" data-lvside="ours" aria-pressed="' + !echo + '" title="This design\'s livery: how our ships of it look">Our ships</button>' +
+         '<button type="button" data-lvside="echo" aria-pressed="' + echo + '" title="Your own Echo: how every Echo ship looks when the Echo wear your livery">Our Echo</button>';
+    if (livRaceHave()) LIV_RACES.forEach(function (r) { h += '<button type="button" data-lvside="' + r.id + '" aria-pressed="' + (race === r.id) + '" title="Your livery for the ' + esc(r.name) + ': their colours and material (their ships keep their own shapes)">' + esc(r.name) + '</button>'; });   // (v222.0)
+    h += '</div></div>';
+  }
+  if (race) { b2RenderRaceLivery(el, h, race); return; }   // (v222.0)
+  if (echo) {
+    h += '<h4>Our Echo</h4><p class="lvnote">One livery for every Echo ship: the picture shows this design as one of them. The Last Stand menu\'s Echo look "My Echo livery" puts it on the Echo.</p>';
+    h += '<div class="lvrow"><span class="l" title="The Echo look laid over the painted hull">Echo look</span><div class="opts" role="group" aria-label="Echo look">';
+    Object.keys(A.echoLooks).forEach(function (v) { h += '<button type="button" data-lvecho="' + esc(v) + '" aria-pressed="' + (!!L.echo && L.echo.look === v) + '">' + esc(A.echoLooks[v]) + '</button>'; });
+    h += '</div></div><div class="lvrow"><span class="l">Glow</span><div class="lvcols"><label>Glow<input type="color" data-lvglow="1" value="' + esc((L.echo && L.echo.glow) || '#b28cff') + '" aria-label="Glow colour"></label></div></div>';
+  } else {
+    h += '<h4>Livery' + (rec ? ' &middot; ' + esc(designFamily(rec)) : '') + '</h4>';
+    if (!rec) h += '<p class="lvnote">Not saved yet: this livery goes on the design when you save it.</p>';
+  }
   h += '<div class="lvrow"><span class="l">Presets</span><div class="opts">';
   A.presets.forEach(function (p, i) { h += '<button type="button" data-lvpre="' + i + '" title="Colours only: the other picks stay">' + esc(p[0]) + '</button>'; });
   h += '</div></div><div class="lvrow"><span class="l">Colours</span><div class="lvcols">';
   B2LV_COLOURS.forEach(function (c) { h += '<label>' + esc(c[1]) + '<input type="color" data-lvcol="' + c[0] + '" value="' + esc(L[c[0]]) + '" aria-label="' + esc(c[1]) + ' colour"></label>'; });
   h += '</div></div>';
   B2LV_ROWS.forEach(function (r) {
-    const list = A.lists[r.k] || {};
+    if (titan && B2LV_PIECES.indexOf(r.k) >= 0) return;   // (v221.0)
+    const list = echo && r.k === 'mat' ? Object.assign({}, A.echoMats, A.lists.mat) : (A.lists[r.k] || {});   // (v220.0) the Echo has its own materials too
     h += '<div class="lvrow"><span class="l" title="' + esc(r.tip) + '">' + esc(r.name) + '</span><div class="opts" role="group" aria-label="' + esc(r.name) + '">';
     Object.keys(list).forEach(function (v) { h += '<button type="button" data-lvk="' + r.k + '" data-lvv="' + esc(v) + '" aria-pressed="' + (L[r.k] === v) + '">' + esc(list[v]) + '</button>'; });
     h += '</div></div>';
   });
   h += '<div class="lvrow"><span class="l">Markings</span><div class="opts">';
   B2LV_MARKS.forEach(function (m) { h += '<button type="button" data-lvmark="' + m[0] + '" aria-pressed="' + (!!L[m[0]]) + '" title="' + esc(m[2]) + '">' + esc(m[1]) + '</button>'; });
-  h += '</div></div><div class="lvacts"><button class="btn" type="button" data-lvact="random" title="A random livery to start from">Random</button>' +
-       '<button class="btn" type="button" data-lvact="plain" title="Back to the plain look"' + (livClean(L) ? '' : ' disabled') + '>Plain look</button>' +
+  h += '</div></div><div class="lvacts"><button class="btn" type="button" data-lvact="random" title="A random livery to start from">Random</button>';
+  if (echo) {
+    h += '<button class="btn" type="button" data-lvact="plain" title="Back to the Echo livery you started with">Starting Echo</button>';
+    h += '</div><p class="lvmsg" aria-live="polite">' + esc(b2lv.msg) + '</p>';
+    el.innerHTML = h;
+    if (!el.dataset.wired) { el.dataset.wired = '1'; b2LvWire(el); }
+    return;
+  }
+  h += '<button class="btn" type="button" data-lvact="plain" title="Back to the plain look"' + (livClean(L) ? '' : ' disabled') + '>Plain look</button>' +
        '<button class="btn" type="button" data-lvact="default" title="New designs start with this livery (in every campaign, in this browser). Designs you already have keep theirs">Make faction default</button>';
   if (b2lv.askAll) {
     const n = SHIP_TYPES.filter(function (r) { return livFor(r) && !r.immobile; }).length;
@@ -103781,21 +104590,51 @@ function b2RenderLivery() {
   el.innerHTML = h;
   if (!el.dataset.wired) { el.dataset.wired = '1'; b2LvWire(el); }
 }
+// (v222.0) The panel for a race: which of its ships to show, the hull and glow colours, its materials
+function b2RenderRaceLivery(el, h, race) {
+  const R = livRaceOf(race), A = window.HULL_ART.alien, L = b2lv.L, ship = b2LvRaceShip(race);
+  h += '<h4>' + esc(R.name) + '</h4><p class="lvnote">' + (race === 'sylph'
+    ? 'Your Sylph livery, for when you play the Sylph. Enemy Sylph ships always keep their houses\' colours: they tell you which house you are fighting.'
+    : 'One livery for every ' + esc(R.one) + ' ship: their colours and material (their shapes stay their own). A Last Stand against them puts it on when the menu\'s Enemy look is "My livery".') + '</p>';
+  h += '<div class="lvrow"><span class="l" title="The ship the picture shows">Ship</span><div class="opts" role="group" aria-label="Ship shown">';
+  livRaceShips(race).forEach(function (n) { h += '<button type="button" data-lvship="' + esc(n) + '" aria-pressed="' + (n === ship) + '">' + esc(n) + '</button>'; });
+  h += '</div></div><div class="lvrow"><span class="l">Colours</span><div class="lvcols">' +
+       '<label>Hull<input type="color" data-lvcol="hull" value="' + esc(L.hull || R.hull) + '" aria-label="Hull colour"></label>' +
+       '<label>Glow<input type="color" data-lvcol="lights" value="' + esc(L.lights || '#f3dfa0') + '" aria-label="Glow colour"></label></div></div>';
+  h += '<div class="lvrow"><span class="l" title="The surface laid over their hull">Material</span><div class="opts" role="group" aria-label="Material">' +
+       '<button type="button" data-lvk="mat" data-lvv="" aria-pressed="' + !L.mat + '">Their own</button>';
+  Object.keys(A.mats[race]).forEach(function (v) { h += '<button type="button" data-lvk="mat" data-lvv="' + esc(v) + '" aria-pressed="' + (L.mat === v) + '">' + esc(A.mats[race][v]) + '</button>'; });
+  h += '</div></div><div class="lvacts"><button class="btn" type="button" data-lvact="random" title="A random livery to start from">Random</button>' +
+       '<button class="btn" type="button" data-lvact="plain" title="Back to their own colours"' + (A.clean(L, race) ? '' : ' disabled') + '>Their own look</button>' +
+       '</div><p class="lvmsg" aria-live="polite">' + esc(b2lv.msg) + '</p>';
+  el.innerHTML = h;
+  if (!el.dataset.wired) { el.dataset.wired = '1'; b2LvWire(el); }
+}
 function b2LvWire(el) {
   el.addEventListener('click', function (ev) {
     const b = ev.target.closest('button'); if (!b || b.disabled) return;
     const A = window.HULL_ART.livery, L = b2lv.L;
+    if (b.dataset.lvship) { b2lv.ship[b2LvRace()] = b.dataset.lvship; b2RenderLivery(); b2ArtMake(); return; }   // (v222.0) the race's ship shown
+    if (b.dataset.lvside) { b2lv.side = b.dataset.lvside === 'echo' || livRaceOf(b.dataset.lvside) ? b.dataset.lvside : 'ours'; b2lv.key = ''; b2lv.L = null; b2RenderLivery(); b2ArtMake(); if (typeof b2ArtNote === 'function' && b2art.pic) b2ArtNote(); return; }   // (v220.0)
+    if (b.dataset.lvecho) { L.echo = { look: b.dataset.lvecho, glow: (L.echo && L.echo.glow) || '#b28cff' }; b2LvCommit(A.echoLooks[b.dataset.lvecho] + '.'); return; }
     if (b.dataset.lvk) { L[b.dataset.lvk] = b.dataset.lvv; b2LvCommit(''); return; }
     if (b.dataset.lvmark) { L[b.dataset.lvmark] = !L[b.dataset.lvmark]; b2LvCommit(''); return; }
     if (b.dataset.lvpre) { const p = A.presets[+b.dataset.lvpre]; ['hull', 'trim', 'accent', 'lights'].forEach(function (k) { L[k] = p[1][k] || A.defaults[k]; }); b2LvCommit(p[0] + ' colours.'); return; }
     const act = b.dataset.lvact;
+    if (b2LvRace() && (act === 'random' || act === 'plain')) {   // (v222.0) a race
+      const race = b2LvRace(), r = Math.random, hex = function () { return '#' + ('00000' + Math.floor(r() * 16777216).toString(16)).slice(-6); }, mats = Object.keys(window.HULL_ART.alien.mats[race]);
+      b2lv.L = act === 'plain' ? {} : { hull: hex(), lights: hex(), mat: r() < .75 ? mats[Math.floor(r() * mats.length)] : '' };
+      b2LvCommit(act === 'plain' ? '' : 'A random livery.'); return;
+    }
     if (act === 'random') {
       const r = Math.random, hex = function () { return '#' + ('00000' + Math.floor(r() * 16777216).toString(16)).slice(-6); }, pick = function (o) { const k = Object.keys(o); return k[Math.floor(r() * k.length)]; };
       ['hull', 'trim', 'accent'].forEach(function (k) { L[k] = hex(); });
       B2LV_ROWS.forEach(function (row) { L[row.k] = pick(A.lists[row.k]); });
       L.hazard = r() < .6; L.roundel = r() < .4; L.tally = r() < .3;
+      if (b2LvEcho()) { const looks = Object.keys(A.echoLooks), mats = Object.keys(A.echoMats); L.echo = { look: looks[Math.floor(r() * looks.length)], glow: hex() }; if (r() < .6) L.mat = mats[Math.floor(r() * mats.length)]; }   // (v220.0)
       b2LvCommit('A random livery.'); return;
     }
+    if (act === 'plain' && b2LvEcho()) { b2lv.L = Object.assign({}, A.defaults, JSON.parse(JSON.stringify(A.echoDefault))); b2LvCommit('The starting Echo livery.'); return; }   // (v220.0)
     if (act === 'plain') { b2lv.L = Object.assign({}, A.defaults); b2LvCommit('The plain look.'); return; }
     if (act === 'default') { const ok = livSetFactionDefault(L); b2lv.msg = ok ? (livClean(L) ? 'New designs now start with this livery. Designs you already have keep theirs.' : 'New designs now start in the plain look.') : 'This browser would not keep it (a private window?).'; b2RenderLivery(); return; }
     if (act === 'all') { b2lv.askAll = true; b2RenderLivery(); return; }
@@ -103803,8 +104642,10 @@ function b2LvWire(el) {
     if (act === 'allyes') { b2lv.askAll = false; const n = livApplyAll(L); b2lv.msg = 'Repainted all ' + n + ' of our designs' + (typeof libOpenHere === 'function' && libOpenHere() ? ' and the design library\'s plans' : '') + '.'; b2RenderLivery(); b2ArtMake(); return; }
   });
   // the colour wheels: the picture follows while the wheel moves, the design gets it when the wheel is let go
-  el.addEventListener('input', function (ev) { const k = ev.target.dataset && ev.target.dataset.lvcol; if (!k) return; b2lv.L[k] = ev.target.value; b2ArtMake(); });
-  el.addEventListener('change', function (ev) { const k = ev.target.dataset && ev.target.dataset.lvcol; if (!k) return; b2lv.L[k] = ev.target.value; b2LvCommit(''); });
+  // (v220.0) and our Echo's glow wheel the same way
+  const glow = function (ev) { if (!(ev.target.dataset && ev.target.dataset.lvglow)) return false; b2lv.L.echo = { look: (b2lv.L.echo && b2lv.L.echo.look) || 'E1', glow: ev.target.value }; return true; };
+  el.addEventListener('input', function (ev) { if (glow(ev)) { b2ArtMake(); return; } const k = ev.target.dataset && ev.target.dataset.lvcol; if (!k) return; b2lv.L[k] = ev.target.value; b2ArtMake(); });
+  el.addEventListener('change', function (ev) { if (glow(ev)) { b2LvCommit(''); return; } const k = ev.target.dataset && ev.target.dataset.lvcol; if (!k) return; b2lv.L[k] = ev.target.value; b2LvCommit(''); });
 }
 // =====================================================================
 // 10f. THE BUREAU v2 STOCK DESIGNS  (SETTINGS.designModel 2; stop 2: content)
@@ -105186,7 +106027,7 @@ BUREAU2_SCREEN_API.testRange = { run: testRangeRun, state: testRange, plan: func
 //   adopted habits come along in its copy code and into every new campaign. A doctrine changed in the Bureau after the save updates the plan's copy.
 //   DOCTRINE TEMPLATES (LIBRARY.templates: [{ name, doctrine, savedAt }]) live here too, so they carry over as well. A plan from before v37 has no doctrine: Auto.
 // =====================================================================
-const GAME_VERSION = 'v219.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
+const GAME_VERSION = 'v223.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
 const LIBRARY_KEY = 'engineersWar.library';
 const LIBRARY_FORMAT = 1;
 const LIBRARY_CODE_SHIP = 'EW-SHIP-1:', LIBRARY_CODE_LIB = 'EW-LIB-1:';
