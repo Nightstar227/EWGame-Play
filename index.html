@@ -1473,11 +1473,11 @@ hr.rule { border:0; border-top:var(--line-w) solid var(--line); margin:var(--sp-
   /* (v105.4, section 8j) the Proving grounds panel: a row per design of ours, then the enemy's choices */
   #mmPanel .pg-row select { flex: 1; min-width: 170px; }
   #mmPanel .pg-row .pg-count { width: 80px; }
-  #mmPanel .pg-row select, #mmPanel .pg-row input, #mmPanel .pg-grid input { background: var(--bg-inset, var(--bg)); color: var(--text); border: var(--line-w) solid var(--line-strong); padding: 4px 6px; font: 500 13px var(--font-data); }
+  #mmPanel .pg-row select, #mmPanel .pg-row input { background: var(--bg-inset, var(--bg)); color: var(--text); border: var(--line-w) solid var(--line-strong); padding: 4px 6px; font: 500 13px var(--font-data); }
   #mmPanel .pg-row .pg-x { min-height: 26px; font-size: 12px; padding: 0 8px; }
-  #mmPanel .pg-grid { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 8px 12px; align-items: center; }
-  #mmPanel .pg-grid .label { font: 700 12px var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
-  #mmPanel .pg-grid input { width: 140px; }
+  #mmPanel .pg-row .pg-lbl { flex: 0 0 90px; font: 700 12px var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+  #mmPanel .pg-row .pg-seed { width: 140px; }
+  #mmPanel .pg-row .pg-add { min-height: 28px; }
   #mmPanel .lib-code { width: 100%; box-sizing: border-box; font: 500 11px var(--font-data); background: var(--bg-inset, var(--bg)); color: var(--text); border: var(--line-w) solid var(--line-strong); padding: 6px; resize: vertical; word-break: break-all; }
   #mmPanel .lib-mmrow { display: flex; gap: 12px; align-items: flex-start; padding: 8px 0; border-top: var(--line-w) solid var(--line); }
   #mmPanel .lib-mmtext { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
@@ -3687,7 +3687,7 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
     <section class="panel hidden" id="mmPanel"><div class="panel-head" id="mmPanelHead"></div><div class="panel-body" id="mmPanelBody"></div></section>
     <input type="file" id="mmFile" accept=".json,application/json,text/plain" class="hidden">
   </div>
-  <div class="mm-version" title="The version of the game you are playing">Version v247.0</div>
+  <div class="mm-version" title="The version of the game you are playing">Version v250.0</div>
 </div>
 
 <!-- (v31 A2, section 7l) the end of the war: the game-over screen (Earth's people are gone) or the victory screen (the aliens' home secured). It lies over
@@ -12517,6 +12517,20 @@ const SETTINGS = {
                               // (5jf fgSwarmRegrow) and never flies to a dock to restock; 0 = it restocks at a dock like ours (v244.0)
   swarmMiteRegrowSeconds: 40, // (v246.0) seconds for a Swarm carrier to grow one new Mite (a fighter-sized craft) for an empty hangar
   swarmCraftRegrowSeconds: 120,   // (v246.0) seconds for one bigger craft (a Swarmling, a Biter)
+  wingModel: 1,               // (v248.0, Alex 13 Nov: carriers "not good enough to justify, and performance heavy") 1 = a carrier's fighters and small craft fly as WINGS:
+                              // a few craft of one hangar type flown as ONE ship in the battle, with a craft count (17b2); 0 = every craft is its own ship (v247)
+  wingMaxTiny: 8,             // (v248.0) the most fighters (Tiny craft, Swarm Mites) in one wing
+  wingMaxSmall: 4,            // (v248.0, Alex 13 Nov: small craft hangars launch "small units of gunboats or bombers") the most small craft in one wing
+  wingSpread: 2.2,            // (v248.0, drawing only) how far apart a wing's craft fly, in craft lengths
+  wingAirGroups: 1,           // (v248.0, step 2) 1 = a carrier's wings are its AIR GROUP: its officer gives each wing a job (bombers STRIKE the enemy's big ships and
+                              // carriers, fighters and gunboats SCREEN round the carrier) and the carrier stands at the back of its Division like a battery (15b);
+                              // 0 = the wings fly with the carrier's Division as ordinary squadrons (step 1)
+  wingLaunchRange: 8000,      // (v248.0) how close an enemy must be for a carrier to launch its wings (u): far enough to fight from a reserve rank (lineRankDepth 3,500)
+  wingScreenRadius: 4000,     // (v248.0) the circle round its carrier a screening wing guards (u)
+  wingStrikeRange: 12000,     // (v248.0) how far from its carrier a bomber wing may go to strike (u)
+  hangarRefillFree: 1,        // (v248.0, Alex 13 Nov: "make hangars expensive in alloys cost to build, but ship recharges free") 1 = a lost craft comes back free
+                              // (at a dock, in the field, between battles); 0 = we pay its Alloys again (v247)
+  hangarBuildMul: 3,          // (v248.0) a hangar's price when the carrier is built: this many times the craft it holds (the craft's own cost is part of it)
   hangarRestockShare: 0.5,    // (v244.0) the share of a carrier's hangars that must stand empty before it goes to restock
   hangarOrphansStay: 1,       // (v94.6) 1 = when a carrier is lost, its launched yard-buildable ships (a Picket, not a fighter) become ordinary ships of the fleet; 0 = lost when the battle ends
   // (v95, Alex 31 Oct: "make tenders and hangars a bit more robust, and make sure the ai can use them intelligently"; section 5jt and 06u)
@@ -13575,7 +13589,7 @@ const SETTING_MUST_BE_POSITIVE = ['commandThinkRate', 'moonOrbitMinutes', 'moonO
   'serviceLastMax', 'serviceHistoryMax', 'serviceEventsMax', 'recentChangeSeconds', 'dossierLastActions', 'reportOfficerRows', 'dossierChartMinSpan',
   'orbitRateHeadroom', 'orbitMinRate', 'facingLeadFactor', 'interceptMaxLead', 'orbitRangeFraction', 'orbitTurnMargin', 'tightOrbitSizeRatio', 'tightOrbitHulls', 'tightOrbitStraySeconds', 'tightOrbitSpacings', 'tacticMinSeconds', 'chaseGiveUpSeconds', 'noChaseSeconds',
   'shapeEnterFactor', 'shapeExitFactor', 'axisTurnRate'];
-const SETTING_MUST_BE_NON_NEGATIVE = ['quietStepMul', 'quietMinSpeed', 'chainLagSeconds', 'chainSpreadSeconds', 'slowRegrowSeconds', 'slowSporeSteps', 'slowFireMapSteps', 'slowGunRetrySeconds', 'lineRankMinWidth', 'lineRankDepth', 'lineRankRotateAt', 'batteryDepthFactor', 'swarmSpreadWidth', 'swarmSpreadDepth', 'swarmSpreadRejig', 'swarmPressOdds', 'swarmFallBackOdds', 'bombardShieldShare', 'bombardHoldSeconds', 'swarmDockStallCap', 'swarmDockStallQuietShare', 'stationHullMendQuiet', 'alloysNeverIdleNote', 'towJobs', 'towWaitSeconds', 'towFreshSeconds', 'towLookSeconds', 'towFleetSeconds', 'towBoldSwing', 'towDangerRadius', 'towDangerOdds', 'aoMobilizeOdds', 'aoMobilizeBoldSwing', 'aoMobilizeReinSwing', 'aoMobilizeSeconds', 'aoMobilizeLossShare', 'aoMobilizeBeatenShare', 'aoMobilizeOtherShips', 'aoMobilizeEnemySpeed', 'aoMobilizeWaitSeconds', 'aoCharLineSwing', 'aoCharCommandSwing', 'aoCharMovePull', 'aoCharDisciplineSwing', 'aoPostureSeconds', 'aoPostureMinSeconds', 'aoMeetOdds', 'aoOddsOutShare', 'aoFallBackOdds', 'aoBoldLean', 'aoMeetReachSlots', 'aoMeetStandoff', 'aoEngageDist', 'aoGroupDist', 'aoEdgeSlots', 'aoInboundSlots', 'aoRetakeLooseShare', 'aoDangerDist', 'aoRetakeStayShare', 'aoRetakeGatherSeconds', 'aoDefenceSplitShips', 'aoFleetMax', 'aoGarrisonShare', 'aoForwardStationSpeed', 'aoRefitShare', 'divisionOwnerSeconds', 'divisionOwnerFirstSeconds', 'divisionOwnerCountBand', 'divisionOwnerJoinSeconds', 'admiralNeedsLean', 'admiralNeedsReachRatio', 'admiralNeedsDefenceRatio', 'admiralNeedsWorksRatio', 'admiralNeedsPdShare', 'scuttleKillShare', 'scuttleXpCost', 'campaignTidySeconds', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftPressed', 'coreLoopShiftQuiet', 'coreLoopShiftMax', 'coreLoopHiveHoldShare', 'coreLoopAssessSeconds', 'coreLoopAssaultMixShare', 'coreLoopReinSwing', 'coreLoopReserveShare', 'coreLoopStrikeShare', 'coreLoopBoldAbove', 'coreLoopVaSeconds', 'coreLoopVaSlack', 'coreLoopVaWornShare', 'coreLoopDefenceRatio', 'coreLoopFleetHoldSeconds', 'coreLoopDivisionMinShips', 'coreLoopAssaultRatio', 'coreLoopAssaultFloor', 'coreLoopPlaceDefenceWorth', 'placesHomeEdgeBias', 'placesBrokenBonus', 'coreLoopStreamWeeks', 'coreLoopStreamMinShips', 'coreLoopLineKeep', 'coreLoopLineSeconds', 'coreLoopLineLooks', 'coreLoopLineDepth', 'coreLoopLineStep', 'coreLoopLineWindow', 'coreLoopTipRatio', 'coreLoopClearSeconds', 'coreLoopBackSeconds', 'coreLoopHoldSeconds', 'coreLoopBerths', 'divisionMergeSlack', 'swarmNestRetakeKeep', 'swarmGrowWindowWeeks', 'swarmGrowLowLoss', 'swarmGrowHighLoss', 'swarmGrowFromShare', 'swarmGrowStep', 'swarmGrowSmallCut', 'swarmGrowBigGain', 'swarmSpreadWeeks', 'hangarRefillWeeks', 'hangarRestockShare', 'swarmMiteRegrowSeconds', 'swarmCraftRegrowSeconds', 'fighterTurnaroundSeconds', 'fighterLaunchSeconds', 'fighterLaunchRange', 'fighterTickSeconds', 'stationFighterGuardRadius', 'droneJamReach', 'droneJamScatterMul', 'droneJamLoseChance', 'dcNoRoomSeconds', 'cmdPaceFormSeconds', 'cmdPaceMinShare', 'cmdPaceLeadSeconds', 'cmdPaceMinMarch', 'divisionSpeedSort', 'divisionSlowBelow', 'divisionFastAbove', 'swarmPaceFormSeconds', 'swarmDrift', 'swarmDivDrift', 'wreckHitShare', 'repairPartsWeeks', 'repairAutoBelow', 'dockQueueWarnSeconds', 'crippledCheckSeconds', 'towSpeedShare', 'towMaxShare', 'towHealthyHull', 'feedHullBelow', 'feedSeconds', 'feedSquadSeconds', 'feedHullShare', 'feedAmmoShare', 'feedGrabRange', 'feedHungryHull', 'feedHungryAmmo', 'feedHatchlingRange', 'swarmInfestTierGain', 'swarmInfestGrowShare', 'swarmInfestStartShare', 'swarmSurfaceInfest', 'swarmBurnPerDps', 'swarmBurnHotMul', 'swarmBurnPerKill', 'swarmRegrowSeconds', 'swarmSporeEvery', 'swarmSporeShotsPer', 'swarmSporeDpsPerInf', 'swarmBileEvery', 'swarmBileFrom', 'swarmBileDpsPerInf', 'swarmConvertCap', 'swarmConvertAimShare', 'swarmConvertFromWeek', 'swarmConvertFullWeek', 'swarmConvertDepthShare', 'swarmConvertWaste', 'facingTwoSidedAngle', 'freshSideHoldSeconds', 'crossTEdge', 'crossTCreepFraction', 'crossTWidth', 'crossTTurnEdge', 'placesPicketSpread', 'placesPicketMove', 'placesPicketMax', 'placesWithdrawGatherSeconds', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerTargetShare', 'ledgerLineMin', 'ledgerLossMargin', 'ledgerSaveFloor', 'ledgerMinLoss', 'ledgerSurplusShare', 'withdrawRatio', 'withdrawHoldWeeks', 'ledgerAssaultWeeks', 'indDevShareSave', 'indDevShareIdle', 'dirPriorityMul', 'resourceHeldShare', 'devGraceWeeks', 'devCapStart', 'devCapAlien', 'devPotShare', 'devIdleWeeks', 'devMaxBuilds', 'bbAcidSeconds', 'bbAcidMaxPatches', 'bbRegrowQuiet', 'bbRegrowHull', 'bbRegrowPlate', 'bbRegrowHeatStop', 'bbBurstTouch', 'bbBurstDeathReach', 'bbBurstSeek', 'bbVolleySpread', 'bbMissileRetries', 'bbPdRoundsPerShot', 'bbPdFlakRounds', 'bbPdReadyRounds', 'bbPdLaserHeat', 'bbRadiatorFoldSeconds', 'bbSideWeight', 'deflectRatio', 'deflectCallSeconds', 'readyRoundsPerGun', 'boostFuEarth', 'boostFuOther', 'boostGrowth', 'alloysEarthStart', 'alloysEarthRampTo', 'alloysEarthRampWeeks', 'alloysGrowth', 'fissilesGrowth', 'alienAlloysStart', 'alienAlloysGrowth', 'alienAlloysPerStep', 'alienBoostPerStep', 'alienNodeLossShare', 'shipUpkeepMaxShare', 'berthIdleWeeks', 'berthBoostWeeks', 'berthMaxGrowth', 'campaignBuildDays', 'campaignLiveEnterShips', 'civilianNoteWeeks', 'leaderNewsCooldown', 'leaderNewsCombatGap', 'stationRebuildYardBonus', 'stationRebuildSecuredBonus', 'stationRebuildNearShare', 'stationRebuildAlloys', 'cmdAttackMaxSeconds', 'cmdPaceGap', 'radioQuietSeconds', 'cmdSummaryMinutes', 'designRemarkSeconds', 'cmdReviewBattles', 'huntMaxShips', 'huntGraceSeconds', 'pursuitFleeingBonus', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'dangerConeSeconds', 'placesAttackStallSeconds', 'campaignAttackStallSeconds', 'campaignStragglerShips', 'campaignStragglerShare', 'campaignStragglerSeconds', 'campaignStandoffSeconds', 'campaignStandoffWeeks', 'campaignRetakeWeeks', 'comebackMassWeeks', 'alienGarrisonCap', 'campaignFallenMax', 'campaignPoolCap', 'campaignGarrisonCap', 'campaignStartOwnShips', 'campaignAlienGarrison', 'campaignAdvanceKeep', 'campaignAdvanceRatio', 'campaignAdvanceTake', 'campaignAdvanceAfterWaves', 'campaignAdvanceHoldWeeks', 'campaignRearKeep', 'campaignFrontMoveMinShips', 'campaignFrontMoveShare', 'executiveMassRatio', 'executiveAssaultRatio', 'executiveAssaultMin', 'campaignPriorityWeight', 'alienShoveWeeks', 'alienGatherRatio', 'alienGatherTarget', 'alienGatherMinShips', 'alienGatherMaxWeeks', 'alienPullBackRatio', 'alienStateHoldWeeks', 'alienFirstPool', 'alienWaveJitter', 'alienWarnWeeks', 'alienWaveBoostWeeks', 'alienTargetWeakest', 'alienTargetMain', 'alienFirstWaveWeek', 'minLaunchShips', 'placesHoldClearOdds', 'campaignYardEvery', 'boostPerMarker', 'campaignRefuelShare', 'capitalBuildShare', 'assaultMaxWaitWeeks', 'repairPerWeek', 'campaignDesignBoostPerMass', 'campaignDesignBuildPerCost', 'campaignDesignAlloysShare', 'campaignDesignWeight', 'placesReachShare', 'placesFailRaise', 'placesContestShare', 'aoSecureShare', 'aoLoseShare', 'siegeBoostTrickle', 'boostFootholdShare', 'siegeGrowthFactor', 'siegeResourceFactor', 'placesReportMinutes', 'placesHysteresis', 'placesMaxOpposite', 'internalChance', 'internalFresh', 'externalCover', 'deepBelowHull', 'dcSeconds', 'blastToHull', 'blastToParts', 'profileNudgeMax', 'profileNudgeTurn', 'profileNudgeFiring', 'reactorWallShare', 'trackSquareCut', 'pressDryValue', 'pressFleetRatio', 'pressOdds', 'pressHealthEdge', 'pressOddsHealthy', 'pressDangerShare', 'pressHitChance', 'pressAfter', 'pressProgress', 'pressHold', 'pressStep', 'pressRingMin', 'lockFormShare', 'looseJitter', 'looseRein', 'lockSettleSeconds', 'lockRein', 'lockBreakHull', 'lockMinShare', 'closeRanksDelay', 'mergeBelow', 'mergeMaxOdds', 'disbandAt', 'stragglerSeconds', 'divisionLeash', 'pursuitBase', 'formBeforeAttack', 'gatherSeconds', 'fallenKeep', 'topUpBelow', 'stagingContactSeconds', 'stagingMaxWait', 'minNewSquadron', 'entryDangerRatio', 'entryCheckFactor', 'entryRetrySeconds', 'rallyInset', 'joinWornBelow', 'survivorEdgeMargin', 'flagKilled', 'flagWounded', 'flagSurviveSwing', 'woundedSkillPenalty', 'woundedBattles', 'replacementDelay', 'handoverSeconds', 'standInSkill', 'pinRenewSeconds', 'divisionTaskMinSeconds', 'rotateWornShare', 'divisionRefuseOdds', 'divisionRallyOdds', 'divisionCounterPressure', 'mainEffortMinOdds', 'mainEffortFreeRein', 'pinRenewFactor', 'supportSeconds', 'supportMaxTravelSeconds', 'divisionTargetBonus', 'localAttackOdds', 'memberCompactShare', 'recruitAxisSpread', 'recruitSkillLow', 'recruitSkillHigh', 'skillPerLevel', 'readinessXpPerRepair', 'medalSkillAdd', 'scarShakenBoldness', 'repertoirePull', 'spawnEdgeMargin', 'doctrinePull', 'matchupPull', 'experimentMinSeconds', 'experimentCooldown', 'tacticLearnStep', 'tacticWeightMax', 'exploreLearnBoost', 'spawnBandWidth', 'spawnVerticalMargin', 'shieldRechargeDelay', 'minArmorPassFraction', 'separationStrength',
+const SETTING_MUST_BE_NON_NEGATIVE = ['quietStepMul', 'quietMinSpeed', 'chainLagSeconds', 'chainSpreadSeconds', 'slowRegrowSeconds', 'slowSporeSteps', 'slowFireMapSteps', 'slowGunRetrySeconds', 'lineRankMinWidth', 'lineRankDepth', 'lineRankRotateAt', 'batteryDepthFactor', 'swarmSpreadWidth', 'swarmSpreadDepth', 'swarmSpreadRejig', 'swarmPressOdds', 'swarmFallBackOdds', 'bombardShieldShare', 'bombardHoldSeconds', 'swarmDockStallCap', 'swarmDockStallQuietShare', 'stationHullMendQuiet', 'alloysNeverIdleNote', 'towJobs', 'towWaitSeconds', 'towFreshSeconds', 'towLookSeconds', 'towFleetSeconds', 'towBoldSwing', 'towDangerRadius', 'towDangerOdds', 'aoMobilizeOdds', 'aoMobilizeBoldSwing', 'aoMobilizeReinSwing', 'aoMobilizeSeconds', 'aoMobilizeLossShare', 'aoMobilizeBeatenShare', 'aoMobilizeOtherShips', 'aoMobilizeEnemySpeed', 'aoMobilizeWaitSeconds', 'aoCharLineSwing', 'aoCharCommandSwing', 'aoCharMovePull', 'aoCharDisciplineSwing', 'aoPostureSeconds', 'aoPostureMinSeconds', 'aoMeetOdds', 'aoOddsOutShare', 'aoFallBackOdds', 'aoBoldLean', 'aoMeetReachSlots', 'aoMeetStandoff', 'aoEngageDist', 'aoGroupDist', 'aoEdgeSlots', 'aoInboundSlots', 'aoRetakeLooseShare', 'aoDangerDist', 'aoRetakeStayShare', 'aoRetakeGatherSeconds', 'aoDefenceSplitShips', 'aoFleetMax', 'aoGarrisonShare', 'aoForwardStationSpeed', 'aoRefitShare', 'divisionOwnerSeconds', 'divisionOwnerFirstSeconds', 'divisionOwnerCountBand', 'divisionOwnerJoinSeconds', 'admiralNeedsLean', 'admiralNeedsReachRatio', 'admiralNeedsDefenceRatio', 'admiralNeedsWorksRatio', 'admiralNeedsPdShare', 'scuttleKillShare', 'scuttleXpCost', 'campaignTidySeconds', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftPressed', 'coreLoopShiftQuiet', 'coreLoopShiftMax', 'coreLoopHiveHoldShare', 'coreLoopAssessSeconds', 'coreLoopAssaultMixShare', 'coreLoopReinSwing', 'coreLoopReserveShare', 'coreLoopStrikeShare', 'coreLoopBoldAbove', 'coreLoopVaSeconds', 'coreLoopVaSlack', 'coreLoopVaWornShare', 'coreLoopDefenceRatio', 'coreLoopFleetHoldSeconds', 'coreLoopDivisionMinShips', 'coreLoopAssaultRatio', 'coreLoopAssaultFloor', 'coreLoopPlaceDefenceWorth', 'placesHomeEdgeBias', 'placesBrokenBonus', 'coreLoopStreamWeeks', 'coreLoopStreamMinShips', 'coreLoopLineKeep', 'coreLoopLineSeconds', 'coreLoopLineLooks', 'coreLoopLineDepth', 'coreLoopLineStep', 'coreLoopLineWindow', 'coreLoopTipRatio', 'coreLoopClearSeconds', 'coreLoopBackSeconds', 'coreLoopHoldSeconds', 'coreLoopBerths', 'divisionMergeSlack', 'swarmNestRetakeKeep', 'swarmGrowWindowWeeks', 'swarmGrowLowLoss', 'swarmGrowHighLoss', 'swarmGrowFromShare', 'swarmGrowStep', 'swarmGrowSmallCut', 'swarmGrowBigGain', 'swarmSpreadWeeks', 'hangarRefillWeeks', 'hangarRestockShare', 'wingMaxTiny', 'wingLaunchRange', 'wingScreenRadius', 'wingStrikeRange', 'wingMaxSmall', 'wingSpread', 'hangarBuildMul', 'swarmMiteRegrowSeconds', 'swarmCraftRegrowSeconds', 'fighterTurnaroundSeconds', 'fighterLaunchSeconds', 'fighterLaunchRange', 'fighterTickSeconds', 'stationFighterGuardRadius', 'droneJamReach', 'droneJamScatterMul', 'droneJamLoseChance', 'dcNoRoomSeconds', 'cmdPaceFormSeconds', 'cmdPaceMinShare', 'cmdPaceLeadSeconds', 'cmdPaceMinMarch', 'divisionSpeedSort', 'divisionSlowBelow', 'divisionFastAbove', 'swarmPaceFormSeconds', 'swarmDrift', 'swarmDivDrift', 'wreckHitShare', 'repairPartsWeeks', 'repairAutoBelow', 'dockQueueWarnSeconds', 'crippledCheckSeconds', 'towSpeedShare', 'towMaxShare', 'towHealthyHull', 'feedHullBelow', 'feedSeconds', 'feedSquadSeconds', 'feedHullShare', 'feedAmmoShare', 'feedGrabRange', 'feedHungryHull', 'feedHungryAmmo', 'feedHatchlingRange', 'swarmInfestTierGain', 'swarmInfestGrowShare', 'swarmInfestStartShare', 'swarmSurfaceInfest', 'swarmBurnPerDps', 'swarmBurnHotMul', 'swarmBurnPerKill', 'swarmRegrowSeconds', 'swarmSporeEvery', 'swarmSporeShotsPer', 'swarmSporeDpsPerInf', 'swarmBileEvery', 'swarmBileFrom', 'swarmBileDpsPerInf', 'swarmConvertCap', 'swarmConvertAimShare', 'swarmConvertFromWeek', 'swarmConvertFullWeek', 'swarmConvertDepthShare', 'swarmConvertWaste', 'facingTwoSidedAngle', 'freshSideHoldSeconds', 'crossTEdge', 'crossTCreepFraction', 'crossTWidth', 'crossTTurnEdge', 'placesPicketSpread', 'placesPicketMove', 'placesPicketMax', 'placesWithdrawGatherSeconds', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerTargetShare', 'ledgerLineMin', 'ledgerLossMargin', 'ledgerSaveFloor', 'ledgerMinLoss', 'ledgerSurplusShare', 'withdrawRatio', 'withdrawHoldWeeks', 'ledgerAssaultWeeks', 'indDevShareSave', 'indDevShareIdle', 'dirPriorityMul', 'resourceHeldShare', 'devGraceWeeks', 'devCapStart', 'devCapAlien', 'devPotShare', 'devIdleWeeks', 'devMaxBuilds', 'bbAcidSeconds', 'bbAcidMaxPatches', 'bbRegrowQuiet', 'bbRegrowHull', 'bbRegrowPlate', 'bbRegrowHeatStop', 'bbBurstTouch', 'bbBurstDeathReach', 'bbBurstSeek', 'bbVolleySpread', 'bbMissileRetries', 'bbPdRoundsPerShot', 'bbPdFlakRounds', 'bbPdReadyRounds', 'bbPdLaserHeat', 'bbRadiatorFoldSeconds', 'bbSideWeight', 'deflectRatio', 'deflectCallSeconds', 'readyRoundsPerGun', 'boostFuEarth', 'boostFuOther', 'boostGrowth', 'alloysEarthStart', 'alloysEarthRampTo', 'alloysEarthRampWeeks', 'alloysGrowth', 'fissilesGrowth', 'alienAlloysStart', 'alienAlloysGrowth', 'alienAlloysPerStep', 'alienBoostPerStep', 'alienNodeLossShare', 'shipUpkeepMaxShare', 'berthIdleWeeks', 'berthBoostWeeks', 'berthMaxGrowth', 'campaignBuildDays', 'campaignLiveEnterShips', 'civilianNoteWeeks', 'leaderNewsCooldown', 'leaderNewsCombatGap', 'stationRebuildYardBonus', 'stationRebuildSecuredBonus', 'stationRebuildNearShare', 'stationRebuildAlloys', 'cmdAttackMaxSeconds', 'cmdPaceGap', 'radioQuietSeconds', 'cmdSummaryMinutes', 'designRemarkSeconds', 'cmdReviewBattles', 'huntMaxShips', 'huntGraceSeconds', 'pursuitFleeingBonus', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'dangerConeSeconds', 'placesAttackStallSeconds', 'campaignAttackStallSeconds', 'campaignStragglerShips', 'campaignStragglerShare', 'campaignStragglerSeconds', 'campaignStandoffSeconds', 'campaignStandoffWeeks', 'campaignRetakeWeeks', 'comebackMassWeeks', 'alienGarrisonCap', 'campaignFallenMax', 'campaignPoolCap', 'campaignGarrisonCap', 'campaignStartOwnShips', 'campaignAlienGarrison', 'campaignAdvanceKeep', 'campaignAdvanceRatio', 'campaignAdvanceTake', 'campaignAdvanceAfterWaves', 'campaignAdvanceHoldWeeks', 'campaignRearKeep', 'campaignFrontMoveMinShips', 'campaignFrontMoveShare', 'executiveMassRatio', 'executiveAssaultRatio', 'executiveAssaultMin', 'campaignPriorityWeight', 'alienShoveWeeks', 'alienGatherRatio', 'alienGatherTarget', 'alienGatherMinShips', 'alienGatherMaxWeeks', 'alienPullBackRatio', 'alienStateHoldWeeks', 'alienFirstPool', 'alienWaveJitter', 'alienWarnWeeks', 'alienWaveBoostWeeks', 'alienTargetWeakest', 'alienTargetMain', 'alienFirstWaveWeek', 'minLaunchShips', 'placesHoldClearOdds', 'campaignYardEvery', 'boostPerMarker', 'campaignRefuelShare', 'capitalBuildShare', 'assaultMaxWaitWeeks', 'repairPerWeek', 'campaignDesignBoostPerMass', 'campaignDesignBuildPerCost', 'campaignDesignAlloysShare', 'campaignDesignWeight', 'placesReachShare', 'placesFailRaise', 'placesContestShare', 'aoSecureShare', 'aoLoseShare', 'siegeBoostTrickle', 'boostFootholdShare', 'siegeGrowthFactor', 'siegeResourceFactor', 'placesReportMinutes', 'placesHysteresis', 'placesMaxOpposite', 'internalChance', 'internalFresh', 'externalCover', 'deepBelowHull', 'dcSeconds', 'blastToHull', 'blastToParts', 'profileNudgeMax', 'profileNudgeTurn', 'profileNudgeFiring', 'reactorWallShare', 'trackSquareCut', 'pressDryValue', 'pressFleetRatio', 'pressOdds', 'pressHealthEdge', 'pressOddsHealthy', 'pressDangerShare', 'pressHitChance', 'pressAfter', 'pressProgress', 'pressHold', 'pressStep', 'pressRingMin', 'lockFormShare', 'looseJitter', 'looseRein', 'lockSettleSeconds', 'lockRein', 'lockBreakHull', 'lockMinShare', 'closeRanksDelay', 'mergeBelow', 'mergeMaxOdds', 'disbandAt', 'stragglerSeconds', 'divisionLeash', 'pursuitBase', 'formBeforeAttack', 'gatherSeconds', 'fallenKeep', 'topUpBelow', 'stagingContactSeconds', 'stagingMaxWait', 'minNewSquadron', 'entryDangerRatio', 'entryCheckFactor', 'entryRetrySeconds', 'rallyInset', 'joinWornBelow', 'survivorEdgeMargin', 'flagKilled', 'flagWounded', 'flagSurviveSwing', 'woundedSkillPenalty', 'woundedBattles', 'replacementDelay', 'handoverSeconds', 'standInSkill', 'pinRenewSeconds', 'divisionTaskMinSeconds', 'rotateWornShare', 'divisionRefuseOdds', 'divisionRallyOdds', 'divisionCounterPressure', 'mainEffortMinOdds', 'mainEffortFreeRein', 'pinRenewFactor', 'supportSeconds', 'supportMaxTravelSeconds', 'divisionTargetBonus', 'localAttackOdds', 'memberCompactShare', 'recruitAxisSpread', 'recruitSkillLow', 'recruitSkillHigh', 'skillPerLevel', 'readinessXpPerRepair', 'medalSkillAdd', 'scarShakenBoldness', 'repertoirePull', 'spawnEdgeMargin', 'doctrinePull', 'matchupPull', 'experimentMinSeconds', 'experimentCooldown', 'tacticLearnStep', 'tacticWeightMax', 'exploreLearnBoost', 'spawnBandWidth', 'spawnVerticalMargin', 'shieldRechargeDelay', 'minArmorPassFraction', 'separationStrength',
   'separationMaxStepFraction', 'reengageMinGap', 'kiteEnterFactor', 'kiteExitFactor', 'kiteBackSpeed', 'debugMaxLines', 'formationHoldFraction', 'formationPaceMin',
   'formationBreakAngle', 'formationBreakSeconds', 'formationPassBend', 'leaderCloserMin', 'escortHoldFraction', 'escortStandOff', 'flankMarginFactor', 'flankAlong', 'flankContactFactor', 'flankArriveFactor', 'flankMapMarginFactor',
   'shotLengthSizes', 'minShipScreenPixels', 'maxTriangleShips', 'defaultReengage', 'defaultSeed',
@@ -13597,7 +13611,7 @@ const SETTING_WHOLE_NUMBERS = ['slowSporeSteps', 'slowFireMapSteps', 'lineRanks'
   'reportSquadronRows', 'reportPacketRows', 'reinforceMaxSquadrons', 'flankMaxSquadrons', 'counterMaxSquadrons', 'withdrawSamples', 'versionLogMax', 'serviceLastMax', 'serviceHistoryMax', 'serviceEventsMax', 'dossierLastActions', 'reportOfficerRows',
   'movementModel', 'hitModel', 'tacticsModel', 'flightAssist', 'retreatFiring', 'simultaneousFire', 'officerModel', 'strengthMapSteps', 'oddsCellsPerRadius', 'oddsMaxCells', 'maxRouts', 'maxBreakOffs', 'overheatFallback', 'smartTargetCandidates'];
 // The switches (section 1b, "The rules in force"): the values each may have, and the names the code uses for them.
-const SETTING_CHOICES = { quietSteps: [0, 1], sleepLockedSquads: [0, 1], commandPace: [0, 1], placesByX: [0, 1], slowClock: [0, 1], lineRanks: [0, 1], swarmSpread: [0, 1], longSolarReach: [0, 1], longDockModel: [0, 1], swarmLine: [0, 1], warValves: [0, 1], bombardShield: [0, 1, 2], stationCrewWithStation: [0, 1], placeHoldFollow: [0, 1], aoMobilize: [0, 1], aoCharacter: [0, 1], aoAdmiral: [0, 1], cmdFormMoves: [0, 1], orderMovesObeyed: [0, 1], huntDetach: [0, 1], cmdStatLeans: [0, 1], huntDetachWhole: [0, 1], aoPostures: [0, 1], divisionOwner: [0, 1], admiralNeedsModel: [0, 1], longMapLine: [0, 1], cmdFormRealSize: [0, 1], cmdCapShare: [0, 1], cmdCapLongGuns: [0, 1], moonOrbits: [0, 1], dockModel: [0, 1], dockSpareModel: [0, 1], dockSpareSwarm: [0, 1], scuttleOnLedger: [0, 1], swarmDockModel: [0, 1], dockEvoModel: [0, 1], dockEvoSwarmSplit: [0, 1], matchupsInPlay: [0, 1], calmShips: [0, 1], cmRenderParts: [0, 1], simBudgetModel: [0, 1], simKeepPace: [0, 1], closeWarmAll: [0, 1], closeKeepPictures: [0, 1], allyShoveOff: [0, 1], allyNudge: [0, 1], divisionSpots: [0, 1], divisionSpotsInFight: [0, 1], campaignSensors: [0, 1], showBoost: [0, 1], coreLoop: [0, 1], coreLoopLine: [0, 1], coreLoopFleetCommand: [0, 1], coreLoopFleetDivisions: [0, 1], coreLoopRecompose: [0, 1], coreLoopAlienCommand: [0, 1], divisionMergeSmall: [0, 1], mergeFarOutOfContact: [0, 1], berthPairingModel: [0, 1], swarmNestModel: [0, 1], swarmGrowUpModel: [0, 1], swarmOpeningSpread: [0, 1], swarmLifeModel: [0, 1], swarmSurfaceModel: [0, 1], swarmEatsEnemies: [0, 1], swarmEatsHatchlings: [0, 1], fighterHangarModel: [0, 1], fighterLaunchModel: [0, 1], hangarRefillFromFleet: [0, 1], hangarRestock: [0, 1], swarmCarrierRegrow: [0, 1], hangarOrphansStay: [0, 1], tenderDocking: [0, 1], supplyRuns: [0, 1], cargoKept: [0, 1], ferryRuns: [0, 1], stationFighterGuard: [0, 1], stationNoSquadron: [0, 1], stationCrewSquad: [0, 1], stationPass: [0, 1], droneJamModel: [0, 1], divisionPaceModel: [0, 1], swarmFormations: [0, 1], facingVsTarget: [0, 1], facingTwoSided: [0, 1], freshSide: [0, 1], crossT: [0, 1], facingDodge: [0, 1], placesPicket: [0, 1], placesPicketSwarm: [0, 1], campaignStandoffPark: [0, 1], placesWithdrawOrder: [0, 1], placesWithdrawGuardDry: [0, 1], campaignLiveYardDawn: [0, 1], longMapReach: [0, 1], longMapLeash: [0, 1], longMapFog: [0, 1], sleepShips: [0, 1, 2], campaignResourceGate: [0, 1], bbAcid: [0, 1], bbRegrow: [0, 1], bbBurst: [0, 1], bbMissileStoreBySize: [0, 1], bbBeams: [0, 1], bbHeatModel: [0, 1], bbMissiles: [0, 1], bbPointDefence: [0, 1], bbLineOfFire: [0, 1], tightOrbit: [0, 1], campaignStartAtEarth: [0, 1], placesCrush: [0, 1], placesMassAttack: [0, 1], assaultSendAll: [0, 1], assaultReachOnly: [0, 1], frontReachOnly: [0, 1], placesNoLeapfrog: [0, 1], placesClaimKeeps: [0, 1], enemyWaitTurnBack: [0, 1], placesClaimFirm: [0, 1], placesSwarmPress: [0, 1], campaignSupplyLine: [0, 1], commandModel: [0, 1], stationRebuild: [0, 1], stationHullMend: [0, 1], cmdHelpMarches: [0, 1], cmdOpCommit: [0, 1, 2], cmdPassThrough: [0, 1, 2], orgScale: [0, 1], campaignLateAdmiral: [0, 1], campaignStartKit: [0, 1], placesFacilityApart: [0, 1], campaignFacilityApart: [0, 1], placesHoldClear: [0, 1], campaignHoldClear: [0, 1], campaignModel: [0, 1], officerCarryOver: [0, 1], campaignAutosave: [0, 1], placesRetry: [0, 1], placesSweep: [0, 1], placesDecisive: [0, 1], siegeYardSlowdown: [0, 1], placesModel: [0, 1], placesAllowAbandon: [0, 1], placesTheatre: [0, 1], designModel: [0, 1, 2], bureauBattle: [0, 1], moduleDamage: [0, 1], pressModel: [0, 1], partLossCall: [0, 1], survivalModel: [0, 1], allowAbandon: [0, 1], weaponModel: [0, 1], formationModel: [0, 1], lockStep: [0, 1], reorgModel: [0, 1], movementModel: [0, 1], hitModel: [0, 1, 2], tacticsModel: [0, 1], flightAssist: [0, 1], retreatFiring: [0, 1], overheatFallback: [0, 1], newSetupDefaults: [0, 1], unmannedRearGuard: [0, 1], simultaneousFire: [0, 1], officerModel: [0, 1], promoteNeedsVacancy: [0, 1], divisionTier: [0, 1], successionMode: [0, 1, 2], stagingModel: [0, 1] };
+const SETTING_CHOICES = { quietSteps: [0, 1], sleepLockedSquads: [0, 1], commandPace: [0, 1], placesByX: [0, 1], slowClock: [0, 1], lineRanks: [0, 1], swarmSpread: [0, 1], longSolarReach: [0, 1], longDockModel: [0, 1], swarmLine: [0, 1], warValves: [0, 1], bombardShield: [0, 1, 2], stationCrewWithStation: [0, 1], placeHoldFollow: [0, 1], aoMobilize: [0, 1], aoCharacter: [0, 1], aoAdmiral: [0, 1], cmdFormMoves: [0, 1], orderMovesObeyed: [0, 1], huntDetach: [0, 1], cmdStatLeans: [0, 1], huntDetachWhole: [0, 1], aoPostures: [0, 1], divisionOwner: [0, 1], admiralNeedsModel: [0, 1], longMapLine: [0, 1], cmdFormRealSize: [0, 1], cmdCapShare: [0, 1], cmdCapLongGuns: [0, 1], moonOrbits: [0, 1], dockModel: [0, 1], dockSpareModel: [0, 1], dockSpareSwarm: [0, 1], scuttleOnLedger: [0, 1], swarmDockModel: [0, 1], dockEvoModel: [0, 1], dockEvoSwarmSplit: [0, 1], matchupsInPlay: [0, 1], calmShips: [0, 1], cmRenderParts: [0, 1], simBudgetModel: [0, 1], simKeepPace: [0, 1], closeWarmAll: [0, 1], closeKeepPictures: [0, 1], allyShoveOff: [0, 1], allyNudge: [0, 1], divisionSpots: [0, 1], divisionSpotsInFight: [0, 1], campaignSensors: [0, 1], showBoost: [0, 1], coreLoop: [0, 1], coreLoopLine: [0, 1], coreLoopFleetCommand: [0, 1], coreLoopFleetDivisions: [0, 1], coreLoopRecompose: [0, 1], coreLoopAlienCommand: [0, 1], divisionMergeSmall: [0, 1], mergeFarOutOfContact: [0, 1], berthPairingModel: [0, 1], swarmNestModel: [0, 1], swarmGrowUpModel: [0, 1], swarmOpeningSpread: [0, 1], swarmLifeModel: [0, 1], swarmSurfaceModel: [0, 1], swarmEatsEnemies: [0, 1], swarmEatsHatchlings: [0, 1], fighterHangarModel: [0, 1], fighterLaunchModel: [0, 1], hangarRefillFromFleet: [0, 1], hangarRestock: [0, 1], wingModel: [0, 1], wingAirGroups: [0, 1], hangarRefillFree: [0, 1], swarmCarrierRegrow: [0, 1], hangarOrphansStay: [0, 1], tenderDocking: [0, 1], supplyRuns: [0, 1], cargoKept: [0, 1], ferryRuns: [0, 1], stationFighterGuard: [0, 1], stationNoSquadron: [0, 1], stationCrewSquad: [0, 1], stationPass: [0, 1], droneJamModel: [0, 1], divisionPaceModel: [0, 1], swarmFormations: [0, 1], facingVsTarget: [0, 1], facingTwoSided: [0, 1], freshSide: [0, 1], crossT: [0, 1], facingDodge: [0, 1], placesPicket: [0, 1], placesPicketSwarm: [0, 1], campaignStandoffPark: [0, 1], placesWithdrawOrder: [0, 1], placesWithdrawGuardDry: [0, 1], campaignLiveYardDawn: [0, 1], longMapReach: [0, 1], longMapLeash: [0, 1], longMapFog: [0, 1], sleepShips: [0, 1, 2], campaignResourceGate: [0, 1], bbAcid: [0, 1], bbRegrow: [0, 1], bbBurst: [0, 1], bbMissileStoreBySize: [0, 1], bbBeams: [0, 1], bbHeatModel: [0, 1], bbMissiles: [0, 1], bbPointDefence: [0, 1], bbLineOfFire: [0, 1], tightOrbit: [0, 1], campaignStartAtEarth: [0, 1], placesCrush: [0, 1], placesMassAttack: [0, 1], assaultSendAll: [0, 1], assaultReachOnly: [0, 1], frontReachOnly: [0, 1], placesNoLeapfrog: [0, 1], placesClaimKeeps: [0, 1], enemyWaitTurnBack: [0, 1], placesClaimFirm: [0, 1], placesSwarmPress: [0, 1], campaignSupplyLine: [0, 1], commandModel: [0, 1], stationRebuild: [0, 1], stationHullMend: [0, 1], cmdHelpMarches: [0, 1], cmdOpCommit: [0, 1, 2], cmdPassThrough: [0, 1, 2], orgScale: [0, 1], campaignLateAdmiral: [0, 1], campaignStartKit: [0, 1], placesFacilityApart: [0, 1], campaignFacilityApart: [0, 1], placesHoldClear: [0, 1], campaignHoldClear: [0, 1], campaignModel: [0, 1], officerCarryOver: [0, 1], campaignAutosave: [0, 1], placesRetry: [0, 1], placesSweep: [0, 1], placesDecisive: [0, 1], siegeYardSlowdown: [0, 1], placesModel: [0, 1], placesAllowAbandon: [0, 1], placesTheatre: [0, 1], designModel: [0, 1, 2], bureauBattle: [0, 1], moduleDamage: [0, 1], pressModel: [0, 1], partLossCall: [0, 1], survivalModel: [0, 1], allowAbandon: [0, 1], weaponModel: [0, 1], formationModel: [0, 1], lockStep: [0, 1], reorgModel: [0, 1], movementModel: [0, 1], hitModel: [0, 1, 2], tacticsModel: [0, 1], flightAssist: [0, 1], retreatFiring: [0, 1], overheatFallback: [0, 1], newSetupDefaults: [0, 1], unmannedRearGuard: [0, 1], simultaneousFire: [0, 1], officerModel: [0, 1], promoteNeedsVacancy: [0, 1], divisionTier: [0, 1], successionMode: [0, 1, 2], stagingModel: [0, 1] };
 // Rule switches that an imported file may lack: a missing one is read as 0 (the file was made before the rule existed), not as this version's default (stage 12).
 const SETTING_SWITCHES_OLD_FILES = ['commandModel', 'orgScale', 'movementModel', 'hitModel', 'tacticsModel', 'newSetupDefaults', 'simultaneousFire', 'officerModel', 'divisionTier', 'stagingModel', 'reorgModel', 'formationModel', 'lockStep', 'weaponModel', 'survivalModel', 'designModel', 'moduleDamage', 'pressModel', 'placesModel'];
 const MOVE_CLASSIC = 0, MOVE_THRUST = 1;
@@ -20261,7 +20275,7 @@ let shipFreshUntil, shipFreshFlip, shipDodgeAcc;   // (v38) the fresh side: no o
 let shipTactic, shipRing, shipWhy, shipFaceOff, shipFaceSide, shipOrbit, shipSidestep, shipLeadT, shipBrakeRad, shipJinkStart, shipJinkPeriod, shipJinkPhase;   // smart tactics (section 5b)
 let shipChaseSince, shipNoChase, shipNoChaseUntil, shipGunMissSince, shipEnemyType, shipEnemyWant, shipEnemyWantSince;
 let shipStraySince, shipRejoin;                   // (stop 8) since when the ship has been far from its squadron (-1 = it is with it); 1 = a straggler flying back to its place (section 5p)
-let shipBay, fgJam, fgCarrierOfSlot;             // (v52, section 5jf) fighters: the bay a fighter flew out of, its scatter under jamming, the carrier record of a carrier (made by fgAllocateShipArrays)
+let shipBay, fgJam, fgCarrierOfSlot, wingN, wingCraftHp;             // (v52, section 5jf) fighters: the bay a fighter flew out of, its scatter under jamming, the carrier record of a carrier (made by fgAllocateShipArrays)
 // (v66, section 5jc) crippled ships: what each ship is doing about it, and that section's state (see 17c)
 let cplState = new Uint8Array(0), cplCtl = new Uint8Array(0), cplPartner = new Int32Array(0);   // [slot] its crippled state, how it is moved here, the other ship of its pair (-1 none)
 let cplPreX = new Float64Array(0), cplPreY = new Float64Array(0), cplEatEnd = new Float64Array(0);   // [slot] where it stood before this step's movement; when an eater's meal is done (-1 = not eating yet)
@@ -23795,7 +23809,7 @@ function resolveHit(a, t, vx, vy, facing, sqA, stateA, saIn, dmgIn, dtIn, trIn, 
   if (damage > 0) {
     let through;
     bbBeamTicks2 = tkIn > 0 ? tkIn : 0;   // (v30 B2) a beam: the armour pass subtracts the armour from each of its ticks in full (spec 7.1)
-    if (stV3[stt] === 1 && bbLof === 1) through = bbArmourPass(a, t, stt, facing, damage, dtype, tr, sa);   // (v30 B1, section 5vb) the line-of-fire pick: the square hit, and only the plates in front of it
+    if (stV3[stt] === 1 && bbLof === 1 && !(wingN[t] > 0)) through = bbArmourPass(a, t, stt, facing, damage, dtype, tr, sa);   // (v30 B1, section 5vb) the line-of-fire pick: the square hit, and only the plates in front of it
     else {
       through = damage - stArmor[stt * 4 + facing] * dmgArmorEffect[dtype] * dbgArmour[shipSide[t]];   // (v78.5) x the debug menu's armour for the target's side
       const floor = damage * SETTINGS.minArmorPassFraction;
@@ -23803,7 +23817,9 @@ function resolveHit(a, t, vx, vy, facing, sqA, stateA, saIn, dmgIn, dtIn, trIn, 
     }
     armorBlocked = damage - through;
     if (fxRec) fxHitNote(t, stV3[stt] === 1 && bbLof === 1 && bbHitShip === t ? bbHitPart : -1, stV3[stt] === 1 && bbLof === 1 && bbHitShip === t ? bbHitDeflected : 0, 0);   // (v33, display only)
-    const hp = shipHp[t], hit = through / (tough * SETTINGS.hpScale);          // (v78.5) the hull takes the debug menu's toughness times less
+    const hp = shipHp[t];
+    let hit = through / (tough * SETTINGS.hpScale);          // (v78.5) the hull takes the debug menu's toughness times less
+    if (wingN[t] > 1) hit = wingCapLoss(t, hit);          // (v248.0, 17b2) a wing: one hit brings down at most one craft (a wing's craft have no parts and go through the plain armour above)
     if (hit >= hp) { hullLoss = hp; over = hit - hp; shipHp[t] = 0; }
     else { hullLoss = hit; shipHp[t] = hp - hit; }
   }
@@ -23823,7 +23839,7 @@ function resolveHit(a, t, vx, vy, facing, sqA, stateA, saIn, dmgIn, dtIn, trIn, 
   statTakenFacing[stt * 4 + facing] += dealt;
   statTakenType[stt * DMG_COUNT + dtype] += dealt;
 
-  if (damage > 0 && shipHp[t] > 0 && SETTINGS.moduleDamage === 1 && stDesigned[stt] === 1) moduleHit(t, stt, facing, damage, hullLoss * tough, sa);   // (v20, section 5v) parts knocked out
+  if (damage > 0 && shipHp[t] > 0 && SETTINGS.moduleDamage === 1 && stDesigned[stt] === 1 && !(wingN[t] > 0)) moduleHit(t, stt, facing, damage, hullLoss * tough, sa);   // (v20, section 5v) parts knocked out
 
   // Destroyed? (Whether a damaged ship breaks off is decided later, when it next thinks.)
   if (shipHp[t] <= 0) {
@@ -25148,6 +25164,7 @@ function resolvePdHit(a, sa, t, vx, vy) {
     through /= tough * SETTINGS.hpScale;   // (v99.5) x the HP dial
     const hp = shipHp[t];
     hullLoss = through >= hp ? hp : through;
+    if (wingN[t] > 1) hullLoss = wingCapLoss(t, hullLoss);   // (v248.0, 17b2) a wing loses at most one craft a hit
     shipHp[t] = hp - hullLoss;
   }
   const dealt = shieldPts + hullLoss;
@@ -26384,7 +26401,7 @@ function bbFire(i, st, dt, withdrawing, deferred) {
       continue;
     }
     const inv = d > 1e-9 ? 1 / d : 0;
-    let shots = live;
+    let shots = wingN[i] > 1 ? live * wingN[i] : live;   // (v248.0, 17b2) a wing fires with all its craft
     // The hit chance (section 5), from the group's own numbers and the target's Profile.
     const stt = shipSide[target] * TYPE_COUNT + shipType[target];
     const ahead = -dx * shipCos[target] - dy * shipSin[target], toRight = -dy * shipCos[target] + dx * shipSin[target];
@@ -49057,7 +49074,7 @@ function campaignHangarFighter(typeIdStr, partIdx) {
 }
 // Pays for one fighter out of the week's pot and shares: '' when paid, else why not. The aliens pay nothing.
 function campaignHangarPay(side, fighter, pot) {
-  if (side !== 0) return '';
+  if (side !== 0 || SETTINGS.hangarRefillFree === 1) return '';   // (v248.0, Alex 13 Nov: "ship recharges free": the hangar was paid for when the carrier was built)
   const info = campaignV3Info(fighter.id), alloys = info ? info.alloys : 0;
   if (!(pot && pot[side] + 1e-9 >= alloys)) return 'needs Alloys';
   const needs = campaignDesignNeeds(fighter.id);
@@ -49141,7 +49158,7 @@ function campaignHangarsEmptyOf(g) {
 // battle runs between dawns, and the week's Alloys are already handed out). A craft needing a resource we get none of a week is refused, as at dawn.
 // Returns '' when the craft is on the bill, else why not.
 function campaignHangarBill(fighter) {
-  if (!campaign || !fighter) return '';
+  if (!campaign || !fighter || SETTINGS.hangarRefillFree === 1) return '';   // (v248.0) lost craft come back free
   campaignEconFields(campaign);
   const needs = campaignDesignNeeds(fighter.id);
   if (campaignResourceGateOn(0)) { const rates = campaignResourceRates(0); for (const r in needs) if (needs[r] > 0 && !(rates[r] > 0)) return 'needs ' + campaignResourceName(r); }
@@ -59552,6 +59569,7 @@ function cmdSquadJobs(dv, a, squads) {
     let job = 'line';
     if (isCap(sq)) job = (longGunCap(sq) ? 'artillery' : 'cap');
     else if (stPdMounts[st] > 0 && midPd > 0 && pdOf(st) > SETTINGS.cmdPdCoverFactor * midPd) job = 'pd';
+    else if (wingCarrierType(t)) job = 'artillery';           // (v248.0, step 2, 17b2) a carrier whose craft fly as wings stands at the back with the batteries: its wings are its guns
     else if (midRange > 0 && cmdTypeRange(st) > SETTINGS.cmdLongRangeFactor * midRange) job = (SETTINGS.lineRanks !== 1 && stSpeed[st] > midSpeed && (stHull[st] + stShield[st]) < midTough) ? 'skirmisher' : 'artillery';   // (v236.0) with the ranks on, a long gun is a battery whatever its hull (Alex: gun size, never hull size); the doctrine's Skirmish style still makes a skirmisher below
     // (v37) the design's doctrine (the Bureau's Doctrine tab) overrules the guess: its Style first, then its Duties (Auto leaves the guess as it is)
     const B = docBattleOf(st);
@@ -64385,8 +64403,8 @@ function fightersOn() { return SETTINGS.fighterLaunchModel === 1; }
 //   shipBay[slot]          the bay a launched fighter flew out of (an index in fgBays), -1 for every other ship
 //   fgJam[slot]            x the ship's scatter right now: above 1 for a drone inside an enemy jammer's reach, 1 for everything else (05f bbFire)
 //   fgCarrierOfSlot[slot]  the carrier record of this ship (an index in fgCarriers), -1 for every other ship
-function fgAllocateShipArrays(n) { shipBay = new Int32Array(n).fill(-1); fgJam = new Float32Array(n).fill(1); fgCarrierOfSlot = new Int32Array(n).fill(-1); }
-function fgResetShip(slot) { shipBay[slot] = -1; fgJam[slot] = 1; fgCarrierOfSlot[slot] = -1; if (fgKeptBySlot.size > 0) fgKeptBySlot.delete(slot); if (fgBackBySlot.size > 0) fgBackBySlot.delete(slot); }   // (spawnShip: a slot used again starts clean)
+function fgAllocateShipArrays(n) { shipBay = new Int32Array(n).fill(-1); fgJam = new Float32Array(n).fill(1); fgCarrierOfSlot = new Int32Array(n).fill(-1); wingN = new Int16Array(n); wingCraftHp = new Float32Array(n); }   // (v248.0) wingN, wingCraftHp: 17b2
+function fgResetShip(slot) { shipBay[slot] = -1; fgJam[slot] = 1; fgCarrierOfSlot[slot] = -1; wingN[slot] = 0; wingCraftHp[slot] = 0; if (fgKeptBySlot.size > 0) fgKeptBySlot.delete(slot); if (fgBackBySlot.size > 0) fgBackBySlot.delete(slot); }   // (spawnShip: a slot used again starts clean)
 
 // ---- The carriers and their bays ----
 const BAY_READY = 0, BAY_OUT = 1, BAY_TURN = 2, BAY_LOST = 3;   // a bay: its fighter waits inside / is out on the field / is inside being rearmed / was lost (knocked out)
@@ -64407,6 +64425,7 @@ function fgReset() {
   fgCarriers.length = 0; fgBays.length = 0; fgPending.length = 0; fgKeptBySlot.clear(); fgBackBySlot.clear(); fgTypeBayCache.clear(); fgTypeJamCache.clear();
   fgNextTick = 0; fgTicks = 0; fgSpareTick = -1; fgSpare.clear(); fgJammerTypes = 0; fgDroneTypes = 0; fgJammers[0].length = 0; fgJammers[1].length = 0; fgGuardOf.length = 0;
   for (const k in fgStats) fgStats[k] = 0;
+  for (const k in wingStats) wingStats[k] = 0; wingJobOf.length = 0; wingStrikeAt = -1e9;   // (v248.0, 17b2)
 }
 // (v95.2) A bay's name in a ship's kit (the empty hangars it remembers): the hangar's part index for the first craft in a hangar (as before), and
 // part + 100000 x seat for the 2nd, 3rd... craft of one standard hangar (35d-4: a hangar may hold several smaller craft). A bay's `part` below is this name.
@@ -64547,16 +64566,19 @@ function fgInTheFight(c) {
   const i = c.slot;
   if (shipTarget[i] >= 0 && shipAlive[shipTarget[i]] === 1) return true;
   if (SHIP_TYPES[shipType[i]].jumpOut === true) return true;   // (v75, section 5vc) a Delver drone tender drops its drones as soon as it arrives
-  const r = c.titan ? Math.max(SETTINGS.fighterLaunchRange, FG_TITAN_LAUNCH_RANGE) : SETTINGS.fighterLaunchRange;   // (v97.3) the Flattop launches from further out: it has no guns of its own to start a fight
+  let r = c.titan ? Math.max(SETTINGS.fighterLaunchRange, FG_TITAN_LAUNCH_RANGE) : SETTINGS.fighterLaunchRange;
+  if (c.station < 0 && wingCarrierType(c.type)) r = Math.max(r, SETTINGS.wingLaunchRange);   // (v248.0, step 2, 17b2) a carrier in the back rank launches from further out   // (v97.3) the Flattop launches from further out: it has no guns of its own to start a fight
   return nearestOfSide(1 - c.side, shipX[i], shipY[i], r * r) >= 0;
 }
 // Every ready bay of a carrier launches: the fighters appear beside it, as one new squadron (or they join the squadron its earlier fighters made).
 function fgLaunch(c) {
   const side = c.side, cx = shipX[c.slot], cy = shipY[c.slot], offset = { x: 0, y: 0 }, W = SETTINGS.worldWidth, H = SETTINGS.worldHeight;
   const byType = new Map();
+  let wingBays = null;                                // (v248.0, 17b2) bays whose craft fly as wings: gathered by launch key, launched below
   for (let k = 0; k < c.bays.length; k++) {
     const bi = c.bays[k], b = fgBays[bi];
     if (b.state !== BAY_READY) continue;
+    if (wingMaxOf(b.type) > 0) { const key = lsLaunchKey(b); if (!wingBays) wingBays = new Map(); let wl = wingBays.get(key); if (!wl) { wl = []; wingBays.set(key, wl); } wl.push(bi); continue; }
     blockOffset(k + 1, typeSpacing[b.type], offset, SETTINGS.repairReleaseSpreadFactor);
     if (!spawnShip(side, b.type, clampNumber(cx + offset.x, 0, W), clampNumber(cy + offset.y, 0, H))) break;   // (no room: the limit maxShipsTotal; the bay stays ready and tries again)
     const slot = lastSpawnedSlot, st = side * TYPE_COUNT + b.type;
@@ -64566,17 +64588,24 @@ function fgLaunch(c) {
     let list = byType.get(key); if (!list) { list = []; byType.set(key, list); }
     list.push(slot);
   }
+  if (wingBays) wingBays.forEach(function (wl, key) {             // (v248.0) each key's craft: topping up this carrier's short wings, then new wings
+    const made = wingLaunch(c, wl, lsLaunchKey);
+    if (made.length === 0) return;
+    let list = byType.get(key); if (!list) { list = []; byType.set(key, list); }
+    for (const m of made) list.push(m);
+  });
   if (byType.size === 0) return;
   const dv = c.station < 0 && shipSquad[c.slot] > 0 ? divisionOf(shipSquad[c.slot]) : null;
   const guard = c.station >= 0 && fgGuardOn();
   let n = 0;
   byType.forEach(function (slots) {
     const type = shipType[slots[0]];
-    n += slots.length;
+    n += slots.reduce(function (a, m) { return a + (wingN[m] > 0 ? wingN[m] : 1); }, 0);
     slots = lsFillGuard(c, type, slots);                         // (v100.0, section 8h) the Last Stand's new fighters fill the gaps of the station's guard first
     if (slots.length === 0) return;
     const sq = addSquadron(side, type, slots, lsOfficerFor(c, slots) || fgOfficerFor(c));   // (v100.1: a Last Stand squadron's officer is its hangar's)
-    if (dv !== null && !dv.dissolved) divisionTake(dv, sq);      // the fighters fly with the carrier's Division
+    if (c.station < 0 && wingAirOn() && wingN[slots[0]] > 0) wingAirTake(c, sq);   // (v248.0, step 2, 17b2) a carrier's wings are its air group, given jobs by its officer
+    else if (dv !== null && !dv.dissolved) divisionTake(dv, sq); // the fighters fly with the carrier's Division
     else if (guard) fgGuardTake(c, sq);                          // (v54) a station's: they guard the station (never the Admiral's)
     else quietReport(sq, 'reinforced', c.name);                  // (a station's with the guard off, or a carrier in no Division: the Admiral gives them a place)
     lsSquadMade(c, sq);                                          // (v101.2, section 8h) the Last Stand remembers its station's squadrons (losses refill them)
@@ -64599,6 +64628,7 @@ function fgGuardTake(c, sq) {
 }
 // The guard's plan, set again every fighter tick (cheap): hold beside the station, on a leash of the guard radius round it.
 function fgGuardPlan(c, sq) {
+  if (c.station < 0) { wingAirPlan(c, sq); return; }              // (v248.0, step 2, 17b2) a ship carrier's air group
   const st = c.side * TYPE_COUNT + sqType[sq];
   sqMode[sq] = MODE_STATION; sqGoalAttack[sq] = 0;
   const spot = lastStand !== null ? lsLineSpotOf(sq) : null;      // (v131.0, section 8h2) a Last Stand guard stands at its spot in its Fleet's line
@@ -64608,12 +64638,14 @@ function fgGuardPlan(c, sq) {
   if (SETTINGS.commandModel === 1) { cmdSqLeashD[sq] = fgGuardLeash(sq, st); cmdSqMarch[sq] = SETTINGS.stationFighterGuardRadius; }
 }
 // (squadronLeash, section 5b) how far a guard may fly from its station: the guard radius plus its own weapon reach (so it can shoot at an enemy on the circle's edge).
-function fgGuardLeash(sq, st) { const ln = lastStand !== null ? lsLineLeash(sq, st) : -1; if (ln > 0) return ln;   // (v131.0, section 8h2) a squadron in the guard line: a short leash round its spot
+function fgGuardLeash(sq, st) { { const c = fgCarriers[fgGuardOf[sq] - 1]; if (c && c.station < 0) return wingAirLeash(c, sq, st); }   // (v248.0, 17b2) a ship carrier's air group
+  const ln = lastStand !== null ? lsLineLeash(sq, st) : -1; if (ln > 0) return ln;   // (v131.0, section 8h2) a squadron in the guard line: a short leash round its spot
   return (lastStand !== null ? Math.max(SETTINGS.stationFighterGuardRadius, LAST_STAND.threatReach) : SETTINGS.stationFighterGuardRadius) + stRange[st]; }   // (v101.4: a Last Stand guard may go out to the snipers, section 8h)
 // (chooseTargetCore, section 5b) a guard fighter's target: the nearest enemy to it that is inside the guard circle; else the enemy nearest the station inside it;
 // else only what is already in its weapon range (it is flying home and shoots back). -1 = nothing: it holds beside the station.
 function fgGuardPick(i, st, sq) {
   const c = fgCarriers[fgGuardOf[sq] - 1];
+  if (c && c.station < 0) return wingAirPick(i, st, sq, c);       // (v248.0, step 2, 17b2) a ship carrier's air group
   if (lastStand !== null) { const ln = lsLinePick(i, st, sq, c); if (ln > -2) return ln; }   // (v131.0, section 8h2) a ship in the guard line: the enemy nearest its squadron's spot
   const range2 = stRange2[st] * (1 + 1e-12);
   if (!c || c.state !== 'live') return findNearestEnemy(i, range2);
@@ -64628,7 +64660,7 @@ function fgGuardPick(i, st, sq) {
 function fgGuardForget(sq) {
   const v = fgGuardOf[sq];
   if (!(v > 0)) return;
-  fgGuardOf[sq] = 0;
+  fgGuardOf[sq] = 0; wingAirForget(sq);
   const c = fgCarriers[v - 1];
   if (c) { const k = c.guard.indexOf(sq); if (k >= 0) c.guard.splice(k, 1); }
 }
@@ -64636,7 +64668,7 @@ function fgGuardForget(sq) {
 function fgGuardRelease(c) {
   for (let k = 0; k < c.guard.length; k++) {
     const sq = c.guard[k];
-    fgGuardOf[sq] = 0;
+    fgGuardOf[sq] = 0; wingAirForget(sq);
     if (sqRetired[sq] === 1 || sqAlive[sq] + sqAway[sq] <= 0) continue;
     releaseSquadronPlan(sq);
     if (SETTINGS.commandModel === 1) { cmdSqLeashD[sq] = 0; cmdSqMarch[sq] = 0; }
@@ -64653,6 +64685,7 @@ function fgRelaunch(bi) {
   if (!returnShip(rec, shipX[c.slot], shipY[c.slot], fgStats.relaunched % 40 + 1, rec.hp, 'rearmed', true)) return;   // (no room: it waits in its bay)
   const slot = lastSpawnedSlot;
   shipBay[slot] = bi; b.state = BAY_OUT; b.fighter = slot; b.rec = null;
+  if (b.wing) wingRelaunch(slot, bi);                            // (v248.0, 17b2) a wing's lead bay brings the whole wing out again
   fgStats.relaunched++;
 }
 
@@ -64690,7 +64723,8 @@ function fgSendHome(i, c) {
 function fgTakeIn(rec) {
   const b = fgBays[rec.bay];
   if (!b || b.state !== BAY_OUT) { fgDropAwayRec(rec); return; }
-  b.state = BAY_TURN; b.fighter = -1; b.rec = rec; b.readyAt = simTime + SETTINGS.fighterTurnaroundSeconds;
+  if (b.wing) wingTakeIn(rec.bay, rec);                          // (v248.0, 17b2) a wing docks as one: every bay of it goes in
+  else { b.state = BAY_TURN; b.fighter = -1; b.rec = rec; b.readyAt = simTime + SETTINGS.fighterTurnaroundSeconds; }
   fgStats.docked++;
 }
 // A docked fighter's record is dropped (its carrier died with it inside): its squadron stops waiting for it, and it is a loss.
@@ -64713,7 +64747,7 @@ function fgHomeGone(i) {
 function fgShipGone(i) {
   if (shipBay.length <= i) return;
   const bi = shipBay[i];
-  if (bi >= 0) { const b = fgBays[bi]; if (b && b.fighter === i) { b.state = BAY_LOST; b.fighter = -1; b.rec = null; fgStats.lost++; } shipBay[i] = -1; }
+  if (bi >= 0) { const b = fgBays[bi]; if (b && b.fighter === i) { if (b.wing) wingGone(i, bi); b.state = BAY_LOST; b.fighter = -1; b.rec = null; fgStats.lost++; } shipBay[i] = -1; }
   const ci = fgCarrierOfSlot[i];
   if (ci >= 0) fgCarrierGone(fgCarriers[ci], 'gone');
 }
@@ -64799,6 +64833,7 @@ function fgCarrierGone(c, how) {
     if (b.state === BAY_TURN && b.rec) fgDropAwayRec(b.rec);   // (a fighter inside dies with the carrier)
     if (b.state !== BAY_OUT) b.state = BAY_LOST;               // (one out fights on: its bay stays "out" so a kill after this still counts once)
     else if (SETTINGS.hangarOrphansStay === 1 && fgTypeYardBuilt(b.type) && b.fighter >= 0 && shipBay[b.fighter] === c.bays[k]) {   // (v94.6) a launched Picket is an ordinary ship now
+      if (wingN[b.fighter] > 0) wingSplit(b.fighter);             // (v248.0, 17b2) a small craft wing: its craft become single ships again
       shipBay[b.fighter] = -1; b.fighter = -1; b.state = BAY_LOST; fgStats.orphaned++;
     }
     b.rec = null;
@@ -64879,9 +64914,9 @@ function fighterStep() {
       let ready = false;
       for (let k = 0; k < c.bays.length; k++) {
         const b = fgBays[c.bays[k]];
-        if (b.state === BAY_TURN) { if (simTime >= b.readyAt) fgRelaunch(c.bays[k]); }
+        if (b.state === BAY_TURN) { if (simTime >= b.readyAt && !(b.lead >= 0)) fgRelaunch(c.bays[k]); }   // (v248.0: a wing's other bays come out with its lead bay)
         else if (b.state === BAY_READY) ready = true;
-        else if (b.state === BAY_LOST && c.station < 0 && SETTINGS.hangarRefillFromFleet === 1 && fgTypeYardBuilt(b.type)) fgRefillFromFleet(c, c.bays[k]);   // (v94.6)
+        else if (b.state === BAY_LOST && c.station < 0 && SETTINGS.hangarRefillFromFleet === 1 && fgTypeYardBuilt(b.type) && wingMaxOf(b.type) === 0) fgRefillFromFleet(c, c.bays[k]);   // (v94.6)
       }
       if (c.station < 0 && fgTitanRebuild(c)) ready = true;   // (v97.3) the Flattop builds new craft for its empty bays
       if (c.station < 0 && fgSwarmRegrow(c)) ready = true;    // (v246.0) a Swarm carrier grows new craft for its empty bays
@@ -64894,7 +64929,9 @@ function fighterStep() {
       const b = fgBays[c.bays[k]];
       if (b.state !== BAY_OUT) continue;
       const f = b.fighter;
-      if (f < 0 || shipAlive[f] !== 1 || shipBay[f] !== c.bays[k]) { b.state = BAY_LOST; b.fighter = -1; continue; }   // (a safety net: killShip notes losses)
+      if (f < 0 || shipAlive[f] !== 1 || shipBay[f] !== wingLeadOf(c.bays[k])) { b.state = BAY_LOST; b.fighter = -1; b.lead = -1; continue; }   // (a safety net: killShip notes losses)
+      if (b.lead >= 0) continue;                                 // (v248.0, 17b2) a wing's other bays: its lead bay speaks for the wing
+      if (wingN[f] > 0) wingSync(f, ci);                         // (v248.0) the wing's craft count follows its hull: lost craft knock out their bays
       const st = shipSide[f] * TYPE_COUNT + shipType[f];
       if (c.state === 'live' && shipState[f] !== STATE_REPAIR && shipRetreating[f] !== 1 && (fgOutOfAmmo(f, st) || fgHangarsDry(f))) { if (fgCarrierOfSlot[f] >= 0) fgStats.restockTrips++; fgSendHome(f, c); }   // (v244.0: or a carried carrier with empty hangars, to restock)
       if (jamOn) fgJamTick(f, st);
@@ -64975,6 +65012,289 @@ function fgPicture() {
     for (let k = 0; k < c.bays.length; k++) { const b = fgBays[c.bays[k]]; if (b.state === BAY_READY) n.ready++; else if (b.state === BAY_OUT) n.out++; else if (b.state === BAY_TURN) n.turn++; else n.lost++; }
     return { name: c.name, side: c.side, slot: c.slot, type: typeId[c.type], state: c.state, station: c.station, launched: c.launched, bays: n, guard: c.guard.slice() };
   });
+}
+// =====================================================================
+// 5jw. WINGS: A CARRIER'S CRAFT FLOWN AS ONE  (v248.0; plan: "Carriers rethink" doc, step 1; SETTINGS.wingModel)
+//
+//   WHY. Alex, 13 Nov: carriers are "not good enough to justify, and performance heavy". Every fighter was a whole ship: its own movement, aim, guns,
+//   part-by-part damage and officer. A late Last Stand had about a thousand carriers and ten thousand craft launched, nearly all used once.
+//
+//   WHAT A WING IS. The craft of one carrier that launch together and share a hangar type (the same design) fly as ONE ship of that design, with a
+//   CRAFT COUNT (wingN). Fighters (Tiny craft) and Swarm Mites make wings of up to wingMaxTiny; small craft (Alex: "small units of gunboats or bombers")
+//   wings of up to wingMaxSmall. Corvettes and anything bigger stay single ships (Alex: "leave corvette hangars as solo ships").
+//     * Its HULL is the craft count x one craft's hull (wingCraftHp). One hit can bring down at most ONE craft (wingCapLoss): the rest of that hit is
+//       wasted, as a shell that kills a fighter does not go on to kill the next one. So many small hits (point defence, flak, light guns) are what
+//       thin a wing out, and a big gun is wasted on it.
+//     * Its GUNS fire as many shots as all its craft together (bbFire: the shots of a group x wingN), and its stores hold all their ammunition.
+//     * Its craft have no part-by-part damage (a craft is too small to matter part by part): a hit goes straight to the hull after the armour.
+//     * EVERY CRAFT KEEPS ITS OWN BAY. A wing's bays are listed on its lead bay (the first: `wing`), and the others point at it (`lead`). A craft lost
+//       knocks out one bay (wingSync, every fighter tick), exactly as a lost fighter did, so restocking, regrowth, the Last Stand head count and the
+//       campaign kit all go on counting craft.
+//     * Launch: the ready bays of one type are first used to TOP UP a wing of the same carrier that is short of craft and close by, then split evenly
+//       into new wings (fgLaunch). Docking and rearming move the whole wing: it comes home as one, waits fighterTurnaroundSeconds, launches as one.
+//     * A yard-built small craft wing whose carrier is lost (hangarOrphansStay) is split back into single ships, so the campaign keeps every one of them.
+//   DRAWING: the screen draws every craft of a wing round its middle, weaving in a loose flock (wingSpot: drawing only, no cost to the battle).
+//   COST: one ship a wing instead of one a craft. The bookkeeping rides on the fighter tick (17b) over the bays already being looked at.
+//   THE SWITCH: wingModel 0 flies every craft as its own ship (v247).
+// =====================================================================
+
+const wingStats = { made: 0, toppedUp: 0, craftLost: 0, split: 0, peakCraft: 0 };
+function wingsOn() { return SETTINGS.wingModel === 1; }
+// The most craft of this type in one wing: 0 = never a wing (a corvette or bigger: a single ship, as before).
+function wingMaxOf(t) {
+  if (!wingsOn()) return 0;
+  const r = SHIP_TYPES[t];
+  if (!r || r.immobile === true) return 0;
+  if (r.fighter === true || (r.summary && r.summary.sizeClass === 'tiny')) return Math.max(1, Math.floor(SETTINGS.wingMaxTiny));
+  if (r.summary && r.summary.sizeClass === 'small') return Math.max(1, Math.floor(SETTINGS.wingMaxSmall));
+  return 0;
+}
+// The lead bay of a bay's wing (itself for a lead or a single craft).
+function wingLeadOf(bi) { const b = fgBays[bi]; return b && b.lead >= 0 ? b.lead : bi; }
+// Every bay of the wing whose lead bay is `lead` (just that bay when it is no wing).
+function wingBaysOf(lead) { const b = fgBays[lead]; return b && b.wing ? b.wing : [lead]; }
+// What one craft of slot i's wing holds in its stores: added to (or taken off) the wing's stores as craft join or are lost.
+function wingStoreScale(i, mul) {
+  if (typeof bbStore === 'undefined' || !bbStore || bbStore.length < (i + 1) * BB_SK) return;
+  for (let k = 1; k < BB_SK; k++) bbStore[i * BB_SK + k] *= mul;
+  shipStore[i] *= mul;
+}
+function wingFullStores(i, n) {
+  const info = typeof bbTypeInfo === 'function' ? bbTypeInfo(shipType[i]) : null;
+  if (info && bbStore && bbStore.length >= (i + 1) * BB_SK) for (let k = 1; k < BB_SK; k++) bbStore[i * BB_SK + k] = info.storeCap[k] * n;
+  const st = shipSide[i] * TYPE_COUNT + shipType[i];
+  shipStore[i] = stStore[st] * n;
+}
+// Ship `slot` (just spawned, one craft's hull and stores) becomes the wing of bays `bays` (all of one carrier and type; the first is the lead).
+function wingMake(slot, bays) {
+  const n = bays.length, st = shipSide[slot] * TYPE_COUNT + shipType[slot], lead = bays[0];
+  wingN[slot] = n; wingCraftHp[slot] = stHull[st];
+  shipHp[slot] = stHull[st] * n;
+  wingFullStores(slot, n);
+  const L = fgBays[lead]; L.wing = bays.slice(); L.lead = -1;
+  for (let k = 0; k < n; k++) { const b = fgBays[bays[k]]; if (k > 0) { b.lead = lead; b.wing = null; } b.state = BAY_OUT; b.fighter = slot; b.rec = null; }
+  shipBay[slot] = lead;
+  wingStats.made++;
+  if (n > wingStats.peakCraft) wingStats.peakCraft = n;
+}
+// Ready bay bi joins wing `slot` (a craft of the same carrier and type flies out to it).
+function wingAdd(slot, bi) {
+  const lead = shipBay[slot], L = fgBays[lead], b = fgBays[bi], n = wingN[slot];
+  if (!L.wing) L.wing = [lead];
+  L.wing.push(bi); b.lead = lead; b.wing = null; b.state = BAY_OUT; b.fighter = slot; b.rec = null;
+  shipHp[slot] += wingCraftHp[slot];
+  if (n > 0) wingStoreScale(slot, (n + 1) / n);
+  wingN[slot] = n + 1;
+  wingStats.toppedUp++;
+}
+// (05 resolveHit, 05d) The hull a hit takes off a wing: at most what its leading craft has left (one hit, one craft at most).
+function wingCapLoss(t, loss) {
+  const c = wingCraftHp[t], hp = shipHp[t];
+  if (!(c > 0) || !(loss > 0)) return loss;
+  const n = Math.ceil(hp / c - 1e-6);
+  if (n <= 1) return loss;
+  const lead = hp - (n - 1) * c;
+  return loss >= lead ? lead : loss;
+}
+// (17b fighterStep, a lead bay out) The wing's craft count follows its hull: a craft whose share of the hull is gone is lost, and knocks out one bay.
+function wingSync(f, ci) {
+  const c = wingCraftHp[f], n = wingN[f];
+  if (!(n > 0) || !(c > 0)) return;
+  if (shipHp[f] > n * c) shipHp[f] = n * c;                         // (hull grown back or mended past its craft: no new craft from that)
+  let now = Math.ceil(shipHp[f] / c - 1e-6);
+  if (now < 1) now = 1;
+  if (now >= n) return;
+  const lead = shipBay[f], L = fgBays[lead], st = shipSide[f] * TYPE_COUNT + shipType[f];
+  if (!L || !L.wing) return;
+  let gone = 0;
+  while (L.wing.length > now && L.wing.length > 1) {
+    const bi = L.wing.pop(), b = fgBays[bi];
+    b.state = BAY_LOST; b.fighter = -1; b.rec = null; b.lead = -1;
+    fgStats.lost++; statLost[st]++; gone++;
+  }
+  wingStoreScale(f, now / n);
+  wingN[f] = now;
+  wingStats.craftLost += gone;
+  if (gone > 0 && typeof addFlash === 'function') addFlash(shipX[f], shipY[f], typeSize[shipType[f]], 1, f);
+}
+// (17b fgShipGone) Wing `slot` is gone (destroyed, or off the map): every bay it still has is knocked out.
+function wingGone(slot, lead) {
+  const L = fgBays[lead];
+  if (!L || !L.wing) return 0;
+  const st = shipSide[slot] * TYPE_COUNT + shipType[slot];
+  let n = 0;
+  for (const bi of L.wing) { if (bi === lead) continue; const b = fgBays[bi]; if (b.fighter === slot) { b.state = BAY_LOST; b.fighter = -1; b.rec = null; b.lead = -1; n++; } }
+  L.wing = null;
+  if (n > 0) { fgStats.lost += n; wingStats.craftLost += n; statLost[st] += n; }
+  return n;
+}
+// (17b fgTakeIn) Wing ship docked (rec): every bay of it goes in to rearm. Only the lead bay keeps the record; it brings the whole wing out again.
+function wingTakeIn(lead, rec) {
+  const bays = wingBaysOf(lead);
+  for (const bi of bays) { const b = fgBays[bi]; if (b.state !== BAY_OUT) continue; b.state = BAY_TURN; b.fighter = -1; b.rec = bi === lead ? rec : null; b.readyAt = simTime + SETTINGS.fighterTurnaroundSeconds; }
+}
+// (17b fgRelaunch) The lead bay's record came back as ship `slot`: it flies out as the whole wing, rearmed and patched up.
+function wingRelaunch(slot, lead) {
+  const L = fgBays[lead], bays = (L.wing || [lead]).filter(function (bi) { const b = fgBays[bi]; return bi === lead || b.state === BAY_TURN; });
+  if (wingMaxOf(shipType[slot]) === 0) { L.wing = null; return; }
+  wingMake(slot, bays);
+}
+// (17b fgCarrierGone, hangarOrphansStay) A yard-built small craft wing whose carrier is lost: its craft become single ships again (each one kept by the
+// campaign, as a launched Picket is). The wing's ship stays as one of them; the others appear beside it in a squadron of their own.
+function wingSplit(slot) {
+  const n = wingN[slot], c = wingCraftHp[slot];
+  if (!(n > 1)) { wingN[slot] = 0; return; }
+  const side = shipSide[slot], t = shipType[slot], lead = shipBay[slot];
+  const lostHp = n * c - shipHp[slot];
+  wingStoreScale(slot, 1 / n);
+  wingN[slot] = 0; shipHp[slot] = Math.max(1, c - lostHp);
+  const made = [], offset = { x: 0, y: 0 };
+  for (let k = 1; k < n; k++) {
+    blockOffset(k, typeSpacing[t], offset, SETTINGS.repairReleaseSpreadFactor);
+    if (!spawnShip(side, t, clampNumber(shipX[slot] + offset.x, 0, SETTINGS.worldWidth), clampNumber(shipY[slot] + offset.y, 0, SETTINGS.worldHeight))) break;
+    made.push(lastSpawnedSlot);
+  }
+  const L = fgBays[lead];
+  if (L && L.wing) for (const bi of L.wing) { const b = fgBays[bi]; b.lead = -1; if (bi !== lead) { b.state = BAY_LOST; b.fighter = -1; } }
+  if (L) L.wing = null;
+  wingStats.split++;
+  if (made.length > 0) { const sq = addSquadron(side, t, made, officerFromPreset(OFFICER_PRESETS[0], ++officerSerial)); quietReport(sq, 'reinforced', typeName[t]); }
+}
+// (17b fgLaunch) Launches the ready bays `bays` (one carrier, one type) beside carrier c: first topping up that carrier's wings of this type that are short
+// and near, then as new wings, split evenly. Returns the new ships' slots (the squadron-making in fgLaunch takes them as it took single fighters).
+function wingLaunch(c, bays, keyOf) {
+  const side = c.side, t = fgBays[bays[0]].type, max = wingMaxOf(t), out = [];
+  const cx = shipX[c.slot], cy = shipY[c.slot], W = SETTINGS.worldWidth, H = SETTINGS.worldHeight, offset = { x: 0, y: 0 };
+  let rest = bays.slice();
+  // top up: a wing of this carrier, of this type and launch key, short of craft and within fighterLaunchRange of the carrier
+  const near2 = SETTINGS.fighterLaunchRange * SETTINGS.fighterLaunchRange, key = keyOf(fgBays[bays[0]]);
+  for (let k = 0; k < c.bays.length && rest.length > 0; k++) {
+    const L = fgBays[c.bays[k]];
+    if (L.state !== BAY_OUT || L.lead >= 0 || L.type !== t || keyOf(L) !== key) continue;
+    const f = L.fighter;
+    if (f < 0 || shipAlive[f] !== 1 || shipBay[f] !== c.bays[k] || !(wingN[f] > 0) || wingN[f] >= max) continue;
+    if (shipState[f] === STATE_REPAIR || shipRetreating[f] === 1) continue;
+    const dx = shipX[f] - cx, dy = shipY[f] - cy;
+    if (dx * dx + dy * dy > near2) continue;
+    while (rest.length > 0 && wingN[f] < max) wingAdd(f, rest.shift());
+  }
+  if (rest.length === 0) return out;
+  const groups = Math.ceil(rest.length / max), per = Math.ceil(rest.length / groups);
+  for (let g = 0; g < groups && rest.length > 0; g++) {
+    const chunk = rest.splice(0, per);
+    blockOffset(g + 1, typeSpacing[t] * 2, offset, SETTINGS.repairReleaseSpreadFactor);
+    if (!spawnShip(side, t, clampNumber(cx + offset.x, 0, W), clampNumber(cy + offset.y, 0, H))) break;   // (no room: these bays stay ready)
+    const slot = lastSpawnedSlot, st = side * TYPE_COUNT + t;
+    wingMake(slot, chunk);
+    statDeployed[st] += chunk.length; statArrived[st] += chunk.length; fgStats.launched += chunk.length;
+    out.push(slot);
+  }
+  return out;
+}
+// ---- Drawing (display only) ----
+// Where craft k (1 .. wingN - 1) of wing i flies, in world units from the wing's middle: a loose V behind the lead, each craft weaving on its own.
+function wingSpot(i, k, out) {
+  const t = shipType[i], gap = Math.max(typeof typeDrawLen !== 'undefined' && typeDrawLen[t] > 0 ? typeDrawLen[t] : 0, typeSize[t]) * SETTINGS.wingSpread;
+  const row = (k + 1) >> 1, sideSign = (k & 1) ? -1 : 1, ph = (i * 0.37 + k * 1.71) % 6.283;
+  const along = -row * gap * 0.8 + Math.cos(simTime * 0.7 + ph * 1.3) * gap * 0.22;
+  const across = sideSign * row * gap * 0.75 + Math.sin(simTime * 0.9 + ph) * gap * 0.32;
+  const c = shipCos[i], s = shipSin[i];
+  out.x = c * along - s * across; out.y = s * along + c * across;
+  return out;
+}
+const WING_SPOT = { x: 0, y: 0 };
+
+// =====================================================================
+// (v248.0, step 2) THE AIR GROUP. Alex's plan, step 2: carriers fight from the back rank and their wings do the jobs a gun line cannot.
+//   * THE CARRIER STANDS AT THE BACK of its Division, where the batteries stand (15b cmdSquadJobs: a carrier is a battery whose guns are its wings), and
+//     launches once an enemy is within wingLaunchRange (far enough to fight from a reserve rank, which stands lineRankDepth behind the front).
+//   * ITS WINGS ARE ITS OWN (the station guard's rules, 17b fgGuard*: no Admiral or Commodore hands them out): the carrier's officer gives each wing a job:
+//       STRIKE - a wing whose craft carry missiles or torpedoes (a bomber): it flies past the line to the most valuable enemy within wingStrikeRange of
+//                its carrier (big ships, carriers, tenders first; worth less the further away) and attacks only that until it is gone or the wing is dry.
+//       SCREEN - every other wing (fighters, gunboats, Mites): it guards the circle of wingScreenRadius round its carrier, between the carrier and the
+//                nearest enemy, and attacks what comes into it (enemy craft, Mites and raiders, first of all).
+//     A wing out of ammunition flies home to rearm as before (17b fgSendHome). A carrier lost: its wings are handed to the Admiral (fgGuardRelease).
+//   THE SWITCH: wingAirGroups 0 = the wings fly with the carrier's Division (step 1).
+// =====================================================================
+const wingJobOf = [];        // by squadron number: 'strike' | 'screen' for an air group's wing, empty for every other squadron
+const wingStrikeList = [[], []];   // per side: the enemy ships worth striking (big ships, carriers, tenders), rebuilt every few seconds
+let wingStrikeAt = -1e9;
+function wingAirOn() { return wingsOn() && SETTINGS.wingAirGroups === 1; }
+// Is ship type t a carrier whose craft fly as wings? (Asked by 15b for the back rank and 17b for the launch range.)
+function wingCarrierType(t) { if (!wingAirOn()) return false; const bays = fgTypeBays(t); for (const b of bays) if (wingMaxOf(b.type) > 0) return true; return false; }
+// Does a wing of type t carry missiles or torpedoes (a bomber)?
+function wingIsBomber(t) { const info = typeof bbTypeInfo === 'function' ? bbTypeInfo(t) : null; if (!info) return false; for (const g of info.groups) if (g.missile && !g.intercept) return true; return false; }
+// (17b fgLaunch) A ship carrier's new wing squadron joins its air group with the job its craft suit.
+function wingAirTake(c, sq) {
+  wingJobOf[sq] = wingIsBomber(sqType[sq]) ? 'strike' : 'screen';
+  fgGuardTake(c, sq);
+}
+function wingAirForget(sq) { wingJobOf[sq] = undefined; }
+// The enemy ships worth a strike, per side (the side that strikes them): big ships (frigate class and up), carriers and tenders. O(ships) every 3 s.
+function wingStrikeRefresh() {
+  if (simTime - wingStrikeAt < 3 && simTime >= wingStrikeAt) return;
+  wingStrikeAt = simTime;
+  wingStrikeList[0].length = 0; wingStrikeList[1].length = 0;
+  for (let i = 0; i < highWater; i++) {
+    if (shipAlive[i] !== 1 || shipRetreating[i] === 1) continue;
+    const t = shipType[i], st = shipSide[i] * TYPE_COUNT + t;
+    if (stImmobile[st] === 1 || !(typeClass[t] >= 2 || fgCarrierOfSlot[i] >= 0 || (typeof tdTypeIsTender === 'function' && tdTypeIsTender(t)))) continue;
+    wingStrikeList[1 - shipSide[i]].push(i);
+  }
+}
+// The strike target for air group squadron sq of carrier c: the biggest listed enemy (hull and shields; a carrier counts twice) within wingStrikeRange of
+// the carrier, less the further it is; kept while it lives and stays in reach (looked at again every few seconds). -1 = none.
+function wingStrikeTarget(c, sq) {
+  const R = SETTINGS.wingStrikeRange, R2 = R * R, cx = shipX[c.slot], cy = shipY[c.slot];
+  const kept = c.strike ? c.strike.get(sq) : undefined;
+  if (kept && shipAlive[kept.t] === 1 && shipSide[kept.t] !== c.side && simTime - kept.at < 6) return kept.t;
+  wingStrikeRefresh();
+  let best = -1, bestV = 0;
+  for (const j of wingStrikeList[c.side]) {
+    if (shipAlive[j] !== 1 || shipSide[j] === c.side) continue;
+    const dx = shipX[j] - cx, dy = shipY[j] - cy, d2 = dx * dx + dy * dy;
+    if (d2 > R2) continue;
+    const sj = shipSide[j] * TYPE_COUNT + shipType[j], v = (stHull[sj] + stShield[sj]) * (fgCarrierOfSlot[j] >= 0 ? 2 : 1) / (1 + Math.sqrt(d2) / R);   // (its size, twice for a carrier: its craft go with it)
+    if (v > bestV) { bestV = v; best = j; }
+  }
+  if (!c.strike) c.strike = new Map();
+  if (best >= 0) c.strike.set(sq, { t: best, at: simTime }); else c.strike.delete(sq);
+  return best;
+}
+// (17b fgGuardPlan) The plan of a ship carrier's wing, set every fighter tick: a strike flies to its target, a screen holds between its carrier and the enemy.
+function wingAirPlan(c, sq) {
+  const st = c.side * TYPE_COUNT + sqType[sq], cx = shipX[c.slot], cy = shipY[c.slot];
+  sqMode[sq] = MODE_STATION; sqGoalAttack[sq] = 0;
+  let gx = cx, gy = cy, leash = SETTINGS.wingScreenRadius + stRange[st];
+  const tgt = wingJobOf[sq] === 'strike' ? wingStrikeTarget(c, sq) : -1;
+  if (tgt >= 0) {
+    gx = shipX[tgt]; gy = shipY[tgt];
+    const dx = gx - cx, dy = gy - cy;
+    leash = Math.sqrt(dx * dx + dy * dy) + stRange[st] + SETTINGS.wingScreenRadius * 0.5;
+  } else {
+    const e = nearestOfSide(1 - c.side, cx, cy, SETTINGS.wingLaunchRange * SETTINGS.wingLaunchRange);
+    if (e >= 0) { const dx = shipX[e] - cx, dy = shipY[e] - cy, d = Math.sqrt(dx * dx + dy * dy) || 1, step = Math.min(d * 0.5, SETTINGS.wingScreenRadius * 0.6); gx = cx + dx / d * step; gy = cy + dy / d * step; }
+  }
+  sqGoalX[sq] = clampNumber(gx, 0, SETTINGS.worldWidth); sqGoalY[sq] = clampNumber(gy, 0, SETTINGS.worldHeight);
+  sqGoalFace[sq] = c.side === BLUE ? 0 : Math.PI;
+  sqGoalArrive[sq] = formationRadius(sq) + 2 * typeSpacing[sqType[sq]];
+  if (SETTINGS.commandModel === 1) { cmdSqLeashD[sq] = leash; cmdSqMarch[sq] = leash; }
+}
+function wingAirLeash(c, sq, st) {
+  if (wingJobOf[sq] === 'strike' && c.strike && c.strike.has(sq)) { const t = c.strike.get(sq).t; if (shipAlive[t] === 1) { const dx = shipX[t] - shipX[c.slot], dy = shipY[t] - shipY[c.slot]; return Math.sqrt(dx * dx + dy * dy) + stRange[st] + SETTINGS.wingScreenRadius * 0.5; } }
+  return SETTINGS.wingScreenRadius + stRange[st];
+}
+// (17b fgGuardPick) A wing's target: a strike's own target while it lives; a screen's (or a strike with none) the nearest enemy to the wing inside its
+// carrier's screen circle, else the enemy nearest the carrier inside it, else only what is already in its weapon range.
+function wingAirPick(i, st, sq, c) {
+  const range2 = stRange2[st] * (1 + 1e-12);
+  if (!c || c.state !== 'live') return findNearestEnemy(i, range2);
+  if (wingJobOf[sq] === 'strike') { const t = wingStrikeTarget(c, sq); if (t >= 0) return t; }
+  const R = SETTINGS.wingScreenRadius, R2 = R * R, sx = shipX[c.slot], sy = shipY[c.slot];
+  const t = findNearestEnemy(i, R2);
+  if (t >= 0) { const dx = shipX[t] - sx, dy = shipY[t] - sy; if (dx * dx + dy * dy <= R2) return t; }
+  const u = nearestOfSide(1 - c.side, sx, sy, R2);
+  return u >= 0 ? u : findNearestEnemy(i, range2);
 }
 // =====================================================================
 // 5jc. CRIPPLED SHIPS  (v66, repair update 2: Part C of the plan "ship repair and crippled ships", approved by Alex 26 Oct; SETTINGS.crippledModel)
@@ -65848,13 +66168,15 @@ function tdCarriedLeaves(m) {
   const bi = shipBay.length > m ? shipBay[m] : -1;
   if (bi < 0) return false;
   const b = fgBays[bi], c = b ? fgCarriers[b.carrier] : null;
+  const csq = c && c.state === 'live' && c.station < 0 ? shipSquad[c.slot] : 0, dv = csq > 0 ? divisionOf(csq) : null;
+  const home = dv !== null && !dv.dissolved && dv.transfer !== null;
+  if (b && b.fighter === m && wingN[m] > 1 && !home && fgTypeYardBuilt(shipType[m])) wingSplit(m);   // (v248.0, 17b2) a small craft wing leaving as ordinary ships: one ship a craft
   shipBay[m] = -1;
   if (!b || b.fighter !== m) return false;
-  b.fighter = -1;
-  const csq = c && c.state === 'live' && c.station < 0 ? shipSquad[c.slot] : 0, dv = csq > 0 ? divisionOf(csq) : null;
-  if (dv !== null && !dv.dissolved && dv.transfer !== null) { b.state = BAY_READY; return true; }
-  b.state = BAY_LOST;
-  return false;
+  const bays = b.wing ? b.wing.slice() : [bi];                  // (v248.0) every bay of a wing goes with it
+  for (const x of bays) { const bx = fgBays[x]; if (bx.fighter !== m) continue; bx.fighter = -1; bx.lead = -1; bx.state = home ? BAY_READY : BAY_LOST; }
+  b.wing = null;
+  return home;
 }
 // (06e campaignSquadronLeaves, campaignShipsLeave) The run a leaving squadron is on, or null.
 function tdRunOf(sq) { return tdRunSq.get(sq) || null; }
@@ -71962,12 +72284,17 @@ function drawShips(left, top, right, bottom, minSize) {
       const L = triangleLen(shipType[i], minSize), nose = L * DRAWN_SIZE.triangleNose, back = L - nose, wing = L * DRAWN_SIZE.triangleWide * 0.5;   // (v110.0) as long as the icon
       if (typeDrawLen[shipType[i]] * camera.zoom >= DOTS_UNTIL_PIXELS) shipsDrawnBig++;   // (v126.3, v136.0)
       const c = shipCos[i], s = shipSin[i];
+      const nw = wingN[i] > 1 ? wingN[i] : 1;                         // (v248.0, 17b2) a wing: every craft, round the wing's middle
+      for (let q = 0; q < nw; q++) {
+      const ox = q > 0 ? wingSpot(i, q, WING_SPOT).x : 0, oy = q > 0 ? WING_SPOT.y : 0;
+      const x = shipX[i] + ox, y = shipY[i] + oy;
       const backX = x - c * back, backY = y - s * back;
       const wingX = -s * wing, wingY = c * wing;
       ctx.moveTo(x + c * nose, y + s * nose);                         // nose
       ctx.lineTo(backX + wingX, backY + wingY);
       ctx.lineTo(backX - wingX, backY - wingY);
       ctx.closePath();
+      }
     }
     ctx.fill();
   }
@@ -72495,12 +72822,17 @@ function drawShipIcons(left, top, right, bottom, minSize) {
       unitCountShip(shipType[i], z);   // (v227.0, section 6x2) how big the ships on screen are
       const L = triangleLen(shipType[i], minSize), nose = L * DRAWN_SIZE.triangleNose, back = L - nose, wing = L * DRAWN_SIZE.triangleWide * 0.5;   // (v110.0) as long as the icon
       const c = shipCos[i], s = shipSin[i];
+      const nw = wingN[i] > 1 ? wingN[i] : 1;                         // (v248.0, 17b2) a wing: every craft, round the wing's middle
+      for (let q = 0; q < nw; q++) {
+      const ox = q > 0 ? wingSpot(i, q, WING_SPOT).x : 0, oy = q > 0 ? WING_SPOT.y : 0;
+      const x = shipX[i] + ox, y = shipY[i] + oy;
       const backX = x - c * back, backY = y - s * back;
       const wingX = -s * wing, wingY = c * wing;
       ctx.moveTo(x + c * nose, y + s * nose);
       ctx.lineTo(backX + wingX, backY + wingY);
       ctx.lineTo(backX - wingX, backY - wingY);
       ctx.closePath();
+      }
     }
     ctx.fill();
   }
@@ -72522,6 +72854,7 @@ function drawShipIcons(left, top, right, bottom, minSize) {
     const c = shipCos[i], s = shipSin[i];
     const g = paintOn ? paintGroupOfShip(i) : side;            // (v25, section 7p) a Fleet shade or the selection colour
     const close = closeWants(i, px);
+    if (wingN[i] > 1) drawWingCraft(i, close, px, z, offX, offY, g, side, st, lod);   // (v248.0, 17b2) the rest of a wing's craft, round its middle
     if (close !== null) { closeDrawShip(i, close, sx, sy, z, g < 2 ? shipColorFor(side, shipType[i]) : paintColors[g], closeDtSim); continue; }
     ctx.setTransform(-s, c, -c, -s, sx, sy);
     const houseCol = g < 2 ? syHouseColour(i) : '';                // (v77, section 5vc) a Sylph ship wears its pilot's house colour
@@ -72530,6 +72863,19 @@ function drawShipIcons(left, top, right, bottom, minSize) {
     else { ctx.translate(-px / 2, -px / 2); drawIconVectorOnMap(shipIconFor(shipType[i], side), g < 2 ? shipColorFor(side, shipType[i]) : paintColors[g], px); }
   }
   ctx.setTransform(z, 0, 0, z, offX, offY);
+}
+// (v248.0, 17b2) The other craft of wing i (the first is drawn as the ship itself): each at its own spot in the wing's loose V, as the same icon or close art.
+function drawWingCraft(i, close, px, z, offX, offY, g, side, st, lod) {
+  const c = shipCos[i], s = shipSin[i];
+  for (let q = 1; q < wingN[i]; q++) {
+    wingSpot(i, q, WING_SPOT);
+    const sx = (shipX[i] + WING_SPOT.x) * z + offX, sy = (shipY[i] + WING_SPOT.y) * z + offY;
+    if (close !== null) { closeDrawShip(i, close, sx, sy, z, g < 2 ? shipColorFor(side, shipType[i]) : paintColors[g], 0); continue; }
+    ctx.setTransform(-s, c, -c, -s, sx, sy);
+    const sprite = g < 2 ? iconSprite[st] : paintSpriteFor(g, st, side, shipType[i], px, lod === ICON_SILHOUETTE);
+    if (sprite !== null) ctx.drawImage(sprite, -px / 2, -px / 2, px, px);
+    else { ctx.translate(-px / 2, -px / 2); drawIconVectorOnMap(shipIconFor(shipType[i], side), g < 2 ? shipColorFor(side, shipType[i]) : paintColors[g], px); }
+  }
 }
 // A very big icon (over 512 pixels) is drawn straight onto the map: its cuts and seams are painted in the map's colour instead of cut out.
 function drawIconVectorOnMap(id, color, px) {
@@ -95284,42 +95630,66 @@ function ls2Click(e) {
 }
 // =====================================================================
 // 8j. (v105.4, UI review finding 15) THE PROVING GROUNDS, PLAYER'S VERSION
-//   The main menu's Proving grounds button opens a small panel in the game's own look: pick our designs and how many of each, pick the enemy, how
-//   far on in the war its designs are and how many ships it sends, then Fight. The battle runs on the ordinary battle screen; when it ends a short
+//   The main menu's Proving grounds button opens a small panel in the game's own look: for each side pick a faction, its designs and how many of
+//   each (since v250.0 both sides are picked the same way), then Fight. The battle runs on the ordinary battle screen; when it ends a short
 //   report (who won, the time, what each side lost) lies over the map, in the Last Stand results' look, with Fight again, Change the forces and the
 //   full report. The old setup page (every number, the rules, the batch runner) is still there, behind "Advanced setup (testing tools)".
 //   Nothing here touches a war: the officers are the Proving grounds' own (provingRosterEnter), and the designs it installs are taken out again
 //   when you leave (pgLeave), as Last Stand does.
 // =====================================================================
 
-const PG_ENEMIES = [
-  { id: 'swarm', name: 'Swarm', rows: function () { return LAST_STAND.swarm; } },
-  { id: 'delver', name: 'Delvers', rows: function () { return LAST_STAND.factions.delver.rows || []; } },
-  { id: 'echo', name: 'Our own designs', rows: function () { return LAST_STAND.factions.echo.rows || []; } }   // (a mirror match: human designs on the other side)
+// (v250.0, Alex 13 Nov: "allow choosing both sides factions and ship types from drop down lists") BOTH SIDES ARE PICKED THE SAME WAY: each side has a
+//   faction (a drop-down) and its own rows of designs (a drop-down each) with how many ships of each, and Add a design for more rows. Before, our side
+//   had design rows and the enemy only buttons (who, how far on in the war, how many ships), so a battle could only ever be ours against one race's mix.
+//   Any faction may stand on either side, the same one on both too (a mirror match). The faction decides which designs its drop-downs offer.
+const PG_FACTIONS = [
+  { id: 'human', name: 'Humans', designs: pgHumanDesigns, start: [['Picket', 12], ['Harrier', 6]] },
+  { id: 'swarm', name: 'Swarm', designs: function () { return pgStockOf(function (s) { return !s.faction; }); }, start: [['Swarmling', 40], ['Biter', 15], ['Spitter', 5]] },
+  { id: 'delver', name: 'Delvers', designs: function () { return pgStockOf(function (s) { return s.faction === 'delver'; }); }, start: [['Spike drone', 30], ['Breaker', 10], ['Driver rock', 2]] },
+  { id: 'sylph', name: 'Sylph', designs: function () { return pgStockOf(function (s) { return s.faction === 'sylph'; }); }, start: [['Duelist', 3], ['Courser', 1]] }
 ];
-const PG_ERAS = [['Early', 5], ['Middle', 12], ['Late', 99]];          // the enemy's designs: those its Last Stand waves bring by this wave
-const PG_SIZES = [['20', 20], ['60', 60], ['150', 150], ['400', 400]];  // enemy ships
-const PG_MAX_ROWS = 6, PG_STORE = 'ewProvingQuick';
+const PG_SIDE_NAMES = ['Our side', 'The enemy'];
+const PG_MAX_ROWS = 8, PG_MAX_SHIPS = 500, PG_STORE = 'ewProvingQuick';
 
-let pgState = null;                      // the panel's choices: { rows: [{ name, n }], enemy, era, size, seed }
+let pgState = null;                      // the panel's choices: { sides: [{ faction, rows: [{ name, n }] }, (the same)], seed }
 let pgRun = null;                        // the battle running from the panel: { typesBefore, savedScenario, shown, seed }
 
+function pgFaction(id) { return PG_FACTIONS.find(function (f) { return f.id === id; }) || PG_FACTIONS[0]; }
+function pgStartRows(id) { return pgFaction(id).start.map(function (r) { return { name: r[0], n: r[1] }; }); }
+function pgCleanSide(x, fallback) {
+  if (!x || !PG_FACTIONS.some(function (f) { return f.id === x.faction; })) return { faction: fallback, rows: pgStartRows(fallback) };
+  const rows = (Array.isArray(x.rows) ? x.rows : []).filter(function (r) { return r && typeof r.name === 'string'; }).slice(0, PG_MAX_ROWS)
+    .map(function (r) { return { name: r.name, n: Math.max(1, Math.min(PG_MAX_SHIPS, Math.floor(+r.n) || 1)) }; });
+  return { faction: x.faction, rows: rows.length ? rows : pgStartRows(x.faction) };
+}
 function pgLoad() {
   if (pgState) return pgState;
   let s = null;
   try { s = JSON.parse(localStorage.getItem(PG_STORE) || 'null'); } catch (e) { s = null; }
-  pgState = s && Array.isArray(s.rows) && s.rows.length ? s : { rows: [{ name: 'Picket', n: 12 }, { name: 'Harrier', n: 6 }], enemy: 'swarm', era: 5, size: 60, seed: '' };
+  if (s && !Array.isArray(s.sides) && Array.isArray(s.rows)) {   // (choices saved before v250.0: our rows stay ours; the old enemy button picks its faction, "Our own designs" = Humans)
+    const was = s.enemy === 'delver' ? 'delver' : (s.enemy === 'echo' ? 'human' : 'swarm');
+    s = { sides: [{ faction: 'human', rows: s.rows }, { faction: was }], seed: s.seed || '' };
+  }
+  const sides = s && Array.isArray(s.sides) ? s.sides : [];
+  pgState = { sides: [pgCleanSide(sides[0], 'human'), pgCleanSide(sides[1], 'swarm')], seed: s && s.seed ? s.seed : '' };
   return pgState;
 }
 function pgSave() { try { localStorage.setItem(PG_STORE, JSON.stringify(pgState)); } catch (e) { /* (no storage: the choices are just not remembered) */ } }
 
-// The designs our side can pick: the stock human designs (not the weapon set) and the designs in your library.
-function pgDesignChoices() {
+// The designs a faction's drop-downs offer, as groups: [[group label, [names]]].
+function pgStockOf(keep) {
+  return [['Stock designs', STOCK_DESIGNS_V3.filter(function (s) { return s.side === 'alien' && keep(s); }).map(function (s) { return s.name; })]];
+}
+// Humans: the stock human designs (not the weapon set) and the designs in your library.
+function pgHumanDesigns() {
   const stock = STOCK_DESIGNS_V3.filter(function (s) { return s.side === 'human' && !s.weaponSet; }).map(function (s) { return s.name; });
   let mine = [];
   try { if (typeof libFamilies === 'function') mine = libFamilies().filter(function (f) { const ck = libCheck(f.latest); return ck.ok && ck.design && !libIsAlien(ck.design); }).map(function (f) { return f.family; }); } catch (e) { mine = []; }
-  return { stock: stock, mine: mine };
+  const g = [['Stock designs', stock]];
+  if (mine.length) g.push(['Your designs', mine]);
+  return g;
 }
+function pgDesignNames(faction) { let all = []; for (const g of pgFaction(faction).designs()) all = all.concat(g[1]); return all; }
 // Puts a design in the ship type table for the battle (a stock one by its spec, one of yours from the library) and returns its type index (-1: cannot).
 function pgInstall(name) {
   const have = findDesignByName(name);
@@ -95339,45 +95709,53 @@ function pgInstall(name) {
 function pgRenderMenu(body) {
   const S = pgLoad();
   const el = function (tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
-  const seg = function (opts, cur, set) {
-    const box = el('div', 'seg');
-    for (const o of opts) { const b = el('button', cur === o[1] ? 'on' : '', o[0]); b.type = 'button'; b.addEventListener('click', function () { set(o[1]); pgSave(); mmRender(); }); box.appendChild(b); }
-    return box;
-  };
-  body.appendChild(el('div', 'mm-msg', 'Pit our designs against an enemy and watch how they do. Nothing here touches your war.'));
-  body.appendChild(el('div', 'mm-h', 'Our side'));
-  const ch = pgDesignChoices();
-  S.rows.forEach(function (r, i) {
-    const row = el('div', 'mm-row pg-row');
-    const sel = el('select'); sel.className = 'pg-design';
-    const og1 = el('optgroup'); og1.label = 'Stock designs';
-    for (const n of ch.stock) { const o = el('option', '', n); o.value = n; og1.appendChild(o); }
-    sel.appendChild(og1);
-    if (ch.mine.length) { const og2 = el('optgroup'); og2.label = 'Your designs'; for (const n of ch.mine) { const o = el('option', '', n); o.value = n; og2.appendChild(o); } sel.appendChild(og2); }
-    if (ch.stock.indexOf(r.name) < 0 && ch.mine.indexOf(r.name) < 0) { const o = el('option', '', r.name + ' (gone)'); o.value = r.name; sel.appendChild(o); }
-    sel.value = r.name;
-    sel.addEventListener('change', function () { r.name = sel.value; pgSave(); });
-    const num = el('input'); num.type = 'number'; num.min = 1; num.max = 500; num.step = 1; num.value = r.n; num.className = 'pg-count';
-    num.addEventListener('change', function () { r.n = Math.max(1, Math.min(500, Math.floor(+num.value) || 1)); num.value = r.n; pgSave(); });
-    row.appendChild(sel); row.appendChild(num); row.appendChild(el('span', 'mm-msg', 'ships'));
-    if (S.rows.length > 1) { const x = el('button', 'btn btn-ghost pg-x', 'Remove'); x.type = 'button'; x.addEventListener('click', function () { S.rows.splice(i, 1); pgSave(); mmRender(); }); row.appendChild(x); }
-    body.appendChild(row);
+  body.appendChild(el('div', 'mm-msg', 'Pick a faction and its ships for each side, then watch how they do. Nothing here touches your war.'));
+  S.sides.forEach(function (side, si) {
+    body.appendChild(el('div', 'mm-h', PG_SIDE_NAMES[si]));
+    // The faction: changing it starts the side's rows again from that faction's own designs.
+    const frow = el('div', 'mm-row pg-row pg-faction-row');
+    frow.appendChild(el('span', 'pg-lbl', 'Faction'));
+    const fsel = el('select'); fsel.className = 'pg-faction'; fsel.id = 'pgFaction' + si;
+    for (const f of PG_FACTIONS) { const o = el('option', '', f.name); o.value = f.id; fsel.appendChild(o); }
+    fsel.value = side.faction;
+    fsel.addEventListener('change', function () { side.faction = fsel.value; side.rows = pgStartRows(side.faction); pgSave(); mmRender(); });
+    frow.appendChild(fsel);
+    body.appendChild(frow);
+    const groups = pgFaction(side.faction).designs(), names = pgDesignNames(side.faction);
+    side.rows.forEach(function (r, i) {
+      const row = el('div', 'mm-row pg-row pg-ship-row');
+      row.appendChild(el('span', 'pg-lbl', i === 0 ? 'Ships' : ''));
+      const sel = el('select'); sel.className = 'pg-design';
+      for (const g of groups) {
+        if (!g[1].length) continue;
+        const og = el('optgroup'); og.label = g[0];
+        for (const n of g[1]) { const o = el('option', '', n); o.value = n; og.appendChild(o); }
+        sel.appendChild(og);
+      }
+      if (names.indexOf(r.name) < 0) { const o = el('option', '', r.name + ' (gone)'); o.value = r.name; sel.appendChild(o); }
+      sel.value = r.name;
+      sel.addEventListener('change', function () { r.name = sel.value; pgSave(); });
+      const num = el('input'); num.type = 'number'; num.min = 1; num.max = PG_MAX_SHIPS; num.step = 1; num.value = r.n; num.className = 'pg-count';
+      num.addEventListener('change', function () { r.n = Math.max(1, Math.min(PG_MAX_SHIPS, Math.floor(+num.value) || 1)); num.value = r.n; pgSave(); });
+      row.appendChild(sel); row.appendChild(num);
+      if (side.rows.length > 1) { const x = el('button', 'btn btn-ghost pg-x', 'Remove'); x.type = 'button'; x.addEventListener('click', function () { side.rows.splice(i, 1); pgSave(); mmRender(); }); row.appendChild(x); }
+      body.appendChild(row);
+    });
+    if (side.rows.length < PG_MAX_ROWS) {
+      const add = el('button', 'btn btn-ghost pg-add', 'Add a design'); add.type = 'button'; add.id = 'pgAdd' + si;
+      add.addEventListener('click', function () {
+        const used = side.rows.map(function (r) { return r.name; });
+        side.rows.push({ name: names.find(function (n) { return used.indexOf(n) < 0; }) || names[0] || 'Picket', n: 6 }); pgSave(); mmRender();
+      });
+      const r = el('div', 'mm-row pg-row'); r.appendChild(el('span', 'pg-lbl', '')); r.appendChild(add); body.appendChild(r);
+    }
   });
-  if (S.rows.length < PG_MAX_ROWS) {
-    const add = el('button', 'btn btn-ghost', 'Add a design'); add.type = 'button';
-    add.addEventListener('click', function () { S.rows.push({ name: ch.stock[0] || 'Picket', n: 6 }); pgSave(); mmRender(); });
-    const r = el('div', 'mm-row'); r.appendChild(add); body.appendChild(r);
-  }
-  body.appendChild(el('div', 'mm-h', 'The enemy'));
-  const grid = el('div', 'pg-grid');
-  const line = function (label, node) { grid.appendChild(el('span', 'label', label)); grid.appendChild(node); };
-  line('Who', seg(PG_ENEMIES.map(function (e) { return [e.name, e.id]; }), S.enemy, function (v) { S.enemy = v; }));
-  line('Their designs', seg(PG_ERAS, S.era, function (v) { S.era = v; }));
-  line('Ships', seg(PG_SIZES, S.size, function (v) { S.size = v; }));
-  const seed = el('input'); seed.type = 'number'; seed.min = 0; seed.step = 1; seed.placeholder = 'random'; seed.value = S.seed || ''; seed.id = 'pgSeed';
+  const srow = el('div', 'mm-row pg-row');
+  srow.appendChild(el('span', 'pg-lbl', 'Seed'));
+  const seed = el('input'); seed.type = 'number'; seed.min = 0; seed.step = 1; seed.placeholder = 'random'; seed.value = S.seed || ''; seed.id = 'pgSeed'; seed.className = 'pg-seed';
   seed.addEventListener('change', function () { S.seed = seed.value; pgSave(); });
-  line('Seed', seed);
-  body.appendChild(grid);
+  srow.appendChild(seed);
+  body.appendChild(srow);
   const acts = el('div', 'mm-row');
   const go = el('button', 'btn btn-primary', 'Fight'); go.type = 'button'; go.id = 'pgGo';
   go.addEventListener('click', function () { const why = pgStart(); if (why) { msg.textContent = why; } });
@@ -95396,20 +95774,15 @@ function pgStart(sameSeed) {
   pgLeave();
   gameEnterMode('proving');                                       // (v228.0, section 7i5) Last Stand ends; the war is set aside: its clock, hooks and officers stay out
   const typesBefore = SHIP_TYPES.length, savedScenario = activeScenario;
-  const ours = [];
-  for (const r of S.rows) { const t = pgInstall(r.name); if (t >= 0) ours.push([t, r.n]); }
-  const E = PG_ENEMIES.find(function (e) { return e.id === S.enemy; }) || PG_ENEMIES[0];
-  const rows = E.rows().filter(function (r) { return (r.from || 1) <= S.era; }), theirs = [];
-  let shares = 0;
-  for (const r of rows) { const t = pgInstall(r.name); if (t >= 0) { theirs.push([t, r.share || 1]); shares += r.share || 1; } }
   const undo = function () { activeScenario = savedScenario; if (SHIP_TYPES.length > typesBefore) { SHIP_TYPES.length = typesBefore; rebuildTypeTables(); } };
-  if (ours.length === 0 || theirs.length === 0) { undo(); return 'Those designs could not be set up.'; }
+  const picked = [[], []];                                        // each side's [type, ships]
+  for (let si = 0; si < 2; si++) for (const r of S.sides[si].rows) { const t = pgInstall(r.name); if (t >= 0) picked[si].push([t, r.n]); }
+  if (picked[0].length === 0 || picked[1].length === 0) { undo(); return (picked[0].length === 0 ? 'Our side' : 'The enemy') + ' has no design that could be set up.'; }
   activeScenario = null;                                          // (open space: the setup page's scenario is put back on leaving)
   const setup = makeDefaultSetup();
   for (let side = 0; side < 2; side++) for (let t = 0; t < TYPE_COUNT; t++) setup[side][t].count = 0;
-  for (const o of ours) setup[BLUE][o[0]].count += o[1];
-  let left = S.size;                                              // the enemy's ships, split by its designs' shares (each design at least one)
-  theirs.forEach(function (o, k) { const n = k === theirs.length - 1 ? Math.max(1, left) : Math.max(1, Math.round(S.size * o[1] / shares)); setup[RED][o[0]].count += n; left -= n; });
+  for (const o of picked[0]) setup[BLUE][o[0]].count += o[1];
+  for (const o of picked[1]) setup[RED][o[0]].count += o[1];
   const command = makeDefaultCommand();
   const seed = sameSeed && pgRun ? pgRun.seed : (+S.seed > 0 ? Math.floor(+S.seed) : (Date.now() % 1000000) + 1);
   try { startBattle(seed, setup, null, command); }
@@ -101087,6 +101460,10 @@ function passNumbersV3(L, a) {
     const h = a.hangarsHeld[k], fs = h.rec.summary, fr0 = fs.resources || {}, u = L.parts[h.part];
     const fr = Object.assign({}, fr0, { alloys: mp && !layoutIsAlienV3(L) && !fs.massProd ? Math.ceil((fr0.alloys || 0) * mp.alloys - 1e-9) : fr0.alloys });   // (v68) a carried fighter's Alloys x0.8 (a carried small craft or corvette is already discounted on its own sheet)
     const fm = fs.mass || 0; mass += fm; if (u) { mx += fm * u.cx; my += fm * u.cy; }
+    // (v248.0, Alex 13 Nov: "make hangars expensive in alloys cost to build, but ship recharges free") our hangar costs hangarBuildMul x its craft's Alloys,
+    // paid once when the carrier is built; a lost craft then comes back free (06p, 17b). The enemy's pouches keep the plain price.
+    const hm = !layoutIsAlienV3(L) && typeof SETTINGS !== 'undefined' && SETTINGS.hangarBuildMul > 1 ? SETTINGS.hangarBuildMul : 1;
+    if (hm > 1) fr.alloys = Math.ceil((fr.alloys || 0) * hm - 1e-9);
     cost += fr.alloys || 0; fighterRes.alloys += fr.alloys || 0;
     res.alloys += fr.alloys || 0; res.iridium += fr.iridium || 0; res.helium3 += fr.helium3 || 0; res.rareEarths += fr.rareEarths || 0; res.fissiles += fr.fissiles || 0; res.antimatter = (res.antimatter || 0) + (fr.antimatter || 0);
     for (const r of ['iridium', 'helium3', 'rareEarths', 'fissiles', 'antimatter']) if (fr[r] > 0) fighterAdv[r] = (fighterAdv[r] || 0) + fr[r];
@@ -107852,21 +108229,20 @@ function stationTypeFor(p, side) {
 function isStationDesign(t) { return t >= 0 && t < SHIP_TYPES.length && SHIP_TYPES[t].stockStation === true; }
 stationDesignsInstall();
 // =====================================================================
-// (v247.0, Alex 12 Nov 2026) THE TAMBORA, our stock gun battleship: "a new default battleship for the humans, one that isnt a carrier", made from
-// Alex's own Krakatoa v6 (tools/test-designs/) and toned down a bit, so a player still has good reason to design their own:
-// plain Steel plate in a 4-deep belt (not Spaced plate), plain bulkheads (not Hardened), Medium Cannon turrets where the Krakatoa has Carronades,
-// four laser point defence mounts (not six). It keeps the Krakatoa's character: two Capital spinal culverins at the nose, a turret pair behind
-// each, magazines walled in bulkheads, a big walled Volatiles tank farm at the stern, the Heavy chemical rocket and the fission reactor.
-// On the four capital sections (the Krakatoa is on three cruiser sections), so it needed what a capital needs: two Large nuclear thermal
-// rockets beside the heavy rocket (the Krakatoa's small rocket and ion drive went), a second crew deck, more tanks, two more radiators, a
-// second airlock and supply port on the bottom edge. Tier 2 (the capital hull opens there).
-// Written by tools/v247.0/make-battleship.js: do not edit by hand, run it again.
+// (v247.1, Alex 13 Nov 2026) THE TAMBORA, our stock gun battleship: "a new default battleship for the humans, one that isnt a carrier", made from
+// Alex's own capital Everest v2 (tools/test-designs/) and toned down so a player still has good reason to design their own. It keeps the Everest's
+// layout: two Capital spinal x-ray lasers down the keel, a block of light rail turrets, two fusion reactors, a shield array, four heavy nuclear
+// thermal rockets, a 5-deep plate belt. The trims: Tier 2 parts and marks only (the Everest's Mk III parts at the best mark Tier 2 allows),
+// plain Steel plate for the Nanolaminate, plain bulkheads for Hardened ones, a Command deck for the Flag bridge, ordinary capacitors and heat
+// sinks for the Superconducting banks and Cryo sinks, and twelve turrets, not eighteen. Tier 2 (the capital hull opens there).
+// (v247.0 had made it from the Krakatoa, which turned out to be Alex's cruiser.)
+// Written by tools/v247.1/make-battleship.js: do not edit by hand, run it again.
 // =====================================================================
 (function () {
-  const t = {"parts":[["tank_vol",5,10,0,1,3],["tank_vol",5,13,0,1,3],["tank_vol",5,16,0,1,3],["tank_vol",5,19,0,1,3],["tank_vol",9,21,0,1,3],["tank_vol",9,18,0,1,3],["tank_vol",9,14,0,1,3],["tank_vol",9,10,0,1,3],["tank_vol",9,7,0,1,3],["tank_vol",12,7,0,1,3],["tank_vol",12,10,0,1,3],["tank_vol",12,14,0,1,3],["tank_vol",12,18,0,1,3],["tank_vol",12,21,0,1,3],["tank_vol",16,14,0,1,3],["tank_vol",16,18,0,1,3],["tank_vol",16,21,0,1,3],["bulkhead",8,23,0],["bulkhead",8,22,0],["bulkhead",8,21,0],["bulkhead",8,20,0],["bulkhead",8,19,0],["bulkhead",8,18,0],["bulkhead",8,17,0],["bulkhead",8,16,0],["bulkhead",8,15,0],["bulkhead",8,14,0],["bulkhead",8,13,0],["bulkhead",8,12,0],["bulkhead",8,11,0],["bulkhead",8,10,0],["bulkhead",8,9,0],["bulkhead",8,8,0],["bulkhead",8,7,0],["bulkhead",9,13,0],["bulkhead",11,13,0],["bulkhead",10,13,0],["bulkhead",12,13,0],["bulkhead",13,13,0],["bulkhead",14,13,0],["bulkhead",15,13,0],["bulkhead",15,14,0],["bulkhead",15,15,0],["bulkhead",15,16,0],["bulkhead",15,17,0],["bulkhead",14,17,0],["bulkhead",13,17,0],["bulkhead",12,17,0],["bulkhead",11,17,0],["bulkhead",10,17,0],["bulkhead",9,17,0],["bulkhead",15,19,0],["bulkhead",15,18,0],["bulkhead",15,20,0],["bulkhead",15,21,0],["bulkhead",15,22,0],["bulkhead",15,23,0],["bulkhead",15,12,0],["bulkhead",15,11,0],["bulkhead",15,10,0],["bulkhead",15,9,0],["bulkhead",15,8,0],["bulkhead",15,7,0],["bulkhead",16,13,0],["bulkhead",17,13,0],["bulkhead",18,13,0],["bulkhead",19,13,0],["bulkhead",19,14,0],["bulkhead",19,15,0],["bulkhead",19,16,0],["bulkhead",19,17,0],["bulkhead",18,17,0],["bulkhead",17,17,0],["bulkhead",16,17,0],["bulkhead",19,18,0],["bulkhead",19,19,0],["bulkhead",19,20,0],["bulkhead",19,21,0],["bulkhead",19,22,0],["bulkhead",19,23,0],["airlock",16,1,1],["supplyport",18,1,1],["lifesupport_plant",24,9,2],["bridge",19,9,2],["tank_fissiles",20,19,0,1,3],["tank_fissiles",35,19,0,1,3],["tank_fissiles",23,19,0,1,3],["tank_fissiles",29,19,0,1,3],["tank_fissiles",26,19,0,1,3],["tank_fissiles",32,19,0,1,3],["reactor_fission_5",39,17,3,2],["dc_3",20,13,1],["quarters_deck",20,16,2],["gun",60,16,0,1,1,{"family":"chem","role":"culverin","size":"capital","mount":"spinal","shell":"standard"}],["gun",60,8,0,1,1,{"family":"chem","role":"culverin","size":"capital","mount":"spinal","shell":"standard"}],["gun",53,8,0,1,1,{"family":"chem","role":"cannon","size":"medium","mount":"turret","shell":"standard"}],["gun",53,16,0,1,1,{"family":"chem","role":"cannon","size":"medium","mount":"turret","shell":"standard"}],["gun",48,8,1,1,1,{"family":"chem","role":"cannon","size":"medium","mount":"turret","shell":"standard"}],["gun",48,16,3,1,1,{"family":"chem","role":"cannon","size":"medium","mount":"turret","shell":"standard"}],["magazine",34,11,1,1,3],["magazine",38,11,1,1,3],["magazine",38,8,1,1,3],["magazine",34,8,1,1,3],["magazine",41,11,1,1,3],["magazine",41,8,1,1,3],["bulkhead",38,16,3],["bulkhead",38,17,3],["bulkhead",38,18,3],["bulkhead",38,19,3],["bulkhead",38,20,3],["bulkhead",38,21,3],["bulkhead",44,20,3],["bulkhead",39,21,3],["bulkhead",40,21,3],["bulkhead",43,16,3],["bulkhead",42,16,3],["bulkhead",41,16,3],["bulkhead",39,16,3],["bulkhead",37,18,3],["bulkhead",36,18,3],["bulkhead",35,18,3],["bulkhead",34,18,3],["bulkhead",32,18,3],["bulkhead",33,18,3],["bulkhead",31,18,3],["bulkhead",30,18,3],["bulkhead",29,18,3],["bulkhead",28,18,3],["bulkhead",27,18,3],["bulkhead",26,18,3],["bulkhead",25,18,3],["bulkhead",24,18,3],["bulkhead",23,18,3],["bulkhead",22,18,3],["bulkhead",21,18,3],["bulkhead",20,18,3],["bulkhead",44,19,3],["bulkhead",44,18,3],["bulkhead",44,17,3],["bulkhead",44,16,3],["pd_laser",20,1,2],["pd_laser",19,1,2],["pd_laser",43,27,2],["pd_laser",44,27,2],["magazine",45,8,2,1,3],["magazine",45,11,2,1,3],["magazine",45,16,2,1,3],["magazine",45,19,2,1,3],["bulkhead",43,21,2,1,2],["bulkhead",41,21,2,1,2],["bulkhead",37,8,2],["bulkhead",37,9,2],["bulkhead",37,10,2],["bulkhead",37,11,2],["bulkhead",37,12,2],["bulkhead",37,13,2],["bulkhead",44,8,2],["bulkhead",44,9,2],["bulkhead",44,10,2],["bulkhead",44,11,2],["bulkhead",44,12,2],["bulkhead",44,13,2],["bulkhead",44,14,2],["bulkhead",45,14,2],["bulkhead",46,14,2],["bulkhead",47,14,2],["bulkhead",43,14,2],["bulkhead",41,14,2],["bulkhead",42,14,2],["bulkhead",40,14,2],["bulkhead",39,14,2],["bulkhead",38,14,2],["bulkhead",37,14,2],["bulkhead",36,14,2],["bulkhead",35,14,2],["bulkhead",34,14,2],["bulkhead",33,14,2],["bulkhead",32,14,2],["bulkhead",33,13,2],["bulkhead",33,12,2],["bulkhead",33,11,2],["bulkhead",33,10,2],["bulkhead",33,9,2],["bulkhead",33,8,2],["bulkhead",49,14,2],["bulkhead",50,14,2],["bulkhead",51,14,2],["bulkhead",52,14,2],["bulkhead",54,14,2],["bulkhead",55,14,2],["bulkhead",56,14,2],["bulkhead",57,14,2],["bulkhead",58,14,2],["bulkhead",59,14,2],["dc_3",16,8,2],["chemrocket_h",0,9,0],["bulkhead",4,9,0],["bulkhead",4,10,0],["bulkhead",4,11,0],["bulkhead",4,12,0],["bulkhead",4,13,0],["bulkhead",4,14,0],["bulkhead",4,15,0],["bulkhead",4,16,0],["bulkhead",4,17,0],["bulkhead",4,18,0],["bulkhead",4,19,0],["bulkhead",4,20,0],["bulkhead",4,21,0],["bulkhead",16,7,0],["quarters_xl",30,7,3],["radiator_m",24,1,0],["radiator_m",21,1,0],["ntr_l",0,5,0],["ntr_l",0,22,0],["radiator_m",18,27,0],["radiator_m",21,27,0],["supplyport",15,27,1],["airlock",47,27,3],["armour",74,1,0,1,4],["armour",74,25,0,1,4],["armour",70,1,0,1,4],["armour",70,25,0,1,4],["armour",66,1,0,1,4],["armour",66,25,0,1,4],["armour",62,1,0,1,4],["armour",62,25,0,1,4],["armour",58,1,0,1,4],["armour",58,25,0,1,4],["armour",54,1,0,1,4],["armour",54,25,0,1,4],["armour",50,1,0,1,4],["armour",50,25,0,1,4],["armour",38,1,0,1,4],["armour",38,25,0,1,4],["armour",34,1,0,1,4],["armour",34,25,0,1,4],["armour",30,1,0,1,4],["armour",30,25,0,1,4],["armour",10,1,0,1,4],["armour",10,25,0,1,4],["armour",83,4,0,1,4],["armour",83,22,0,1,4],["armour",79,4,0,1,4],["armour",79,22,0,1,4],["armour",89,8,0,1,4],["armour",89,18,0,1,4],["armour",91,13,0,1,4],["armour",7,1,0,1,3],["armour",7,26,0,1,3],["armour",4,1,0,1,3],["armour",4,26,0,1,3],["armour",28,1,0,1,2],["armour",28,27,0,1,2],["armour",45,3,0,1,2],["armour",45,25,0,1,2],["armour",28,3,0,1,2],["armour",28,25,0,1,2],["armour",87,8,0,1,2],["armour",87,20,0,1,2],["armour",87,10,0,1,2],["armour",87,18,0,1,2],["armour",3,1,0],["armour",3,28,0],["armour",3,2,0],["armour",3,27,0],["armour",49,3,0],["armour",49,26,0],["armour",42,3,0],["armour",42,26,0],["armour",27,3,0],["armour",27,26,0],["armour",14,3,0],["armour",14,26,0],["armour",3,3,0],["armour",3,26,0],["armour",78,4,0],["armour",78,25,0],["armour",49,4,0],["armour",49,25,0],["armour",42,4,0],["armour",42,25,0],["armour",27,4,0],["armour",27,25,0],["armour",14,4,0],["armour",14,25,0],["armour",9,4,0],["armour",9,25,0],["armour",8,4,0],["armour",8,25,0],["armour",78,5,0],["armour",78,24,0],["armour",78,6,0],["armour",78,23,0],["armour",78,7,0],["armour",78,22,0],["armour",94,12,0],["armour",94,17,0],["armour",93,12,0],["armour",93,17,0],["armour",92,12,0],["armour",92,17,0],["armour",91,12,0],["armour",91,17,0],["quarters_deck",60,5,0],["tank_vol",80,13,0,1,3],["tank_vol",80,17,0,1,3],["tank_vol",84,13,0,1,3],["tank_vol",84,17,0,1,3],["tank_vol",79,9,0,1,3],["tank_fissiles",24,23,0,1,3],["tank_fissiles",26,5,0,1,3],["tank_fissiles",55,22,0,1,3],["tank_fissiles",22,5,0,1,3],["tank_fissiles",18,4,0,1,3],["tank_fissiles",88,15,0,1,3],["tank_vol",83,8,0,1,3],["tank_vol",16,25,0,1,2],["tank_vol",21,23,0,1,2]],"trackCells":{"passage":[47,26,47,25,47,24,47,23,47,22,48,22,49,22,50,22,51,22,52,22,53,22,54,22,54,21,17,3,18,3,19,3,20,3,21,3,22,3,22,4,23,3,24,3,25,3,26,3,26,4,17,4,17,5,17,6,17,7,23,9,32,7,33,7,34,7,16,6,15,6,14,6,13,6,12,6,11,6,10,6,9,6,8,6,35,7,36,7,37,7,38,7,39,7,40,7,41,7,42,7,43,7,44,7,45,7,46,7,47,7,48,7,37,15,38,15,39,15,40,15,40,16,49,7,50,7,51,7,52,7,53,7,41,15,42,15,43,15,44,15,45,15,46,15,47,15,48,15,49,15,50,15,51,15,52,15,53,15,54,7,55,7,56,7,57,7,58,7,59,7,60,7,54,15,55,15,56,15,57,15,58,15,59,15,60,15,59,16,59,17,59,18,59,19,59,20,59,21,58,21,57,21,56,21,55,21,46,27,45,27,46,24,45,24,44,24,43,24,43,25,43,26,42,24,41,24,40,24,39,24,38,24,37,24,37,23,37,22,36,22,35,22,34,22,33,22,32,22,31,22,30,22,29,22,28,22,27,22,26,22,25,22,24,22,23,22,22,22,23,23,23,24,23,25,23,26,22,26,21,26,20,26,19,26,18,26,18,25,18,24,17,24,16,24,15,24,14,24,15,25,15,26,13,24,12,24,11,24,10,24,9,24,8,24,61,15,62,15,63,15,64,15,65,15,66,15,67,15,68,15,69,15,70,15,71,15,72,15,73,15,74,15,75,15,76,15,77,15,78,15,79,15,79,16,80,16,79,14,79,13,79,12,81,16,82,16,83,16,84,16,85,16,86,16,87,16,80,12,81,12,82,12,83,12,83,11],"conduit":[23,9,23,13,23,8,22,8,21,8,20,8,19,8,21,7,21,6,21,5,21,4,21,3,20,3,19,3,29,15,30,15,31,15,32,15,33,15,34,15,35,15,36,15,37,15,38,15,39,15,40,15,40,16,43,21,43,22,43,23,43,24,43,25,43,26,44,26,44,22,45,22,46,22,47,22,48,22,49,22,50,22,51,22,52,22,53,22,53,21,54,21,55,21,56,21,57,21,58,21,59,21,44,17,44,16,44,15,45,15,46,15,47,15,48,15,48,14,49,14,50,14,51,14,52,14,53,14,53,13,54,13,55,13,56,13,57,13,58,13,59,13,18,3,17,3,16,3,15,3,15,4,15,5,14,5,13,5,12,5,11,5,10,5,9,5,8,5,8,6,8,7,8,8,8,9,8,10,8,11,8,12,8,13,8,14,8,15,8,16,8,17,8,18,8,19,8,20,8,21,8,22,8,23,8,24,9,24,10,24,11,24,12,24,13,24,14,24,15,24,16,24,17,24,18,24,18,25,18,26,28,15,27,15,26,15,25,15,24,15,23,15,23,14,23,12,23,11,23,10],"hoist":[37,8,37,7,36,7,44,8,44,7,45,7,45,14,45,15,47,7,48,7,49,7,50,7,51,7,52,7,53,7,47,15,48,15,49,15,50,15,51,15,52,15,53,15,54,7,55,7,56,7,57,7,58,7,59,7,60,7,54,15,55,15,56,15,57,15,58,15,59,15,60,15,18,3,19,3,20,3,21,3,22,3,23,3,24,3,25,3,25,4,25,5,25,6,25,7,25,8,26,8,27,8,28,8,29,8,29,7,29,6,30,6,31,6,32,6,33,6,34,6,34,7,17,3,16,3,15,3,15,4,15,5,15,6,15,7,15,8,15,9,15,10,15,11,15,12,15,13,15,14,15,15,15,16,15,17,15,18,15,19,15,20,15,21,15,22,15,23,15,24,15,25,15,26],"fuelline":[5,9,5,8,4,21,3,21,8,21,8,22,8,23,8,24,9,24,15,23,15,24,16,24,19,23,20,23,8,10,8,9,8,8,8,7,8,6,9,6,19,18,20,18,21,18,22,18,23,18,24,18,25,18,26,18,27,18,28,18,29,18,30,18,31,18,32,18,33,18,34,18,35,18,36,18,37,18,38,18,38,17,38,16,39,16,40,16,41,16,42,16,43,16,44,16,44,15,45,15,46,15,47,15,48,15,49,15,50,15,51,15,52,15,53,15,54,15,55,15,56,15,57,15,58,15,59,15,60,15,61,15,62,15,63,15,64,15,65,15,66,15,67,15,68,15,69,15,70,15,71,15,72,15,73,15,74,15,75,15,76,15,77,15,78,15,79,15,80,12,82,9,83,13,80,16,84,16,24,22,79,16,81,16,82,16,83,16,85,16,86,16,87,16,59,16,59,17,59,18,59,19,59,20,59,21,58,21,57,21,19,17,18,17,17,17,16,17,15,17,15,16,15,15,15,14,15,13,15,12,15,11,15,10,15,9,15,8,15,7,16,7,17,7,18,7,21,5,25,5,18,3,17,3,17,4,17,5,17,6,15,26]}};
+  const t = {"parts":[["ntr_l",0,6,0],["ntr_h",0,11,0],["ntr_l",0,21,0],["ntr_h",0,15,0],["iondrive_l",0,24,0],["iondrive_l",0,4,0],["tank_vol",1,3,0],["tank_vol",1,26,0],["tank_vol",14,20,0,3,5],["tank_vol",14,5,0,3,5],["tank_vol",14,11,0,3,2],["tank_vol",14,17,0,3,2],["bridge_command",30,6,0],["bridge_backup",55,21,0],["reactor_fusion_6",23,17,0,2],["reactor_fusion_6",23,8,0,2],["bulkhead",14,10,0],["bulkhead",15,10,0],["bulkhead",18,10,0],["bulkhead",19,10,0],["bulkhead",19,6,0],["bulkhead",19,7,0],["bulkhead",19,8,0],["bulkhead",19,9,0],["bulkhead",19,23,0],["bulkhead",19,22,0],["bulkhead",19,21,0],["bulkhead",19,20,0],["bulkhead",19,19,0],["bulkhead",18,19,0],["bulkhead",15,19,0],["bulkhead",14,19,0],["bulkhead",14,16,0],["bulkhead",15,16,0],["bulkhead",16,16,0],["bulkhead",16,17,0],["bulkhead",14,13,0],["bulkhead",15,13,0],["bulkhead",16,13,0],["bulkhead",16,12,0],["armour",10,4,0,1,2],["armour",25,1,0,1,5],["armour",30,1,0,1,5],["armour",35,1,0,1,5],["armour",40,1,0,1,5],["armour",45,1,0,1,5],["armour",50,1,0,1,5],["armour",60,1,0,1,5],["armour",65,1,0,1,5],["armour",70,1,0,1,5],["armour",75,1,0,1,5],["armour",80,1,0,1,5],["armour",85,1,0,1,5],["armour",90,1,0,1,5],["armour",95,1,0,1,5],["armour",25,24,0,1,5],["armour",30,24,0,1,5],["armour",40,24,0,1,5],["armour",45,24,0,1,5],["armour",50,24,0,1,5],["armour",80,24,0,1,5],["armour",85,24,0,1,5],["armour",90,24,0,1,5],["armour",95,24,0,1,5],["armour",95,6,0,1,5],["armour",95,19,0,1,5],["emitter",73,11,0,2,1,{"size":"capital","mount":"spinal","lens":"medium","wave":"visible","beam":"pulsed","kind":"laser","optics":"none"}],["emitter",73,15,0,2,1,{"size":"capital","mount":"spinal","lens":"medium","wave":"visible","beam":"pulsed","kind":"laser","optics":"none"}],["dc_4",51,20,0],["medward_4",47,20,0],["quarters_deck",59,19,0],["quarters_deck",77,21,0],["quarters_deck",77,19,0],["lifesupport_plant",30,16,0],["airlock",23,1,0],["supplyport",24,27,1],["bulkhead",13,6,1],["bulkhead",13,7,1],["bulkhead",13,8,1],["bulkhead",13,9,1],["bulkhead",13,10,1],["bulkhead",13,11,1],["bulkhead",13,12,1],["bulkhead",13,13,1],["bulkhead",13,16,1],["bulkhead",13,17,1],["bulkhead",13,18,1],["bulkhead",13,19,1],["bulkhead",13,20,1],["bulkhead",13,21,1],["bulkhead",13,22,1],["bulkhead",13,23,1],["lifesupport_3",56,7,1],["supplyport",2,26,2],["supplyport",2,3,2],["lasbattery",20,26,1],["capacitor_3",43,17,3],["capacitor_3",43,21,3],["armour",35,24,0,1,5],["lasbattery",57,1,0],["pd_laser",56,1,0],["pd_laser",55,1,0],["armour",58,4,0,1,2],["armour",56,4,0,1,2],["bulkhead",23,7,0],["bulkhead",24,7,0],["bulkhead",25,7,0],["bulkhead",26,7,0],["bulkhead",27,7,0],["bulkhead",28,8,0],["bulkhead",28,9,0],["bulkhead",28,10,0],["bulkhead",28,11,0],["bulkhead",22,7,0],["bulkhead",22,8,0],["bulkhead",22,9,0],["bulkhead",22,10,0],["bulkhead",22,11,0],["bulkhead",22,12,0],["bulkhead",22,13,0],["bulkhead",28,22,0],["bulkhead",28,21,0],["bulkhead",28,20,0],["bulkhead",28,19,0],["bulkhead",28,18,0],["bulkhead",22,22,0],["bulkhead",22,21,0],["bulkhead",22,20,0],["bulkhead",22,19,0],["bulkhead",22,18,0],["bulkhead",22,17,0],["bulkhead",22,16,0],["bulkhead",23,16,0],["bulkhead",24,16,0],["bulkhead",25,16,0],["bulkhead",26,16,0],["bulkhead",27,16,0],["tank_he3",20,22,0,3,2],["tank_he3",20,20,0,3,2],["tank_he3",20,17,0,3,2],["tank_he3",18,17,0,3,2],["tank_he3",20,6,0,3,2],["tank_he3",20,8,0,3,2],["tank_he3",20,11,0,3,2],["tank_he3",18,11,0,3,2],["tank_he3",17,17,0,3],["tank_he3",17,12,0,3],["tank_he3",22,6,0,3],["tank_he3",22,23,0,3],["tank_he3",17,11,0,3],["tank_he3",17,18,0,3],["bulkhead",16,18,0],["bulkhead",16,19,0],["bulkhead",17,19,0],["bulkhead",20,19,0],["bulkhead",21,19,0],["bulkhead",17,16,0],["bulkhead",18,16,0],["bulkhead",19,16,0],["bulkhead",20,16,0],["bulkhead",21,16,0],["bulkhead",17,13,0],["bulkhead",18,13,0],["bulkhead",19,13,0],["bulkhead",20,13,0],["bulkhead",21,13,0],["bulkhead",16,11,0],["bulkhead",16,10,0],["bulkhead",17,10,0],["bulkhead",20,10,0],["bulkhead",21,10,0],["bulkhead",23,6,0],["bulkhead",23,23,0],["bulkhead",28,13,0],["bulkhead",28,16,0],["bulkhead",28,7,0],["gun",93,6,1,2,1,{"family":"coil","role":"cannon","size":"light","mount":"turret","shell":"he"}],["gun",89,6,1,2,1,{"family":"coil","role":"cannon","size":"light","mount":"turret","shell":"he"}],["gun",87,6,3,2,1,{"family":"coil","role":"cannon","size":"light","mount":"turret","shell":"he"}],["gun",83,6,3,2,1,{"family":"coil","role":"cannon","size":"light","mount":"turret","shell":"he"}],["gun",75,6,3,2,1,{"family":"coil","role":"cannon","size":"light","mount":"turret","shell":"he"}],["gun",71,6,3,2,1,{"family":"coil","role":"cannon","size":"light","mount":"turret","shell":"he"}],["gun",63,6,3,2,1,{"family":"coil","role":"cannon","size":"light","mount":"turret","shell":"he"}],["gun",59,6,3,2,1,{"family":"coil","role":"cannon","size":"light","mount":"turret","shell":"he"}],["gun",65,6,1,2,1,{"family":"coil","role":"cannon","size":"light","mount":"turret","shell":"he"}],["gun",69,6,1,2,1,{"family":"coil","role":"cannon","size":"light","mount":"turret","shell":"he"}],["gun",77,6,1,2,1,{"family":"coil","role":"cannon","size":"light","mount":"turret","shell":"he"}],["gun",81,6,1,2,1,{"family":"coil","role":"cannon","size":"light","mount":"turret","shell":"he"}],["radiator_drop_l",64,25,1],["lasbattery",60,26,2],["radiator_drop_l",68,25,1],["radiator_drop_l",72,25,1],["radiator_drop_l",76,25,1],["heatsink",94,23,1],["heatsink",93,23,1],["heatsink",92,23,1],["heatsink",91,23,1],["heatsink",90,23,1],["heatsink",89,23,1],["heatsink",88,23,1],["heatsink",87,23,1],["heatsink",86,23,1],["heatsink",85,23,1],["heatsink",84,23,1],["heatsink",83,23,1],["heatsink",82,23,1],["heatsink",81,23,1],["heatsink",80,23,1],["heatsink",78,23,1,1,2],["pd_laser",63,27,2],["armour",74,21,2,1,3],["armour",71,21,2,1,3],["armour",68,21,2,1,3],["armour",65,21,2,1,3],["armour",62,21,2,1,3],["armour",60,21,2,1,2],["armour",62,25,2],["armour",61,25,2],["armour",60,25,2],["armour",59,21,2],["armour",59,22,2],["armour",77,23,2],["armour",57,20,2],["armour",56,20,2],["armour",55,20,2],["magazine",51,6,2,1,3],["magazine",48,6,2,1,3],["magazine",45,6,2,1,3],["magazine",42,6,2,1,3],["magazine",39,6,2,1,3],["magazine",39,10,2,1,3],["magazine",42,10,2,1,3],["bulkhead",38,6,2],["bulkhead",38,7,2],["bulkhead",38,8,2],["bulkhead",38,9,2],["bulkhead",38,10,2],["bulkhead",38,11,2],["bulkhead",38,12,2],["bulkhead",38,13,2],["bulkhead",39,9,2],["bulkhead",40,9,2],["bulkhead",41,9,2],["bulkhead",42,9,2],["bulkhead",43,9,2],["bulkhead",44,9,2],["bulkhead",45,9,2],["bulkhead",46,9,2],["bulkhead",47,9,2],["bulkhead",48,9,2],["bulkhead",49,9,2],["bulkhead",50,9,2],["bulkhead",51,9,2],["bulkhead",52,9,2],["bulkhead",53,9,2],["bulkhead",54,9,2],["bulkhead",54,8,2],["bulkhead",54,7,2],["bulkhead",54,6,2],["bulkhead",45,10,2],["bulkhead",45,11,2],["bulkhead",45,12,2],["bulkhead",45,13,2],["bulkhead",44,13,2],["bulkhead",43,13,2],["bulkhead",42,13,2],["bulkhead",41,13,2],["bulkhead",40,13,2],["bulkhead",39,13,2],["firecontrol",36,16,2],["bulkhead",46,22,2],["bulkhead",46,23,2],["bulkhead",42,23,2],["bulkhead",42,22,2],["bulkhead",42,21,2],["bulkhead",42,20,2],["bulkhead",42,19,2],["bulkhead",42,18,2],["bulkhead",42,17,2],["bulkhead",42,16,2],["bulkhead",43,16,2],["bulkhead",44,16,2],["bulkhead",45,16,2],["bulkhead",43,20,2],["bulkhead",44,20,2],["bulkhead",45,20,2],["heatsink",30,22,2,1,2],["heatsink",32,22,2,1,2],["heatsink",34,22,2,1,2],["heatsink",36,22,2,1,2],["heatsink",38,22,2,1,2],["heatsink",40,22,2,1,2],["bulkhead",56,6,2],["bulkhead",57,6,2],["bulkhead",58,6,2],["lasbattery",20,1,0],["pd_laser",23,27,0],["bulkhead",11,10,0],["bulkhead",10,10,0],["bulkhead",9,10,0],["bulkhead",8,10,0],["bulkhead",7,10,0],["bulkhead",6,10,0],["bulkhead",5,10,0],["bulkhead",4,10,0],["bulkhead",3,10,0],["bulkhead",2,10,0],["bulkhead",1,10,0],["bulkhead",0,10,0],["bulkhead",11,19,0],["bulkhead",10,19,0],["bulkhead",9,19,0],["bulkhead",8,19,0],["bulkhead",7,19,0],["bulkhead",6,19,0],["bulkhead",5,19,0],["bulkhead",4,19,0],["bulkhead",3,19,0],["bulkhead",2,19,0],["bulkhead",1,19,0],["bulkhead",0,19,0],["armour",4,4,0,1,2],["armour",6,4,0,1,2],["armour",8,4,0,1,2],["armour",12,4,0,1,2],["armour",22,4,0,1,2],["armour",20,4,0,1,2],["armour",22,24,0,1,2],["armour",20,24,0,1,2],["armour",12,24,0,1,2],["armour",10,24,0,1,2],["armour",8,24,0,1,2],["armour",6,24,0,1,2],["armour",4,24,0,1,2],["armour",1,0,0,1,3],["armour",1,27,0,1,3],["armour",14,25,0],["armour",15,25,0],["armour",16,25,0],["armour",17,25,0],["armour",18,25,0],["armour",19,25,0],["armour",14,4,0],["armour",15,4,0],["armour",16,4,0],["armour",17,4,0],["armour",18,4,0],["armour",19,4,0],["bulkhead",19,5,0],["bulkhead",19,24,0],["armour",0,26,0],["armour",0,27,0],["armour",0,28,0],["armour",0,29,0],["armour",0,3,0],["armour",0,2,0],["armour",0,1,0],["armour",0,0,0],["tank_vol",50,11,0,3,3],["tank_vol",50,15,0,3,3],["tank_he3",56,11,0,3,3],["tank_he3",56,15,0,3,3],["tank_vol",62,11,0,3,3],["tank_vol",62,15,0,3,3]],"trackCells":{"passage":[24,25,24,24,24,23,25,23,26,23,27,23,28,23,29,23,29,22,29,21,29,20,29,19,29,18,29,17,29,16,29,15,24,6,25,6,26,6,27,6,28,6,29,6,29,7,29,8,29,9,29,10,29,11,29,12,29,13,29,14,30,15,31,15,32,15,33,15,34,15,35,15,36,15,37,15,38,15,45,15,46,15,12,6,12,7,12,8,12,9,12,10,12,11,12,12,12,13,12,14,12,15,12,16,12,17,12,18,12,19,12,20,12,21,12,22,12,23,13,14,14,14,15,14,16,14,17,14,17,15,16,15,15,15,14,15,13,15,46,14,46,13,46,12,46,11,46,10,48,10,49,10,46,16,46,17,46,18,46,19,47,19,48,19,49,19,50,19,39,15,40,15,44,15,51,19,52,19,53,19,54,19,55,19,56,3,55,3,55,4,55,5,55,6,55,7,55,8,55,9,54,10,53,10,52,10,51,10,50,10,18,14,19,14,20,14,21,14,22,14,23,14,24,14,25,14,26,14,27,14,27,15,26,15,25,15,24,15,23,15,22,15,21,15,20,15,19,15,18,15,30,14,31,14,32,14,33,14,34,14,35,14,36,14,37,14,38,14,39,14,40,14,41,14,42,14,43,14,44,14,45,14,28,14,28,15,28,12,28,17,24,4,24,5,47,10,55,10,56,10,57,10,58,10,59,10,60,10,61,10,62,10,63,10,64,10,65,10,66,10,67,10,68,10,69,10,70,10,71,10,72,10,73,10,74,10,75,10,76,10,77,10,78,10,79,10,80,10,81,10,82,10,83,10,84,10,85,10,86,10,87,10,88,10,89,10,90,10,91,10,92,10,93,10,94,10,56,19,57,19,58,19,58,20,58,21,58,22,58,23,41,15,42,15,43,15,59,23,60,23,60,24,63,24,64,24,65,24,66,24,67,24,68,24,69,24,70,24,71,24,72,24,73,24,74,24,75,24,76,24,77,24,63,25,62,24,61,24,63,26,46,20,46,21,24,26,24,3,23,3,23,26,62,18,50,18,56,18,11,6,10,6,9,6,8,6,11,21,10,21,9,21,8,21],"conduit":[12,6,12,7,12,8,12,9,12,10,12,11,12,12,12,13,12,14,12,15,12,16,12,17,12,18,12,19,12,20,12,21,12,22,12,23,13,14,13,15,13,10,14,10,15,10,16,10,17,10,18,10,19,10,20,10,21,10,22,10,22,19,21,19,20,19,19,19,18,19,17,19,16,19,15,19,14,19,13,19,29,15,30,15,31,15,32,15,33,15,34,15,35,15,36,15,37,15,38,15,45,15,46,15,46,14,46,13,46,12,46,11,46,10,46,16,46,17,46,18,46,19,44,15,40,15,39,15,51,19,52,19,49,10,50,10,51,10,52,10,53,10,54,10,50,19,49,19,48,19,47,19,24,24,24,23,25,23,26,23,27,23,28,23,29,23,29,22,29,21,29,20,29,19,29,18,29,17,29,16,29,14,29,13,29,12,29,11,29,10,29,9,29,8,29,7,29,6,28,6,27,6,26,6,25,6,24,6,17,14,16,14,15,14,14,14,14,15,15,15,16,15,17,15,56,3,55,3,55,9,55,8,55,7,55,6,55,5,55,4,24,25,28,12,28,17,18,14,19,14,20,14,21,14,22,14,23,14,24,14,25,14,26,14,27,14,28,14,30,14,31,14,32,14,33,14,34,14,35,14,36,14,37,14,38,14,39,14,40,14,41,14,44,14,45,14,43,14,42,14,28,15,27,15,26,15,25,15,24,15,23,15,22,15,21,15,20,15,19,15,18,15,24,4,24,5,53,19,54,19,55,19,56,19,57,19,58,19,58,20,58,21,58,22,58,23,43,15,42,15,41,15,47,10,48,10,55,10,56,10,57,10,58,10,59,10,60,10,61,10,62,10,63,10,64,10,65,10,66,10,67,10,68,10,69,10,70,10,71,10,72,10,73,10,74,10,75,10,76,10,77,10,78,10,79,10,80,10,81,10,82,10,83,10,84,10,85,10,86,10,87,10,88,10,89,10,90,10,91,10,92,10,93,10,94,10,59,23,60,23,60,24,63,24,63,25,63,26,61,24,62,24,64,24,65,24,66,24,67,24,68,24,69,24,70,24,71,24,72,24,73,24,74,24,75,24,76,24,77,24,46,20,46,21,24,26,24,3,23,3,23,26,11,6,10,6,9,6,8,6,11,21,10,21,9,21,8,21,72,11,72,12,72,13,72,14,72,15,47,11,48,11,58,18,59,18,59,17,59,16,59,15,59,14,59,13,59,12,59,11],"hoist":[94,10,93,10,92,10,91,10,90,10,89,10,88,10,87,10,86,10,85,10,84,10,83,10,82,10,81,10,80,10,79,10,78,10,77,10,76,10,75,10,74,10,73,10,72,10,71,10,70,10,69,10,68,10,67,10,66,10,65,10,64,10,63,10,62,10,61,10,60,10,59,10,58,10,57,10,56,10,55,10,54,10,45,10,46,10,47,10,48,10,49,10,50,10,51,10,52,10,53,10,46,9,24,26,24,25,24,24,24,23,25,23,26,23,27,23,28,23,29,23,29,22,29,21,29,20,29,19,29,18,29,17,29,16,29,15,30,15,31,15,32,15,33,15,34,15,35,15,36,15,37,15,38,15,39,15,40,15,41,15,42,15,43,15,44,15,45,15,46,15,46,14,46,13,46,12,46,11,47,11,48,11,55,9,55,11,55,12,55,13,55,14,56,14,57,14,58,14,59,14,59,13,59,12,59,11],"fuelline":[12,6,12,7,12,8,12,9,12,10,12,11,12,12,12,13,12,14,12,15,12,16,12,17,12,18,12,19,12,20,12,21,12,22,12,23,13,8,13,21,15,10,15,19,13,17,13,12,22,10,21,10,22,19,21,19,20,10,19,10,18,10,17,10,16,10,14,10,13,10,20,19,19,19,18,19,17,19,16,19,14,19,13,19,24,25,24,24,24,23,23,23,25,23,26,23,27,23,28,23,29,23,29,22,29,21,29,20,29,19,29,18,29,17,29,16,29,15,29,14,29,13,29,12,29,11,29,10,29,9,29,8,29,7,29,6,28,6,27,6,26,6,25,6,24,6,23,6,19,23,16,17,16,12,28,15,27,15,26,15,25,15,24,15,23,15,22,15,21,15,20,15,19,15,18,15,17,15,16,15,15,15,14,15,13,15,28,14,27,14,26,14,25,14,24,14,23,14,22,14,21,14,20,14,19,14,18,14,17,14,16,14,15,14,14,14,13,14,20,13,20,16,24,26,11,6,10,6,9,6,8,6,11,21,10,21,9,21,8,21,30,13,31,13,32,13,33,13,34,13,35,13,36,13,37,13,38,13,39,13,40,13,41,13,42,13,43,13,44,13,45,13,46,13,47,13,48,13,49,13,50,14,53,11,54,11,55,11,55,10,56,10,57,10,58,10,59,10,60,10,61,10,62,10,62,14,49,14,51,14,52,14,53,14,53,13,53,12,56,14]}};
   STOCK_DESIGNS_V3.push({ name: 'Tambora', side: 'human', role: 'Capital ship', icon: 'H18', era: 'tier2',
-    note: 'a gun battleship: two Capital spinal culverins and four Medium Cannon turrets on a fission reactor, a 4-deep steel belt (Tier 2)',
-    hull: 'capital', frames: ['sec_capital_thrust', 'sec_capital_hull', 'sec_capital_hull', 'sec_capital_prow'], jumps: 1, parts: t.parts, trackCells: t.trackCells });
+    note: 'a laser battleship: two Capital spinal x-ray lasers and twelve light rail turrets on two fusion reactors, a shield array, a 5-deep steel belt (Tier 2)',
+    hull: 'capital', frames: ["bay_capital_thrust","sec_capital_hull","sec_capital_hull","sec_capital_hull"], jumps: 1, parts: t.parts, trackCells: t.trackCells });
   if (CAMPAIGN_V3_STOCK.indexOf('Tambora') < 0) CAMPAIGN_V3_STOCK.push('Tambora');   // installed in every war, hidden like the other stock designs unless Unlock everything is on
 })();
 // =====================================================================
@@ -108046,7 +108422,7 @@ BUREAU2_SCREEN_API.testRange = { run: testRangeRun, state: testRange, plan: func
 //   adopted habits come along in its copy code and into every new campaign. A doctrine changed in the Bureau after the save updates the plan's copy.
 //   DOCTRINE TEMPLATES (LIBRARY.templates: [{ name, doctrine, savedAt }]) live here too, so they carry over as well. A plan from before v37 has no doctrine: Auto.
 // =====================================================================
-const GAME_VERSION = 'v247.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
+const GAME_VERSION = 'v250.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
 const LIBRARY_KEY = 'engineersWar.library';
 const LIBRARY_FORMAT = 1;
 const LIBRARY_CODE_SHIP = 'EW-SHIP-1:', LIBRARY_CODE_LIB = 'EW-LIB-1:';
