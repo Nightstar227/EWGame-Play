@@ -47188,8 +47188,30 @@ function researchMods() {
 // 'antimatterOn': 1 once Antimatter production is done, 'antimatterSun': the Sun's extra share). 06f reads the rates.
 function researchRate(key) { const v = researchMods()[key]; return typeof v === 'number' && isFinite(v) ? v : 0; }
 // (35d) the numbers the design model reads: weaponCrew (x a built weapon's crew), quarters (x what quarters sleep), startDriveEff (a starting-tech drive's
-// fuel efficiency is at least this; 0 = no change). Outside a campaign: no change.
-function researchDesignMods() { return researchMods(); }
+// fuel efficiency is at least this; 0 = no change).
+// (v249.0, Alex 13 Nov: "full tech outside a war") Fuel is the one research effect that decides whether a plan passes at all: Better propellants makes
+// chemical rockets burn less, so a plan drawn after that research carries smaller tanks. Outside a war (the main menu Library and Bureau, Last Stand,
+// the Proving grounds, the stock checks) there is no research to look at, and the plan used to be judged as if the research had never happened (the
+// Krakatoa came up 19.4 FU short). So outside a war the fuel step counts as researched. Inside a war the war's own research is used, and a plan that is
+// short only for want of it reads "needs research: Better propellants" (35h libFuelResearchNeed) instead of broken.
+// Crew and price research are NOT counted outside a war: they never stop a plan passing, and counting them would change Last Stand's numbers.
+let researchDesignOverride = null;   // (v249.0) a stand-in set for one check only (researchWithDesignMods)
+function researchInWar() { return researchState() !== null && !(typeof gameOtherModeOwns === 'function' && gameOtherModeOwns()); }
+// the best fuel step any project gives (Better propellants: x0.45), and the projects that give it
+function researchBestStartDriveEff() { let e = 0; for (const p of RESEARCH_PROJECTS) if (p.spin && p.spin.startDriveEff > e) e = p.spin.startDriveEff; return e; }
+function researchStartDriveProjects() { const best = researchBestStartDriveEff(), out = []; for (const p of RESEARCH_PROJECTS) if (p.spin && p.spin.startDriveEff >= best && best > 0) out.push(p); return out; }
+function researchDesignMods() {
+  if (researchDesignOverride) return researchDesignOverride;
+  const m = researchMods();
+  if (researchInWar()) return m;
+  const best = researchBestStartDriveEff();
+  return m.startDriveEff >= best ? m : Object.assign({}, m, { startDriveEff: best });
+}
+// Runs fn with the design numbers set to mods (for a "what if this research were done" check), then puts them back.
+function researchWithDesignMods(mods, fn) {
+  const keep = researchDesignOverride; researchDesignOverride = mods;
+  try { return fn(); } finally { researchDesignOverride = keep; }
+}
 // Every human design worked out again when those numbers change (and after a load), so its crew and fuel follow. Not while a battle is live (next week).
 let researchDesignKey = '1|1|0';
 function researchSyncDesigns(force) {
@@ -47347,7 +47369,7 @@ function researchFinishOne(p, id, by, quiet) {
   r.progress[id] = Math.max(r.progress[id] || 0, researchPrice(id));
   if (p.opensSomething && typeof campaignV3Open === 'function') campaignV3Open(p.opens);
   if (p.luna) researchLunaFinished();                                                          // (v65) the Luna find's parts
-  if (p.opensSomething && typeof libPlansReadyCheck === 'function') libPlansReadyCheck();   // (v32) a library plan whose last locked part this opens (section 10h)
+  if ((p.opensSomething || (p.spin && p.spin.startDriveEff)) && typeof libPlansReadyCheck === 'function') libPlansReadyCheck();   // (v32) a library plan whose last locked part this opens (section 10h); (v249.0) or whose fuel waited for Better propellants
   if (typeof campaignFighterPickForget === 'function') campaignFighterPickForget();          // (v51) the stations pick their fighter again (06p)
   if (p.crew || p.massProd || (p.spin && p.spin.startDriveEff)) researchSyncDesigns();
   if (p.spin) { campaignUpdateBoost(); campaignEconWeek(); }
@@ -101241,6 +101263,11 @@ function passFuelV3(L, a) {
   const localPJ = {};
   for (let f = 0; f < FUEL_TYPES.length; f++) { const t = FUEL_TYPES[f].id, v = splitJump[t] || 0; localPJ[t] = v > 0 ? Math.ceil(v - 1e-9) : 0; }
   a.transferDrive = !local && pick ? { name: pick.name, fuel: pick.fuel, parts: pick.parts.slice(), of: kinds.length } : null;
+  // (v249.0) in a war that has not done Better propellants yet, a short chemical-rocket ship is told the research would help (35h: the Library then
+  // shows such a plan as "needs research: Better propellants", not broken)
+  const propHint = typeof researchInWar === 'function' && researchInWar() && rmods && rmods.startDriveEff < researchBestStartDriveEff()
+    ? ' Better propellants research (not done yet in this war) makes chemical rockets burn less: the plan may pass once it is done.' : '';
+  const hintFor = function (type) { return propHint && L.parts.some(function (u) { return u.m.fuel && u.m.fuel.type === type && !u.m.reactor && !u.m.alien && u.s.fuel && u.s.fuel.start; }) ? propHint : ''; };
   for (let f = 0; f < FUEL_TYPES.length; f++) {
     const type = FUEL_TYPES[f].id, h = have[type], dry = dryOf[type], consumers = consumersOf[type];
     const perJump = local ? localPJ[type] : pickPJ[type];
@@ -101255,12 +101282,14 @@ function passFuelV3(L, a) {
       const tanks = L.parts.filter(function (u) { return u.s.tank && u.s.tank.type === type; });
       const where = tanks.length ? tanks : L.parts.filter(function (u) { return consumers.indexOf(u.idx) >= 0; });
       addProblem(a, 'FUEL_RESERVE', 'problem', FUEL_TYPES[f].name + ' tanks hold ' + roundTo(h, 2) + ' FU: a Local ship still needs a working reserve of ' + (flatReserve > 0 ? roundTo(need, 2) + ' FU (one tank square)' : 'a quarter of a transfer, ' + roundTo(need, 2) + ' FU (one transfer is ' + perJump + ' FU)') + '. It never transfers, but it still needs fuel to fly. Add ' + roundTo(need - h, 2) + ' FU of ' + FUEL_TYPES[f].name + ' tanks.', partsAt(L, where), partsSquares(L, where), partIdxs(where), { fuel: type });
+      a.problems[a.problems.length - 1].text += hintFor(type);   // (v249.0)
     }
     if (!local && need > h + 1e-9) {
       const tanks = L.parts.filter(function (u) { return u.s.tank && u.s.tank.type === type; });
       const where = tanks.length ? tanks : L.parts.filter(function (u) { return consumers.indexOf(u.idx) >= 0; });
       const on = pick && pick.fuel === type && kinds.length > 1 ? ' (flying on the ' + pick.name.toLowerCase() + ', the drive that gets furthest on its own)' : '';
       addProblem(a, 'FUEL_SHORT', 'problem', FUEL_TYPES[f].name + ' tanks are ' + roundTo(need - h, 1) + ' FU short for ' + pluralV3(jumps, 'transfer', 'transfers') + on + ' (' + roundTo(h, 1) + ' of ' + roundTo(need, 1) + ' FU). Add tanks, or pick Local (0 transfers) for a ship that stays where it is built.', partsAt(L, where), partsSquares(L, where), partIdxs(where), { fuel: type });
+      a.problems[a.problems.length - 1].text += hintFor(type);   // (v249.0)
     }
     if (h + haveLoose[type] > 0 && consumers.length === 0) addProblem(a, 'FUEL_UNUSED', 'note', 'Nothing burns ' + FUEL_TYPES[f].name + ', but it has tanks.', null, [], [], { fuel: type });
   }
@@ -108484,6 +108513,8 @@ function libCheckDesign(raw) {
   if (!rd.ok) { const rp = libRepair(raw); return { ok: false, broken: true, design: null, a: null, problems: [rp && rp.dropped.length ? 'no longer in the game: ' + rp.dropped.join(', ') : rd.text] }; }
   const d = rd.design; d.refitOf = '';
   const a = analyzeDesignV3(d, { unlockAll: true });
+  // (v249.0) in a war, a plan short of fuel ONLY because Better propellants is not done yet is not broken: it waits for that research (libNeedsResearch)
+  if (a.statBlock && a.problems.length > 0 && libHardProblems(a).every(libIsFuelProblem) && libFuelResearchNeed(d).length > 0) return { ok: true, broken: false, design: d, a: a, problems: [] };
   if (!a.statBlock || a.problems.length > 0) return { ok: false, broken: true, design: d, a: a, problems: a.problems.length ? a.problems.slice(0, 6).map(function (p) { return p.text || String(p); }) : ['no hull'] };
   return { ok: true, broken: false, design: d, a: a, problems: [] };
 }
@@ -108523,6 +108554,29 @@ function libRepair(raw) {
   return rd.ok ? { design: rd.design, dropped: dropped } : null;
 }
 
+// (v249.0) THE FUEL RESEARCH A PLAN WAITS FOR. In a war that has not done Better propellants, a chemical rocket burns more, so a plan drawn with the
+// research (or brought from outside a war, where it counts as done) can come up short of fuel. When the plan's only fuel trouble goes away with the
+// research done, the plan "needs research: Better propellants" (like a part research has not opened) instead of being broken; the yards can build it
+// once the labs finish it. Returns the project names, [] when nothing is waited for. Remembered for each plan until research changes.
+const libFuelNeedCache = new WeakMap();
+function libIsFuelProblem(p) { return !!p && (p.code === 'FUEL_SHORT' || p.code === 'FUEL_RESERVE'); }
+function libHardProblems(a) { return (a && a.problemList ? a.problemList : []).filter(function (p) { return p.level === 'problem'; }); }
+function libFuelResearchNeed(d) {
+  if (!d || typeof researchInWar !== 'function' || !researchInWar()) return [];
+  const now = researchDesignMods(), best = researchBestStartDriveEff();
+  if (!(now.startDriveEff < best)) return [];
+  const stamp = libResearchStamp(), had = libFuelNeedCache.get(d);
+  if (had && had.stamp === stamp) return had.need;
+  let need = [];
+  const a = analyzeDesignV3(d, { unlockAll: true });
+  if (a.statBlock && libHardProblems(a).some(libIsFuelProblem)) {
+    const a2 = researchWithDesignMods(Object.assign({}, now, { startDriveEff: best }), function () { return analyzeDesignV3(d, { unlockAll: true }); });
+    if (a2.statBlock && !libHardProblems(a2).some(libIsFuelProblem)) need = researchStartDriveProjects().filter(function (p) { return !researchDone(p.id); }).map(function (p) { return p.name; });
+  }
+  libFuelNeedCache.set(d, { stamp: stamp, need: need });
+  return need;
+}
+
 // ---- What a plan waits for in this campaign ----
 // The research projects a design still needs under a kit (the campaign's), as names: ['Culverin', 'Heavy guns']. [] = everything is open.
 function libNeedsResearch(d, kit) {
@@ -108545,6 +108599,7 @@ function libNeedsResearch(d, kit) {
       if (fam && fam.roleTech && fam.roleTech[o.role]) { const fr = kit.options && kit.options.gun ? kit.options.gun.famrole : null; if (!Array.isArray(fr) || fr.indexOf(o.family + '.' + o.role) < 0) add(fam.roleTech[o.role]); }
     }
   }
+  for (const n of libFuelResearchNeed(d)) add(n);   // (v249.0) the fuel research the plan was drawn with
   return need;
 }
 function libNeedsWords(need) { return need.map(function (n) { return n === 'Luna prototype' ? 'the Luna prototype' : (/^Tier [2-9]/.test(n) ? n + ' tech (not in the game yet)' : researchShownName(n)); }).filter(function (n, i, all) { return all.indexOf(n) === i; }).join(', '); }   // (v112.0) the halved tree's names, each once
