@@ -3676,7 +3676,7 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
     <section class="panel hidden" id="mmPanel"><div class="panel-head" id="mmPanelHead"></div><div class="panel-body" id="mmPanelBody"></div></section>
     <input type="file" id="mmFile" accept=".json,application/json,text/plain" class="hidden">
   </div>
-  <div class="mm-version" title="The version of the game you are playing">Version v261.0</div>
+  <div class="mm-version" title="The version of the game you are playing">Version v261.4</div>
 </div>
 
 <!-- (v31 A2, section 7l) the end of the war: the game-over screen (Earth's people are gone) or the victory screen (the aliens' home secured). It lies over
@@ -5626,10 +5626,16 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
     /* engine bells out of the stern */
     var runs = [], r0 = -1;
     for (var ry = 0; ry <= f.H; ry++) { var on = ry < f.H && mask['0,' + ry]; if (on && r0 < 0) r0 = ry; if (!on && r0 >= 0) { runs.push([r0, ry - 1]); r0 = -1; } }
+    // each bell: { x: the stern edge it sits on (squares), y: its middle (squares), h: its mouth's height (squares) }. (v261.1) The game hands over its one
+    // list of the ship's drive nozzles (f.nozzles), the same list the hull art draws its bells from and the battle puts its plumes on; without it (the art
+    // sheets) the stern column gets evenly spread bells, as before
     var bells = [];
-    runs.forEach(function (rn) { var th = rn[1] - rn[0] + 1, k = Math.max(1, Math.round(th / (sh ? 3.4 : 4))); for (var j = 0; j < k; j++) bells.push((rn[0] + (j + .5) * th / k) * s); });
-    for (var i = 0; i < bells.length; i++) { var yc = bells[i]; o += PG([[sx0, yc - s * 1.2], [sx0 - nz, yc - s * 1.7], [sx0 - nz, yc + s * 1.7], [sx0, yc + s * 1.2]], P.grit ? '#3A3631' : P.k === 'paint' ? '#4B5154' : P.plate2, P.edge, 1);
-      if (P.grit) { o += L(sx0 - nz * .35, yc - s * 1.38, sx0 - nz * .35, yc + s * 1.38, '#5E6E8A', 1.2, ' opacity=".8"') + L(sx0 - nz * .7, yc - s * 1.55, sx0 - nz * .7, yc + s * 1.55, '#8A6A3A', 1.2, ' opacity=".7"') + L(sx0 - nz + 1, yc - s * 1.6, sx0 - nz + 1, yc + s * 1.6, '#0b0906', 2); } }
+    if (f.nozzles) bells = f.nozzles;
+    else runs.forEach(function (rn) { var th = rn[1] - rn[0] + 1, k = Math.max(1, Math.round(th / (sh ? 3.4 : 4))); for (var j = 0; j < k; j++) bells.push({ x: 0, y: rn[0] + (j + .5) * th / k, h: 3.4, old: 1 }); });
+    for (var i = 0; i < bells.length; i++) {
+      var bl = bells[i], yc = bl.y * s, hm = bl.h * s / 2, ht = hm * 1.2 / 1.7, bx = bl.x > 0 ? bl.x * s : sx0, bn = bl.old ? nz : bl.h * s * 1.1;
+      o += PG([[bx, yc - ht], [bx - bn, yc - hm], [bx - bn, yc + hm], [bx, yc + ht]], P.grit ? '#3A3631' : P.k === 'paint' ? '#4B5154' : P.plate2, P.edge, 1);
+      if (P.grit) { o += L(bx - bn * .35, yc - hm * .81, bx - bn * .35, yc + hm * .81, '#5E6E8A', 1.2, ' opacity=".8"') + L(bx - bn * .7, yc - hm * .91, bx - bn * .7, yc + hm * .91, '#8A6A3A', 1.2, ' opacity=".7"') + L(bx - bn + 1, yc - hm * .94, bx - bn + 1, yc + hm * .94, '#0b0906', 2); } }
     o += '<path d="' + d + '" fill="url(#' + id + 'g)"/>';
     o += '<g clip-path="url(#' + id + 'c)">';
     if (!opts.nogrid) for (var x = 1; x < f.W; x++) o += L(x * s, 0, x * s, H, P.k === 'paint' ? '#00000038' : P.seam, .5);
@@ -9813,7 +9819,10 @@ function htBell(c, x, y, h) {
   g.addColorStop(0, '#2a2b27'); g.addColorStop(.35, '#7a7b72'); g.addColorStop(1, '#151613'); c.fillStyle = g; c.fill(p); c.strokeStyle = COL.line; c.lineWidth = PX * 1.5; c.stroke(p);
   c.strokeStyle = 'rgba(0,0,0,.5)'; c.lineWidth = PX; for (var k = 1; k < 4; k++) { var xx = x - len * k / 4; c.beginPath(); c.moveTo(xx, y - h * (.3 + .2 * k / 4)); c.lineTo(xx, y + h * (.3 + .2 * k / 4)); c.stroke(); }
 }
-function htDrives(c, parts, opts) {
+function htDrives(c, parts, opts, nozzles) {
+  // (v261.1, Alex: "it would be nice if we could better match the thrust art on ships between art styles") the game hands over its one list of the
+  // ship's drive nozzles (where each one is and how big), the same list the module view draws its bells from and the battle puts its plumes on
+  if (opts.game && nozzles) { nozzles.forEach(function (n) { htBell(c, n.x + .2, n.y, n.h); }); return; }
   parts.forEach(function (p, k) {
     if ((p.d === 'rocket' || p.d === 'ion' || p.d === 'amdrive') && p.x <= 1) { if (opts.game) htBell(c, p.x + .2, p.y + p.h / 2, p.h * .85); else engine(c, p.x + .2, p.y + p.h / 2, p.h * .85, opts.t || 2.2, k); }
   });
@@ -10096,7 +10105,7 @@ function htCraft(c, info, opts, loops, u, seed) {
   var T0 = T0s[0], b = bbox(T0), mid = (b[1] + b[3]) / 2;
   var edge = function (x) { return htEdgesAt(T0, x) || [b[1], b[3]]; };
   // drives first, then wings or flaps (under the body)
-  htDrives(c, parts, opts);
+  htDrives(c, parts, opts, info.nozzles);
   var tips = [];
   [-1, 1].forEach(function (sd) {
     var e, y;
@@ -10165,7 +10174,7 @@ function hullTop(c, info, opts) {
 
   // drives behind (bells where the design has rockets in the stern column). Radiator and solar panels are NOT drawn here: the game's own fold-out panels go on top, as today
   var parts = info.parts || [];
-  htDrives(c, parts, opts);
+  htDrives(c, parts, opts, info.nozzles);
 
   // the hull plate
   T0s.forEach(function (T0, i) {
@@ -10685,7 +10694,7 @@ var LV_ECHO_DEFAULT = { echo: { look: 'E1', glow: '#b28cff' }, mat: 'obsidian' }
 // What the game calls (section 6v, closeHullBuild):
 //   HULL_ART.picture(info, s): one still picture of a design with its hull on. info = { name, cls, W, H, cells: ['##..', ...] (frame squares),
 //     parts: [{ d (the art kind), id, x, y, w, h (grid squares), ang, turning, role }], reg (the registry painted on the deck) }; s = pixels a grid square.
-//     Returns { canvas, x0, y0 (the picture's top-left corner, in pixels, the grid's top-left being 0,0) }.
+//     Returns { canvas, x0, y0 (the picture's top-left corner, in pixels, the grid's top-left being 0,0), lights (v261.2: where it painted each light) }.
 //     The turning guns, the drive plumes and the radiator and solar panels are NOT in it: the battle draws those every frame.
 //   (v188.2) a launcher part also carries kind ('standard', 'rapid', 'torpedo' or 'rack'); a rack is drawn in the picture as its bare rail.
 //   HULL_ART.rackMissile(p, info, s): the rack's missile alone, for the battle to draw on top while the rack still holds it. Returns { canvas, x0, y0 } like picture.
@@ -10745,9 +10754,31 @@ window.HULL_ART = {
     PX = 1 / s;
     c.setTransform(s, 0, 0, s, -x0 * s, -y0 * s);
     livSet(L);
-    try { hullTop(c, info, { t: 0, aim: 0, game: true }); } finally { livSet({}); }
+    // (v261.2, Alex: "many of the ships have old baked square lights that dont blink ... add blinking lights on top of those old ones") every light
+    // the drawing paints (a lit window, a deck lamp, a bridge pane, a nose running light, wherever in the art and in any livery) is noted as it is
+    // painted: any square filled in a light colour. The battle puts its live lights on exactly those spots (lights: { x, y, w, h in the picture's
+    // pixels from its top-left corner; k: 'nav' for a running light (col: its colour), 'win' for a window or lamp }).
+    var lights = [], fr = c.fillRect, winCols = function () { return [String(COL.win).toLowerCase(), '#bfe3ff', '#9fe0ff']; }, navCols = { '#ff4a3a': 1, '#4cff7a': 1 };
+    c.fillRect = function (x, y, w, h) {
+      var f = typeof c.fillStyle === 'string' ? c.fillStyle.toLowerCase() : '', nav = navCols[f], win = !nav && winCols().indexOf(f) >= 0;
+      if ((nav || win) && c.globalAlpha > .3 && lights.length < 600) {
+        var m = c.getTransform(), cx = x + w / 2, cy = y + h / 2, sc = Math.hypot(m.a, m.b);
+        lights.push({ x: m.a * cx + m.c * cy + m.e, y: m.b * cx + m.d * cy + m.f, w: Math.abs(w) * sc, h: Math.abs(h) * sc, k: nav ? 'nav' : 'win', col: f });
+      }
+      return fr.call(c, x, y, w, h);
+    };
+    try { hullTop(c, info, { t: 0, aim: 0, game: true }); } finally { livSet({}); c.fillRect = fr; }
+    // only the lights still showing in the finished picture (a window painted and then covered by a part or a deck is not a light)
+    try {
+      var img = c.getImageData(0, 0, cv.width, cv.height).data;
+      lights = lights.filter(function (l) {
+        var px = Math.round(l.x), py = Math.round(l.y); if (px < 0 || py < 0 || px >= cv.width || py >= cv.height) return false;
+        var o = (py * cv.width + px) * 4, r = parseInt(l.col.substr(1, 2), 16), g = parseInt(l.col.substr(3, 2), 16), b = parseInt(l.col.substr(5, 2), 16);
+        return Math.abs(img[o] - r) + Math.abs(img[o + 1] - g) + Math.abs(img[o + 2] - b) < 90;
+      });
+    } catch (err) { /* (the list as painted) */ }
     if (L && L.echo) cv = lvEchoLook(cv, L.echo.look, L.echo.glow, htSeed(info.name));   // (v220.0) an Echo livery: its look laid over the finished hull (the same size)
-    return { canvas: cv, x0: x0 * s, y0: y0 * s };
+    return { canvas: cv, x0: x0 * s, y0: y0 * s, lights: lights };
   },
   rackMissile: function (p, info, s) {
     var x0 = p.x - 2, y0 = p.y - 2, w = p.w + 4, h = p.h + 4, cv = document.createElement('canvas');
@@ -78203,10 +78234,27 @@ const CLOSE_LOOK = {
   maxShips: 150,             // at most this many ships in close detail at once; the rest are drawn as icons
   idleMinMs: 12,             // (v245.0) a picture is made only when the browser has this many ms of spare time ...
   idleTimeoutMs: 1500,       // (v245.0) ... or once this long has passed since it was asked for (was 120 ms: pictures were made mid-frame in a busy battle)
+  // (v261.3, Alex 14 Nov 2026: "when zooming in to a chunk of ships, it can currently take 5+ seconds to get the close art") a busy battle never has
+  // idleMinMs spare, so every picture waited the whole idleTimeoutMs, one after another: the n-th ship type on screen showed after n x 1.5 seconds.
+  // Now a picture for a ship ON SCREEN (or about to be: lookAheadShare) jumps the line and is made without waiting for spare time, with this many ms
+  // of breathing room after the last picture finished (so a pile of them is a few small hitches spread out, not one long freeze). Pictures nobody is
+  // looking at (the battle start's warm-up, effects asking for a ship off screen) still wait for spare time. -1 = as before v261.3.
+  urgentGapMs: 80,
+  // (v261.3) a picture drawn from SVG (the module view, the Delvers, the Echo looks) is mostly the browser unpacking it in the background (150-300 ms,
+  // only a few ms of the game's time): up to this many urgent pictures may be on the go at once, so the next can start while one is unpacking
+  urgentAtOnce: 3,
+  // (v261.3) LOOK AHEAD: pictures are started once a ship type on screen is this share of minPixels long, while zooming in, so they are usually
+  // ready by the time the ships are big enough to wear them. 0 = only once they are big enough, as before.
+  lookAheadShare: 0.5,
   pictureLongest: 1600,      // a design's picture is at most this many pixels long ...
   squareMin: 6,              // ... with between squareMin ...
   squareMax: 22,             // ... and squareMax pixels a grid square
-  keepMax: 400,              // (v103.4) the picture store is emptied once it holds this many pictures (each design, look and gun is one)
+  keepMax: 400,
+  // (v261.4, Alex 14 Nov 2026, after v261.3) the pictures drawn straight onto a canvas (our ships' outer hull, the Swarm, the Sylph, the titans) are
+  // kept in the picture store too, not only the module view's: the next time the game is opened (or a picture let go after dropAfterSeconds comes back
+  // into view) it is read back and unpacked by the browser in the background instead of drawn again. They are filed under the build's fingerprint,
+  // so any change to the game or its art draws them fresh. 0 = only the module view's pictures are kept, as before.
+  keepDrawn: 1,              // (v103.4) the picture store is emptied once it holds this many pictures (each design, look and gun is one)
   smallBelow: 0.4,           // drawn at less than this share of its picture's size, a ship uses the quarter-size copy (smoother, and cheaper)
   maxTurrets: 24,            // turning guns a ship can show (more are drawn fixed)
   glowAlpha: 0.3,            // the side-colour glow under a ship
@@ -78301,8 +78349,11 @@ const CLOSE_PART_ANGLE = [0, -Math.PI / 2, Math.PI, Math.PI / 2];   // a part tu
 const CLOSE_DIR_ANGLE = [0, Math.PI, -Math.PI / 2, Math.PI / 2];     // the old direction numbers (0 front, 1 rear, 2 left, 3 right) as angles
 
 let closeArt = new Map();            // 'type id|look' -> a design's picture: { state: 'wait' | 'busy' | 'ready' | 'none', ... } (closeArtEntry)
-let closeArtQueue = [];              // pictures waiting to be made, one at a time
-let closeArtBusy = false;
+let closeArtQueue = [];              // pictures waiting to be made, one at a time (pictures for ships on screen at the front: closeArtUrgent)
+let closeArtBusy = 0;                // (v261.3: a count) pictures being made right now
+let closeArtWaitId = null, closeArtWaitKind = '';   // (v261.3) the wait before the next picture: 'urgent' (a short timer), 'idle' (spare time) or 'timer'
+let closeArtDoneAt = 0;              // (v261.3) when the last picture finished (performance.now)
+let closeLookAheadFrame = new Int32Array(0);   // (v261.3) [side * TYPE_COUNT + type] the last frame this type was looked ahead for
 let closeDrawn = new Uint8Array(0);  // [ship] 1 = drawn in close detail last frame (the effects in section 6w read it)
 let closeTurAng = new Float32Array(0);   // [ship * maxTurrets + n] each turning gun's angle on the ship (radians, 0 = the bow)
 let closeRadExt = new Float32Array(0);   // [ship] how far its radiator panels are out (0 folded, 1 out)
@@ -78339,14 +78390,14 @@ function closeAlienInfo(rec) {
   // (v97) a titan on a super frame is drawn whole from UI/titan-art.js (TITAN_ART), far bigger than its build grid: W and H are the grid's size
   const tf = titanSuperOfDesign(rec.design);
   if (tf && typeof window.TITAN_ART !== 'undefined' && window.TITAN_ART.keys.indexOf(tf.titanSuper) >= 0)
-    return { alien: 'titan', name: tf.titanSuper, W: tf.w, H: tf.h, centre: [tf.w / 2, tf.h / 2], parts: [], turrets: [], radiators: [], bells: [], tracks: [],
+    return { alien: 'titan', name: tf.titanSuper, W: tf.w, H: tf.h, centre: [tf.w / 2, tf.h / 2], parts: [], turrets: [], radiators: [], nozzles: [], tracks: [],
              fit: closeTitanFit(rec), rec: rec };   // (v239.0) fit: the fitted drive the art shows; rec: for the module cutaway (closeTitanCutBuild)
   let f = rec.faction, A = typeof window.ALIEN_ART !== 'undefined' ? window.ALIEN_ART : null;
   if (!f && rec.alienStock && typeof window.SWARM_ART !== 'undefined') { f = 'swarm'; A = { swarm: window.SWARM_ART }; }
   const name = CLOSE_ALIEN_ART_NAME[rec.name] || rec.name;
   if ((f !== 'delver' && f !== 'sylph' && f !== 'swarm') || !A || !A[f] || !A[f].designs || !A[f].designs[name]) return null;
   const d = A[f].designs[name], W = d.W || 10, H = d.H || 6;
-  return { alien: f, name: name, W: W, H: H, centre: [W / 2, H / 2], parts: [], turrets: [], radiators: [], bells: [], tracks: [] };
+  return { alien: f, name: name, W: W, H: H, centre: [W / 2, H / 2], parts: [], turrets: [], radiators: [], nozzles: [], tracks: [] };
 }
 // (v239.0) What a titan's design carries that its outer art shows (UI/titan-art.js draws it): a pulse drive, { drive: 'pulse' } (fission) or
 // { drive: 'pulsef' } (fusion), the biggest one fitted, in place of the art's drive bells; or else the colour of its biggest main drive's plume,
@@ -78445,23 +78496,11 @@ function closeMakeInfo(rec) {
     const up = y > 0 && (L.cellTrack[c - L.W] & bit), down = y < H - 1 && (L.cellTrack[c + L.W] & bit);
     tracks.push({ d: d, x: x, y: y, vertical: !!(up || down) });
   }
-  // the engine bells: as the art's hull draws them, on each run of squares in the stern column
-  const bells = [];
-  { const sh = SHIP_ART.SHELL[frame.k];
-    let r0 = -1;
-    for (let y = 0; y <= H; y++) {
-      const on = y < H && L.cellFrame[(y0 + y) * L.W + x0] >= 0;
-      if (on && r0 < 0) r0 = y;
-      if (!on && r0 >= 0) { const tk = y - r0, n = Math.max(1, Math.round(tk / (sh ? 3.4 : 4))); for (let j = 0; j < n; j++) bells.push(r0 + (j + 0.5) * tk / n); r0 = -1; }
-    }
-    // (v181.0) no bells in front of a pulse drive's pusher plate: it has its own flash and plasma fan (05f-2d)
-    for (let k = 0; k < L.parts.length; k++) {
-      const u = L.parts[k];
-      if (!u.m.pulse || u.rec.x > x0 + 1) continue;
-      const th = (u.rec.r & 1) ? u.s.w : u.s.h, py0 = u.rec.y - y0 - 1, py1 = u.rec.y - y0 + th + 1;
-      for (let b = bells.length - 1; b >= 0; b--) if (bells[b] > py0 && bells[b] < py1) bells.splice(b, 1);
-    }
-  }
+  // (v261.1, Alex: "it would be nice if we could better match the thrust art on ships between art styles") the drive nozzles: ONE list, used by the
+  // module view's bells (frame.nozzles), the hull art's bells (closeHullInfo) and the battle's plumes, so every look shows the same nozzles in the
+  // same places. (Before, the module view spread same-size bells evenly down the stern and the hull art put one bell on each drive, so they never matched.)
+  const nozzles = closeNozzles(L, x0, y0, W, H, parts);
+  frame.nozzles = nozzles;
   // the weapon groups' muzzles (section 5vb's groups, which list their parts): where each part fires from, on the grid
   const muzzles = [];
   for (let k = 0; k < parts.length; k++) {
@@ -78469,8 +78508,38 @@ function closeMakeInfo(rec) {
     const dx = Math.cos(p.ang), dy = Math.sin(p.ang);
     muzzles.push({ x: p.cx + dx * p.w / 2 * Math.abs(dx) + 0, y: p.cy + dy * p.h / 2 * Math.abs(dy) });
   }
-  return { rec: rec, frame: frame, W: W, H: H, parts: parts, turrets: turrets, radiators: radiators, pds: pds, tracks: tracks, bells: bells, muzzles: muzzles, cls: frame.k,
+  return { rec: rec, frame: frame, W: W, H: H, parts: parts, turrets: turrets, radiators: radiators, pds: pds, tracks: tracks, nozzles: nozzles, muzzles: muzzles, cls: frame.k,
            centre: [W / 2, H / 2] };
+}
+// (v261.1) A design's drive nozzles, for every look: [{ x: the stern edge the bell sits on, y: its middle, h: its mouth's height }] in grid squares.
+// Each drive (chemical rocket, nuclear rocket, fusion torch, ion or antimatter drive) at the back of the hull (no more than one square of frame behind
+// it in its rows) gets one bell, as tall as the drive. A ship whose drives are all buried inside gets bells spread evenly down its stern instead (the
+// old rule), so it still shows where it pushes from. A pulse drive has its own plate and flash: no bells in front of it.
+const CLOSE_DRIVE_KINDS = { rocket: 1, ion: 1, amdrive: 1 };
+function closeNozzles(L, x0, y0, W, H, parts) {
+  const on = (x, y) => x >= 0 && y >= 0 && x < W && y < H && L.cellFrame[(y0 + y) * L.W + x0 + x] >= 0;
+  const out = [];
+  for (let q = 0; q < parts.length; q++) {
+    const p = parts[q];
+    if (!CLOSE_DRIVE_KINDS[p.spec.d]) continue;
+    let sx = W;
+    for (let y = p.y; y < p.y + p.h; y++) for (let x = 0; x < W; x++) if (on(x, y)) { if (x < sx) sx = x; break; }
+    if (sx < W && p.x <= sx + 1) out.push({ x: sx, y: p.y + p.h / 2, h: p.h * 0.85 });
+  }
+  if (out.length) return out;
+  let r0 = -1;
+  for (let y = 0; y <= H; y++) {
+    const o = y < H && on(0, y);
+    if (o && r0 < 0) r0 = y;
+    if (!o && r0 >= 0) { const tk = y - r0, n = Math.max(1, Math.round(tk / 3.4)); for (let j = 0; j < n; j++) out.push({ x: 0, y: r0 + (j + 0.5) * tk / n, h: Math.min(2.9, tk / n * 0.85) }); r0 = -1; }
+  }
+  for (let k = 0; k < parts.length; k++) {
+    const p = parts[k];
+    if (p.spec.d !== 'pulse' && p.spec.d !== 'pulsef') continue;
+    if (p.x > 1) continue;
+    for (let b = out.length - 1; b >= 0; b--) if (out[b].y > p.y - 1 && out[b].y < p.y + p.h + 1) out.splice(b, 1);
+  }
+  return out;
 }
 // One part's drawing for the art sheet (ship-art.js D functions): its kind, size and options; and the mount it turns on ('' = it does not turn)
 function closePartSpec(u) {
@@ -78620,21 +78689,53 @@ function closeArtEntry(t, look, house, modules) {
   if (info) { closeArtQueue.push(e); closeArtPump(); }
   return e;
 }
-// Makes the next waiting picture, in the browser's spare time (one at a time, so a battle never stalls on a pile of them).
+// (v261.3) A picture someone is looking at moves to the front of the line and is made without waiting for the browser's spare time
+// (CLOSE_LOOK.urgentGapMs). level 2 = a ship drawn on screen now (or the Selected squadron close-up); level 1 = a ship about to be big enough
+// (look ahead). Level 2 goes before level 1, and each level keeps its order.
+function closeArtUrgent(e, level) {
+  const lv = level || 2;
+  if (!e || (e.urgent || 0) >= lv || e.state !== 'wait' || CLOSE_LOOK.urgentGapMs < 0) return;
+  e.urgent = lv;
+  const at = closeArtQueue.indexOf(e);
+  if (at < 0) return;
+  closeArtQueue.splice(at, 1);
+  let k = 0; while (k < closeArtQueue.length && (closeArtQueue[k].urgent || 0) >= lv) k++;
+  closeArtQueue.splice(k, 0, e);
+  closeArtPump();
+}
+// Makes the next waiting picture: pictures someone is looking at after a short breather (a few may be unpacking at once), the rest in the browser's
+// spare time, one at a time (so a battle never stalls on a pile of them).
 function closeArtPump() {
-  if (closeArtBusy || closeArtQueue.length === 0) return;
-  closeArtBusy = true;
+  if (closeArtQueue.length === 0) return;
+  const urgent = CLOSE_LOOK.urgentGapMs >= 0 && closeArtQueue[0].urgent > 0;
+  if (closeArtBusy >= (urgent ? Math.max(1, CLOSE_LOOK.urgentAtOnce) : 1)) return;
+  if (closeArtWaitId !== null) {
+    // already waiting: an urgent picture cuts a wait for spare time short; any other wait just carries on
+    if (!urgent || closeArtWaitKind === 'urgent') return;
+    if (closeArtWaitKind === 'idle' && typeof cancelIdleCallback === 'function') cancelIdleCallback(closeArtWaitId); else clearTimeout(closeArtWaitId);
+    closeArtWaitId = null;
+  }
   const run = function () {
-    const e = closeArtQueue.shift();
-    if (!e) { closeArtBusy = false; return; }
-    closeArtBuild(e, function () { closeArtBusy = false; closeArtPump(); });
+    closeArtWaitId = null;
+    const e = closeArtQueue.shift();   // (the front of the line now: an urgent picture that arrived during the wait goes first)
+    if (!e) return;
+    closeArtBusy++;
+    let finished = false;
+    closeArtBuild(e, function () { if (finished) return; finished = true; closeArtBusy--; closeArtDoneAt = performance.now(); closeArtPump(); });
+    if (!finished) { closeArtDoneAt = performance.now(); closeArtPump(); }   // (unpacking in the background: the breather counts from now, and the next may start)
   };
+  if (urgent) {
+    closeArtWaitKind = 'urgent';
+    closeArtWaitId = setTimeout(run, Math.max(0, closeArtDoneAt + CLOSE_LOOK.urgentGapMs - performance.now()));
+    return;
+  }
   // (v245.0) only in real spare time: a picture takes 50-90 ms to make, and with a 120 ms timeout a busy battle (which never has spare time) made them
   // in the middle of its frames, a hitch each. Now the browser must offer at least idleMinMs of spare time, or idleTimeoutMs must pass (so a picture
   // still comes within a second or so); the ship is drawn as its icon until then.
   const asked = performance.now();
-  const idle = function (dl) { const left = CLOSE_LOOK.idleTimeoutMs - (performance.now() - asked); if (dl && !dl.didTimeout && left > 0 && dl.timeRemaining() < CLOSE_LOOK.idleMinMs) { requestIdleCallback(idle, { timeout: Math.max(1, left) }); return; } run(); };
-  if (typeof requestIdleCallback === 'function') requestIdleCallback(idle, { timeout: CLOSE_LOOK.idleTimeoutMs }); else setTimeout(run, 0);
+  const idle = function (dl) { const left = CLOSE_LOOK.idleTimeoutMs - (performance.now() - asked); if (dl && !dl.didTimeout && left > 0 && dl.timeRemaining() < CLOSE_LOOK.idleMinMs) { closeArtWaitId = requestIdleCallback(idle, { timeout: Math.max(1, left) }); return; } run(); };
+  if (typeof requestIdleCallback === 'function') { closeArtWaitKind = 'idle'; closeArtWaitId = requestIdleCallback(idle, { timeout: CLOSE_LOOK.idleTimeoutMs }); }
+  else { closeArtWaitKind = 'timer'; closeArtWaitId = setTimeout(run, 0); }
 }
 function closeArtBuild(e, done) {
   if (e.info.alien) { closeAlienBuild(e, done); return; }
@@ -78752,17 +78853,25 @@ function closeHullInfo(info, livery) {
     return sd === 0 ? [r.x - m, r.y - out, r.x + r.w + m, r.y] : sd === 1 ? [r.x - m, r.y + r.h, r.x + r.w + m, r.y + r.h + out]
          : sd === 2 ? [r.x - out, r.y - m, r.x, r.y + r.h + m] : [r.x + r.w, r.y - m, r.x + r.w + out, r.y + r.h + m];
   });
-  return { name: rec.name || String(rec.id || ''), cls: rec.design.hull || info.cls, W: info.W, H: info.H, cells: cells, parts: parts, reg: info.frame.reg, livery: livery !== undefined ? livery : (rec.livery || null), keep: keep };
+  return { name: rec.name || String(rec.id || ''), cls: rec.design.hull || info.cls, W: info.W, H: info.H, cells: cells, parts: parts, reg: info.frame.reg, livery: livery !== undefined ? livery : (rec.livery || null), keep: keep, nozzles: info.nozzles };
 }
 function closeHullBuild(e, done) {
   const info = e.info, A = SHIP_ART;
   e.state = 'busy'; e.guns = {};
   const s = Math.max(CLOSE_LOOK.squareMin, Math.min(CLOSE_LOOK.squareMax, Math.floor(CLOSE_LOOK.pictureLongest / (info.W + 16))));
-  let pic = null, hi = null;
+  let hi = null;
   // (v221.0) in the entry's livery: the design's, the player's Echo's, or none
-  try { hi = closeHullInfo(info, e.livery); pic = window.HULL_ART.picture(hi, s); } catch (err) { pic = null; }
+  try { hi = closeHullInfo(info, e.livery); } catch (err) { hi = null; }
+  if (!hi) { e.state = 'none'; done(); return; }
+  // (v261.4) read back from the picture store when this exact picture was drawn before (closeKeptPicture)
+  closeKeptPicture('hull|' + s + '|' + JSON.stringify(hi), function () { return window.HULL_ART.picture(hi, s); }, function (pic) {
+    try { closeHullBuildOn(e, done, info, A, s, hi, pic); } catch (err) { e.state = 'none'; done(); }
+  });
+}
+function closeHullBuildOn(e, done, info, A, s, hi, pic) {
   if (!pic) { e.state = 'none'; done(); return; }
   e.s = s; e.x0 = pic.x0; e.y0 = pic.y0; e.w = pic.canvas.width; e.h = pic.canvas.height; e.canvas = pmWatch(pic.canvas);
+  e.hullLights = pic.lights || null;   // (v261.2) where the hull art painted its lights (closeDrawHullLights)
   // the turning guns: hull art turrets, one small picture each (the battle turns them toward the target)
   for (let k = 0; k < info.turrets.length; k++) {
     const tu = info.turrets[k], p = hi.parts[tu.k];
@@ -78852,7 +78961,45 @@ function closeAlienBuild(e, done) {
       // (v260.1) a titan with live lights is drawn calm (its gun dark) and the battle lays the lights over it (closeDrawTitanLights)
       const lights = CLOSE_LOOK.titanLights && !e.cut && window.TITAN_ART.lights ? window.TITAN_ART.lights(info.name, info.W, info.H) : null;
       if (lights) e.lights = lights;
-      const pic = window.TITAN_ART.picture(info.name, CLOSE_LOOK.pictureLongest * 2, info.W, info.H, e.livery || null, info.fit || null, !!lights);   // (v239.0) with its fitted pulse drive
+      // (v239.0) with its fitted pulse drive; (v261.4) read back from the picture store when drawn before
+      const targs = [info.name, CLOSE_LOOK.pictureLongest * 2, info.W, info.H, e.livery || null, info.fit || null, !!lights];
+      closeKeptPicture('titan|' + JSON.stringify(targs), function () { return window.TITAN_ART.picture.apply(window.TITAN_ART, targs); }, function (pic) {
+        try { titanOn(pic); } catch (err) { e.state = 'none'; done(); }
+      });
+      return;
+    }
+    if (info.alien === 'swarm') {
+      // (v91.2) a Swarm ship: one still picture, its tentacles reaching past the body. The body's middle is the turning point.
+      // (v260.1) and the rim's outline: the body alone, a quarter of the size (the same box as the picture, so it lies over it exactly)
+      // (v261.4) both read back from the picture store when drawn before
+      const nm = info.name, L = CLOSE_LOOK.pictureLongest;
+      closeKeptPicture('swarm|' + nm + '|' + L, function () { return window.SWARM_ART.picture(nm, L); }, function (pic) {
+        if (!pic) { finish(null); return; }
+        closeKeptPicture('swarm|' + nm + '|' + (L / 4) + '|body', function () { return window.SWARM_ART.picture(nm, L / 4, true); }, function (body) {
+          try {
+            s = pic.s; e.s = s; e.bodyW = pic.bodyW;
+            e.rimSrc = body ? pmWatch(body.canvas) : null;
+            finish(pic.canvas, pic.pivX, pic.pivY);
+          } catch (err) { e.state = 'none'; done(); }
+        });
+      });
+      return;
+    }
+    if (info.alien === 'sylph') {
+      const house = e.house || 'Aurel';
+      closeKeptPicture('sylph|' + info.name + '|' + house + '|' + s, function () { return AA.sylph.picture(info.name, house, s); }, function (pic) {
+        try { if (!pic) { finish(null); return; } finish(pic.canvas, pic.sternX + info.W * s / 2, pic.midY); } catch (err) { e.state = 'none'; done(); }
+      });
+      return;
+    }
+    AA.delver.setLook(e.look);
+    const r = AA.delver.ship(info.name, s);
+    if (!r) { finish(null); return; }
+    const svg = SHIP_ART.wrapSVG(r.svg, r.x, r.y, r.w, r.h);
+    closeSvgToCanvas(svg, function (c) { finish(c, -r.x + info.W * s / 2, -r.y + info.H * s / 2); });
+  } catch (err) { e.state = 'none'; done(); }
+  // a titan's picture, once drawn or read back
+  function titanOn(pic) {
       if (!pic) { finish(null); return; }
       s = pic.s; e.s = s;
       const box = window.TITAN_ART.box ? window.TITAN_ART.box(info.name) : null;
@@ -78868,29 +79015,7 @@ function closeAlienBuild(e, done) {
         return;
       }
       finish(pic.canvas, pic.pivX, pic.pivY);
-      return;
-    }
-    if (info.alien === 'swarm') {
-      // (v91.2) a Swarm ship: one still picture, its tentacles reaching past the body. The body's middle is the turning point.
-      const pic = window.SWARM_ART.picture(info.name, CLOSE_LOOK.pictureLongest);
-      if (!pic) { finish(null); return; }
-      s = pic.s; e.s = s; e.bodyW = pic.bodyW;
-      // (v260.1) the rim's outline: the body alone, a quarter of the size (the same box as the picture, so it lies over it exactly)
-      try { const body = window.SWARM_ART.picture(info.name, CLOSE_LOOK.pictureLongest / 4, true); if (body) e.rimSrc = pmWatch(body.canvas); } catch (err) { e.rimSrc = null; }
-      finish(pic.canvas, pic.pivX, pic.pivY);
-      return;
-    }
-    if (info.alien === 'sylph') {
-      const pic = AA.sylph.picture(info.name, e.house || 'Aurel', s);
-      finish(pic.canvas, pic.sternX + info.W * s / 2, pic.midY);
-      return;
-    }
-    AA.delver.setLook(e.look);
-    const r = AA.delver.ship(info.name, s);
-    if (!r) { finish(null); return; }
-    const svg = SHIP_ART.wrapSVG(r.svg, r.x, r.y, r.w, r.h);
-    closeSvgToCanvas(svg, function (c) { finish(c, -r.x + info.W * s / 2, -r.y + info.H * s / 2); });
-  } catch (err) { e.state = 'none'; done(); }
+  }
 }
 // ---------------------------------------------------------------------
 // (v239.0) THE TITAN MODULE CUTAWAY. Alex 12 Nov 2026: "we need to do module cutaway art for titans".
@@ -79070,7 +79195,7 @@ function closePartSVG(p, s) {
 // which costs the game almost nothing. A design or art change gives different SVG, so a different fingerprint, so a fresh picture: nothing goes stale.
 // The store is emptied when it holds more than closeKeepMax pictures. SETTINGS.closeKeepPictures 0 = never keep them (as before v103.4).
 // Where the browser refuses storage (a private window, some previews) the pictures are simply made as before.
-const closeStore = { db: null, waiting: null, off: false, hits: 0, made: 0 };
+const closeStore = { db: null, waiting: null, off: false, hits: 0, made: 0, keys: null };   // (v261.4) keys: the names of every kept picture, read once when the store opens
 function closeStoreOpen(cb) {
   if (closeStore.off || SETTINGS.closeKeepPictures !== 1 || typeof indexedDB === 'undefined' || typeof createImageBitmap !== 'function') { cb(null); return; }
   if (closeStore.db) { cb(closeStore.db); return; }
@@ -79084,7 +79209,12 @@ function closeStoreOpen(cb) {
   try {
     const rq = indexedDB.open('ew-close-pictures', 1);
     rq.onupgradeneeded = function () { try { rq.result.createObjectStore('pics'); } catch (e) { /* already there */ } };
-    rq.onsuccess = function () { fin(rq.result); };
+    rq.onsuccess = function () {
+      // (v261.4) the list of kept pictures, read once: a picture not in it is drawn straight away, without asking the store first
+      const db = rq.result;
+      try { const kq = db.transaction('pics', 'readonly').objectStore('pics').getAllKeys(); kq.onsuccess = function () { closeStore.keys = new Set(kq.result || []); fin(db); }; kq.onerror = function () { fin(db); }; }
+      catch (e) { fin(db); }
+    };
     rq.onerror = function () { fin(null); };
     rq.onblocked = function () { fin(null); };
   } catch (e) { fin(null); }
@@ -79102,17 +79232,19 @@ function closeStoreGet(key, cb) {
     catch (e) { cb(null); }
   });
 }
-function closeStorePut(key, blob) {
+function closeStorePut(key, blob, meta) {
   if (!blob) return;
   closeStoreOpen(function (db) {
     if (!db) return;
     try {
       const os = db.transaction('pics', 'readwrite').objectStore('pics');
       const cq = os.count();
-      cq.onsuccess = function () { if (cq.result >= CLOSE_LOOK.keepMax) os.clear(); os.put({ blob: blob, at: Date.now() }, key); };
+      cq.onsuccess = function () { if (cq.result >= CLOSE_LOOK.keepMax) { os.clear(); if (closeStore.keys) closeStore.keys.clear(); } if (closeStore.keys) closeStore.keys.add(key); os.put(meta ? { blob: blob, at: Date.now(), meta: meta } : { blob: blob, at: Date.now() }, key); };
     } catch (e) { /* storage full or refused: the picture is simply not kept */ }
   });
 }
+// (v261.4) the store is opened as the game loads, so it is ready (with its list of kept pictures) before the first close-up is wanted
+setTimeout(function () { try { if (SETTINGS.closeKeepPictures === 1) closeStoreOpen(function () {}); } catch (e) { /* (no store) */ } }, 0);
 function closeSvgToCanvas(svg, cb, second) {
   if (!second && SETTINGS.closeKeepPictures === 1 && !closeStore.off) {
     const key = closeSvgPrint(svg);
@@ -79125,9 +79257,68 @@ function closeSvgToCanvas(svg, cb, second) {
   }
   closeSvgMake(svg, cb, second, null);
 }
+// (v261.4) Puts a finished picture in the store. Packing it into a PNG file took the game's own time (about a third of a second for a few big pictures
+// on a first visit, holding up the next pictures), so a copy of it is handed to a helper running beside the game (a worker), which packs it and hands
+// the file back to be kept. The copy is taken at once, so a picture drawn on afterwards (our hull's pulse drive plate) is kept as it was. Where the
+// browser has no such helper, the picture is packed as before.
+let closeKeepWorker = null, closeKeepJobs = new Map(), closeKeepJobNo = 0;
+function closeKeepWorkerOf() {
+  if (closeKeepWorker !== null) return closeKeepWorker || null;
+  closeKeepWorker = false;
+  try {
+    if (typeof Worker !== 'function' || typeof OffscreenCanvas !== 'function' || typeof createImageBitmap !== 'function') return null;
+    const code = 'onmessage=function(ev){var d=ev.data;try{var c=new OffscreenCanvas(d.bm.width,d.bm.height);c.getContext("2d").drawImage(d.bm,0,0);d.bm.close();'
+      + 'c.convertToBlob({type:"image/png"}).then(function(b){postMessage({id:d.id,blob:b});},function(){postMessage({id:d.id,blob:null});});}catch(e){postMessage({id:d.id,blob:null});}};';
+    const w = new Worker(URL.createObjectURL(new Blob([code], { type: 'text/javascript' })));
+    w.onmessage = function (ev) { const job = closeKeepJobs.get(ev.data.id); closeKeepJobs.delete(ev.data.id); if (job && ev.data.blob) closeStorePut(job.key, ev.data.blob, job.meta); };
+    w.onerror = function () { closeKeepWorker = false; closeKeepJobs.clear(); };
+    closeKeepWorker = w;
+  } catch (e) { closeKeepWorker = false; }
+  return closeKeepWorker || null;
+}
+function closeKeepCanvas(canvas, key, meta) {
+  const w = closeKeepWorkerOf();
+  if (!w) { try { canvas.toBlob(function (b) { closeStorePut(key, b, meta); }, 'image/png'); } catch (e) { /* (a tainted canvas cannot be kept) */ } return; }
+  createImageBitmap(canvas).then(function (bm) {
+    const id = ++closeKeepJobNo; closeKeepJobs.set(id, { key: key, meta: meta });
+    try { w.postMessage({ id: id, bm: bm }, [bm]); } catch (e) { closeKeepJobs.delete(id); }
+  }, function () { /* (not kept) */ });
+}
+// (v261.4) A picture the art draws straight onto a canvas (make() returns { canvas, ... its measurements }), kept in the picture store
+// (CLOSE_LOOK.keepDrawn). what: everything the picture is drawn from, as text (the art, the design, the size, the livery). It is filed under that and
+// the build's fingerprint (CLOSE_BUILD_PRINT, made by tools/build.js from every source file), so a picture drawn by older art is never read back.
+// cb(pic): the same { canvas, ... } as make() gives (read back: a fresh canvas with the kept measurements), or null when it could not be drawn.
+const CLOSE_BUILD_PRINT = '674a49de10da';
+function closeKeptPicture(what, make, cb) {
+  const fresh = function (key) {
+    let pic = null;
+    try { pic = make(); } catch (err) { pic = null; }
+    if (key && pic && pic.canvas && typeof pic.canvas.toBlob === 'function') {
+      let meta = null;
+      try { const m = {}; for (const k in pic) if (k !== 'canvas') m[k] = pic[k]; meta = JSON.parse(JSON.stringify(m)); } catch (err) { meta = null; }
+      if (meta) { closeStore.made++; closeKeepCanvas(pic.canvas, key, meta); }
+    }
+    cb(pic);
+  };
+  if (CLOSE_LOOK.keepDrawn !== 1 || SETTINGS.closeKeepPictures !== 1 || closeStore.off) { fresh(null); return; }
+  const key = 'c-' + closeSvgPrint(CLOSE_BUILD_PRINT + '|' + what);
+  // not kept (no need to ask), or the store not open yet (opening it can take a moment: the picture is drawn now rather than wait for it)
+  if (!closeStore.db || !closeStore.keys || !closeStore.keys.has(key)) { if (!closeStore.db) closeStoreOpen(function () {}); fresh(key); return; }
+  closeStoreGet(key, function (rec) {
+    if (!rec || !rec.blob || !rec.meta) { fresh(key); return; }
+    createImageBitmap(rec.blob).then(function (bm) {
+      let c = null;
+      try { c = document.createElement('canvas'); c.width = bm.width; c.height = bm.height; c.getContext('2d').drawImage(bm, 0, 0); if (bm.close) bm.close(); } catch (err) { c = null; }
+      if (!c) { fresh(key); return; }
+      closeStore.hits++;
+      const pic = { canvas: c }; for (const k in rec.meta) pic[k] = rec.meta[k];
+      cb(pic);
+    }, function () { fresh(key); });
+  });
+}
 function closeSvgMake(svg, cb0, second, keepKey) {
   const cb = !keepKey ? cb0 : function (c) {
-    if (c) { closeStore.made++; try { c.toBlob(function (b) { closeStorePut(keepKey, b); }, 'image/png'); } catch (e) { /* (a tainted canvas cannot be kept) */ } }
+    if (c) { closeStore.made++; closeKeepCanvas(c, keepKey, null); }
     cb0(c);
   };
   let url = null;
@@ -79213,12 +79404,25 @@ function closeChooseShips(left, top, right, bottom) {
   if (closeAllowSt.length < n) closeAllowSt = new Uint8Array(n);
   const count = new Int32Array(n);
   let all = 0;
+  // (v261.3) look ahead: a type on screen at lookAheadShare of minPixels or more has its picture started now, so it is ready when the ships are big
+  // enough (marked as used, so it is not let go while it stays on screen that size)
+  if (closeLookAheadFrame.length < n) closeLookAheadFrame = new Int32Array(n).fill(-1);
+  const ahead = CLOSE_LOOK.lookAheadShare > 0 && CLOSE_LOOK.lookAheadShare < 1 && typeof window.SHIP_ART !== 'undefined' ? CLOSE_LOOK.minPixels * CLOSE_LOOK.lookAheadShare : CLOSE_LOOK.minPixels;
+  const look = closeLookKey(), nowMs = performance.now();
   for (let i = 0; i < highWater; i++) {
     if (shipAlive[i] === 0 || fogHides(i)) continue;       // (v154.0: the long map's fog)
     const st = shipSide[i] * TYPE_COUNT + shipType[i];
-    if (iconLod[st] === ICON_TRIANGLE || iconLod[st] === ICON_FACILITY || iconPx[st] < CLOSE_LOOK.minPixels) continue;
+    if (iconLod[st] === ICON_TRIANGLE || iconLod[st] === ICON_FACILITY || iconPx[st] < ahead) continue;
     const x = shipX[i], y = shipY[i];
     if (x < left || x > right || y < top || y > bottom) continue;
+    if (iconPx[st] < CLOSE_LOOK.minPixels) {
+      if (closeLookAheadFrame[st] !== closeFrameNo) {        // (once a type a frame)
+        closeLookAheadFrame[st] = closeFrameNo;
+        const e = closeArtEntry(shipType[i], look, closeHouseOf(i));
+        if (e) { if (e.state === 'wait') closeArtUrgent(e, 1); else if (e.state === 'ready') e.used = nowMs; }
+      }
+      continue;
+    }
     count[st]++; all++;
   }
   if (all <= CLOSE_LOOK.maxShips) return;
@@ -79239,6 +79443,7 @@ function closeWants(i, px) {
   if (closeRationed && closeAllowSt[shipSide[i] * TYPE_COUNT + shipType[i]] !== 1) return null;   // (v126.2) over the cap: whole types, biggest first
   if (!closeRationed && closeCount >= CLOSE_LOOK.maxShips) return null;
   const e = closeArtEntry(shipType[i], closeLookKey(), closeHouseOf(i));   // (v78.1) a Sylph in its house's colours; (v126.0) an Echo ship in the run's Echo look
+  if (e && e.state === 'wait') closeArtUrgent(e);                          // (v261.3) on screen and waiting: to the front of the line
   if (!e || e.state !== 'ready') return null;
   // (v126.1) a picture whose size came out wrong is never drawn (the ship shows its icon): it would cover the screen
   if (!(e.worldPerPx > 0 && e.w * e.worldPerPx < CLOSE_LOOK.biggestShare * Math.max(1e-6, shipDrawLenOf(shipType[i])))) return null;
@@ -79311,12 +79516,15 @@ function closeDrawShipOn(i, e, sx, sy, z, paintColour, dtSim, view) {
   // engine glow: brighter the faster the ship goes, with a flicker
   const spd = Math.sqrt(shipVX[i] * shipVX[i] + shipVY[i] * shipVY[i]), top = Math.max(1e-6, stSpeed && stSpeed.length > 0 ? stSpeed[shipSide[i] * TYPE_COUNT + shipType[i]] : 1);
   const thrust = mdFuelOut.length > i && mdFuelOut[i] === 1 ? 0 : Math.min(1, 0.25 + 0.75 * spd / top);
-  if (thrust > 0.02 && info.bells.length) {
-    const nz = S * 2, eng = fxEngineLook(shipType[i]);
+  if (thrust > 0.02 && info.nozzles && info.nozzles.length) {
+    // (v261.1) a plume out of each of the ship's nozzles (closeNozzles: the same bells every look draws), sized by its bell; the bell's mouth is
+    // h x 1.1 squares behind the stern edge it sits on (the hull art's bells start 0.2 of a square in; the module view's sit on its stern shell)
+    const eng = fxEngineLook(shipType[i]), shell = !e.hull && SHIP_ART.SHELL ? SHIP_ART.SHELL[info.frame.k] : null;
     ctx.globalCompositeOperation = 'lighter';
-    for (let b = 0; b < info.bells.length; b++) {
-      const by = oy + info.bells[b] * S, bx = ox - nz - S * 0.4, flick = 0.85 + Math.random() * 0.3;
-      const r = S * (1.4 + 2.2 * thrust) * flick;
+    for (let b = 0; b < info.nozzles.length; b++) {
+      const n = info.nozzles[b], at = e.hull ? n.x + 0.2 : (n.x > 0 || !shell ? n.x : -shell.out);
+      const by = oy + n.y * S, bx = ox + (at - n.h * 1.1) * S - S * 0.4, flick = 0.85 + Math.random() * 0.3;
+      const r = S * (n.h / 2.9) * (1.4 + 2.2 * thrust) * flick;
       // (v101.8, section 6w) the drive's own colour, and a long plume out of the bell (longer for the faster-burning drives)
       ctx.globalAlpha = 0.5 * thrust; ctx.drawImage(fxGlowSprite(eng.col), bx - r * (1.6 + 2.2 * eng.trail * thrust), by - r * 0.45, r * (2.2 + 2.2 * eng.trail * thrust), r * 0.9);
       ctx.globalAlpha = 0.6 * thrust; ctx.drawImage(fxGlowSprite(eng.col), bx - r * 1.6, by - r * 0.7, r * 2.2, r * 1.4);
@@ -79680,7 +79888,42 @@ function closeDrawShipLights(i, e, view, k, ox, oy, out, lenPx) {
       if (full && c3 > 0.3) glow(L.x, L.y, r * 0.35, r * 0.35, '#fff6e0', (c3 - 0.3) * 0.8 * ready);
     }
   }
+  if (e.hull && e.hullLights && e.hullLights.length) closeDrawHullLights(i, e, T, full, q);
   ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+}
+// (v261.2, Alex: "the new blinking lights are great, but many of the ships have old baked square lights that dont blink. an easy fix would be to add
+// blinking lights on top of those old ones") the hull art notes every light it paints (HULL_ART.picture's lights: lit windows, deck lamps, bridge
+// panes, the nose's running lights, in any livery), and these live lights go on exactly those spots:
+//   running lights   blink with a glow, with a white strobe's double flash (small ships: only the flash)
+//   windows          (big enough on screen) now and then one flares up for a moment, and one goes dark for a while, each on its own slow clock. (A soft glow
+//                    breathing over all the windows was tried: 9 big ships cost 13 ms more a frame, so it was left out.)
+function closeDrawHullLights(i, e, T, full, q) {
+  const ctx = closeCtx(), L = e.hullLights, X = -e.pivX, Y = -e.pivY;   // a light at (x, y) in the picture is drawn at (X + x, Y + y)
+  const glowPx = function (x, y, r, col, a) { if (a <= 0.01) return; ctx.globalAlpha = Math.min(1, a); ctx.drawImage(fxGlowSprite(col), X + x - r, Y + y - r, 2 * r, 2 * r); };
+  ctx.globalCompositeOperation = 'lighter';
+  const ws = 0.6 / Math.max(1e-6, q / e.s);   // (picture pixels a 0.6 screen pixel)
+  for (let n = 0; n < L.length; n++) {
+    const l = L[n];
+    if (l.k !== 'nav') continue;
+    const r = Math.max(l.w * 2.2, ws * 5), w = (((T + n * 0.9) % 2.6) + 2.6) % 2.6, flash = w < 0.08 || (w > 0.22 && w < 0.3);
+    if (full) { const on = (((T * 0.5 + n * 0.37) % 1) + 1) % 1 < 0.5; glowPx(l.x, l.y, r * (on ? 1.3 : 0.8), l.col, on ? 0.85 : 0.35); }
+    if (flash) glowPx(l.x, l.y, r * 1.5, '#ffffff', 0.9);
+  }
+  if (!full) return;
+  // a few other windows flare up brighter for a moment, each on its own clock (only the ones flaring cost a glow)
+  for (let n = (i * 3 + 3) % 7; n < L.length; n += 7) {
+    const l = L[n];
+    if (l.k !== 'win') continue;
+    const w = (((T * 0.21 + n * 0.618 + i * 0.17) % 1) + 1) % 1;
+    if (w < 0.12) glowPx(l.x, l.y, Math.max(l.w, l.h) * 1.3 + ws * 3, l.col, 0.7 * Math.sin(w / 0.12 * Math.PI));
+  }
+  // a few windows go dark for a while (someone turns the light off), each on its own slow clock
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 0.92; ctx.fillStyle = '#0c0d0b';
+  for (let n = (i * 3) % 7; n < L.length; n += 7) {
+    const l = L[n];
+    if (l.k !== 'win') continue;
+    if ((((T * 0.09 + n * 0.618 + i * 0.31) % 1) + 1) % 1 < 0.22) ctx.fillRect(X + l.x - l.w / 2, Y + l.y - l.h / 2, l.w, l.h);
+  }
 }
 function closeTurretTarget(i, info5, k) {
   let t = -1;
@@ -80319,7 +80562,7 @@ function spriteMemoryTrim() {
 function pictureMemoryReset() {
   pictureMemory.resets++;
   try {
-    closeArt.clear(); closeArtQueue.length = 0;
+    closeArt.clear(); closeArtQueue.length = 0;   // (v261.3: a wait already set up finds the line empty and does nothing)
     if (typeof closeBlue !== 'undefined') closeBlue.clear();
     if (typeof closeStationArt !== 'undefined') closeStationArt.clear();
     shipSprites.clear();
@@ -85424,6 +85667,7 @@ function bsShipViewFrame() {
   if (!bsShipHere()) { say(bsShipGone().replace('.', '').toUpperCase()); return; }   // lost or away: the view stops (a new pick starts it again)
   const t = shipType[i], side = shipSide[i], rec = SHIP_TYPES[t];
   const e = typeof window.SHIP_ART !== 'undefined' ? closeArtEntry(t, closeLookKey(), closeHouseOf(i), true) : null;   // (a Sylph in its house's colours, an Echo ship in its look; (v188.0) always the modules, never the hull art)
+  if (e && e.state === 'wait') closeArtUrgent(e);                          // (v261.3) being looked at: made without waiting for spare time
   if (!e || e.state === 'none') {                                           // no close-up drawing for this type: its icon, big
     const px = Math.min(W, H) * 0.7;
     g.setTransform(1, 0, 0, 1, W / 2 - px / 2, H / 2 - px / 2);
@@ -111641,7 +111885,7 @@ BUREAU2_SCREEN_API.testRange = { run: testRangeRun, state: testRange, plan: func
 //   adopted habits come along in its copy code and into every new campaign. A doctrine changed in the Bureau after the save updates the plan's copy.
 //   DOCTRINE TEMPLATES (LIBRARY.templates: [{ name, doctrine, savedAt }]) live here too, so they carry over as well. A plan from before v37 has no doctrine: Auto.
 // =====================================================================
-const GAME_VERSION = 'v261.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
+const GAME_VERSION = 'v261.4';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
 const LIBRARY_KEY = 'engineersWar.library';
 const LIBRARY_FORMAT = 1;
 const LIBRARY_CODE_SHIP = 'EW-SHIP-1:', LIBRARY_CODE_LIB = 'EW-LIB-1:';
