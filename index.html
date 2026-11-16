@@ -3592,6 +3592,7 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
         <label class="bs-layer" id="bsLayerFleetNamesBox" title="Each Fleet's banner tag (its name and Vice Admiral) near its centre. Needs the chain of command." style="display:none"><input type="checkbox" id="bsLayerFleetNames">Fleet names</label>
         <label class="bs-layer" id="bsLayerMovesBox" title="Each Fleet's move as a big arrow from its centre to the move's target, in the Fleet's shade: dashed while it waits for its cue, solid while it runs (the enemy's dimmer). Needs the chain of command." style="display:none"><input type="checkbox" id="bsLayerMoves">Fleet moves</label>
         <label class="bs-layer" id="bsLayerRetreatBox" title="Each Fleet's line of retreat (dashed, from its front to its rally point and on to its edge; red where the enemy threatens to cut it) and its rally point (a flag). Needs the chain of command." style="display:none"><input type="checkbox" id="bsLayerRetreat">Lines of retreat</label>
+        <label class="bs-layer" title="Each of our ships (zoomed in enough to see it): a white line out of its nose. Red ring: its back is to the nearest enemy. Amber ring: it is leaving on purpose (routing, or off to repairs). Green ring: it just traded places in the front rank."><input type="checkbox" id="bsLayerFacing">Ship facing</label>
         <label class="bs-layer" title="Where the enemy's guns reach (shaded: the darker, the more fire). Needs squadrons to look after themselves. With the chain of command on: the enemy's fire by weapon range and damage type (kinetic amber, energy cyan, missile violet), or, with a squadron selected, the danger as its officer reads it."><input type="checkbox" id="bsLayerDanger">Danger</label>
         <label class="bs-layer bs-places-only" title="The AO plate and the minimap of the whole battlefield (bottom right). Click the minimap to look there." style="display:none"><input type="checkbox" id="bsLayerMinimap">Minimap</label>
       </div></div>
@@ -3676,7 +3677,7 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
     <section class="panel hidden" id="mmPanel"><div class="panel-head" id="mmPanelHead"></div><div class="panel-body" id="mmPanelBody"></div></section>
     <input type="file" id="mmFile" accept=".json,application/json,text/plain" class="hidden">
   </div>
-  <div class="mm-version" title="The version of the game you are playing">Version v261.4</div>
+  <div class="mm-version" title="The version of the game you are playing">Version v261.9</div>
 </div>
 
 <!-- (v31 A2, section 7l) the end of the war: the game-over screen (Earth's people are gone) or the victory screen (the aliens' home secured). It lies over
@@ -3848,7 +3849,7 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
 <!-- (v17) The ship icons: ship-icons.js from the UI folder, built in word for word. -->
 <script>
 /* =====================================================================
-   ENGINEER'S WAR  -  ship-icons.js   (version 0.5: 53 ship ID icons and the place icons)
+   ENGINEER'S WAR  -  ship-icons.js   (version 0.6: 53 ship ID icons and the place icons)
    =====================================================================
 
    WHAT THIS FILE IS
@@ -3871,6 +3872,9 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
    VERSION 0.2.1 (v25.1): A19 Leviathan, the default alien capital, is redrawn.
    The old one looked like a goldfish; the new one is an armoured warship
    with jaws, spines and carapace ridges, in the same striped bio style.
+
+   VERSION 0.6 (15 Nov 2026, game v261.5): A19 Leviathan redrawn to match its new
+   close-up art: a great manta with a ring of arms at the nose and a long tail.
 
    VERSION 0.3 (29 Oct 2026): PLACE ICONS for our stations and colonies,
    tiers 1-3 (plan: notes/plans/campaign/colony-starbase-growth.md, 4k).
@@ -4125,10 +4129,10 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
     {id:"A18", side:"enemy", name:"Kraken", role:"Tentacle beast", size:"XL",
      note:"A dome head with three curling arms.",
      d:"M24 9 C24 12.9 20.4 16 16 16 C11.6 16 8 12.9 8 9 C8 5.1 11.6 2 16 2 C20.4 2 24 5.1 24 9 Z M8.5 14 C7.8 15.2 8.1 19 7.5 21 C6.9 23 5.9 24.8 5 26 C4.1 27.2 3 27.3 2 28 C3.7 28.3 5.6 29.5 7 29 C8.4 28.5 9.8 26.7 10.5 25 C11.2 23.3 11.2 20.8 11.5 19 C11.8 17.2 12.5 14.8 12 14 C11.5 13.2 9.2 12.8 8.5 14 Z M14.5 14 C13.9 15.3 14.2 19.8 14.5 22 C14.8 24.2 15.9 25.7 16 27 C16.1 28.3 15.3 29 15 30 C16.3 29.3 18.4 29.5 19 28 C19.6 26.5 18.7 23.3 18.5 21 C18.3 18.7 18.7 15.2 18 14 C17.3 12.8 15.1 12.7 14.5 14 Z M20.5 14 C20.8 14.2 20.8 19.2 21.5 21 C22.2 22.8 23.6 24.3 25 25 C26.4 25.7 28.3 25 30 25 C28.8 26.5 27.9 29.3 26.5 29.5 C25.1 29.7 22.7 27.6 21.5 26 C20.3 24.4 19.7 22 19.5 20 C19.3 18 20.2 13.8 20.5 14 Z"},
-    {id:"A19", side:"enemy", name:"Leviathan", role:"Capital beast", size:"XL",
-     note:"An armoured bio warship: forward jaws, ridged carapace, swept-back spines and a cleft stern.",
-     d:"M12 1 C13 3 14 5 15.8 6.5 C17 5 18.2 3.8 19.5 2.5 C20.8 4.5 21.6 6.5 21.8 8.5 C22.2 9.6 22.6 10.6 23 11.5 C25 12.2 27 14 28 16.8 C26.4 16.3 24.8 16 23.6 16.2 C23.9 17.3 23.9 18.5 23.6 19.5 C25.2 20.6 26.6 22.6 27.2 25.4 C25.8 24.4 24.4 23.9 22.9 23.8 C22.3 25.2 21.5 26.4 20.5 27.5 C20.3 29 19.5 30.3 18.5 30.8 C17.6 30 16.8 29.4 15.8 29.4 C14.8 29.4 13.8 30.2 12.8 30.8 C12 29.6 11.2 28.2 10.2 26.5 C9.3 25.8 8.7 25 8.4 24.2 C6.4 24.8 4.6 26 3.2 28 C3.8 25 5.4 22.2 8 20.6 C7.8 19.3 7.7 17.6 7.9 16.3 C6.6 15.6 5.4 14.6 4.6 12.8 C6 12.9 7.4 13.2 8.5 13.7 C8.8 11.6 9.4 9.6 10.2 8 C10.8 5.5 11.4 3.2 12 1 Z",
-     inner:"M9.6 13.6 Q16 16.6 22.8 13 M9 20.6 Q16 23.8 23.3 20"},
+    {id:"A19", side:"enemy", name:"Leviathan", role:"Swarm titan", size:"XL",
+     note:"(v0.6) A great manta: wide swept wings, a ring of arms reaching forward from the nose and a long thin tail.",
+     d:"M16 6 C17.6 6 18.4 8 19 10 C21 12 25 14 30 17.5 C26 19 22 20.2 19 22.5 C18 23.6 17 24.5 16 25 C15 24.5 14 23.6 13 22.5 C10 20.2 6 19 2 17.5 C7 14 11 12 13 10 C13.6 8 14.4 6 16 6 Z M15.3 24 L16.7 24 L16.3 31.6 L15.7 31.6 Z",
+     inner:"M14.6 7.2 C13 5.2 11.4 3.8 9.6 3.2 M15.4 6.4 C15.1 4.2 14.7 2.2 14.1 0.8 M16.6 6.4 C16.9 4.2 17.3 2.2 17.9 0.8 M17.4 7.2 C19 5.2 20.6 3.8 22.4 3.2 M8.6 16.6 Q16 19.4 23.4 16.6"},
     {id:"A20", side:"enemy", name:"Hive", role:"Brood core", size:"XL",
      note:"Four round cells fused into one.",
      d:"M16.6 11 C16.6 14.1 14.1 16.6 11 16.6 C7.9 16.6 5.4 14.1 5.4 11 C5.4 7.9 7.9 5.4 11 5.4 C14.1 5.4 16.6 7.9 16.6 11 Z M26.5 12 C26.5 14.8 24.3 17 21.5 17 C18.7 17 16.5 14.8 16.5 12 C16.5 9.2 18.7 7 21.5 7 C24.3 7 26.5 9.2 26.5 12 Z M15.3 22 C15.3 24.7 13.2 26.8 10.5 26.8 C7.8 26.8 5.7 24.7 5.7 22 C5.7 19.3 7.8 17.2 10.5 17.2 C13.2 17.2 15.3 19.3 15.3 22 Z M26.4 23.5 C26.4 26.5 24 28.9 21 28.9 C18 28.9 15.6 26.5 15.6 23.5 C15.6 20.5 18 18.1 21 18.1 C24 18.1 26.4 20.5 26.4 23.5 Z M20 17 C20 19.2 18.2 21 16 21 C13.8 21 12 19.2 12 17 C12 14.8 13.8 13 16 13 C18.2 13 20 14.8 20 17 Z"},
@@ -7113,7 +7117,8 @@ function partPicture(id,w,h,houseKey,cell){var Hs=house(houseKey),cv=document.cr
 })();
 <!-- (v91.2) The Swarm's art: swarm-art.js from the UI folder (the Swarm close-up art sheet's ships, look N), built in word for word. The close look draws the Swarm's ships with it (section 6v). -->
 // =====================================================================
-// ENGINEER'S WAR  -  SWARM ART (v1.3, 14 Nov 2026): the Swarm's ships up close, in look N, the Weeping Engine.
+// ENGINEER'S WAR  -  SWARM ART (v1.4, 15 Nov 2026): the Swarm's ships up close, in look N, the Weeping Engine.
+// v1.4 (game v261.5): the Leviathan redone as a colossal manta with a ring of arms and barbed whips round its maw (ships.js; sheet UI/mockup-leviathan-redesign.html).
 // v1.3 (game v260.3): every Swarm ship swims (game.js swimOf: its picture bent by a wave running from nose to tail, and breathing).
 // v1.2 (game v260.1): the Leviathan swims (anim.js): SWARM_ART.loop and SWARM_ART.flipbook for the battle's moving close-ups.
 // v1.1 (game v260.0): the four new ships Howler, Lasher, Gorger and Devourer (ships-new.js), the frenzy sac and the armour plates (close.js).
@@ -7576,6 +7581,31 @@ function geyser(c, t, x, y, ang, len, k, i) {
   var hole = blobP(0, 0, 1.5 * k, .45 * k, i * 5 + 3, .3, 14); c.fillStyle = '#0a0604'; c.fill(hole);
   c.restore(); glow(c, x, y, 1.4 * k, BILE, .45);
 }
+// (v261.5) pieces of the redone Leviathan
+// a spine battery seen from above: a crown of bone thorns sweeping back from a dark knot, acid glowing in the knot
+// (the knot is ragged and the glow sits off to the front, so it never reads as an eye)
+function spireCrown(c, t, x, y, R, k, i, ang) {
+  ang = ang || 0; var n = 7, j;
+  glow(c, x, y, R * 2.2, GLOW, .45 + .25 * Math.sin(t * 2.2 + i));
+  for (j = 0; j < n; j++) { var q = j / (n - 1) - .5, a = ang + Math.PI + q * 2.6; spur(c, x + Math.cos(a) * R * .3, y + Math.sin(a) * R * .3, a, R * (1.5 + .7 * (1 - Math.abs(q) * 2) + .25 * Math.sin(j * 3 + i)), R * .2); }
+  spur(c, x, y, ang, R * 1.2, R * .26);
+  var knot = blobP(x, y, R * .7, R * .55, i * 3 + 1, .3, 16); c.fillStyle = lin(c, x, y - R, x, y + R, [[0, '#7d8783'], [.5, '#22282a'], [1, '#050505']]); c.fill(knot); c.strokeStyle = '#000'; c.lineWidth = .14 * k; c.stroke(knot);
+  var hole = blobP(x + R * .2, y, R * .32, R * .2, i * 3 + 2, .35, 12); c.fillStyle = '#0a0604'; c.fill(hole);
+  glow(c, x + R * .35, y, R * .5, BILE, .5 + .3 * Math.sin(t * 2.6 + i * 1.7));
+}
+// a long trailing feeler from a flank: a bone tentacle with lights down it and a bile bead at its tip
+function feeler(c, t, x, y, ang, len, w, ph, k) { var tt = boneTentacle(c, x, y, ang, len, w, ph, t * .6, .9, TGLOW), e = tt.L[tt.L.length - 1]; glow(c, e[0], e[1], 1.4 * k, BILE, .5 + .3 * Math.sin(t * 2 + ph)); return tt; }
+// faint torn rings of green spreading out from a reactor sac: the hive chorus healing the ships round it
+// (the Howler's ripples in the chorus's colour; one ring every `period` seconds)
+// the part of x after the whole number, always 0 to 1 (also for times before zero, which the loop's fade uses)
+function frac(x) { return ((x % 1) + 1) % 1; }
+function chorusRings(c, t, x, y, R, k, period) {
+  for (var j = 0; j < 2; j++) {
+    var ph = frac(t / period + j / 2), rr = R * (.5 + ph * 1.8);
+    for (var s = 0; s < 11; s++) { var a0 = s / 11 * Math.PI * 2 + j * 1.3, a1 = a0 + .35 + .2 * Math.sin(s * 3 + j); c.strokeStyle = 'rgba(150,255,110,' + (.32 * (1 - ph)) + ')'; c.lineWidth = (.55 - ph * .35) * k; c.beginPath(); c.arc(x, y, rr * (1 + .05 * Math.sin(s * 5)), a0, a1); c.stroke(); }
+  }
+}
+
 // =====================================================================
 // THE SHIPS, smallest to biggest. f: the shape words for the sheet.
 // =====================================================================
@@ -7756,19 +7786,40 @@ ship({ n: 'Deep mother', cls: 'capital carrier', tier: 3, f: ['Short and wide', 
     [-2.5, -2.05, -1.6, 1.75, 2.2, 2.6].forEach(function (a, i) { var q = P.at(.72, a); pouch(c, t, q[0], q[1], 2.6, 1.8, i + 4); });
     for (var i = 0; i < 6; i++) { var a = -1.2 + i * .48, ph = (t * .06 + i / 6) % 1, q = P.at(1.05 + ph * .5, a); mite(c, q[0], q[1], a * .4, t, 2.2); } } });
 
-ship({ n: 'Leviathan', cls: 'titan', tier: 3, f: ['S-curve', 'Lopsided'], seed: 71, k: 2.1,
-  d: 'The titan swims: one huge body bent in an S, a reactor sac bulging from each bend, two acid geysers, four spine batteries and the maw at its nose, a ring of bone plates round a wet opening.',
+// (v261.5, 15 Nov 2026) THE LEVIATHAN REDONE. Alex: "redo the art for the leviathan entirely. current is old and not suitable for the swarms
+// pinnacle titan". From three looks on UI/mockup-leviathan-redesign.html Alex picked the Abyssal ray with the Kraken's arms (look D):
+// a colossal manta of ribbed bone with a ring of arms and two barbed whips round its maw. It swims with the shared swim (game.js), set slow
+// and gentle with a big breath across, so its wings rise and fall. Its parts match the game's design: the maw, two acid geysers, four
+// spine batteries (crowns of thorns down the back), two reactor sacs with the hive chorus rippling out, and four mother pouches.
+ship({ n: 'Leviathan', cls: 'titan', tier: 3, f: ['Winged', 'Many-armed', 'Barb-tailed'], seed: 239, k: 2.2,
+  d: 'The Swarm\'s greatest titan: a colossal manta. Two great swept wings of ribbed bone and wet hide, a glowing reactor sac set in each wing with the hive chorus rippling out, four spine batteries standing like crowns of thorns down its back, acid geysers on the wing edges, mother pouches along the trailing edges where the Biters drop out, and a long barbed tail. Round the maw at its nose a ring of six thick arms and two long barbed hunting whips reach forward, coiling and groping towards the enemy, while the wings rise and fall behind them.',
+  swim: { amp: 2.4, breathe: .07, wave: 260 },
   make: function () { return [
-    bl({ x: 58, y: -29, rx: 10, ry: 6.5, rot: -.3, mode: 'sac', seed: 3 }),
-    bl({ x: 104, y: 28, rx: 11, ry: 7, rot: .25, mode: 'sac', seed: 6 }),
-    hl({ top: [[-.8, 0], [0, 4], [12, 13], [30, 17], [52, 15], [74, 19], [98, 17], [118, 13], [134, 11], [146, 8], [151.5, 0]], bot: [[-.8, 0], [0, 4], [12, 12], [30, 15], [52, 17], [74, 16], [98, 18], [118, 14], [134, 10], [146, 7], [151.5, 0]], spine: [[0, 0], [25, 11], [60, -11], [100, 10], [135, -3], [151.5, 0]], seed: 71, collars: [30, 60, 90, 120] })]; },
-  back: function (c, t, r, k) { tails(c, t, r, 1, 0, 16, 24, 44, 4, k); },
+    hl({ top: [[-1, 0], [0, 4], [14, 9], [34, 26], [52, 46], [62, 50], [72, 44], [90, 28], [112, 18], [132, 13], [146, 8], [152, 0]],
+         bot: [[-1, 0], [0, 4], [14, 9], [36, 27], [54, 47], [64, 50], [74, 43], [92, 27], [112, 18], [132, 13], [146, 8], [152, 0]],
+         spine: [[0, 0], [76, -1], [152, 0]], seed: 239, wob: .22, collars: [30, 120], armour: [118, 152] }),
+    bl({ x: 66, y: -28, rx: 11, ry: 7.5, rot: -.35, mode: 'sac', seed: 41 }),
+    bl({ x: 68, y: 28, rx: 11, ry: 7.5, rot: .35, mode: 'sac', seed: 43 })]; },
+  back: function (c, t, r, k) {
+    // the barbed tail: one long whip and two shorter tendrils
+    whip(c, t, 1, 0, Math.PI, 72, 3.4, 0, k, .5);
+    feeler(c, t, 4, -4, Math.PI - .25, 40, 2.2, 1.4, k); feeler(c, t, 4, 4, Math.PI + .25, 38, 2.2, 2.8, k);
+    // slime and torn hide streaming off the wing tips
+    for (var i = 0; i < 4; i++) { feeler(c, t, 56 - i * 6, -44 + i * 7, Math.PI + .9, 20 - i * 3, 1.6, i, k); feeler(c, t, 58 - i * 6, 44 - i * 7, Math.PI - .9, 20 - i * 3, 1.6, i + 4, k); }
+    // the two hive choruses: green rings spreading from the reactor sacs, one every 2 seconds (so they repeat within the 4-second swim)
+    chorusRings(c, t, 66, -28, 14, k, 2); chorusRings(c, t + .5, 68, 28, 14, k, 2);
+  },
   front: function (c, t, r, k, S) {
-    var B = S.parts[2];
-    [[40, 1], [70, -1], [112, -1], [126, 1]].forEach(function (b, i) { var x = b[0], y = b[1] < 0 ? B.up(x) : B.dn(x); for (var j = -1; j <= 1; j++) throwerAt(c, t, x + j * 3, y + b[1] * Math.abs(j) * .6, b[1] * (1 - j * .15), 5.5, .6); });
-    geyser(c, t, 84, B.up(84) + 4, -1.2, 18, k, 0); geyser(c, t, 128, B.dn(128) - 4, 1.0, 16, k, 1);
-    [[22, 1], [48, -1], [96, 1], [138, -1]].forEach(function (p, i) { var x = p[0], y = p[1] < 0 ? B.up(x) + 4.5 : B.dn(x) - 4.5; pouch(c, t, x, y, 4.4, 3, i); });
-    maw(c, t, 152, -.2, 3.8, 9, k, 13); } });
+    var B = S.parts[0];
+    [44, 68, 92, 112].forEach(function (x, i) { spireCrown(c, t, x, B.S(x), 4.4 - i * .25, k, i); });
+    geyser(c, t, 66, B.up(66) + 4.5, -1.5, 20, k, 0); geyser(c, t, 68, B.dn(68) - 4.5, 1.5, 20, k, 1);
+    [[40, -1], [40, 1], [48, -1], [48, 1]].forEach(function (p, i) { var x = p[0], y = p[1] < 0 ? B.up(x) * .78 : B.dn(x) * .78; pouch(c, t, x, y, 4, 2.8, i); });
+    // the ring of arms round the maw, rooted along the sides of the plated head, and the two barbed whips in the middle
+    [[-1, .95, 40, 4.2, 140], [-1, .6, 50, 4.6, 144], [-1, .28, 44, 4, 148], [1, .3, 46, 4.1, 148], [1, .62, 52, 4.6, 144], [1, .98, 38, 4, 140]].forEach(function (a, i) {
+      var x = a[4], y = a[0] < 0 ? B.up(x) + 2.5 : B.dn(x) - 2.5; arm(c, t, x, y, a[0] * a[1], a[2], a[3], i * 1.3, k); });
+    whip(c, t, 150, -2.6, -.08, 64, 2.6, 0, k, .32); whip(c, t, 150, 2.6, .1, 56, 2.4, 1.9, k, .36);
+    maw(c, t, 152, B.S(152), 3.8, 7.5, k, 13);
+  } });
 // =====================================================================
 // THE FOUR NEW SWARM SHIPS (v260, 14 Nov 2026), in look N like the rest.
 // Plan: thread "Rethink the Swarm late-game fleet". Names match the game's
@@ -7927,57 +7978,8 @@ ship({ n: 'Devourer', cls: 'titan', tier: 3, isNew: true, f: ['Armoured head', '
 //              drawing (drawSwarm(c, t, S, true) uses these)
 // =====================================================================
 
-// faint torn rings of green spreading out from a reactor sac: the hive chorus healing the ships round it
-// (the Howler's ripples in the chorus's colour; one ring every `period` seconds)
-// the part of x after the whole number, always 0 to 1 (also for times before zero, which the loop's fade uses)
-function frac(x) { return ((x % 1) + 1) % 1; }
-function chorusRings(c, t, x, y, R, k, period) {
-  for (var j = 0; j < 2; j++) {
-    var ph = frac(t / period + j / 2), rr = R * (.5 + ph * 1.8);
-    for (var s = 0; s < 11; s++) { var a0 = s / 11 * Math.PI * 2 + j * 1.3, a1 = a0 + .35 + .2 * Math.sin(s * 3 + j); c.strokeStyle = 'rgba(150,255,110,' + (.32 * (1 - ph)) + ')'; c.lineWidth = (.55 - ph * .35) * k; c.beginPath(); c.arc(x, y, rr * (1 + .05 * Math.sin(s * 5)), a0, a1); c.stroke(); }
-  }
-}
-
-(function () {
-  var S = null; SWARM_CLOSE.forEach(function (q) { if (q.n === 'Leviathan') S = q; });
-  if (!S) return;
-  var L = 4, TAU = Math.PI * 2, LEN = 151.5;
-  S.loop = L;
-  // the middle line of the body at x (tail 0, nose 151.5) and time t: a wave rolling from the head down to the tail,
-  // swinging widest at the tail and least at the head, so the maw stays on its target while the body swims
-  var amp = function (x) { return 11 * (.45 + .55 * (1 - x / LEN)); };
-  var sp = function (x, t) { return amp(x) * Math.sin(TAU * x / 80 + TAU * t / L - .393); };
-  var slope = function (x, t) { return (sp(x + .5, t) - sp(x - .5, t)); };
-  S.makeAt = function (t) {
-    var pts = [], x;
-    for (x = 0; x <= LEN + .01; x += 5.05) pts.push([x, sp(x, t)]);
-    return [
-      bl({ x: 58, y: sp(58, t) - 18, rx: 10, ry: 6.5, rot: -.3 + Math.atan(slope(58, t)) * .8 + .18, mode: 'sac', seed: 3 }),
-      bl({ x: 104, y: sp(104, t) + 18.5, rx: 11, ry: 7, rot: .25 + Math.atan(slope(104, t)) * .8 - .18, mode: 'sac', seed: 6 }),
-      hl({ top: [[-.8, 0], [0, 4], [12, 13], [30, 17], [52, 15], [74, 19], [98, 17], [118, 13], [134, 11], [146, 8], [151.5, 0]], bot: [[-.8, 0], [0, 4], [12, 12], [30, 15], [52, 17], [74, 16], [98, 18], [118, 14], [134, 10], [146, 7], [151.5, 0]], spine: pts, seed: 71, collars: [30, 60, 90, 120] })];
-  };
-  S.liveBack = function (c, t, r, k) {
-    // the tail fan follows the tail's swing; a wake of green motes drifts off behind it
-    var ty = sp(1, t), ta = Math.PI + Math.atan(slope(1, t)) * 1.4;
-    for (var j = 0; j < 10; j++) { var ph = frac(t / (L / 2) + j / 10), d = ph * 40, wy = ty - Math.sin(ta) * d + Math.sin(ph * 7 + j) * 3 * ph; glow(c, 1 + Math.cos(ta) * d, wy, (1 + ph * 2.5) * k * .6, 'rgba(150,255,110,.6)', .5 * (1 - ph)); }
-    tails(c, t, r, 1, ty, 16, 24, 44, 4, k, ta);
-    // the two hive choruses: rings of green spreading from the reactor sacs, one every 2 seconds
-    chorusRings(c, t, 58, sp(58, t) - 18, 14, k, L / 2); chorusRings(c, t + L / 4, 104, sp(104, t) + 18.5, 15, k, L / 2);
-  };
-  S.liveFront = function (c, t, r, k, Sh) {
-    var B = Sh.parts[2];
-    // the spine batteries, geysers, pouches and maw, riding on the moving body
-    [[40, 1], [70, -1], [112, -1], [126, 1]].forEach(function (b) { var x = b[0], y = b[1] < 0 ? B.up(x) : B.dn(x); for (var j = -1; j <= 1; j++) throwerAt(c, t, x + j * 3, y + b[1] * Math.abs(j) * .6, b[1] * (1 - j * .15) + Math.atan(slope(x, t)), 5.5, .6); });
-    geyser(c, t, 84, B.up(84) + 4, -1.2 + Math.atan(slope(84, t)), 18, k, 0); geyser(c, t, 128, B.dn(128) - 4, 1.0 + Math.atan(slope(128, t)), 16, k, 1);
-    [[22, 1], [48, -1], [96, 1], [138, -1]].forEach(function (p, i) { var x = p[0], y = p[1] < 0 ? B.up(x) + 4.5 : B.dn(x) - 4.5; pouch(c, t, x, y, 4.4, 3, i); });
-    // the reactor sacs swell with each stroke
-    var sw = .5 + .5 * Math.sin(TAU * t / L);
-    glow(c, 58, sp(58, t) - 18, 9 + 3 * sw, 'rgba(160,255,90,.8)', .2 + .25 * sw); glow(c, 104, sp(104, t) + 18.5, 10 + 3 * (1 - sw), 'rgba(160,255,90,.8)', .2 + .25 * (1 - sw));
-    // a pulse of green light running down the spine from the head to the tail, in time with the stroke
-    for (var j = 0; j < 2; j++) { var ph = frac(t / L + j / 2), x = LEN - 6 - ph * (LEN - 10); glow(c, x, sp(x, t), 6 * k * .7, 'rgba(160,255,90,.9)', .5 * Math.sin(ph * Math.PI)); }
-    maw(c, t, 152, sp(150, t) - .2, 3.8, 9, k, 13);
-  };
-})();
+// (v261.5) frac and chorusRings moved to close.js; the Leviathan's own swim (makeAt) was removed when its art was redone: it now uses the
+// shared swim (game.js). The machinery for a ship's own swim (loop, makeAt, liveBack, liveFront) stays in close.js and game.js for any ship that wants one.
 // ---- what the game calls (the close look, section 6v): one still picture of a Swarm ship ----
 var BOX = {};
 // the ship's body (no tentacles), in art squares
@@ -8033,7 +8035,7 @@ function swims(S) { return S.swim !== false; }
 var BY = {}, DESIGNS = {};
 SWARM_CLOSE.forEach(function (S) { BY[S.n] = S; var b = bodyOf(S); DESIGNS[S.n] = { W: b[1] - b[0], H: b[3] - b[2] }; });
 window.SWARM_ART = {
-  version: '1.3',
+  version: '1.4',
   ships: SWARM_CLOSE,
   draw: drawSwarm,
   box: boxOf,
@@ -13038,7 +13040,22 @@ const SETTINGS = {
                               //   friend that beats that design covers it. Counts only when very bad (a third) or a Division friend beats it. 0 = none of that.
   badMatchWeight: 0.35,       // (v259.2) the bad-match part's weight when a squadron scores spots near its station (the danger reading's four parts add up to 1)
   badMatchRearAt: 0.5,        // (v259.2) a squadron this badly matched (0 to 1) goes to its Division's rear rank
-  badMatchCoverAt: 0.4,       // (v259.2) a squadron this badly matched gets a friend sent to take that enemy on
+  badMatchCoverAt: 0.4,
+  noseModel: 1,               // (v261.8, Alex 16 Nov: "human ships should nearly almost never face left, unless turning tail entirely") 1 = THE NOSE TO THE ENEMY
+                              //   (section 4b9): near the enemy our ships keep their noses within noseArcDeg of the way to the nearest enemy ship, so a ship
+                              //   that wants to go back slides and backs off on its retros (falling back: all the way); one leaving for repairs turns tail only after
+                              //   noseBackSeconds; a routing ship turns tail at once. 0 = noses point wherever the ship wants to go, as before
+  noseArcDeg: 80,             // (v261.8) how far (degrees) a ship's nose may point off the way to the nearest enemy (90 = side-on at most)
+  noseNearFactor: 2.5,        // (v261.8) the rule holds while the nearest enemy ship is within this x the ship's gun range ...
+  noseNearMin: 2000,          // (v261.8) ... or within this many map units, whichever is more
+  noseBackSeconds: 8,         // (v261.8) a ship leaving for repairs backs off nose-first this many battle seconds, then turns and burns
+  rankSwap: 1,                // (v261.8, Alex 16 Nov: "front rank ships that take damage pull back, and fresh squadron mates behind them take their place") 1 = THE
+                              //   FRONT RANK SWAP (section 5q2): a hurt ship in a squadron's front rank trades formation places with a fresh one behind it. 0 = never
+  rankSwapAt: 0.75,           // (v261.8) a front-rank ship pulls back when its hull is below this share ...
+  rankSwapFresh: 0.9,         // (v261.8) ... for a squadron mate behind it with at least this share of its hull ...
+  rankSwapGap: 0.2,           // (v261.8) ... and at least this much more than the hurt ship's
+  rankSwapSeconds: 6,         // (v261.8) at most one swap a squadron every this many battle seconds
+  turnRampSeconds: 0.5,       // (v261.8) TURN MOMENTUM: a ship's turning speed builds up (and dies away) over this many seconds; 0 = turns start and stop at once       // (v259.2) a squadron this badly matched gets a friend sent to take that enemy on
   sizeHitModel: 1,            // (v258.0, Alex 14 Nov: "large guns have a much lower hit rate against much smaller craft") 1 = GUN SIZE AGAINST SHIP SIZE (section 5vg):
                               // a gun's size step against the target's grid size step on Alex's chart (same size 75%, one down 50%, two 25%, three 5%, one up 95%),
                               // coil/rail and slow guns a little better, lasers a step better, nimble ships a little harder to hit; 0 = the old size-free formula
@@ -14118,7 +14135,7 @@ const SETTING_MUST_BE_POSITIVE = ['commandThinkRate', 'moonOrbitMinutes', 'moonO
   'serviceLastMax', 'serviceHistoryMax', 'serviceEventsMax', 'recentChangeSeconds', 'dossierLastActions', 'reportOfficerRows', 'dossierChartMinSpan',
   'orbitRateHeadroom', 'orbitMinRate', 'facingLeadFactor', 'interceptMaxLead', 'orbitRangeFraction', 'orbitTurnMargin', 'tightOrbitSizeRatio', 'tightOrbitHulls', 'tightOrbitStraySeconds', 'tightOrbitSpacings', 'tacticMinSeconds', 'chaseGiveUpSeconds', 'noChaseSeconds',
   'shapeEnterFactor', 'shapeExitFactor', 'axisTurnRate'];
-const SETTING_MUST_BE_NON_NEGATIVE = ['quietStepMul', 'quietMinSpeed', 'chainLagSeconds', 'chainSpreadSeconds', 'slowRegrowSeconds', 'slowSporeSteps', 'slowFireMapSteps', 'slowGunRetrySeconds', 'lineRankMinWidth', 'lineRankDepth', 'lineRankRotateAt', 'batteryDepthFactor', 'swarmSpreadWidth', 'swarmSpreadDepth', 'swarmSpreadRejig', 'swarmPressOdds', 'swarmFallBackOdds', 'bombardShieldShare', 'bombardHoldSeconds', 'swarmDockStallCap', 'swarmDockStallQuietShare', 'stationHullMendQuiet', 'alloysNeverIdleNote', 'towJobs', 'towWaitSeconds', 'towFreshSeconds', 'towLookSeconds', 'towFleetSeconds', 'towBoldSwing', 'towDangerRadius', 'towDangerOdds', 'aoMobilizeOdds', 'aoMobilizeBoldSwing', 'aoMobilizeReinSwing', 'aoMobilizeSeconds', 'aoMobilizeLossShare', 'aoMobilizeBeatenShare', 'aoMobilizeOtherShips', 'aoMobilizeEnemySpeed', 'aoMobilizeWaitSeconds', 'aoCharLineSwing', 'aoCharCommandSwing', 'aoCharMovePull', 'aoCharDisciplineSwing', 'aoPostureSeconds', 'aoPostureMinSeconds', 'aoMeetOdds', 'aoOddsOutShare', 'aoFallBackOdds', 'aoBoldLean', 'aoMeetReachSlots', 'aoMeetStandoff', 'aoEngageDist', 'aoGroupDist', 'aoEdgeSlots', 'aoInboundSlots', 'aoRetakeLooseShare', 'aoDangerDist', 'aoRetakeStayShare', 'aoRetakeGatherSeconds', 'aoDefenceSplitShips', 'aoFleetMax', 'aoGarrisonShare', 'aoForwardStationSpeed', 'aoRefitShare', 'divisionOwnerSeconds', 'divisionOwnerFirstSeconds', 'divisionOwnerCountBand', 'divisionOwnerJoinSeconds', 'admiralNeedsLean', 'admiralNeedsReachRatio', 'admiralNeedsDefenceRatio', 'admiralNeedsWorksRatio', 'admiralNeedsPdShare', 'scuttleKillShare', 'scuttleXpCost', 'campaignTidySeconds', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftPressed', 'coreLoopShiftQuiet', 'coreLoopShiftMax', 'coreLoopHiveHoldShare', 'coreLoopAssessSeconds', 'coreLoopAssaultMixShare', 'coreLoopReinSwing', 'coreLoopReserveShare', 'coreLoopStrikeShare', 'coreLoopBoldAbove', 'coreLoopVaSeconds', 'coreLoopVaSlack', 'coreLoopVaWornShare', 'coreLoopDefenceRatio', 'coreLoopFleetHoldSeconds', 'coreLoopDivisionMinShips', 'coreLoopAssaultRatio', 'coreLoopAssaultFloor', 'coreLoopPlaceDefenceWorth', 'placesHomeEdgeBias', 'placesBrokenBonus', 'coreLoopStreamWeeks', 'coreLoopStreamMinShips', 'coreLoopLineKeep', 'coreLoopLineSeconds', 'coreLoopLineLooks', 'coreLoopLineDepth', 'coreLoopLineStep', 'coreLoopLineWindow', 'coreLoopTipRatio', 'coreLoopClearSeconds', 'coreLoopBackSeconds', 'coreLoopHoldSeconds', 'coreLoopBerths', 'divisionMergeSlack', 'swarmNestRetakeKeep', 'swarmGrowWindowWeeks', 'swarmGrowLowLoss', 'swarmGrowHighLoss', 'swarmGrowFromShare', 'swarmGrowStep', 'swarmGrowSmallCut', 'swarmGrowBigGain', 'swarmSpreadWeeks', 'hangarRefillWeeks', 'hangarRestockShare', 'wingMaxTiny', 'wingLaunchRange', 'wingScreenRadius', 'wingStrikeRange', 'wingMaxSmall', 'wingSpread', 'hangarBuildMul', 'swarmMiteRegrowSeconds', 'swarmCraftRegrowSeconds', 'fighterTurnaroundSeconds', 'fighterLaunchSeconds', 'fighterLaunchRange', 'fighterTickSeconds', 'stationFighterGuardRadius', 'droneJamReach', 'droneJamScatterMul', 'droneJamLoseChance', 'dcNoRoomSeconds', 'cmdPaceFormSeconds', 'cmdPaceMinShare', 'cmdPaceLeadSeconds', 'cmdPaceMinMarch', 'divisionSpeedSort', 'divisionSlowBelow', 'divisionFastAbove', 'swarmPaceFormSeconds', 'swarmDrift', 'swarmDivDrift', 'wreckHitShare', 'repairPartsWeeks', 'repairAutoBelow', 'dockQueueWarnSeconds', 'crippledCheckSeconds', 'towSpeedShare', 'towMaxShare', 'towHealthyHull', 'feedHullBelow', 'feedSeconds', 'feedSquadSeconds', 'feedHullShare', 'feedAmmoShare', 'feedGrabRange', 'feedHungryHull', 'feedHungryAmmo', 'feedHatchlingRange', 'swarmInfestTierGain', 'swarmInfestGrowShare', 'swarmInfestStartShare', 'swarmSurfaceInfest', 'swarmBurnPerDps', 'swarmBurnHotMul', 'swarmBurnPerKill', 'swarmRegrowSeconds', 'swarmSporeEvery', 'swarmSporeShotsPer', 'swarmSporeDpsPerInf', 'swarmBileEvery', 'swarmBileFrom', 'swarmBileDpsPerInf', 'swarmConvertCap', 'swarmConvertAimShare', 'swarmConvertFromWeek', 'swarmConvertFullWeek', 'swarmConvertDepthShare', 'swarmConvertWaste', 'facingTwoSidedAngle', 'freshSideHoldSeconds', 'crossTEdge', 'crossTCreepFraction', 'crossTWidth', 'crossTTurnEdge', 'placesPicketSpread', 'placesPicketMove', 'placesPicketMax', 'placesWithdrawGatherSeconds', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerTargetShare', 'ledgerLineMin', 'ledgerLossMargin', 'ledgerSaveFloor', 'ledgerMinLoss', 'ledgerSurplusShare', 'withdrawRatio', 'withdrawHoldWeeks', 'ledgerAssaultWeeks', 'indDevShareSave', 'indDevShareIdle', 'dirPriorityMul', 'resourceHeldShare', 'devGraceWeeks', 'devCapStart', 'devCapAlien', 'devPotShare', 'devIdleWeeks', 'devMaxBuilds', 'bbAcidSeconds', 'bbAcidMaxPatches', 'bbRegrowQuiet', 'bbRegrowHull', 'bbRegrowPlate', 'bbRegrowHeatStop', 'bbBurstTouch', 'bbBurstDeathReach', 'bbBurstSeek', 'bbVolleySpread', 'bbMissileRetries', 'bbPdRoundsPerShot', 'bbPdFlakRounds', 'bbPdReadyRounds', 'bbPdLaserHeat', 'bbRadiatorFoldSeconds', 'bbSideWeight', 'deflectRatio', 'deflectCallSeconds', 'readyRoundsPerGun', 'boostFuEarth', 'boostFuOther', 'boostGrowth', 'alloysEarthStart', 'alloysEarthRampTo', 'alloysEarthRampWeeks', 'alloysGrowth', 'fissilesGrowth', 'alienAlloysStart', 'alienAlloysGrowth', 'alienAlloysPerStep', 'alienBoostPerStep', 'alienNodeLossShare', 'shipUpkeepMaxShare', 'berthIdleWeeks', 'berthBoostWeeks', 'berthMaxGrowth', 'campaignBuildDays', 'campaignLiveEnterShips', 'civilianNoteWeeks', 'leaderNewsCooldown', 'leaderNewsCombatGap', 'stationRebuildYardBonus', 'stationRebuildSecuredBonus', 'stationRebuildNearShare', 'stationRebuildAlloys', 'cmdAttackMaxSeconds', 'cmdPaceGap', 'radioQuietSeconds', 'cmdSummaryMinutes', 'designRemarkSeconds', 'cmdReviewBattles', 'huntMaxShips', 'huntGraceSeconds', 'pursuitFleeingBonus', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'dangerConeSeconds', 'placesAttackStallSeconds', 'campaignAttackStallSeconds', 'campaignStragglerShips', 'campaignStragglerShare', 'campaignStragglerSeconds', 'campaignStandoffSeconds', 'campaignStandoffWeeks', 'campaignRetakeWeeks', 'comebackMassWeeks', 'alienGarrisonCap', 'campaignFallenMax', 'campaignPoolCap', 'campaignGarrisonCap', 'campaignStartOwnShips', 'campaignAlienGarrison', 'campaignAdvanceKeep', 'campaignAdvanceRatio', 'campaignAdvanceTake', 'campaignAdvanceAfterWaves', 'campaignAdvanceHoldWeeks', 'campaignRearKeep', 'campaignFrontMoveMinShips', 'campaignFrontMoveShare', 'executiveMassRatio', 'executiveAssaultRatio', 'executiveAssaultMin', 'campaignPriorityWeight', 'alienShoveWeeks', 'alienGatherRatio', 'alienGatherTarget', 'alienGatherMinShips', 'alienGatherMaxWeeks', 'alienPullBackRatio', 'alienStateHoldWeeks', 'alienFirstPool', 'alienWaveJitter', 'alienWarnWeeks', 'alienWaveBoostWeeks', 'alienTargetWeakest', 'alienTargetMain', 'alienFirstWaveWeek', 'minLaunchShips', 'placesHoldClearOdds', 'campaignYardEvery', 'boostPerMarker', 'campaignRefuelShare', 'capitalBuildShare', 'assaultMaxWaitWeeks', 'repairPerWeek', 'campaignDesignBoostPerMass', 'campaignDesignBuildPerCost', 'campaignDesignAlloysShare', 'campaignDesignWeight', 'placesReachShare', 'placesFailRaise', 'placesContestShare', 'aoSecureShare', 'aoLoseShare', 'siegeBoostTrickle', 'boostFootholdShare', 'siegeGrowthFactor', 'siegeResourceFactor', 'placesReportMinutes', 'placesHysteresis', 'placesMaxOpposite', 'internalChance', 'internalFresh', 'externalCover', 'deepBelowHull', 'dcSeconds', 'blastToHull', 'blastToParts', 'profileNudgeMax', 'profileNudgeTurn', 'profileNudgeFiring', 'reactorWallShare', 'trackSquareCut', 'pressDryValue', 'pressFleetRatio', 'pressOdds', 'pressHealthEdge', 'pressOddsHealthy', 'pressDangerShare', 'pressHitChance', 'pressAfter', 'pressProgress', 'pressHold', 'pressStep', 'pressRingMin', 'lockFormShare', 'looseJitter', 'looseRein', 'lockSettleSeconds', 'lockRein', 'lockBreakHull', 'lockMinShare', 'closeRanksDelay', 'mergeBelow', 'mergeMaxOdds', 'disbandAt', 'stragglerSeconds', 'divisionLeash', 'pursuitBase', 'formBeforeAttack', 'gatherSeconds', 'fallenKeep', 'topUpBelow', 'stagingContactSeconds', 'stagingMaxWait', 'minNewSquadron', 'entryDangerRatio', 'entryCheckFactor', 'entryRetrySeconds', 'rallyInset', 'joinWornBelow', 'survivorEdgeMargin', 'flagKilled', 'flagWounded', 'flagSurviveSwing', 'woundedSkillPenalty', 'woundedBattles', 'replacementDelay', 'handoverSeconds', 'standInSkill', 'pinRenewSeconds', 'divisionTaskMinSeconds', 'rotateWornShare', 'divisionRefuseOdds', 'divisionRallyOdds', 'divisionCounterPressure', 'mainEffortMinOdds', 'mainEffortFreeRein', 'pinRenewFactor', 'supportSeconds', 'supportMaxTravelSeconds', 'divisionTargetBonus', 'localAttackOdds', 'memberCompactShare', 'recruitAxisSpread', 'recruitSkillLow', 'recruitSkillHigh', 'skillPerLevel', 'readinessXpPerRepair', 'medalSkillAdd', 'scarShakenBoldness', 'repertoirePull', 'spawnEdgeMargin', 'doctrinePull', 'matchupPull', 'experimentMinSeconds', 'experimentCooldown', 'tacticLearnStep', 'tacticWeightMax', 'exploreLearnBoost', 'spawnBandWidth', 'spawnVerticalMargin', 'shieldRechargeDelay', 'minArmorPassFraction', 'separationStrength',
+const SETTING_MUST_BE_NON_NEGATIVE = ['rankSwapSeconds', 'noseArcDeg', 'noseNearFactor', 'noseNearMin', 'noseBackSeconds', 'turnRampSeconds', 'quietStepMul', 'quietMinSpeed', 'chainLagSeconds', 'chainSpreadSeconds', 'slowRegrowSeconds', 'slowSporeSteps', 'slowFireMapSteps', 'slowGunRetrySeconds', 'lineRankMinWidth', 'lineRankDepth', 'lineRankRotateAt', 'batteryDepthFactor', 'swarmSpreadWidth', 'swarmSpreadDepth', 'swarmSpreadRejig', 'swarmPressOdds', 'swarmFallBackOdds', 'bombardShieldShare', 'bombardHoldSeconds', 'swarmDockStallCap', 'swarmDockStallQuietShare', 'stationHullMendQuiet', 'alloysNeverIdleNote', 'towJobs', 'towWaitSeconds', 'towFreshSeconds', 'towLookSeconds', 'towFleetSeconds', 'towBoldSwing', 'towDangerRadius', 'towDangerOdds', 'aoMobilizeOdds', 'aoMobilizeBoldSwing', 'aoMobilizeReinSwing', 'aoMobilizeSeconds', 'aoMobilizeLossShare', 'aoMobilizeBeatenShare', 'aoMobilizeOtherShips', 'aoMobilizeEnemySpeed', 'aoMobilizeWaitSeconds', 'aoCharLineSwing', 'aoCharCommandSwing', 'aoCharMovePull', 'aoCharDisciplineSwing', 'aoPostureSeconds', 'aoPostureMinSeconds', 'aoMeetOdds', 'aoOddsOutShare', 'aoFallBackOdds', 'aoBoldLean', 'aoMeetReachSlots', 'aoMeetStandoff', 'aoEngageDist', 'aoGroupDist', 'aoEdgeSlots', 'aoInboundSlots', 'aoRetakeLooseShare', 'aoDangerDist', 'aoRetakeStayShare', 'aoRetakeGatherSeconds', 'aoDefenceSplitShips', 'aoFleetMax', 'aoGarrisonShare', 'aoForwardStationSpeed', 'aoRefitShare', 'divisionOwnerSeconds', 'divisionOwnerFirstSeconds', 'divisionOwnerCountBand', 'divisionOwnerJoinSeconds', 'admiralNeedsLean', 'admiralNeedsReachRatio', 'admiralNeedsDefenceRatio', 'admiralNeedsWorksRatio', 'admiralNeedsPdShare', 'scuttleKillShare', 'scuttleXpCost', 'campaignTidySeconds', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftPressed', 'coreLoopShiftQuiet', 'coreLoopShiftMax', 'coreLoopHiveHoldShare', 'coreLoopAssessSeconds', 'coreLoopAssaultMixShare', 'coreLoopReinSwing', 'coreLoopReserveShare', 'coreLoopStrikeShare', 'coreLoopBoldAbove', 'coreLoopVaSeconds', 'coreLoopVaSlack', 'coreLoopVaWornShare', 'coreLoopDefenceRatio', 'coreLoopFleetHoldSeconds', 'coreLoopDivisionMinShips', 'coreLoopAssaultRatio', 'coreLoopAssaultFloor', 'coreLoopPlaceDefenceWorth', 'placesHomeEdgeBias', 'placesBrokenBonus', 'coreLoopStreamWeeks', 'coreLoopStreamMinShips', 'coreLoopLineKeep', 'coreLoopLineSeconds', 'coreLoopLineLooks', 'coreLoopLineDepth', 'coreLoopLineStep', 'coreLoopLineWindow', 'coreLoopTipRatio', 'coreLoopClearSeconds', 'coreLoopBackSeconds', 'coreLoopHoldSeconds', 'coreLoopBerths', 'divisionMergeSlack', 'swarmNestRetakeKeep', 'swarmGrowWindowWeeks', 'swarmGrowLowLoss', 'swarmGrowHighLoss', 'swarmGrowFromShare', 'swarmGrowStep', 'swarmGrowSmallCut', 'swarmGrowBigGain', 'swarmSpreadWeeks', 'hangarRefillWeeks', 'hangarRestockShare', 'wingMaxTiny', 'wingLaunchRange', 'wingScreenRadius', 'wingStrikeRange', 'wingMaxSmall', 'wingSpread', 'hangarBuildMul', 'swarmMiteRegrowSeconds', 'swarmCraftRegrowSeconds', 'fighterTurnaroundSeconds', 'fighterLaunchSeconds', 'fighterLaunchRange', 'fighterTickSeconds', 'stationFighterGuardRadius', 'droneJamReach', 'droneJamScatterMul', 'droneJamLoseChance', 'dcNoRoomSeconds', 'cmdPaceFormSeconds', 'cmdPaceMinShare', 'cmdPaceLeadSeconds', 'cmdPaceMinMarch', 'divisionSpeedSort', 'divisionSlowBelow', 'divisionFastAbove', 'swarmPaceFormSeconds', 'swarmDrift', 'swarmDivDrift', 'wreckHitShare', 'repairPartsWeeks', 'repairAutoBelow', 'dockQueueWarnSeconds', 'crippledCheckSeconds', 'towSpeedShare', 'towMaxShare', 'towHealthyHull', 'feedHullBelow', 'feedSeconds', 'feedSquadSeconds', 'feedHullShare', 'feedAmmoShare', 'feedGrabRange', 'feedHungryHull', 'feedHungryAmmo', 'feedHatchlingRange', 'swarmInfestTierGain', 'swarmInfestGrowShare', 'swarmInfestStartShare', 'swarmSurfaceInfest', 'swarmBurnPerDps', 'swarmBurnHotMul', 'swarmBurnPerKill', 'swarmRegrowSeconds', 'swarmSporeEvery', 'swarmSporeShotsPer', 'swarmSporeDpsPerInf', 'swarmBileEvery', 'swarmBileFrom', 'swarmBileDpsPerInf', 'swarmConvertCap', 'swarmConvertAimShare', 'swarmConvertFromWeek', 'swarmConvertFullWeek', 'swarmConvertDepthShare', 'swarmConvertWaste', 'facingTwoSidedAngle', 'freshSideHoldSeconds', 'crossTEdge', 'crossTCreepFraction', 'crossTWidth', 'crossTTurnEdge', 'placesPicketSpread', 'placesPicketMove', 'placesPicketMax', 'placesWithdrawGatherSeconds', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerTargetShare', 'ledgerLineMin', 'ledgerLossMargin', 'ledgerSaveFloor', 'ledgerMinLoss', 'ledgerSurplusShare', 'withdrawRatio', 'withdrawHoldWeeks', 'ledgerAssaultWeeks', 'indDevShareSave', 'indDevShareIdle', 'dirPriorityMul', 'resourceHeldShare', 'devGraceWeeks', 'devCapStart', 'devCapAlien', 'devPotShare', 'devIdleWeeks', 'devMaxBuilds', 'bbAcidSeconds', 'bbAcidMaxPatches', 'bbRegrowQuiet', 'bbRegrowHull', 'bbRegrowPlate', 'bbRegrowHeatStop', 'bbBurstTouch', 'bbBurstDeathReach', 'bbBurstSeek', 'bbVolleySpread', 'bbMissileRetries', 'bbPdRoundsPerShot', 'bbPdFlakRounds', 'bbPdReadyRounds', 'bbPdLaserHeat', 'bbRadiatorFoldSeconds', 'bbSideWeight', 'deflectRatio', 'deflectCallSeconds', 'readyRoundsPerGun', 'boostFuEarth', 'boostFuOther', 'boostGrowth', 'alloysEarthStart', 'alloysEarthRampTo', 'alloysEarthRampWeeks', 'alloysGrowth', 'fissilesGrowth', 'alienAlloysStart', 'alienAlloysGrowth', 'alienAlloysPerStep', 'alienBoostPerStep', 'alienNodeLossShare', 'shipUpkeepMaxShare', 'berthIdleWeeks', 'berthBoostWeeks', 'berthMaxGrowth', 'campaignBuildDays', 'campaignLiveEnterShips', 'civilianNoteWeeks', 'leaderNewsCooldown', 'leaderNewsCombatGap', 'stationRebuildYardBonus', 'stationRebuildSecuredBonus', 'stationRebuildNearShare', 'stationRebuildAlloys', 'cmdAttackMaxSeconds', 'cmdPaceGap', 'radioQuietSeconds', 'cmdSummaryMinutes', 'designRemarkSeconds', 'cmdReviewBattles', 'huntMaxShips', 'huntGraceSeconds', 'pursuitFleeingBonus', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'dangerConeSeconds', 'placesAttackStallSeconds', 'campaignAttackStallSeconds', 'campaignStragglerShips', 'campaignStragglerShare', 'campaignStragglerSeconds', 'campaignStandoffSeconds', 'campaignStandoffWeeks', 'campaignRetakeWeeks', 'comebackMassWeeks', 'alienGarrisonCap', 'campaignFallenMax', 'campaignPoolCap', 'campaignGarrisonCap', 'campaignStartOwnShips', 'campaignAlienGarrison', 'campaignAdvanceKeep', 'campaignAdvanceRatio', 'campaignAdvanceTake', 'campaignAdvanceAfterWaves', 'campaignAdvanceHoldWeeks', 'campaignRearKeep', 'campaignFrontMoveMinShips', 'campaignFrontMoveShare', 'executiveMassRatio', 'executiveAssaultRatio', 'executiveAssaultMin', 'campaignPriorityWeight', 'alienShoveWeeks', 'alienGatherRatio', 'alienGatherTarget', 'alienGatherMinShips', 'alienGatherMaxWeeks', 'alienPullBackRatio', 'alienStateHoldWeeks', 'alienFirstPool', 'alienWaveJitter', 'alienWarnWeeks', 'alienWaveBoostWeeks', 'alienTargetWeakest', 'alienTargetMain', 'alienFirstWaveWeek', 'minLaunchShips', 'placesHoldClearOdds', 'campaignYardEvery', 'boostPerMarker', 'campaignRefuelShare', 'capitalBuildShare', 'assaultMaxWaitWeeks', 'repairPerWeek', 'campaignDesignBoostPerMass', 'campaignDesignBuildPerCost', 'campaignDesignAlloysShare', 'campaignDesignWeight', 'placesReachShare', 'placesFailRaise', 'placesContestShare', 'aoSecureShare', 'aoLoseShare', 'siegeBoostTrickle', 'boostFootholdShare', 'siegeGrowthFactor', 'siegeResourceFactor', 'placesReportMinutes', 'placesHysteresis', 'placesMaxOpposite', 'internalChance', 'internalFresh', 'externalCover', 'deepBelowHull', 'dcSeconds', 'blastToHull', 'blastToParts', 'profileNudgeMax', 'profileNudgeTurn', 'profileNudgeFiring', 'reactorWallShare', 'trackSquareCut', 'pressDryValue', 'pressFleetRatio', 'pressOdds', 'pressHealthEdge', 'pressOddsHealthy', 'pressDangerShare', 'pressHitChance', 'pressAfter', 'pressProgress', 'pressHold', 'pressStep', 'pressRingMin', 'lockFormShare', 'looseJitter', 'looseRein', 'lockSettleSeconds', 'lockRein', 'lockBreakHull', 'lockMinShare', 'closeRanksDelay', 'mergeBelow', 'mergeMaxOdds', 'disbandAt', 'stragglerSeconds', 'divisionLeash', 'pursuitBase', 'formBeforeAttack', 'gatherSeconds', 'fallenKeep', 'topUpBelow', 'stagingContactSeconds', 'stagingMaxWait', 'minNewSquadron', 'entryDangerRatio', 'entryCheckFactor', 'entryRetrySeconds', 'rallyInset', 'joinWornBelow', 'survivorEdgeMargin', 'flagKilled', 'flagWounded', 'flagSurviveSwing', 'woundedSkillPenalty', 'woundedBattles', 'replacementDelay', 'handoverSeconds', 'standInSkill', 'pinRenewSeconds', 'divisionTaskMinSeconds', 'rotateWornShare', 'divisionRefuseOdds', 'divisionRallyOdds', 'divisionCounterPressure', 'mainEffortMinOdds', 'mainEffortFreeRein', 'pinRenewFactor', 'supportSeconds', 'supportMaxTravelSeconds', 'divisionTargetBonus', 'localAttackOdds', 'memberCompactShare', 'recruitAxisSpread', 'recruitSkillLow', 'recruitSkillHigh', 'skillPerLevel', 'readinessXpPerRepair', 'medalSkillAdd', 'scarShakenBoldness', 'repertoirePull', 'spawnEdgeMargin', 'doctrinePull', 'matchupPull', 'experimentMinSeconds', 'experimentCooldown', 'tacticLearnStep', 'tacticWeightMax', 'exploreLearnBoost', 'spawnBandWidth', 'spawnVerticalMargin', 'shieldRechargeDelay', 'minArmorPassFraction', 'separationStrength',
   'separationMaxStepFraction', 'reengageMinGap', 'kiteEnterFactor', 'kiteExitFactor', 'kiteBackSpeed', 'debugMaxLines', 'formationHoldFraction', 'formationPaceMin',
   'formationBreakAngle', 'formationBreakSeconds', 'formationPassBend', 'leaderCloserMin', 'escortHoldFraction', 'escortStandOff', 'flankMarginFactor', 'flankAlong', 'flankContactFactor', 'flankArriveFactor', 'flankMapMarginFactor',
   'shotLengthSizes', 'minShipScreenPixels', 'maxTriangleShips', 'defaultReengage', 'defaultSeed',
@@ -14140,7 +14157,7 @@ const SETTING_WHOLE_NUMBERS = ['slowSporeSteps', 'slowFireMapSteps', 'lineRanks'
   'reportSquadronRows', 'reportPacketRows', 'reinforceMaxSquadrons', 'flankMaxSquadrons', 'counterMaxSquadrons', 'withdrawSamples', 'versionLogMax', 'serviceLastMax', 'serviceHistoryMax', 'serviceEventsMax', 'dossierLastActions', 'reportOfficerRows',
   'movementModel', 'hitModel', 'tacticsModel', 'flightAssist', 'retreatFiring', 'simultaneousFire', 'officerModel', 'strengthMapSteps', 'oddsCellsPerRadius', 'oddsMaxCells', 'maxRouts', 'maxBreakOffs', 'overheatFallback', 'smartTargetCandidates'];
 // The switches (section 1b, "The rules in force"): the values each may have, and the names the code uses for them.
-const SETTING_CHOICES = { devourerGrab: [0, 1], killRecordModel: [0, 1], priorityTargetModel: [0, 1], badMatchModel: [0, 1], acidMortar: [0, 1], frenzyGland: [0, 1], lsFrenzy: [0, 1], biteModel: [0, 1], lsMixModel: [0, 1], sizeHitModel: [0, 1], calmLookSkipAsleep: [0, 1], gunPace: [0, 1], alienLoopsByArrival: [0, 1], quietSteps: [0, 1], sleepLockedSquads: [0, 1], commandPace: [0, 1], placesByX: [0, 1], slowClock: [0, 1], lineRanks: [0, 1], swarmSpread: [0, 1], longSolarReach: [0, 1], longDockModel: [0, 1], swarmLine: [0, 1], warValves: [0, 1], bombardShield: [0, 1, 2], stationCrewWithStation: [0, 1], placeHoldFollow: [0, 1], aoMobilize: [0, 1], aoCharacter: [0, 1], aoAdmiral: [0, 1], cmdFormMoves: [0, 1], orderMovesObeyed: [0, 1], huntDetach: [0, 1], cmdStatLeans: [0, 1], huntDetachWhole: [0, 1], aoPostures: [0, 1], divisionOwner: [0, 1], admiralNeedsModel: [0, 1], longMapLine: [0, 1], cmdFormRealSize: [0, 1], cmdCapShare: [0, 1], cmdCapLongGuns: [0, 1], moonOrbits: [0, 1], dockModel: [0, 1], dockSpareModel: [0, 1], dockSpareSwarm: [0, 1], scuttleOnLedger: [0, 1], swarmDockModel: [0, 1], dockEvoModel: [0, 1], dockEvoSwarmSplit: [0, 1], matchupsInPlay: [0, 1], calmShips: [0, 1], cmRenderParts: [0, 1], simBudgetModel: [0, 1], simKeepPace: [0, 1], closeWarmAll: [0, 1], closeKeepPictures: [0, 1], allyShoveOff: [0, 1], allyNudge: [0, 1], divisionSpots: [0, 1], divisionSpotsInFight: [0, 1], campaignSensors: [0, 1], showBoost: [0, 1], coreLoop: [0, 1], coreLoopLine: [0, 1], coreLoopFleetCommand: [0, 1], coreLoopFleetDivisions: [0, 1], coreLoopRecompose: [0, 1], coreLoopAlienCommand: [0, 1], divisionMergeSmall: [0, 1], mergeFarOutOfContact: [0, 1], berthPairingModel: [0, 1], swarmNestModel: [0, 1], swarmGrowUpModel: [0, 1], swarmOpeningSpread: [0, 1], swarmLifeModel: [0, 1], swarmSurfaceModel: [0, 1], swarmEatsEnemies: [0, 1], swarmEatsHatchlings: [0, 1], fighterHangarModel: [0, 1], fighterLaunchModel: [0, 1], hangarRefillFromFleet: [0, 1], hangarRestock: [0, 1], wingModel: [0, 1], wingAirGroups: [0, 1], hangarRefillFree: [0, 1], swarmCarrierRegrow: [0, 1], hangarOrphansStay: [0, 1], tenderDocking: [0, 1], supplyRuns: [0, 1], cargoKept: [0, 1], ferryRuns: [0, 1], stationFighterGuard: [0, 1], stationNoSquadron: [0, 1], stationCrewSquad: [0, 1], stationPass: [0, 1], droneJamModel: [0, 1], divisionPaceModel: [0, 1], swarmFormations: [0, 1], facingVsTarget: [0, 1], facingTwoSided: [0, 1], freshSide: [0, 1], crossT: [0, 1], facingDodge: [0, 1], placesPicket: [0, 1], placesPicketSwarm: [0, 1], campaignStandoffPark: [0, 1], placesWithdrawOrder: [0, 1], placesWithdrawGuardDry: [0, 1], campaignLiveYardDawn: [0, 1], longMapReach: [0, 1], longMapLeash: [0, 1], longMapFog: [0, 1], sleepShips: [0, 1, 2], campaignResourceGate: [0, 1], bbAcid: [0, 1], bbRegrow: [0, 1], bbBurst: [0, 1], bbMissileStoreBySize: [0, 1], bbBeams: [0, 1], bbHeatModel: [0, 1], bbMissiles: [0, 1], bbPointDefence: [0, 1], bbLineOfFire: [0, 1], tightOrbit: [0, 1], campaignStartAtEarth: [0, 1], placesCrush: [0, 1], placesMassAttack: [0, 1], assaultSendAll: [0, 1], assaultReachOnly: [0, 1], frontReachOnly: [0, 1], placesNoLeapfrog: [0, 1], placesClaimKeeps: [0, 1], enemyWaitTurnBack: [0, 1], placesClaimFirm: [0, 1], placesSwarmPress: [0, 1], campaignSupplyLine: [0, 1], commandModel: [0, 1], stationRebuild: [0, 1], stationHullMend: [0, 1], cmdHelpMarches: [0, 1], cmdOpCommit: [0, 1, 2], cmdPassThrough: [0, 1, 2], orgScale: [0, 1], campaignLateAdmiral: [0, 1], campaignStartKit: [0, 1], placesFacilityApart: [0, 1], campaignFacilityApart: [0, 1], placesHoldClear: [0, 1], campaignHoldClear: [0, 1], campaignModel: [0, 1], officerCarryOver: [0, 1], campaignAutosave: [0, 1], placesRetry: [0, 1], placesSweep: [0, 1], placesDecisive: [0, 1], siegeYardSlowdown: [0, 1], placesModel: [0, 1], placesAllowAbandon: [0, 1], placesTheatre: [0, 1], designModel: [0, 1, 2], bureauBattle: [0, 1], moduleDamage: [0, 1], pressModel: [0, 1], partLossCall: [0, 1], survivalModel: [0, 1], allowAbandon: [0, 1], weaponModel: [0, 1], formationModel: [0, 1], lockStep: [0, 1], reorgModel: [0, 1], movementModel: [0, 1], hitModel: [0, 1, 2], tacticsModel: [0, 1], flightAssist: [0, 1], retreatFiring: [0, 1], overheatFallback: [0, 1], newSetupDefaults: [0, 1], unmannedRearGuard: [0, 1], simultaneousFire: [0, 1], officerModel: [0, 1], promoteNeedsVacancy: [0, 1], divisionTier: [0, 1], successionMode: [0, 1, 2], stagingModel: [0, 1] };
+const SETTING_CHOICES = { noseModel: [0, 1], rankSwap: [0, 1], devourerGrab: [0, 1], killRecordModel: [0, 1], priorityTargetModel: [0, 1], badMatchModel: [0, 1], acidMortar: [0, 1], frenzyGland: [0, 1], lsFrenzy: [0, 1], biteModel: [0, 1], lsMixModel: [0, 1], sizeHitModel: [0, 1], calmLookSkipAsleep: [0, 1], gunPace: [0, 1], alienLoopsByArrival: [0, 1], quietSteps: [0, 1], sleepLockedSquads: [0, 1], commandPace: [0, 1], placesByX: [0, 1], slowClock: [0, 1], lineRanks: [0, 1], swarmSpread: [0, 1], longSolarReach: [0, 1], longDockModel: [0, 1], swarmLine: [0, 1], warValves: [0, 1], bombardShield: [0, 1, 2], stationCrewWithStation: [0, 1], placeHoldFollow: [0, 1], aoMobilize: [0, 1], aoCharacter: [0, 1], aoAdmiral: [0, 1], cmdFormMoves: [0, 1], orderMovesObeyed: [0, 1], huntDetach: [0, 1], cmdStatLeans: [0, 1], huntDetachWhole: [0, 1], aoPostures: [0, 1], divisionOwner: [0, 1], admiralNeedsModel: [0, 1], longMapLine: [0, 1], cmdFormRealSize: [0, 1], cmdCapShare: [0, 1], cmdCapLongGuns: [0, 1], moonOrbits: [0, 1], dockModel: [0, 1], dockSpareModel: [0, 1], dockSpareSwarm: [0, 1], scuttleOnLedger: [0, 1], swarmDockModel: [0, 1], dockEvoModel: [0, 1], dockEvoSwarmSplit: [0, 1], matchupsInPlay: [0, 1], calmShips: [0, 1], cmRenderParts: [0, 1], simBudgetModel: [0, 1], simKeepPace: [0, 1], closeWarmAll: [0, 1], closeKeepPictures: [0, 1], allyShoveOff: [0, 1], allyNudge: [0, 1], divisionSpots: [0, 1], divisionSpotsInFight: [0, 1], campaignSensors: [0, 1], showBoost: [0, 1], coreLoop: [0, 1], coreLoopLine: [0, 1], coreLoopFleetCommand: [0, 1], coreLoopFleetDivisions: [0, 1], coreLoopRecompose: [0, 1], coreLoopAlienCommand: [0, 1], divisionMergeSmall: [0, 1], mergeFarOutOfContact: [0, 1], berthPairingModel: [0, 1], swarmNestModel: [0, 1], swarmGrowUpModel: [0, 1], swarmOpeningSpread: [0, 1], swarmLifeModel: [0, 1], swarmSurfaceModel: [0, 1], swarmEatsEnemies: [0, 1], swarmEatsHatchlings: [0, 1], fighterHangarModel: [0, 1], fighterLaunchModel: [0, 1], hangarRefillFromFleet: [0, 1], hangarRestock: [0, 1], wingModel: [0, 1], wingAirGroups: [0, 1], hangarRefillFree: [0, 1], swarmCarrierRegrow: [0, 1], hangarOrphansStay: [0, 1], tenderDocking: [0, 1], supplyRuns: [0, 1], cargoKept: [0, 1], ferryRuns: [0, 1], stationFighterGuard: [0, 1], stationNoSquadron: [0, 1], stationCrewSquad: [0, 1], stationPass: [0, 1], droneJamModel: [0, 1], divisionPaceModel: [0, 1], swarmFormations: [0, 1], facingVsTarget: [0, 1], facingTwoSided: [0, 1], freshSide: [0, 1], crossT: [0, 1], facingDodge: [0, 1], placesPicket: [0, 1], placesPicketSwarm: [0, 1], campaignStandoffPark: [0, 1], placesWithdrawOrder: [0, 1], placesWithdrawGuardDry: [0, 1], campaignLiveYardDawn: [0, 1], longMapReach: [0, 1], longMapLeash: [0, 1], longMapFog: [0, 1], sleepShips: [0, 1, 2], campaignResourceGate: [0, 1], bbAcid: [0, 1], bbRegrow: [0, 1], bbBurst: [0, 1], bbMissileStoreBySize: [0, 1], bbBeams: [0, 1], bbHeatModel: [0, 1], bbMissiles: [0, 1], bbPointDefence: [0, 1], bbLineOfFire: [0, 1], tightOrbit: [0, 1], campaignStartAtEarth: [0, 1], placesCrush: [0, 1], placesMassAttack: [0, 1], assaultSendAll: [0, 1], assaultReachOnly: [0, 1], frontReachOnly: [0, 1], placesNoLeapfrog: [0, 1], placesClaimKeeps: [0, 1], enemyWaitTurnBack: [0, 1], placesClaimFirm: [0, 1], placesSwarmPress: [0, 1], campaignSupplyLine: [0, 1], commandModel: [0, 1], stationRebuild: [0, 1], stationHullMend: [0, 1], cmdHelpMarches: [0, 1], cmdOpCommit: [0, 1, 2], cmdPassThrough: [0, 1, 2], orgScale: [0, 1], campaignLateAdmiral: [0, 1], campaignStartKit: [0, 1], placesFacilityApart: [0, 1], campaignFacilityApart: [0, 1], placesHoldClear: [0, 1], campaignHoldClear: [0, 1], campaignModel: [0, 1], officerCarryOver: [0, 1], campaignAutosave: [0, 1], placesRetry: [0, 1], placesSweep: [0, 1], placesDecisive: [0, 1], siegeYardSlowdown: [0, 1], placesModel: [0, 1], placesAllowAbandon: [0, 1], placesTheatre: [0, 1], designModel: [0, 1, 2], bureauBattle: [0, 1], moduleDamage: [0, 1], pressModel: [0, 1], partLossCall: [0, 1], survivalModel: [0, 1], allowAbandon: [0, 1], weaponModel: [0, 1], formationModel: [0, 1], lockStep: [0, 1], reorgModel: [0, 1], movementModel: [0, 1], hitModel: [0, 1, 2], tacticsModel: [0, 1], flightAssist: [0, 1], retreatFiring: [0, 1], overheatFallback: [0, 1], newSetupDefaults: [0, 1], unmannedRearGuard: [0, 1], simultaneousFire: [0, 1], officerModel: [0, 1], promoteNeedsVacancy: [0, 1], divisionTier: [0, 1], successionMode: [0, 1, 2], stagingModel: [0, 1] };
 // Rule switches that an imported file may lack: a missing one is read as 0 (the file was made before the rule existed), not as this version's default (stage 12).
 const SETTING_SWITCHES_OLD_FILES = ['commandModel', 'orgScale', 'movementModel', 'hitModel', 'tacticsModel', 'newSetupDefaults', 'simultaneousFire', 'officerModel', 'divisionTier', 'stagingModel', 'reorgModel', 'formationModel', 'lockStep', 'weaponModel', 'survivalModel', 'designModel', 'moduleDamage', 'pressModel', 'placesModel'];
 const MOVE_CLASSIC = 0, MOVE_THRUST = 1;
@@ -14148,7 +14165,7 @@ const HIT_ALWAYS = 0, HIT_ROLL = 1, HIT_EXPECTED = 2;
 const TACTICS_CLASSIC = 0, TACTICS_SMART = 1;
 const ASSIST_SOFT = 0, ASSIST_HARD = 1;
 const RETREAT_FIRE_NONE = 0, RETREAT_FIRE_BEARING = 1;
-const SETTING_FRACTIONS = ['lineRankRotateAt', 'bombardShieldShare', 'swarmDockStallQuietShare', 'allyNudgeDeep', 'facingTieShare', 'freshSideShare', 'freshSideShareAlways', 'freshSideArmour', 'placesPicketShare', 'bbAcidAblativeShare', 'bbRegrowHull', 'bbRegrowPlate', 'bbEnergyPlateEffect', 'bbFocusPerTick', 'bbBeamFullShare', 'bbBeamMinPower', 'bbHeatHitShare', 'bbRadiatorFoldShare', 'bbPdStopCap', 'bbFlakSmallBonus', 'bbMinArmorPass', 'piercingArmourShare', 'blastNeighbourShare', 'falloffBandBar', 'tightOrbitReach', 'cmdPassSoftPush', 'cmdGiveUpLossShare', 'cmdGiveUpOdds', 'cmdHelpOdds', 'cmdWithdrawRatio', 'cmdPlacesReach', 'moraleRallyAt', 'moraleCarryOver', 'moraleFleetWithdrawShare', 'moraleAbandonAt', 'cmdRearToughShare', 'cmdRotateBelow', 'cmdStrikeLossShare', 'cmdBoundFactor', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'cmdSplitMain', 'cmdSplitSecond', 'cmdSplitThird', 'cmdSplitRaid', 'cmdFleetWornShare', 'alienWaveJitter', 'alienGatherRatio', 'alienPullBackRatio', 'alienTargetWeakest', 'alienTargetMain', 'capitalBuildShare', 'placesReachShare', 'placesContestShare', 'rotateWornShare', 'mainEffortFreeRein', 'repertoireSwapLow', 'repertoireSwapHigh', 'repertoireKeepDoctrineAbove', 'centripetalUse', 'exploreChance', 'orbitSpeedFraction', 'lineCreepFraction', 'sidestepFraction', 'faceSideGunShare', 'standoffMinShare', 'ringTieBand', 'impatienceCreep', 'anchorBetterFactor', 'routCaution', 'fallbackCalmFraction', 'fallbackBackMargin', 'minHitChance', 'maxHitChance', 'assumedEvasion', 'effectiveHitChance', 'spawnEdgeMargin', 'spawnBandWidth', 'spawnVerticalMargin', 'minArmorPassFraction', 'separationStrength', 'formationHoldFraction', 'flankAlong',
+const SETTING_FRACTIONS = ['rankSwapAt', 'rankSwapFresh', 'rankSwapGap', 'lineRankRotateAt', 'bombardShieldShare', 'swarmDockStallQuietShare', 'allyNudgeDeep', 'facingTieShare', 'freshSideShare', 'freshSideShareAlways', 'freshSideArmour', 'placesPicketShare', 'bbAcidAblativeShare', 'bbRegrowHull', 'bbRegrowPlate', 'bbEnergyPlateEffect', 'bbFocusPerTick', 'bbBeamFullShare', 'bbBeamMinPower', 'bbHeatHitShare', 'bbRadiatorFoldShare', 'bbPdStopCap', 'bbFlakSmallBonus', 'bbMinArmorPass', 'piercingArmourShare', 'blastNeighbourShare', 'falloffBandBar', 'tightOrbitReach', 'cmdPassSoftPush', 'cmdGiveUpLossShare', 'cmdGiveUpOdds', 'cmdHelpOdds', 'cmdWithdrawRatio', 'cmdPlacesReach', 'moraleRallyAt', 'moraleCarryOver', 'moraleFleetWithdrawShare', 'moraleAbandonAt', 'cmdRearToughShare', 'cmdRotateBelow', 'cmdStrikeLossShare', 'cmdBoundFactor', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'cmdSplitMain', 'cmdSplitSecond', 'cmdSplitThird', 'cmdSplitRaid', 'cmdFleetWornShare', 'alienWaveJitter', 'alienGatherRatio', 'alienPullBackRatio', 'alienTargetWeakest', 'alienTargetMain', 'capitalBuildShare', 'placesReachShare', 'placesContestShare', 'rotateWornShare', 'mainEffortFreeRein', 'repertoireSwapLow', 'repertoireSwapHigh', 'repertoireKeepDoctrineAbove', 'centripetalUse', 'exploreChance', 'orbitSpeedFraction', 'lineCreepFraction', 'sidestepFraction', 'faceSideGunShare', 'standoffMinShare', 'ringTieBand', 'impatienceCreep', 'anchorBetterFactor', 'routCaution', 'fallbackCalmFraction', 'fallbackBackMargin', 'minHitChance', 'maxHitChance', 'assumedEvasion', 'effectiveHitChance', 'spawnEdgeMargin', 'spawnBandWidth', 'spawnVerticalMargin', 'minArmorPassFraction', 'separationStrength', 'formationHoldFraction', 'flankAlong',
   'lineMaxGapFraction', 'roleHeavyNorm', 'roleFastNorm', 'reserveMaxDepthFraction', 'arrivalEdgeMargin', 'arrivalEdgeHeight', 'repairForwardSetback',
   'learningSoftZone', 'learningMaxRoomShare', 'learningMinWindow', 'learningMinActivity', 'adaptabilityMin', 'successScore', 'notableScore', 'objectiveMinShare'];   // normally 0 to 1 (a warning, not an error, outside)
 
@@ -20833,6 +20850,8 @@ let shipSquad, shipState, shipNextThink, shipThreat, shipEverRetreated, shipSlot
 let shipAttacker, shipAttackedAt, shipDistracted, shipProtectedBy;
 let shipRepairPoint;                              // the repair point a ship in the state Repair is heading for (a number in repairPoints, section 5j), or -1 = off the edge of the map
 let shipVX, shipVY, shipTurnRun, shipTurnRunSince, shipMoveNote;
+let shipSpin, shipNoseLeaveAt, shipNoseState;   // (v261.8, 4b9) how fast the nose is turning (radians a second), when it began to leave the fight, the state it was in
+let shipSwapAt;   // (v261.9, 5q2) the battle time the ship last traded places in the front rank (only the map's Ship facing layer reads it)
 let shipAimedBy;                                                       // how many enemy ships have this ship as their target (recounted with the strength map, section 4d)
 let shipIncoming, shipIncomingAtEntry, shipStateSince, shipLastThinkAt;   // stage 8: the incoming-fire meter, its value when the ship fell back, when the state last changed, the last think
 let shipFallRear, shipRouted, shipBreakOffs, shipRouts, shipFireTarget, shipGunSearchAt, shipOddsOkSince;   // stage 8: see allocateShipArrays
@@ -20915,6 +20934,8 @@ function allocateShipArrays(n) {
   shipTurnRun = new Uint8Array(n);                // thrusters: 1 = a kiting ship has turned its back on the threat and is running on its main engine
   shipTurnRunSince = new Float32Array(n);         // battle time it turned to run (it keeps running at least turnRunMinSeconds)
   shipMoveNote = new Uint8Array(n);               // thrusters: what interfered with the ship's flight on its last step (MOVE_NOTE_...; the inspector shows it)
+  shipSpin = new Float32Array(n); shipNoseLeaveAt = new Float64Array(n); shipNoseState = new Uint8Array(n);   // (v261.8, 4b9)
+  shipSwapAt = new Float64Array(n);   // (v261.9)
   shipAimedBy = new Int32Array(n);                // how many enemy ships are aiming at this one (section 4d)
   shipIncoming = new Float32Array(n);             // stage 8: the damage the ship has taken lately (added by resolveHit, faded with incomingHalfLife at each think)
   shipIncomingAtEntry = new Float32Array(n);      // ... what the meter read when the ship fell back (a shieldless ship returns once the fire has died down to a share of it)
@@ -21470,6 +21491,7 @@ function resetBattleState() {
   statAliveTime.fill(0); statOverheatTime.fill(0); statPowerTime.fill(0);
   statArrived.fill(0); statSentRepair.fill(0); statRepaired.fill(0);
   simTime = 0;
+  noseNextAt = -1; rankSwapCount = 0;               // (v261.8, 4b9 and 5q2) the nose rule looks afresh in a new battle; no front-rank swaps yet
   battleResult = null;
   clearEffects();
   shotNext = 0;
@@ -21548,7 +21570,7 @@ function spawnShip(side, type, atX, atY) {
   shipOverheated[slot] = 0;
   shipGoalX[slot] = -1;
   shipVX[slot] = 0; shipVY[slot] = 0;
-  shipTurnRun[slot] = 0; shipTurnRunSince[slot] = 0; shipMoveNote[slot] = 0;
+  shipTurnRun[slot] = 0; shipTurnRunSince[slot] = 0; shipMoveNote[slot] = 0; shipSpin[slot] = 0; shipNoseLeaveAt[slot] = 0; shipNoseState[slot] = 0; shipSwapAt[slot] = -1e9;
   shipStore[slot] = stStore[st]; shipHoldSince[slot] = -1; shipHoldTarget[slot] = -1;   // (v18) a full magazine
   shipHitAcc[slot] = 0; shipJinkSpeed[slot] = 0; shipJink[slot] = 0; shipAimedBy[slot] = 0;
   shipIncoming[slot] = 0; shipIncomingAtEntry[slot] = 0; shipStateSince[slot] = simTime; shipLastThinkAt[slot] = simTime;
@@ -23182,14 +23204,16 @@ function flyGlideStep(i, st, target, dt) {
   const TWO_PI = Math.PI * 2;
   let want = flyFace[i];
   if (flyFaceMode[i] === 1 && target >= 0 && shipAlive[target] === 1) want = Math.atan2(shipY[target] - shipY[i], shipX[target] - shipX[i]) + flyFace[i];
+  want = noseClamp(i, want, flyState[i]);                                  // (v261.8, 4b9) our ships keep their noses to the enemy
   let diff = want - shipAngle[i];
   if (diff > Math.PI) diff -= TWO_PI; else if (diff < -Math.PI) diff += TWO_PI;
   if (stSpinal[st] === 1 && SETTINGS.weaponModel === 1 && Math.abs(diff) < SETTINGS.spinalDeadband * Math.PI / 180) diff = 0;
   const maxTurn = mdShip[i] === 1 ? stTurn[st] * dt * mdTurnMul[i] : stTurn[st] * dt;
-  if (diff > maxTurn) diff = maxTurn; else if (diff < -maxTurn) diff = -maxTurn;
+  diff = turnStep(i, diff, maxTurn, dt);                                   // (v261.8, 4b9) with a little turn momentum
   let angle = shipAngle[i] + diff;
   if (angle > Math.PI) angle -= TWO_PI; else if (angle < -Math.PI) angle += TWO_PI;
   shipAngle[i] = angle;
+  thrNoteTurn(i, diff, dt, maxTurn / dt);                                  // (v261.6, section 6w3) what the turn did, for the thruster puffs
   let c, s;
   if (trigAngle[i] === angle) { c = trigCos[i]; s = trigSin[i]; }
   else { c = Math.cos(angle); s = Math.sin(angle); trigAngle[i] = angle; trigCos[i] = c; trigSin[i] = s; }
@@ -23212,6 +23236,7 @@ function flyGlideStep(i, st, target, dt) {
     if (bm !== 1) fMin *= bm;
     if (f < fMin) f = fMin; else if (f > fMax) f = fMax;
     if (l < -lMax) l = -lMax; else if (l > lMax) l = lMax;
+    thrNotePush(i, f, fMin, fMax, l, lMax);                                  // (v261.6, section 6w3) what the thrusters did
     vx += f * c - l * s; vy += f * s + l * c;
     const v2 = vx * vx + vy * vy;
     if (v2 > stSpeed2[st] * bm * bm) { const q = stSpeed[st] * bm / Math.sqrt(v2); vx *= q; vy *= q; }
@@ -23257,6 +23282,105 @@ function flyRecord(i, st, state, target, wvx, wvy, wantFace, faceAtTarget, gap, 
     flyFaceMode[i] = 1; flyFace[i] = off;
   } else { flyFaceMode[i] = 0; flyFace[i] = wantFace; }
   flyStats.steers++;
+}
+// =====================================================================
+// 4b9. (v261.8) THE NOSE TO THE ENEMY, BACKING OFF ON RETROS, AND TURNS WITH A LITTLE MOMENTUM
+//   Alex, 16 Nov 2026: "i see a lot of ships turning away from enemies, this is especially noticeable with ships like the colossus, which should almost
+//   never want to do that. in general, human ships should nearly almost never face left, unless turning tail entirely" and "I want to see more sliding,
+//   and more using retros to disengage" and "maybe just a slight change [to momentum based turning] for vibe more than gameplay effect".
+//
+//   What was wrong (measured with tools/v261.8/facing-probe.js, a mixed human fleet with a Colossus against a mixed Swarm fleet): our ships near the
+//   fight had their noses away from the nearest enemy about a quarter of the time. The causes: a damaged ship turned its back at once to fly to its dock;
+//   a squadron circling its target swung every locked member's nose round with the leader; a ship that could not back off fast enough turned and ran;
+//   and a ship whose own target had slipped past it turned round to chase it.
+//
+//   THE ONE RULE (noseClamp): every way a ship decides where its nose points (the full steer 04-2, the glide 04-1h, a locked squadron member's turn on
+//   the spot 20b) goes through noseClamp. For a ship of ours (a human design; not a tiny fighter, not a facility) near the enemy, its nose is kept within
+//   noseArcDeg of the way to the nearest enemy (noseRefresh: from the squadron's middle, once a second). It may still fight side-on (a broadside) and its guns
+//   still turn, but it never shows the enemy its stern. Its wanted motion is not changed: the thrusters (4c) can only push it that way with the reverse
+//   and side jets, so a ship that wants to go back SLIDES and BACKS OFF ON ITS RETROS, slower than it would on its main engine.
+//   Free of the rule: a ship far from any enemy (more than noseNearFactor x its gun range, and at least noseNearMin), one that is routing (Retreat:
+//   turning tail entirely), and one leaving for repairs once it has backed off for noseBackSeconds (then it turns and burns for the dock). A ship
+//   falling back (a step back to its fall-back place) stays nose-first all the way.
+//   The aliens are not touched (the Swarm and the Delvers fight as they always have).
+//
+//   TURN MOMENTUM (turnStep, for every ship): the nose speeds up into a turn and slows out of it over turnRampSeconds (at most its top turning speed, as
+//   before), so it stops exactly on the facing it wants. Small: a full turn takes about half that time longer. 0 = turns start and stop at once (as before).
+//   (v261.9, Alex: "clean up the math, so that it only runs when ships are actually using it") a ship whose nose is still and already on its facing, or a
+//   hair from it, skips the momentum maths; once on its facing a ship stays there (it no longer drifts a hair past it and back).
+//   Switch: SETTINGS.noseModel (0 = none of the nose rule). Check: tools/v261.8/nose-check.js.
+// =====================================================================
+let sqNoseAng = new Float64Array(0), sqNoseD2 = new Float64Array(0);   // per squadron: the way to the nearest enemy ship (radians), and its distance squared (Infinity = none)
+let noseNextAt = -1;
+let noseTypeRec = [], noseTypeVal = new Int8Array(0);   // (v261.9) per ship type: the design last asked about, and its answer (so the question costs one look-up a step)
+// 1 = ship type t follows the nose rule: a human design (no alien faction, not the Swarm's), not a tiny fighter, not a facility
+function noseTypeOn(t) {
+  const rec = SHIP_TYPES[t];
+  if (!rec) return 0;
+  if (noseTypeRec[t] === rec) return noseTypeVal[t];
+  let v = 1;
+  if (rec.faction || rec.alienStock || rec.immobile) v = 0;
+  else if (rec.design && (rec.design.hull === 'tiny' || (typeof HULL_BY_ID !== 'undefined' && HULL_BY_ID[rec.design.hull] && HULL_BY_ID[rec.design.hull].fighter))) v = 0;
+  if (noseTypeVal.length <= t) { const a = new Int8Array(Math.max(t + 1, SHIP_TYPES.length, 64)); a.set(noseTypeVal); noseTypeVal = a; }
+  noseTypeRec[t] = rec; noseTypeVal[t] = v;
+  return v;
+}
+// Once a second: each squadron's way from its middle to the nearest enemy ship (perfect knowledge, as the AI has)
+function noseRefresh() {
+  if (simTime < noseNextAt && noseNextAt - simTime < 2) return;
+  noseNextAt = simTime + 1;
+  const m = squadronCount;
+  if (sqNoseAng.length < m) { sqNoseAng = new Float64Array(MAX_SQUADRONS); sqNoseD2 = new Float64Array(MAX_SQUADRONS); }
+  for (let q = 1; q < m; q++) {
+    sqNoseD2[q] = Infinity;
+    if (!(sqAlive[q] > 0) || !noseTypeOn(sqType[q])) continue;            // only our squadrons need it
+    const x = sqCenterX[q], y = sqCenterY[q], e = nearestOfSide(1 - sqSide[q], x, y, Infinity);   // the nearest enemy SHIP to its middle (the grid search, 4a)
+    if (e < 0) continue;
+    const dx = shipX[e] - x, dy = shipY[e] - y;
+    sqNoseD2[q] = dx * dx + dy * dy; sqNoseAng[q] = Math.atan2(dy, dx);
+  }
+}
+// The facing ship i may turn to, given the facing it wants (radians) and its state: want itself, or want pulled back to the edge of the arc round the
+// way to the enemy (see the top of this section)
+function noseClamp(i, want, state) {
+  if (SETTINGS.noseModel !== 1) return want;
+  const sq = shipSquad[i];
+  if (!(sq > 0) || sq >= sqNoseD2.length || !noseTypeOn(shipType[i])) return want;
+  // leaving the fight: back off nose-first for noseBackSeconds, then turn tail
+  const leaving = state === STATE_REPAIR || state === STATE_FALLBACK;
+  if (leaving && shipNoseState[i] !== state) shipNoseLeaveAt[i] = simTime;
+  shipNoseState[i] = state;
+  if (state === STATE_RETREAT) return want;
+  if (state === STATE_REPAIR && simTime - shipNoseLeaveAt[i] > SETTINGS.noseBackSeconds) return want;   // (falling back stays nose-first all the way)
+  const st = shipSide[i] * TYPE_COUNT + shipType[i];
+  const near = Math.max(SETTINGS.noseNearFactor * (stRange[st] || 0), SETTINGS.noseNearMin);
+  if (!(sqNoseD2[sq] <= near * near)) return want;
+  const ang = sqNoseAng[sq], arc = SETTINGS.noseArcDeg * Math.PI / 180;
+  let off = want - ang;
+  off -= Math.round(off / (2 * Math.PI)) * 2 * Math.PI;
+  if (off > arc) return ang + arc;
+  if (off < -arc) return ang - arc;
+  return want;
+}
+// How far ship i's nose turns this step (radians), when it wants to turn diff (radians, -pi..pi) and may turn at most maxTurn this step (its top turning
+// speed x dt): with turnRampSeconds the turning speed builds up and dies away (turn momentum), and it never passes the facing it wants
+function turnStep(i, diff, maxTurn, dt) {
+  const R = SETTINGS.turnRampSeconds;
+  if (!(R > 0) || !(dt > 0)) { if (diff > maxTurn) diff = maxTurn; else if (diff < -maxTurn) diff = -maxTurn; return diff; }
+  const w0 = shipSpin[i];
+  if (w0 === 0 && diff === 0) return 0;                            // (v261.9) a ship that is not turning and does not want to: nothing to work out
+  const rate = maxTurn / dt, acc = rate / R;
+  const ad = Math.abs(diff);
+  if (w0 === 0 && ad <= acc * dt * dt) { shipSpin[i] = diff / dt; return diff; }   // (v261.9) a still nose with a tiny way to go: it gets there this step (the same answer as below, without the square root)
+  let want = Math.min(rate, Math.sqrt(2 * acc * ad), ad / dt);    // the turning speed that still stops on the wanted facing
+  if (diff < 0) want = -want;
+  let w = want;
+  if (w > w0 + acc * dt) w = w0 + acc * dt; else if (w < w0 - acc * dt) w = w0 - acc * dt;
+  let d = w * dt;
+  if (d > maxTurn) d = maxTurn; else if (d < -maxTurn) d = -maxTurn;
+  if ((d > 0 && diff >= 0 && d > diff) || (d < 0 && diff <= 0 && d < diff)) { d = diff; w = diff / dt; }   // never past the wanted facing (v261.9: nor off it once there)
+  shipSpin[i] = w;
+  return d;
 }
 // ---------------------------------------------------------------------
 // 4c. Moving
@@ -23384,6 +23508,7 @@ function updateMovementAndTargeting(dtStep) {
   const passAlongMax = SETTINGS.formationPassAlongMax, passFadeIn = SETTINGS.formationPassFadeIn, passFadeOut = SETTINGS.formationPassFadeOut, passBend = SETTINGS.formationPassBend;
   const parity = (moveStepCounter++) & 1;
   const thrusters = SETTINGS.movementModel === MOVE_THRUST;
+  if (thrusters && SETTINGS.noseModel === 1) noseRefresh();   // (v261.8, 4b9) each squadron of ours: the way to the nearest enemy, once a second
   const slotGain = SETTINGS.slotGain, keepPace = SETTINGS.matchTargetVelocity, ringMax = SETTINGS.ringMaxFraction / (1 + SETTINGS.ringBandFraction);
   const edgeLook = SETTINGS.edgeLookSeconds, edgeMX = SETTINGS.edgeMarginFraction * worldW, edgeMY = SETTINGS.edgeMarginFraction * worldH;
   const hardAssist = SETTINGS.flightAssist === 1;
@@ -23908,17 +24033,20 @@ function updateMovementAndTargeting(dtStep) {
     }
     // --- Turn toward the wanted direction, limited by the ship's turn rate.
     if (thrusters && surgeUntil.length > i && surgeUntil[i] > 0 && surgeActive(i)) wantFace = Math.atan2(surgeAY - shipY[i], surgeAX - shipX[i]);   // (v258.2, section 5vh) a surging ship turns its nose (its mouth) to its target (v258.6: or the point it heads for)
+    if (thrusters) wantFace = noseClamp(i, wantFace, state);   // (v261.8, 4b9) our ships keep their noses to the enemy (backing off on retros)
     let diff = (thrusters ? wantFace : desired) - shipAngle[i];
     if (diff > Math.PI) diff -= TWO_PI;
     else if (diff < -Math.PI) diff += TWO_PI;
     if (stSpinal[st] === 1 && SETTINGS.weaponModel === 1 && Math.abs(diff) < SETTINGS.spinalDeadband * Math.PI / 180) diff = 0;   // (v18) a spinal weapon's ship holds its nose once the aim is close enough
     const maxTurn = mdShip[i] === 1 ? stTurn[st] * dt * mdTurnMul[i] : stTurn[st] * dt;   // (section 5vb) Balance after a drive loss
-    if (diff > maxTurn) diff = maxTurn;
+    if (thrusters) diff = turnStep(i, diff, maxTurn, dt);   // (v261.8, 4b9) at most maxTurn, with a little turn momentum
+    else if (diff > maxTurn) diff = maxTurn;
     else if (diff < -maxTurn) diff = -maxTurn;
     let angle = shipAngle[i] + diff;
     if (angle > Math.PI) angle -= TWO_PI;
     else if (angle < -Math.PI) angle += TWO_PI;
     shipAngle[i] = angle;
+    if (thrusters) thrNoteTurn(i, diff, dt, maxTurn / dt);   // (v261.6, section 6w3) what the turn did, for the thruster puffs (display only)
     let c, s;
     if (trigAngle[i] === angle) { c = trigCos[i]; s = trigSin[i]; }   // (v103.7) the nose has not moved since the last step: the same cosine and sine, not worked out again
     else { c = Math.cos(angle); s = Math.sin(angle); trigAngle[i] = angle; trigCos[i] = c; trigSin[i] = s; }
@@ -24001,6 +24129,7 @@ function updateMovementAndTargeting(dtStep) {
         else if (bm !== 1) { fMax *= bm; lMax *= bm; fMin *= bm; }
         if (f < fMin) f = fMin; else if (f > fMax) f = fMax;
         if (l < -lMax) l = -lMax; else if (l > lMax) l = lMax;
+        thrNotePush(i, f, fMin, fMax, l, lMax);                               // (v261.6, section 6w3) what the thrusters did (display only)
         vx += f * c - l * s; vy += f * s + l * c;
         const v2 = vx * vx + vy * vy;
         if (surge > 0) { if (v2 > surge * surge) { const q = surge / Math.sqrt(v2); vx *= q; vy *= q; } }
@@ -53282,6 +53411,21 @@ function refreshSquadronCache(sq) {
 }
 
 // ---------------------------------------------------------------------
+// (v261.7) IN THE FIGHT: the one rule every count of "ships fighting" uses (the Last Stand squadron cards, the squadron card, the map tags, sqActive).
+//   A ship is in the fight when it exists on the field and has not broken off. Broken off = retreating, regrouping (pulled back to get its shield
+//   back) or heading home to be repaired or rearmed (shipRetreating, which only setShipState sets). A ship falling back a little inside the fight
+//   still counts. A ship that is destroyed, docked (being repaired or rearmed) or not yet launched is not on the field, so it never counts.
+// ---------------------------------------------------------------------
+function shipInFight(i) { return i >= 0 && shipAlive[i] === 1 && shipRetreating[i] === 0; }
+// The ships of squadron sq in the fight right now (counted fresh, so it is never behind; sqActive is the same count kept by the squadron's think).
+function sqInFightCount(sq) {
+  const start = sqStart[sq], end = start + sqSize[sq];
+  let n = 0;
+  for (let k = start; k < end; k++) { const m = sqMembers[k]; if (sqMemberAway[k] === 0 && m >= 0 && shipSquad[m] === sq && shipInFight(m)) n++; }
+  return n;
+}
+
+// ---------------------------------------------------------------------
 // Ship states. setShipState is the ONLY place that changes a ship's state (newState may also be STATE_NONE:
 // that is how a ship that was destroyed or has left is taken out of the books).
 // ---------------------------------------------------------------------
@@ -54939,7 +55083,13 @@ function slotWorld(sq, i) {
   } else { slotW[0] = shipSlotX[i]; slotW[1] = shipSlotY[i]; }
 }
 
+// (v261.8, section 5q2) Every dealing of the places keeps the front rank swap: places are dealt by where the ships are now, which would put a hurt ship
+// that has not yet pulled back into the front again; rankSwapAfterDeal trades it back with a fresh one behind (no waiting time).
 function assignFormation(sq) {
+  assignFormationDeal(sq);
+  if (SETTINGS.tacticsModel === TACTICS_SMART) rankSwapAfterDeal(sq);
+}
+function assignFormationDeal(sq) {
   sqDirty[sq] = 0;
   const leader = sqLeader[sq];
   if (leader < 0) return;
@@ -55246,7 +55396,7 @@ function squadronThink(sq) {
     if (shipAlive[m] === 1 && shipSquad[m] === sq) {
       sx += shipX[m]; sy += shipY[m]; n++;
       if (fmBody && (shipX[m] - shipX[leader]) * (shipX[m] - shipX[leader]) + (shipY[m] - shipY[leader]) * (shipY[m] - shipY[leader]) <= fmFar2) { bx += shipX[m]; by += shipY[m]; bn++; }
-      if (shipRetreating[m] === 0) active++;
+      if (shipInFight(m)) active++;                     // (v261.7) the one rule for "in the fight" (section 5b)
       if (smart) health += shipStrength(m, sst);
     }
   }
@@ -55270,6 +55420,7 @@ function squadronThink(sq) {
   sqFormation[sq] = formation;
   if (formation === 1) {
     if (sqDirty[sq] === 1) assignFormation(sq);
+    if (smart) rankSwap(sq);                                 // (v261.8, section 5q2) a hurt front-rank ship trades places with a fresh one behind it
     // The leader slows down while members straggle, so they can catch up (they fly at the same top speed as the leader).
     let far2 = sqHold2[sq] * 4;                              // "straggling" = more than twice the hold distance from the slot
     if (sqLocked[sq] === 0 && lockOn() && lockAllowed(sq)) { const t = SETTINGS.lockTolerance * sqSpacing[sq]; if (t * t < far2) far2 = t * t; }   // (v16: forming up to lock, the leader waits for anyone off its place)
@@ -70296,10 +70447,12 @@ function placeLockedShips(dtStep) {
     let want;
     if (t >= 0 && shipAlive[t] === 1) want = Math.atan2(shipY[t] - y, shipX[t] - x) - shipFaceSide[i] * shipFaceOff[i];
     else { const Ld = sqLeader[sq]; want = Ld >= 0 && shipAlive[Ld] === 1 ? shipAngle[Ld] : sqAxisAng[sq]; }
+    want = noseClamp(i, want, shipState[i]);   // (v261.8, 4b9) our ships keep their noses to the enemy, even when the leader circles
     let diff = want - shipAngle[i];
     diff -= TWO_PI * Math.round(diff / TWO_PI);
     const maxTurn = stTurn[st] * dt;
-    if (diff > maxTurn) diff = maxTurn; else if (diff < -maxTurn) diff = -maxTurn;
+    diff = SETTINGS.movementModel === MOVE_THRUST ? turnStep(i, diff, maxTurn, dt) : Math.max(-maxTurn, Math.min(maxTurn, diff));   // (v261.8) a little turn momentum
+    thrNoteTurn(i, diff, dt, stTurn[st]);   // (v261.6, section 6w3) for the thruster puffs (display only)
     let a = shipAngle[i] + diff;
     if (a > Math.PI) a -= TWO_PI; else if (a < -Math.PI) a += TWO_PI;
     shipAngle[i] = a; shipCos[i] = Math.cos(a); shipSin[i] = Math.sin(a);
@@ -70337,6 +70490,61 @@ function formationFromScript(ev) {
   stFormationDoc[side * TYPE_COUNT + t] = f;
   for (let sq = 1; sq < squadronCount; sq++) if (sqAlive[sq] > 0 && sqSide[sq] === side && sqType[sq] === t) sqShapeSince[sq] = -1e9;   // (no wait for shapeMinSeconds)
   logEvent(side, 'Script: ' + typeName[t] + ' squadrons now fly in formation "' + ev.formation + '".');
+}
+// =====================================================================
+// 5q2. (v261.8) THE FRONT RANK SWAP. Alex, 16 Nov 2026: "I also want to see front rank ships that take damage pull back, and fresh squadron mates behind
+//   them take their place at the front of the line".
+//   When a squadron thinks (07-5b squadronThink, after its places are dealt), a member in its FRONT rank (a place no more than half a spacing behind the
+//   squadron's most forward place) whose hull has fallen below rankSwapAt trades places with the freshest member further back (hull at least
+//   rankSwapFresh, and at least rankSwapGap more than the hurt one's). The places are the squadron's own formation places (the line's ranks, or any other
+//   shape's: "forward" is toward the enemy along the squadron's axis), so the hurt ship pulls back into the second rank and the fresh one steps up; with
+//   the nose rule (4b9) the hurt ship backs off on its retros, facing the enemy. A locked squadron's places glide over (20b), so the two ships trade
+//   places smoothly. At most one new swap a squadron every rankSwapSeconds; when the places are dealt again (a ship lost, a new one joining) the swaps
+//   made are kept (rankSwapAfterDeal), since the dealing goes by where the ships are and the hurt one may not have moved back yet. The leader (whose place the formation is built round) never swaps.
+//   This works inside one squadron; the Division's own rotation of tired squadrons out of the front rank (06e line ranks, lineRankRotateAt) is untouched.
+//   Switch: SETTINGS.rankSwap (0 = never). Check: tools/v261.8/nose-check.js.
+// =====================================================================
+let sqRankSwapAt = new Float64Array(0);   // per squadron: the battle time of its last swap
+let rankSwapCount = 0;                     // this battle: swaps made (the check reads it)
+// (squadronThink) at most one new swap every rankSwapSeconds
+function rankSwap(sq) {
+  if (SETTINGS.rankSwap !== 1 || !noseTypeOn(sqType[sq])) return;       // (our ships only: the aliens do not fight in ranks like this)
+  if (sqRankSwapAt.length < MAX_SQUADRONS) { const a = new Float64Array(MAX_SQUADRONS).fill(-1e9); a.set(sqRankSwapAt.subarray(0, Math.min(sqRankSwapAt.length, MAX_SQUADRONS))); sqRankSwapAt = a; }
+  if (sqRankSwapAt[sq] > simTime) sqRankSwapAt[sq] = -1e9;             // (left over from an earlier battle)
+  if (simTime - sqRankSwapAt[sq] < SETTINGS.rankSwapSeconds) return;
+  if (rankSwapOnce(sq)) { sqRankSwapAt[sq] = simTime; rankSwapCount++; }
+}
+// (assignFormation, after every dealing of the places) every swap the squadron owes, at once: the places were just dealt by where the ships are
+function rankSwapAfterDeal(sq) {
+  if (SETTINGS.rankSwap !== 1 || !noseTypeOn(sqType[sq])) return;
+  for (let n = 0; n < 8 && rankSwapOnce(sq); n++) rankSwapCount++;   // (one hurt front-rank ship a time)
+}
+// One swap if one is owed: the most hurt front-rank member trades places with the freshest member behind it. true = swapped
+function rankSwapOnce(sq) {
+  if (orgSecs.size > 0 && orgSecs.has(sq)) return false;                 // (a big squadron laid out in sections keeps its sections)
+  const leader = sqLeader[sq], start = sqStart[sq], end = start + sqSize[sq], spacing = sqSpacing[sq];
+  if (leader < 0 || !(spacing > 0)) return false;
+  const hullOf = (m) => { const st = shipSide[m] * TYPE_COUNT + shipType[m]; return stHull[st] > 0 ? shipHp[m] / stHull[st] : 1; };
+  const ok = (m) => m !== leader && shipAlive[m] === 1 && shipSquad[m] === sq && shipRetreating[m] === 0 && shipState[m] !== STATE_REPAIR && shipState[m] !== STATE_RETREAT && !(wingN.length > m && wingN[m] > 0);
+  let front = 0;                                                         // the leader's place (0, 0) is in the front rank
+  for (let k = start; k < end; k++) { const m = sqMembers[k]; if (ok(m) && shipSlotX[m] > front) front = shipSlotX[m]; }
+  const edge = front - 0.5 * spacing;
+  let hurt = -1, hurtH = SETTINGS.rankSwapAt;
+  for (let k = start; k < end; k++) { const m = sqMembers[k]; if (!ok(m) || shipSlotX[m] < edge) continue; const h = hullOf(m); if (h < hurtH) { hurtH = h; hurt = m; } }
+  if (hurt < 0) return false;
+  let fresh = -1, freshH = Math.max(SETTINGS.rankSwapFresh, hurtH + SETTINGS.rankSwapGap) - 1e-9;
+  for (let k = start; k < end; k++) {
+    const m = sqMembers[k];
+    if (!ok(m) || shipSlotX[m] > shipSlotX[hurt] - 0.5 * spacing) continue;
+    const h = hullOf(m);
+    if (h > freshH || (h === freshH && fresh >= 0 && shipSlotX[m] > shipSlotX[fresh])) { freshH = h; fresh = m; }
+  }
+  if (fresh < 0) return false;
+  const x = shipSlotX[hurt], y = shipSlotY[hurt];
+  shipSlotX[hurt] = shipSlotX[fresh]; shipSlotY[hurt] = shipSlotY[fresh];
+  shipSlotX[fresh] = x; shipSlotY[fresh] = y;
+  shipSwapAt[hurt] = simTime; shipSwapAt[fresh] = simTime;              // (v261.9) for the map's Ship facing layer (display only)
+  return true;
 }
 // =====================================================================
 // 5u. SELF-PRESERVATION  (the self-preservation update, v19: plan notes/plans/self-preservation/plan.md)
@@ -74937,6 +75145,7 @@ function draw() {
   if (UI_SETTINGS.engineGlow) fxDrawEngines(left, top, right, bottom, z);                    // (v101.8, section 6w) engine trails and plumes in each drive's colour, under the ships
   if (UI_SETTINGS.icons && (shipsDrawnLastFrame <= UI_SETTINGS.iconMaxShips || unitMarkersOn())) drawShipIcons(left, top, right, bottom, minSize);   // (v17, section 6b)
   else drawShips(left, top, right, bottom, minSize);
+  if (UI_SETTINGS.engineGlow && UI_SETTINGS.icons && (shipsDrawnLastFrame <= UI_SETTINGS.iconMaxShips || unitMarkersOn())) thrDrawPuffs(left, top, right, bottom, z, minSize);   // (v261.6, section 6w3) thruster puffs over the ships
   if (typeof pulseDrawAll === 'function') pulseDrawAll(left, top, right, bottom, z);   // (v181.0, 05f-2d) the pulse drives: plate, flash, plasma fan, fallout
   ctx.lineWidth = 1.5 / z;
   fxDrawShots(left, top, right, bottom);                        // (v33, section 6w: shots coloured by weapon; drawShots is the v32 drawing)
@@ -74985,7 +75194,7 @@ const UI_SETTINGS = {
   effects: 'full',           // screen effects: 'full', 'subtle' or 'off' (the radio static, typewriter, stamps, radar sweep...: section 7j)
   layerLine: 1, layerRange: 1, layerTags: 1, layerDanger: 0, layerMinimap: 1,   // the map layers: the Admiral's battle line, the selected squadron's gun range, the squadron tags (section 7i)
   layerDivNames: 0, layerFleetNames: 1,                                        // (v25, section 7p) the Division names and, with the chain of command on, the Fleet banner tags
-  layerMoves: 0, layerRetreat: 0,                                              // (v25, section 7p, chain of command only) each Fleet's move as a big arrow; the lines of retreat and rally points. (v125.0, Alex 7 Nov) Fleet moves off by default, in the campaign and Last Stand alike
+  layerMoves: 0, layerRetreat: 0, layerFacing: 0,                              // (v261.9) layerFacing: the Ship facing layer (off by default). (v25, section 7p, chain of command only) each Fleet's move as a big arrow; the lines of retreat and rally points. (v125.0, Alex 7 Nov) Fleet moves off by default, in the campaign and Last Stand alike
   cmLayerOverlay: 1, cmLayerDivNames: 1,                                       // (v27 B3, section 7l) the campaign AO view's two switches: the AO overlay (plates, what each place makes) and the Division names
   tipDismissed: 0,           // 1 = the first-time tip on the map was closed for good
   foldLeft: 0, foldRight: 0, // 1 = that side column is folded away (keys [ and ])
@@ -75009,7 +75218,7 @@ const UI_SETTINGS = {
 // The choices offered for the side colours (the mockup's swatches). Shapes tell the sides apart too, so any pair works for colour-blind players.
 const OUR_COLOR_CHOICES = [['Blue', '#4D9DFF'], ['Cyan', '#35D6E0'], ['Green', '#4FD67E'], ['Bone', '#DCD0A6'], ['White', '#E8EEF4']];
 const ENEMY_COLOR_CHOICES = [['Red', '#FF5A3C'], ['Orange', '#FF9A2E'], ['Magenta', '#FF4FC3'], ['Violet', '#A87CFF'], ['Acid', '#B8F03A']];
-const UI_SAVED_KEYS = ['closeDetail', 'closeHull', 'closeLook', 'shotDetail', 'engineGlow', 'icons', 'palette', 'ourColor', 'enemyColor', 'delverColor', 'sylphColor', 'echoColor', 'effects', 'layerLine', 'layerRange', 'layerTags', 'layerDanger', 'layerMinimap', 'layerDivNames', 'layerFleetNames', 'layerMoves', 'layerRetreat', 'tipDismissed', 'foldLeft', 'foldRight', 'commsSmall', 'layoutV105', 'movesOffV125', 'backdrops', 'starfield', 'dispatchPause', 'cmLayerOverlay', 'cmLayerDivNames'];
+const UI_SAVED_KEYS = ['closeDetail', 'closeHull', 'closeLook', 'shotDetail', 'engineGlow', 'icons', 'palette', 'ourColor', 'enemyColor', 'delverColor', 'sylphColor', 'echoColor', 'effects', 'layerLine', 'layerRange', 'layerTags', 'layerDanger', 'layerMinimap', 'layerDivNames', 'layerFleetNames', 'layerMoves', 'layerRetreat', 'layerFacing', 'tipDismissed', 'foldLeft', 'foldRight', 'commsSmall', 'layoutV105', 'movesOffV125', 'backdrops', 'starfield', 'dispatchPause', 'cmLayerOverlay', 'cmLayerDivNames'];
 const UI_STORE_PREFIX = 'engineersWar.ui.';
 
 // Reads the saved display settings (a browser that blocks storage simply keeps the defaults).
@@ -78501,6 +78710,8 @@ function closeMakeInfo(rec) {
   // same places. (Before, the module view spread same-size bells evenly down the stern and the hull art put one bell on each drive, so they never matched.)
   const nozzles = closeNozzles(L, x0, y0, W, H, parts);
   frame.nozzles = nozzles;
+  // (v261.6, section 6w3) where the reaction control thrusters sit: bow and stern, at the hull's edges there
+  const rcs = closeRcsSites(L, x0, y0, W, H);
   // the weapon groups' muzzles (section 5vb's groups, which list their parts): where each part fires from, on the grid
   const muzzles = [];
   for (let k = 0; k < parts.length; k++) {
@@ -78508,7 +78719,7 @@ function closeMakeInfo(rec) {
     const dx = Math.cos(p.ang), dy = Math.sin(p.ang);
     muzzles.push({ x: p.cx + dx * p.w / 2 * Math.abs(dx) + 0, y: p.cy + dy * p.h / 2 * Math.abs(dy) });
   }
-  return { rec: rec, frame: frame, W: W, H: H, parts: parts, turrets: turrets, radiators: radiators, pds: pds, tracks: tracks, nozzles: nozzles, muzzles: muzzles, cls: frame.k,
+  return { rec: rec, frame: frame, W: W, H: H, parts: parts, turrets: turrets, radiators: radiators, pds: pds, tracks: tracks, nozzles: nozzles, rcs: rcs, muzzles: muzzles, cls: frame.k,
            centre: [W / 2, H / 2] };
 }
 // (v261.1) A design's drive nozzles, for every look: [{ x: the stern edge the bell sits on, y: its middle, h: its mouth's height }] in grid squares.
@@ -79288,7 +79499,7 @@ function closeKeepCanvas(canvas, key, meta) {
 // (CLOSE_LOOK.keepDrawn). what: everything the picture is drawn from, as text (the art, the design, the size, the livery). It is filed under that and
 // the build's fingerprint (CLOSE_BUILD_PRINT, made by tools/build.js from every source file), so a picture drawn by older art is never read back.
 // cb(pic): the same { canvas, ... } as make() gives (read back: a fresh canvas with the kept measurements), or null when it could not be drawn.
-const CLOSE_BUILD_PRINT = '674a49de10da';
+const CLOSE_BUILD_PRINT = '194179505472';
 function closeKeptPicture(what, make, cb) {
   const fresh = function (key) {
     let pic = null;
@@ -79513,9 +79724,8 @@ function closeDrawShipOn(i, e, sx, sy, z, paintColour, dtSim, view) {
   const S = e.s, ox = -e.pivX - e.x0, oy = -e.pivY - e.y0;   // grid square (gx, gy) is at picture pixel (ox + gx * S, oy + gy * S)
   // (v188.2) a Torpedo rack's missile, while the rack still holds it (its missile store not spent, the rack not shot away)
   if (e.racks && e.racks.length) closeDrawRacks(i, e, ox, oy, view);
-  // engine glow: brighter the faster the ship goes, with a flicker
-  const spd = Math.sqrt(shipVX[i] * shipVX[i] + shipVY[i] * shipVY[i]), top = Math.max(1e-6, stSpeed && stSpeed.length > 0 ? stSpeed[shipSide[i] * TYPE_COUNT + shipType[i]] : 1);
-  const thrust = mdFuelOut.length > i && mdFuelOut[i] === 1 ? 0 : Math.min(1, 0.25 + 0.75 * spd / top);
+  // engine glow: (v261.6, section 6w3) as hard as the main engine really pushes, a dim cruise glow while it coasts, with a flicker
+  const thrust = thrBurn(i, shipSide[i] * TYPE_COUNT + shipType[i]);
   if (thrust > 0.02 && info.nozzles && info.nozzles.length) {
     // (v261.1) a plume out of each of the ship's nozzles (closeNozzles: the same bells every look draws), sized by its bell; the bell's mouth is
     // h x 1.1 squares behind the stern edge it sits on (the hull art's bells start 0.2 of a square in; the module view's sit on its stern shell)
@@ -81593,14 +81803,8 @@ function fxEngineOf(t) {
   return k;
 }
 function fxEngineLook(t) { return FX_ENGINE_LOOK[FX_ENGINE_KINDS[fxEngineOf(t)]]; }
-// How hard ship i's engines burn (0 to 1): its speed against its type's top speed; nothing while it is still or out of fuel
-function fxThrust(i) {
-  if (mdFuelOut.length > i && mdFuelOut[i] === 1) return 0;
-  const spd = Math.sqrt(shipVX[i] * shipVX[i] + shipVY[i] * shipVY[i]);
-  if (spd < 0.5) return 0;
-  const top = stSpeed && stSpeed.length > 0 ? stSpeed[shipSide[i] * TYPE_COUNT + shipType[i]] : 0;
-  return top > 0 ? Math.min(1, 0.3 + 0.7 * spd / top) : 0.6;
-}
+// How hard ship i's engines burn (0 to 1): (v261.6) its main engine's real push, or a dim cruise glow while it coasts (thrBurn, section 6w3)
+function fxThrust(i) { return thrBurn(i, shipSide[i] * TYPE_COUNT + shipType[i]); }
 let fxEngKind = new Int8Array(0);
 // The normal map (world units): the trails, then the plumes and their hot cores, one path each per engine kind. Under the ships (the hull covers the plume's root).
 function fxDrawEngines(left, top, right, bottom, z) {
@@ -82068,6 +82272,186 @@ function fxHulkBreak(d, src, q) {
     fxChunks(src[0], src[1], 10, Math.random() * 6.283, q * 1.2);
     fxBreakAt(d, fxEvenCuts(d, 8), mid[0], mid[1], L * 0.55, { ttl: 2.6, spin: 2, fire: 0 });
   } else fxBreakAt(d, fxEvenCuts(d, 4), ox, oy, L * 0.5, { ttl: 3 });
+}
+// ---------------------------------------------------------------------
+// 6w3. (v261.6) THRUSTERS THAT SHOW WHAT THE SHIP IS DOING (Alex, 16 Nov 2026: "I want to change the way ship turning and movement looks to be a bit
+// more RCS like").
+//   Ships already fly like spacecraft (section 4c): a velocity that the main engine, weaker retro and reverse jets and weaker still side jets change a
+//   little each step, so they drift, slide and overshoot. But the LOOK did not say so: the main plume burned by SPEED, so a ship coasting at speed
+//   glowed as if under full power, and turning or sliding sideways showed nothing at all.
+//   Now every thruster step leaves a note of what it really did (thrNotePush: the main engine, the retro jets, the side jets; thrNoteTurn: a turn
+//   starting, speeding up, slowing or stopping), and the drawing reads only those notes:
+//     - the main plume burns by the main engine's real push (thrBurn); a ship that is only coasting keeps a dim cruise glow, so a fleet under way still
+//       shows from far out;
+//     - small puffs of cold gas from the reaction control thrusters (RCS) at the bow and stern: a pair on opposite corners when a turn STARTS, the
+//       other pair when it STOPS (as a real spacecraft spins up and then cancels its spin), both side puffs on one side when it slides sideways, and
+//       puffs out of the nose when it brakes or backs up.
+//   Where the puffs sit comes from each design's own hull (closeRcsSites, worked out once per design in the close look, next to the drive nozzles).
+//   Display only: nothing here changes how a ship flies, turns or fights. Not for the Swarm (living ships that flex and swim) or the Sylph (their
+//   grace drives), only for ships with thrusters: ours, the Echo's copies, the Delvers. Puffs show only on ships at least THRUSTERS.minPx long on screen,
+//   and only with Engine glow on (Display menu). Check: tools/v261.6/thrusters-check.js.
+// ---------------------------------------------------------------------
+const THRUSTERS = {
+  cruiseGlow: 0.45,     // a ship coasting at full speed with its main engine idle still glows this much (0 = dark when coasting, 1 = the old look: glow by speed)
+  noteHold: 0.6,        // seconds a thruster note stays good (a ship that stops being stepped, asleep or calm, fades out)
+  kickMin: 0.12,        // a change of turning speed smaller than this share of the ship's top turning speed fires no puff (small aim corrections)
+  kickHold: 0.45,       // seconds a turn's puff lasts
+  pushMin: 0.15,        // side or retro push under this share of what the jets can do fires no puff
+  puffLen: 0.14,        // a full puff's length x the ship's drawn length
+  puffMinPx: 2,         // never shorter than this on screen ...
+  puffMaxPx: 70,        // ... nor longer
+  minPx: 14,            // puffs only on ships at least this many pixels long on screen
+  maxPuffs: 900,        // at most this many puffs drawn a frame (the rest of the battle still flies the same)
+  colour: '#DDE9FF',    // cold gas, lit by the sun: a pale blue white
+  alpha: 0.95
+};
+const THR_N = 7;                       // per ship: [forward push, side push, when, last turning speed, when the turn kick was, the kick, when the turn was noted]
+let thrNote = new Float64Array(0);
+function thrGrow(i) {
+  if (thrNote.length > i * THR_N) return;
+  const a = new Float64Array(Math.max((i + 1) * THR_N, thrNote.length * 2, 256 * THR_N));
+  a.set(thrNote); thrNote = a;
+}
+
+// ---- the notes, from the thruster steps (4c in 04-2, the glide in 04-1h) ----
+// f: the push along the nose this step (fMin..fMax, negative = retro or reverse); l: the push to the left (-lMax..lMax)
+function thrNotePush(i, f, fMin, fMax, l, lMax) {
+  thrGrow(i);
+  const o = i * THR_N;
+  thrNote[o] = f > 0 ? (fMax > 0 ? f / fMax : 0) : (fMin < 0 ? -f / fMin : 0);
+  thrNote[o + 1] = lMax > 0 ? l / lMax : 0;
+  thrNote[o + 2] = simTime;
+}
+// turned: how far the nose turned this step (radians, signed), in dt seconds; rate: the ship's top turning speed (radians a second)
+function thrNoteTurn(i, turned, dt, rate) {
+  if (!(dt > 0) || !(rate > 0)) return;
+  thrGrow(i);
+  const o = i * THR_N, w = turned / dt;
+  let last = thrNote[o + 3];
+  if (thrNote[o + 6] > simTime || simTime - thrNote[o + 6] > THRUSTERS.noteHold) last = 0;   // a stale note (a new battle, or a ship not stepped for a while)
+  thrNote[o + 6] = simTime;
+  const k = (w - last) / rate;
+  thrNote[o + 3] = w;
+  if (Math.abs(k) < THRUSTERS.kickMin) return;
+  const age = simTime - thrNote[o + 4];
+  const old = age >= 0 && age < THRUSTERS.kickHold ? thrNote[o + 5] * (1 - age / THRUSTERS.kickHold) : 0;
+  thrNote[o + 4] = simTime;
+  thrNote[o + 5] = Math.max(-1, Math.min(1, old * k > 0 ? old + k : k));   // a turn starting over two steps adds up; a reversal starts afresh
+}
+
+// ---- the main engine ----
+// How hard ship i's main engine burns (0 to 1), for the plume on the map (6w) and up close (6v): its real push, or the cruise glow while it coasts
+function thrBurn(i, st) {
+  if (mdFuelOut.length > i && mdFuelOut[i] === 1) return 0;
+  const spd2 = shipVX[i] * shipVX[i] + shipVY[i] * shipVY[i];
+  const top = stSpeed && stSpeed.length > st ? stSpeed[st] : 0;
+  const cruise = spd2 < 0.25 ? 0 : (top > 0 ? THRUSTERS.cruiseGlow * Math.min(1, Math.sqrt(spd2) / top) : THRUSTERS.cruiseGlow);
+  const o = i * THR_N;
+  if (thrNote.length > o + 2) {
+    const at = thrNote[o + 2];
+    if (at <= simTime && simTime - at < THRUSTERS.noteHold) { const f = thrNote[o]; return f > 0 && f > cruise ? f : cruise; }
+  }
+  return cruise;
+}
+
+// ---- where a design's thrusters sit ----
+// (called by the close look's closeMakeInfo, which has the hull's squares) In drawn lengths from the ship's middle, x toward the nose, y to the left:
+// bx/sx the bow and stern clusters (y0 the right edge of the hull there, y1 the left), nx the nose. One list per design, used by every zoom.
+function closeRcsSites(L, x0, y0, W, H) {
+  const on = (x, y) => L.cellFrame[(y0 + y) * L.W + x0 + x] >= 0;
+  let nose = 0;
+  for (let x = W - 1; x >= 0 && !nose; x--) for (let y = 0; y < H; y++) if (on(x, y)) { nose = x + 1; break; }
+  const edge = (x) => { let a = -1, b = -1; for (let y = 0; y < H; y++) if (on(x, y)) { if (a < 0) a = y; b = y + 1; } return a < 0 ? null : [a, b]; };
+  const col = (frac) => {   // the nearest column with hull in it to that share of the length
+    const want = Math.round(frac * (W - 1));
+    for (let d = 0; d < W; d++) { for (const x of [want - d, want + d]) if (x >= 0 && x < W) { const e = edge(x); if (e) return [x, e]; } }
+    return [want, [0, H]];
+  };
+  const b = col(0.8), s = col(0.15);
+  return { bx: (b[0] + 0.5 - W / 2) / W, by0: (b[1][0] - H / 2) / W, by1: (b[1][1] - H / 2) / W,
+           sx: (s[0] + 0.5 - W / 2) / W, sy0: (s[1][0] - H / 2) / W, sy1: (s[1][1] - H / 2) / W, nx: ((nose || W) - W / 2) / W };
+}
+const thrSitesCache = new WeakMap();
+// Ship type t's thruster places (closeRcsSites), or a fair stand-in from its art's size; null: a type that shows no puffs (the Swarm, the Sylph)
+function thrSitesOf(t) {
+  const rec = SHIP_TYPES[t];
+  if (!rec) return null;
+  let v = thrSitesCache.get(rec);
+  if (v !== undefined) return v;
+  const kind = FX_ENGINE_KINDS[fxEngineOf(t)];
+  if (kind === 'bio' || kind === 'grace' || rec.alienStock || rec.immobile) v = null;
+  else {
+    let info = null;
+    try { info = typeof closeInfoOf === 'function' ? closeInfoOf(t) : null; } catch (e) { info = null; }
+    if (info && info.alien === 'swarm' || info && info.alien === 'sylph') v = null;
+    else if (info && info.rcs) v = info.rcs;
+    else {
+      const hw = info && info.W > 0 ? Math.min(0.3, Math.max(0.06, 0.4 * info.H / info.W)) : 0.11;
+      v = { bx: 0.34, by0: -hw, by1: hw, sx: -0.36, sy0: -hw, sy1: hw, nx: 0.47 };
+    }
+  }
+  thrSitesCache.set(rec, v);
+  return v;
+}
+
+// ---- the puffs ----
+// Over the ships, in world units (section 6's draw, after the ships). Each puff is two soft round blobs blown out from the hull: no turning of the
+// canvas, so a few hundred cost little. Only ships on screen, at least THRUSTERS.minPx long, with a fresh note.
+let thrPuffCount = 0;
+function thrDrawPuffs(left, top, right, bottom, z, minSize) {
+  thrPuffCount = 0;
+  if (thrNote.length === 0 || unitFar || dotMode) return;   // (far zoom: the ships are dots under unit markers)
+  const T = THRUSTERS, px = 1 / z, sprite = fxGlowSprite(T.colour);
+  const n = Math.min(highWater, (thrNote.length / THR_N) | 0);
+  const flick = simTime * 11;
+  let drawn = 0;
+  for (let i = 0; i < n && drawn < T.maxPuffs; i++) {
+    if (shipAlive[i] === 0) continue;
+    const o = i * THR_N, pushAge = simTime - thrNote[o + 2], kickAge = simTime - thrNote[o + 4];
+    const pushOk = pushAge >= 0 && pushAge < T.noteHold, kickOk = kickAge >= 0 && kickAge < T.kickHold && thrNote[o + 5] !== 0;
+    if (!pushOk && !kickOk) continue;
+    const x = shipX[i], y = shipY[i];
+    if (x < left || x > right || y < top || y > bottom) continue;
+    const t = shipType[i];
+    const Ld = Math.max(typeDrawLen.length > t ? typeDrawLen[t] : shipDrawLenOf(t), minSize * UI_SETTINGS.iconScale * (SHIP_TYPES[t].iconScale > 0 ? SHIP_TYPES[t].iconScale : 1) * DRAWN_SIZE.baseShare);
+    if (Ld * z < T.minPx) continue;
+    if (fogHides(i)) continue;
+    const site = thrSitesOf(t);
+    if (!site) continue;
+    const c = shipCos[i], s = shipSin[i];
+    const flk = 0.7 + 0.3 * Math.abs(Math.sin(flick + i * 1.7));
+    let len0 = Ld * T.puffLen;
+    if (len0 < px * T.puffMinPx) len0 = px * T.puffMinPx; else if (len0 > px * T.puffMaxPx) len0 = px * T.puffMaxPx;
+    // one puff: from the hull at (lx, ly) (drawn lengths, ship's own axes), blown out along (dx, dy) (ship's axes), a = how hard (0..1)
+    const puff = (lx, ly, dx, dy, a) => {
+      if (a <= 0) return;
+      const wx = x + (c * lx - s * ly) * Ld, wy = y + (s * lx + c * ly) * Ld;
+      const ex = c * dx - s * dy, ey = s * dx + c * dy, len = len0 * Math.sqrt(a) * flk;
+      ctx.globalAlpha = T.alpha * Math.min(1, 0.4 + a);
+      let r = len * 0.32; ctx.drawImage(sprite, wx + ex * len * 0.3 - r, wy + ey * len * 0.3 - r, r * 2, r * 2);
+      ctx.globalAlpha = T.alpha * 0.45 * Math.min(1, 0.4 + a);
+      r = len * 0.5; ctx.drawImage(sprite, wx + ex * len * 0.85 - r, wy + ey * len * 0.85 - r, r * 2, r * 2);
+      drawn++;
+    };
+    // a turn: spinning the nose toward one side pushes the bow that way and the stern the other way, so the gas leaves the bow on the far side and
+    // the stern on the near side (opposite corners); stopping that spin fires the other pair
+    if (kickOk) {
+      const k = thrNote[o + 5], a = Math.abs(k) * (1 - kickAge / T.kickHold);
+      if (k > 0) { puff(site.bx, site.by0, 0, -1, a); puff(site.sx, site.sy1, 0, 1, a); }
+      else { puff(site.bx, site.by1, 0, 1, a); puff(site.sx, site.sy0, 0, -1, a); }
+    }
+    if (pushOk) {
+      const fade = 1 - pushAge / T.noteHold, f = thrNote[o], l = thrNote[o + 1];
+      if (l > T.pushMin) { puff(site.bx, site.by0, 0, -1, l * fade); puff(site.sx, site.sy0, 0, -1, l * fade); }          // sliding one way: gas out of the other side
+      else if (l < -T.pushMin) { puff(site.bx, site.by1, 0, 1, -l * fade); puff(site.sx, site.sy1, 0, 1, -l * fade); }   // sliding the other way
+      if (f < -T.pushMin) {                                                                                                // braking or backing up: out of the nose
+        const w = (site.by1 - site.by0) * 0.3;
+        puff(site.nx, -w, 1, -0.25, -f * fade * 0.8); puff(site.nx, w, 1, 0.25, -f * fade * 0.8);
+      }
+    }
+  }
+  ctx.globalAlpha = 1;
+  thrPuffCount = drawn;
 }
 // =====================================================================
 // 6x. (v154.0) FOG ON THE BATTLE SCREEN OF THE LONG MAP (06d2 campaignBuildLongMap)
@@ -83293,7 +83677,8 @@ function refreshMapChrome() {
 (function wireLayers() {
   const pairs = [[bsEl.bsLayerLine, 'layerLine'], [bsEl.bsLayerRange, 'layerRange'], [bsEl.bsLayerTags, 'layerTags'], [bsEl.bsLayerDanger, 'layerDanger'],
                  [document.getElementById('bsLayerDivNames'), 'layerDivNames'], [document.getElementById('bsLayerFleetNames'), 'layerFleetNames'],   // (v25, section 7p)
-                 [document.getElementById('bsLayerMoves'), 'layerMoves'], [document.getElementById('bsLayerRetreat'), 'layerRetreat']];
+                 [document.getElementById('bsLayerMoves'), 'layerMoves'], [document.getElementById('bsLayerRetreat'), 'layerRetreat'],
+                 [document.getElementById('bsLayerFacing'), 'layerFacing']];   // (v261.9)
   pairs.forEach(function (p) {
     p[0].checked = UI_SETTINGS[p[1]] === 1;
     p[0].addEventListener('change', function () { saveUiSetting(p[1], p[0].checked ? 1 : 0); });
@@ -83418,6 +83803,7 @@ function drawMapOverlays(now) {
   const showMoves = UI_SETTINGS.layerMoves === 1 && cmdOn();
   if (UI_SETTINGS.layerRetreat === 1 && cmdOn()) drawFleetRetreats(sx, sy, w, h);
   if (showMoves) drawFleetMoveArrows(sx, sy, w, h);
+  if (UI_SETTINGS.layerFacing === 1) drawFacingLayer(sx, sy, z, w, h);   // (v261.9) the Ship facing layer
 
   // 3. The selected squadron's gun range: a dotted circle
   const sel = bsSelectedSq;
@@ -83465,7 +83851,7 @@ function drawMapOverlays(now) {
       bracket(t.x, t.y, t.half);
       ctx.setLineDash([]); ctx.globalAlpha = 1;
       const code = shipIconFor(sqType[sq], side);
-      const text = code + '·' + sqAlive[sq] + (orgScaled(side) ? '/' + stSquadSize[side * TYPE_COUNT + sqType[sq]] : '') + (side === BLUE ? ' ' + squadCallSign(sq) : '');   // (v23: a scaled side shows ships left of the full size)
+      const text = code + '·' + sqInFightCount(sq) + (orgScaled(side) ? '/' + stSquadSize[side * TYPE_COUNT + sqType[sq]] : '') + (side === BLUE ? ' ' + squadCallSign(sq) : '');   // (v23: a scaled side shows ships left of the full size; v261.7: only ships in the fight, section 5b)
       if (orgSecs.size > 0 && orgSecs.has(sq)) orgDrawSectionTicks(sq, z, offX, offY, color);   // (v23, section 5z: the sections inside a big squadron)
       // A tag that would cover one already written is left out (the bracket stays); the nearest the middle and the selected one come first
       const bx = t.x - t.half, by = t.y - t.half - 16, bw = ctx.measureText(text).width;
@@ -83512,6 +83898,41 @@ function bracket(x, y, half) {
   ctx.stroke();
 }
 // A label on the map: light text with a dark edge so it reads over anything
+// ---- (v261.9) The Ship facing layer (Alex, 16 Nov 2026: a way to see the v261.8 nose rule and front rank swaps in a normal battle) ----
+// Over each of our ships big enough to see (at least FACING_MIN_PX long on screen): a short white line out of its nose. A ship near the enemy
+// (inside the nose rule's reach, 4b9) whose nose points away from the nearest enemy ship gets a RED ring; an AMBER ring instead when it is meant to
+// (routing, or off to repairs after backing off). A GREEN ring for FACING_SWAP_SECONDS after a front rank swap (5q2). At the bottom left: how many
+// of the ships checked are facing away. Display only: it reads the battle, never changes it. At most FACING_MAX_SHIPS ships a frame.
+const FACING_MIN_PX = 6, FACING_SWAP_SECONDS = 4, FACING_MAX_SHIPS = 1500;
+function drawFacingLayer(sx, sy, z, w, h) {
+  let checked = 0, away = 0, leaving = 0, swaps = 0;
+  ctx.lineWidth = 1.5;
+  for (let i = 0; i < highWater && checked < FACING_MAX_SHIPS; i++) {
+    if (shipAlive[i] !== 1 || shipSide[i] !== BLUE) continue;
+    const t = shipType[i];
+    if (SHIP_TYPES[t] && SHIP_TYPES[t].immobile) continue;
+    const L = shipDrawLenOf(t) * z;
+    if (L < FACING_MIN_PX) continue;
+    const x = sx(shipX[i]), y = sy(shipY[i]);
+    if (x < -L || x > w + L || y < -L || y > h + L) continue;
+    checked++;
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + shipCos[i] * L * 0.9, y + shipSin[i] * L * 0.9); ctx.stroke();
+    const st = BLUE * TYPE_COUNT + t, near = Math.max(SETTINGS.noseNearFactor * (stRange[st] || 0), SETTINGS.noseNearMin);
+    const e = nearestOfSide(RED, shipX[i], shipY[i], near * near);
+    let ring = null;
+    if (e >= 0 && shipCos[i] * (shipX[e] - shipX[i]) + shipSin[i] * (shipY[e] - shipY[i]) < 0) {
+      const meant = shipState[i] === STATE_RETREAT || shipRetreating[i] !== 0 || shipState[i] === STATE_REPAIR;
+      if (meant) { leaving++; ring = 'rgba(255,190,70,0.9)'; } else { away++; ring = 'rgba(255,60,60,0.95)'; }
+    }
+    if (simTime - shipSwapAt[i] < FACING_SWAP_SECONDS) { swaps++; ctx.strokeStyle = 'rgba(80,255,120,0.95)'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(x, y, Math.max(5, L * 0.9), 0, Math.PI * 2); ctx.stroke(); ctx.lineWidth = 1.5; }
+    if (ring !== null) { ctx.strokeStyle = ring; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(x, y, Math.max(4, L * 0.75), 0, Math.PI * 2); ctx.stroke(); ctx.lineWidth = 1.5; }
+  }
+  const text = checked === 0 ? 'SHIP FACING · ZOOM IN TO SEE OUR SHIPS' :
+    'SHIP FACING · ' + checked + ' OF OURS · BACK TO THE ENEMY: ' + away + (leaving ? ' · LEAVING ON PURPOSE: ' + leaving : '') + (swaps ? ' · FRONT RANK SWAPS: ' + swaps : '');
+  mapLabel(text, 14, h - 44, false, 11, false);
+}
+
 function mapLabel(text, x, y, centred, size, dim) {
   ctx.font = '600 ' + size + 'px "IBM Plex Mono", monospace';
   ctx.textAlign = centred ? 'center' : 'left'; ctx.textBaseline = 'top';
@@ -85465,7 +85886,7 @@ function refreshSquadronCard() {
 
   // One box per ship
   const start = sqStart[sq], n = sqSize[sq];
-  let hull = 0, shield = 0, heat = 0, ammo = 0, fighting = 0, boxes = '', craft = 0, craftTop = 0;
+  let hull = 0, shield = 0, heat = 0, ammo = 0, fighting = 0, boxes = '', craft = 0, craftTop = 0, inFight = 0;   // fighting: ships on the field; inFight: of those, the ones not broken off (v261.7)
   const small = shipIconHtml(icon, 18);
   for (let k = 0; k < n; k++) {
     const m = sqMembers[start + k];
@@ -85479,12 +85900,14 @@ function refreshSquadronCard() {
       if (stHeatLimit[st] > 0) heat += shipHeat[m] / stHeatLimit[st];
       if (stStore[st] > 0) ammo += shipStoreFrac(m);                       // (v18)
       cls = h < 0.5 ? 'hurt' : 'ok'; title = (wingN[m] > 0 ? 'Wing of ' + wingN[m] + ' craft, hull ' : 'Hull ') + Math.round(h * 100) + '%';
+      if (shipInFight(m)) inFight++;
+      else { cls = 'away'; title += ', broken off: ' + (shipState[m] === STATE_REPAIR ? 'heading home for repair' : shipState[m] === STATE_REGROUP ? 'pulled back to regroup' : 'retreating'); }   // (v261.7) not counted as fighting (section 5b, shipInFight)
     }
     boxes += '<div class="s ' + cls + (m === bsShip.slot && sq === bsShip.sq ? ' sel' : '') + '" data-slot="' + m + '" title="' + title + ' (click: watch this ship up close)">' + small + '</div>';   // (v98.9)
   }
   if (orgSecs.size > 0 && orgSecs.has(sq)) boxes = orgSectionBoxes(sq);   // (v23: a big squadron shows one box per section, not hundreds of ships)
   html += '<div class="bs-ships">' + boxes + '</div>';
-  html += '<div class="bs-sq-sub">' + sqAlive[sq] + ' fighting' + (sqAway[sq] > 0 ? ', ' + sqAway[sq] + ' away for repair' : '') + (n - sqAlive[sq] - sqAway[sq] > 0 ? ', ' + (n - sqAlive[sq] - sqAway[sq]) + ' lost' : '') +
+  html += '<div class="bs-sq-sub">' + inFight + ' fighting' + (fighting > inFight ? ', ' + (fighting - inFight) + ' broken off' : '') + (sqAway[sq] > 0 ? ', ' + sqAway[sq] + ' away for repair' : '') + (n - sqAlive[sq] - sqAway[sq] > 0 ? ', ' + (n - sqAlive[sq] - sqAway[sq]) + ' lost' : '') +
     (bsShip.sq === sq ? '' : ' · click a ship to watch it up close') + '</div>';
   if (craftTop > 0) html += '<div class="bs-sq-sub"><b>' + craft + ' of ' + craftTop + ' craft flying</b>' + (craftTop > craft ? ', ' + (craftTop - craft) + ' shot down' : '') + (fighting > 1 ? ' in ' + fighting + ' wings' : ' in one wing') + ' (carrier craft fly as wings: one marker for several craft)</div>';   // (v252.0)
   if (bsShip.sq === sq) html += '<div class="bs-shipview-slot"></div>';   // (v98.9) the one ship up close goes here (bsShipViewPlace)
@@ -97830,11 +98253,24 @@ function ls2SquadOf(hi) {
   return sq > 0 && sqAlive[sq] > 0 && sqRetired[sq] !== 1 && sqSide[sq] === BLUE && L.sqHangar.get(sq) === hi ? sq : 0;
 }
 // ---- What a squadron card shows ----
-function ls2Alive(h) {
-  let n = 0;
-  for (const bi of h.bays) { const b = fgBays[bi]; if (b && b.state === BAY_OUT && b.fighter >= 0 && shipAlive[b.fighter] === 1) n++; }
-  return n;
+// (v261.7) Alex: the number shows the ships that really exist and are fighting, out of the most the squadron has (its size: the yards keep it
+// filled to that). Every bay is one ship (or one craft of a wing), so the count is by bays, and "fighting" is the game's one rule (shipInFight,
+// section 5b): out on the field and not broken off. Before, a ship heading home for repair, regrouping or retreating still counted.
+//   fight: out and fighting; off: out but broken off (retreating, regrouping, heading home for repair); docked: inside the station being repaired
+//   or rearmed; waiting: built and inside, not launched yet; lost: destroyed, waiting for the yards to build it again.
+function ls2Count(h) {
+  const c = { fight: 0, off: 0, docked: 0, waiting: 0, lost: 0 };
+  for (const bi of h.bays) {
+    const b = fgBays[bi];
+    if (!b) continue;
+    if (b.state === BAY_OUT) { if (b.fighter >= 0 && shipAlive[b.fighter] === 1) { if (shipInFight(b.fighter)) c.fight++; else c.off++; } else c.lost++; }
+    else if (b.state === BAY_TURN) c.docked++;
+    else if (b.state === BAY_READY) c.waiting++;
+    else c.lost++;
+  }
+  return c;
 }
+function ls2Alive(h) { return ls2Count(h).fight; }   // the ships of the squadron fighting now
 function ls2ShortName(name, rank) { return officerShortName({ name: name, rank: rank }); }
 
 // =====================================================================
@@ -98735,13 +99171,22 @@ function ls2OfficerCard(cls, name, rank, line, attrs, title) {
 }
 function ls2SquadCard(hi, f, d, s) {
   const L = lastStand, h = L.hangars[hi];
-  const alive = ls2Alive(h), rk = rankById(h.rank);
+  const cnt = ls2Count(h), alive = cnt.fight, rk = rankById(h.rank);
   const sq = ls2SquadOf(hi), sel = sq > 0 && bsSelectedSq === sq ? ' sel' : '';
   const held = ls2Held !== null && ls2Held.hangar === hi ? ' held' : '';
-  const title = typeName[h.type] + ' squadron (' + lsHullOf(h.type) + '): ' + alive + ' of ' + h.size + ' flying. Led by ' + (rk ? rk.name + ' ' : '') + h.officer +
+  const title = typeName[h.type] + ' squadron (' + lsHullOf(h.type) + '): ' + alive + ' of ' + h.size + ' fighting' + ls2CountWords(cnt) + '. Full strength ' + h.size + ' (it can grow to ' + lsCapOf(h) + '). Led by ' + (rk ? rk.name + ' ' : '') + h.officer +
                 ' (' + lsTemperName(h.temper) + '). ' + lsShipFactsWords(h.type) + ' Click to select it; drag it to another slot to move it.';   // (v134.0) its weapons and numbers too
   return '<div class="ls2-card ls2-squad' + sel + held + ls2Ok({ kind: 'slot', f: f, d: d, s: s }) + (alive === 0 ? ' down' : '') + '" draggable="true" data-hangar="' + hi + '" data-f="' + f + '" data-d="' + d + '" data-s="' + s + '" title="' + ls2Esc(title) + '">' +
          shipIconHtml(shipIconFor(h.type, BLUE), 20) + '<span class="ls2-count">' + alive + '/' + h.size + '</span><span class="ls2-type">' + ls2Esc(typeName[h.type]) + '</span></div>';
+}
+// The rest of a squadron, in words for its card's tooltip: "; 2 broken off (...), 1 docked for repair or rearming, 3 lost (...)".
+function ls2CountWords(c) {
+  const w = [];
+  if (c.off > 0) w.push(c.off + ' broken off (retreating, regrouping or heading home for repair)');
+  if (c.docked > 0) w.push(c.docked + ' docked for repair or rearming');
+  if (c.waiting > 0) w.push(c.waiting + ' waiting to launch');
+  if (c.lost > 0) w.push(c.lost + ' lost (the yards are building them again)');
+  return w.length > 0 ? '; ' + w.join(', ') : '';
 }
 function ls2HandCard(c, k) {
   const held = ls2Held !== null && ls2Held.hand === k ? ' held' : '';
@@ -111885,7 +112330,7 @@ BUREAU2_SCREEN_API.testRange = { run: testRangeRun, state: testRange, plan: func
 //   adopted habits come along in its copy code and into every new campaign. A doctrine changed in the Bureau after the save updates the plan's copy.
 //   DOCTRINE TEMPLATES (LIBRARY.templates: [{ name, doctrine, savedAt }]) live here too, so they carry over as well. A plan from before v37 has no doctrine: Auto.
 // =====================================================================
-const GAME_VERSION = 'v261.4';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
+const GAME_VERSION = 'v261.9';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
 const LIBRARY_KEY = 'engineersWar.library';
 const LIBRARY_FORMAT = 1;
 const LIBRARY_CODE_SHIP = 'EW-SHIP-1:', LIBRARY_CODE_LIB = 'EW-LIB-1:';
