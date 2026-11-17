@@ -1194,6 +1194,9 @@ hr.rule { border:0; border-top:var(--line-w) solid var(--line); margin:var(--sp-
   .ls2-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
   .ls2-line, .ls2-type { color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
   .ls2-count { font: 700 12px var(--font-data); }
+  .ls2-countrow { display: flex; align-items: baseline; gap: 4px; white-space: nowrap; }
+  .ls2-stars { font-size: 10px; line-height: 1; letter-spacing: 1px; color: var(--accent, #E8B23A); white-space: nowrap; }   /* (v264.2) a squadron's stars: filled = taken, hollow = still open */
+  .ls2-stars.s1 { opacity: .8; }
   .ls2-hand { grid-area: map; align-self: end; justify-self: center; width: min(820px, calc(100% - 20px)); height: 86px; margin-bottom: 8px; z-index: 54; position: relative;
     display: flex; flex-direction: column; min-height: 0; box-shadow: 0 6px 24px rgba(0,0,0,.55); }
   #battleScreen .ls2-hand .panel-head { min-height: 20px; font-size: 12px; padding-left: 32px; } #battleScreen .ls2-hand .panel-head::before { width: 22px; }
@@ -3677,7 +3680,7 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
     <section class="panel hidden" id="mmPanel"><div class="panel-head" id="mmPanelHead"></div><div class="panel-body" id="mmPanelBody"></div></section>
     <input type="file" id="mmFile" accept=".json,application/json,text/plain" class="hidden">
   </div>
-  <div class="mm-version" title="The version of the game you are playing">Version v264.0</div>
+  <div class="mm-version" title="The version of the game you are playing">Version v264.2</div>
 </div>
 
 <!-- (v31 A2, section 7l) the end of the war: the game-over screen (Earth's people are gone) or the victory screen (the aliens' home secured). It lies over
@@ -67281,7 +67284,7 @@ function fgLaunch(c) {
     slots = lsFillGuard(c, type, slots);                         // (v100.0, section 8h) the Last Stand's new fighters fill the gaps of the station's guard first
     if (slots.length === 0) return;
     const sq = addSquadron(side, type, slots, lsOfficerFor(c, slots) || fgOfficerFor(c));   // (v100.1: a Last Stand squadron's officer is its hangar's)
-    if (c.station < 0 && wingAirOn() && wingN[slots[0]] > 0) wingAirTake(c, sq);   // (v248.0, step 2, 17b2) a carrier's wings are its air group, given jobs by its officer
+    if (c.station < 0 && wingAirOn() && (wingN[slots[0]] > 0 || wingIsBomber(type))) wingAirTake(c, sq);   // (v264.1: a bomber flies alone (a Corvette, like the Talon) but still joins its carrier's air group, to STRIKE)   // (v248.0, step 2, 17b2) a carrier's wings are its air group, given jobs by its officer
     else if (dv !== null && !dv.dissolved) divisionTake(dv, sq); // the fighters fly with the carrier's Division
     else if (guard) fgGuardTake(c, sq);                          // (v54) a station's: they guard the station (never the Admiral's)
     else quietReport(sq, 'reinforced', c.name);                  // (a station's with the guard off, or a carrier in no Division: the Admiral gives them a place)
@@ -80138,7 +80141,7 @@ function closeKeepCanvas(canvas, key, meta) {
 // (CLOSE_LOOK.keepDrawn). what: everything the picture is drawn from, as text (the art, the design, the size, the livery). It is filed under that and
 // the build's fingerprint (CLOSE_BUILD_PRINT, made by tools/build.js from every source file), so a picture drawn by older art is never read back.
 // cb(pic): the same { canvas, ... } as make() gives (read back: a fresh canvas with the kept measurements), or null when it could not be drawn.
-const CLOSE_BUILD_PRINT = '51532210dd57';
+const CLOSE_BUILD_PRINT = '2c156f062b83';
 function closeKeptPicture(what, make, cb) {
   const fresh = function (key) {
     let pic = null;
@@ -80416,7 +80419,7 @@ function closeDrawShipOn(i, e, sx, sy, z, paintColour, dtSim, view) {
       const p = info.radiators[r];
       if (out && out[p.k]) continue;
       if ((p.edge && p.edge.kind === 'short' && !p.solar ? 0 : 1) !== pass) continue;
-      closeDrawPanels(p, ox, oy, S, p.solar ? 1 : ext, k);   // solar wings stay out; only radiators fold back
+      closeDrawPanels(p, ox, oy, S, p.solar ? 1 : ext, k, e.house);   // solar wings stay out; only radiators fold back
     }
   }
   // damage: knocked-out parts dark and scorched; a lost plate shows the bare deck under it
@@ -80933,7 +80936,7 @@ function closePanelEdge(L, x0, y0, p) {
 // (v40) Radiators come in two drawings (Alex 26 Oct), both standing straight out into space:
 //   * LONG EDGE (the part lies along the hull): a row of flat panels side by side, one for each square that faces space, hot ribs across;
 //   * SHORT EDGE (the part stands end-on to the hull): one long fin on a short neck, fanning out wider as it goes, folded down the middle.
-function closeDrawPanels(p, ox, oy, S, ext, k) {   // (k: screen pixels a picture pixel, or 1 when not known)
+function closeDrawPanels(p, ox, oy, S, ext, k, house) {   // (k: screen pixels a picture pixel, or 1 when not known; house: closeHouseOf's, for an Echo look)
   const ctx = closeCtx();
   const e = p.edge;
   const out = S * Math.max(18, Math.max(p.w, p.h) * 7.8) * ext;
@@ -80947,7 +80950,9 @@ function closeDrawPanels(p, ox, oy, S, ext, k) {   // (k: screen pixels a pictur
   else { ctx.translate(X + w, Y); ctx.rotate(Math.PI / 2); }
   // (v262.7) the panels as a picture made once, fully out, not drawn line by line and drop by drop every frame; folding back squeezes it toward the hull.
   // Only while a picture pixel is no bigger than a screen pixel: nearer than that (only a few ships fit on screen) they are drawn afresh, crisp.
-  const pic = CLOSE_LOOK.panelPictures && !(k > 1) ? closePanelPicture(p, S) : null;
+  // (v263.1) an Echo ship's panels are always the picture, put through its look's colours once (echoPanelFilter, section 6v2)
+  const tint = house && typeof echoPanelFilter === 'function' ? echoPanelFilter(house) : '';
+  const pic = tint || (CLOSE_LOOK.panelPictures && !(k > 1)) ? closePanelPicture(p, S, tint) : null;
   if (pic) {
     const src = k < CLOSE_LOOK.smallBelow && pic.small ? pic.small : pic.c;   // (drawn small: the smoothed quarter-size copy, so thin ribs and drops do not shimmer)
     ctx.drawImage(src, pic.x0, pic.y0 * ext, pic.c.width, pic.c.height * ext); ctx.restore(); return;
@@ -80958,9 +80963,10 @@ function closeDrawPanels(p, ox, oy, S, ext, k) {   // (k: screen pixels a pictur
 // (v262.7) A part's radiator or solar panels, fully out, drawn once into their own picture and kept on the part's record (one for each picture scale).
 // A droplet radiator's sheet alone was about 400 tiny squares, drawn again every frame for every ship on screen: 300 Bastions zoomed out took about
 // 250 ms a frame, nearly all of it their two radiators. A panel folding back under fire is the same picture squeezed toward the hull.
-function closePanelPicture(p, S) {
-  const kept = p.pics || (p.pics = {});
-  if (kept[S] !== undefined) return kept[S];
+// (v263.1) tint: a canvas filter the finished picture goes through (an Echo look's colours), kept apart from the plain one
+function closePanelPicture(p, S, tint) {
+  const kept = p.pics || (p.pics = {}), key = tint ? S + '|' + tint : S;
+  if (kept[key] !== undefined) return kept[key];
   const e = p.edge, out = S * Math.max(18, Math.max(p.w, p.h) * 7.8), len = e.len * S;
   // room for everything the drawings reach: the T and H shapes reach past the part along the edge (up to about 1.6 of its length each way);
   // a plain row of panels or an end-on fin stays within about a third of its length past it (kept tight: empty picture still costs to draw)
@@ -80968,16 +80974,17 @@ function closePanelPicture(p, S) {
   const x0 = Math.floor(-reach - S * 2), x1 = Math.ceil(len + reach + S * 2), y0 = Math.floor(-out - S * 2), y1 = Math.ceil(S);
   let pic = null;
   try {
-    const c = pmWatch(document.createElement('canvas')); c.width = x1 - x0; c.height = y1 - y0;
+    let c = pmWatch(document.createElement('canvas')); c.width = x1 - x0; c.height = y1 - y0;
     const g = c.getContext('2d'), was = closeG;
     g.translate(-x0, -y0);
     closeG = g;
     try { closeDrawPanelsOn(p, S, 1, out); } finally { closeG = was; }
+    if (tint) { const c2 = pmWatch(document.createElement('canvas')); c2.width = c.width; c2.height = c.height; const g3 = c2.getContext('2d'); g3.filter = tint; g3.drawImage(c, 0, 0); c = c2; }
     const sm = pmWatch(document.createElement('canvas')); sm.width = Math.max(1, Math.round(c.width / 4)); sm.height = Math.max(1, Math.round(c.height / 4));
     const g2 = sm.getContext('2d'); g2.imageSmoothingEnabled = true; g2.imageSmoothingQuality = 'high'; g2.drawImage(c, 0, 0, sm.width, sm.height);
     pic = { c: c, small: sm, x0: x0, y0: y0 };
   } catch (err) { pic = null; }
-  kept[S] = pic;
+  kept[key] = pic;
   return pic;
 }
 // The panels themselves, in the turned frame (see closeDrawPanels): x along the hull edge, outward is minus y
@@ -81171,7 +81178,7 @@ function closeDrawDesignStill(g, e, sx, sy, k) {
     for (let pass = 0; pass < 2; pass++) for (let r = 0; r < info.radiators.length; r++) {   // end-on fins first, as in battle (closeDrawShipOn)
       const p = info.radiators[r];
       if ((p.edge && p.edge.kind === 'short' && !p.solar ? 0 : 1) !== pass) continue;
-      closeDrawPanels(p, ox, oy, S, 1, k);
+      closeDrawPanels(p, ox, oy, S, 1, k, e.house);
     }
     for (let n = 0; n < info.turrets.length; n++) {
       const tu = info.turrets[n], gun = e.guns && e.guns[tu.key];
@@ -81478,6 +81485,33 @@ function echoLightColour(c, P, base, dark) {
 function echoLightFlicker(T, x, y) {
   const w = Math.sin(T * 23.1 + x * 7.3 + y * 3.1) + Math.sin(T * 37.7 + x * 1.9 + y * 5.3);
   return w > 1.35 ? 0.12 : 1;
+}
+
+// ---- (v263.1) THE RADIATOR AND SOLAR PANELS IN THE LOOK ----
+// Alex 17 Nov 2026 said yes to: the fold-out radiator panels still showed our red on Echo ships. The panels are drawn live by the battle, not in the
+// ship's picture, so the look never reached them. Now they go through the very same colour filter as the ship's turning guns (echoFilterDefs with
+// colourOnly: the look's colours, no bending), so hull, guns and panels always match, and a new look needs nothing extra here.
+// Returns the canvas filter to put a picture through ('url(#ecPanelE3)'), or '' (not an Echo ship, or no page to hold the filter).
+const echoPanelFilters = {};
+function echoPanelFilter(house) {
+  if (!house || house.indexOf('echo-') !== 0 || typeof document === 'undefined') return '';
+  const look = echoLookBase(house.slice(5));
+  if (!echoLookById(look)) return '';
+  if (echoPanelFilters[look] !== undefined) return echoPanelFilters[look];
+  let f = '';
+  try {
+    let svg = document.getElementById('echoPanelFilters');
+    if (!svg) {
+      svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.id = 'echoPanelFilters';
+      svg.setAttribute('width', '0'); svg.setAttribute('height', '0'); svg.setAttribute('aria-hidden', 'true');
+      svg.style.position = 'absolute'; svg.style.width = '0'; svg.style.height = '0'; svg.style.pointerEvents = 'none';
+      document.body.appendChild(svg);
+    }
+    svg.insertAdjacentHTML('beforeend', '<defs>' + echoFilterDefs(look, 1, true).replace('id="ecLook"', 'id="ecPanel' + look + '"') + '</defs>');
+    if (document.getElementById('ecPanel' + look)) f = 'url(#ecPanel' + look + ')';
+  } catch (err) { f = ''; }
+  echoPanelFilters[look] = f;
+  return f;
 }
 
 // ---- The icons in an Echo look ----
@@ -96459,18 +96493,25 @@ const LAST_STAND = {
   xpFirst: 3, xpGrowth: 1.10,                 // (v101.4: 1.10, was 1.15: about two levels a wave instead of one, so a run sees some 60 cards by wave 30)
   // (v100.2) the designs a New squadron card may offer: every stock human design but these (the tutorial's craft), each once the run has its base tech
   poolSkip: ['Trainer'],
-  // (v100.1) per hull size: the ships a new squadron starts with, the most a squadron may grow to, and how long a lost ship takes to rebuild (s)
-  // (v101.4, Alex 5 Nov: "never been able to get destroyers, beat the 30 waves, or get large amounts of ships") caps about 4 times bigger (v101.3: 24, 18, 12, 8, 6, 4, 3, 1)
+  // (v100.1) per hull size: the ships a squadron has, and how long a lost ship takes to rebuild (s)
+  // (v264.2, Alex 17 Nov: "a new squadron to start at its default cap, no growing over time", "bigger squad cards apply a max of 2 times to a
+  // squadron, like a 1 star, 2 star, or 3 star squad size", "titans single ship maximum") STARS: a squadron is always at full strength, the
+  // size its stars give it: stars[0] for a new squadron (1 star), stars[1] after one Bigger squadron card (2 stars), stars[2] after two (3 stars,
+  // the most). Nothing grows by itself any more; lost ships are rebuilt up to that size. Titans fly alone at every star.
+  // (Before v264.2 a squadron started small (6, 6, 4, 3, 2, 2, 1, 1), grew 15% a wave up to a cap (96, 72, 48, 32, 24, 16, 10, 4), and each
+  // Bigger squadron card added two fifths and raised the cap, with no limit. A 3-star squadron is about three quarters of the old cap, reached with two
+  // cards instead of many waves; a new squadron is about four times the old start.)
   hullRows: {
-    tiny:      { start: 6, cap: 96, rebuild: 12 },
-    small:     { start: 6, cap: 72, rebuild: 15 },
-    corvette:  { start: 4, cap: 48, rebuild: 25 },
-    frigate:   { start: 3, cap: 32, rebuild: 40 },
-    destroyer: { start: 2, cap: 24, rebuild: 60 },
-    cruiser:   { start: 2, cap: 16, rebuild: 90 },
-    capital:   { start: 1, cap: 10, rebuild: 120 },
-    titan:     { start: 1, cap: 4,  rebuild: 240 }
+    tiny:      { stars: [24, 48, 72], rebuild: 12 },
+    small:     { stars: [18, 36, 54], rebuild: 15 },
+    corvette:  { stars: [12, 24, 36], rebuild: 25 },
+    frigate:   { stars: [8, 16, 24],  rebuild: 40 },
+    destroyer: { stars: [6, 12, 18],  rebuild: 60 },
+    cruiser:   { stars: [4, 8, 12],   rebuild: 90 },
+    capital:   { stars: [3, 6, 9],    rebuild: 120 },
+    titan:     { stars: [1, 1, 1],    rebuild: 240 }
   },
+  maxStars: 3,                                // (v264.2) 1 star new, +1 for each Bigger squadron card: so at most two Bigger squadron cards a squadron
   threatReach: 6000, threatMargin: 600,       // (v101.4) the guard also goes after an enemy up to this far from the station whose weapons reach the station (+ the margin): the drones that snipe from outside the guard circle
   // (v131.0, section 8h2) THE GUARD LINE: each station's squadrons stand in a line in front of it, Division by Division, instead of heaped on the station.
   //   on: 1 = the line (0 = as before v131.0); ahead: how far in front of the station the line stands (u); maxAhead: how far it may move up to meet an
@@ -96501,9 +96542,9 @@ const LAST_STAND = {
   muster: { on: 1, factions: ['delver'], maxWaves: 3, defendRadius: 3000, homeArrive: 300 },
   guardLine: { on: 1, ahead: 1200, maxAhead: 5000, reachShare: 0.7, lastAhead: 500, divisionGap: 250, rowGap: 60, lineGap: 300, bandShare: 1, overflow: 1.3, leashMin: 500, leashRange: 0.4, huntSeconds: 6,
                ranks: 1, rankDepth: 2000 },   // (v241.0) the ranks of the guard line (31c2): the front has the Fleet's share of the map, the rest stand rankDepth behind it, firing only when reached
-  waveGrowth: 0.15,                           // (v101.4) with each new wave every squadron grows by this share of its size (at least one ship), up to its cap: the fleet grows as the waves do
-  biggerShare: 0.4,                           // (v245.3: 0.4, was 0.5) (v101.4) a Bigger squadron card adds this share of the squadron (at least its hull's starting size)
-  biggerCapShare: 0.4,                        // (v245.3: 0.4, was 0.5) (v128.0, Alex 8 Nov) and raises that squadron's cap by this share of its hull's cap (each card again), so it keeps growing
+  // (v264.2) how often a Bigger squadron card is dealt (v128.0 to v264.1: 2.5). Each card is now worth a whole starting squadron again and a
+  // squadron takes at most two, so it comes a little less often.
+  biggerWeight: 1.5,
   // (v233.0) the card weights of the hull size card (the next size up, while one is closed), of all the upgrade cards together (shared among those
   // that could be played), and how much more often a New squadron card offers one of your own designs than a stock one
   hullCardWeight: 3, upgradeWeight: 3.5, mineWeight: 2,
@@ -96568,7 +96609,7 @@ const LAST_STAND = {
   // launched and regrew some 1,900 craft a wave past it (measured: 2,144 Swarm ships at wave 45 against a cap of 1,500). Now the cap holds every head, the
   // craft still inside a carrier included, and a carrier's regrowth only refills a bay it already paid for. blueCap: our fleet's ceiling, the same count
   // (every hangar's full squadron and its craft): once it is reached the yards stop growing squadrons and a Bigger squadron card only raises the cap
-  // (lost ships are still rebuilt). headCount 0 = as before v245.3 (no ceiling for us, the Swarm's cap counts ships on the field only).
+  // (lost ships are still rebuilt; since v264.2 squadrons never grow by themselves, so the ceiling only cuts a Bigger squadron card). headCount 0 = as before v245.3 (no ceiling for us, the Swarm's cap counts ships on the field only).
   // (v251.0, Alex 13 Nov: "an elegant solution to keeping the player at about 1000 would just shift which cards are offered to the player to bound them")
   // blueByCards: 1 = no ceiling on the yards; instead blueCap bounds the cards. Our fleet's full size is every squadron at its cap, each ship with the craft
   // it carries (lsFullFleet). A New squadron, Bigger squadron or Bigger hull card is dealt (and a Bigger squadron card can be dropped on a squadron) only
@@ -96699,7 +96740,7 @@ function lsStart(enemy, opts) {
   for (let side = 0; side < 2; side++) for (let t = 0; t < TYPE_COUNT; t++) {
     const row = setup[side][t];
     row.officer = 'aggressive'; row.retreatBelow = 0; row.fallbackBelow = 0; row.repairBelow = 0;   // (preset officers: nothing of the roster is touched)
-    row.squadSize = side === BLUE ? lsHullRow(t).cap : lsSquadSize(t);   // (v100.1) ours: room for the squadron to grow (a squadron's member block is this big)
+    row.squadSize = side === BLUE ? lsSquadFull(t, LAST_STAND.maxStars) : lsSquadSize(t);   // (v100.1) ours: room for the squadron at its most stars (a squadron's member block is this big)
   }
   const command = makeDefaultCommand();
   // (stage 1) no enemy Admiral: every wave squadron heads for the station (lsAim). (v101.2) Our side has an Admiral: the chain of command, anchored on the Station, never withdrawing.
@@ -96906,21 +96947,22 @@ function lsCardsBound() { return lsHeadCountOn() && LAST_STAND.governor.blueByCa
 // Is the yards' hard ceiling of v245.3 in force? (Only with the head count on and the cards not bounding the fleet.)
 function lsCeilingOn() { return lsHeadCountOn() && LAST_STAND.governor.blueByCards !== 1; }
 // Our fleet's full size: every squadron at its cap, each ship with the craft it carries, plus the cards waiting in the hand that would add to it
-// (a New squadron card: its hull's cap; a Bigger squadron card: the smallest rise it could give).
+// (a New squadron card: its 1-star size; a Bigger squadron card: the smallest rise it could give).
 function lsFullFleet() {
   const L = lastStand;
   let n = 0;
   for (const h of L.hangars) n += lsCapOf(h) * lsTypeCraft(h.type);
   if (L.v2 && L.hand) for (const c of L.hand) {
-    if (c.kind === 'squadron') n += lsHullRow(c.type).cap * lsTypeCraft(c.type);
+    if (c.kind === 'squadron') n += lsSquadFull(c.type, 1) * lsTypeCraft(c.type);
     else if (c.kind === 'bigger') n += lsSmallestRise();
   }
   return n;
 }
 // How much a Bigger squadron card would add to the full size on squadron h.
-function lsBiggerRise(h) { return (lsCapOf(h, 1) - lsCapOf(h)) * lsTypeCraft(h.type); }
-function lsSmallestRise() { let m = Infinity; for (const h of lastStand.hangars) m = Math.min(m, lsBiggerRise(h)); return m === Infinity ? 0 : m; }
-// How much a Bigger hull card from squadron h to type t would change the full size (often less: a bigger hull's cap is smaller).
+function lsBiggerRise(h) { return lsCanStarUp(h) ? (lsCapOf(h, 1) - lsCapOf(h)) * lsTypeCraft(h.type) : 0; }
+// (v264.2) only over the squadrons that can still take one (below 3 stars, not titans)
+function lsSmallestRise() { let m = Infinity; for (const h of lastStand.hangars) if (lsCanStarUp(h)) m = Math.min(m, lsBiggerRise(h)); return m === Infinity ? 0 : m; }
+// How much a Bigger hull card from squadron h to type t would change the full size (often less: a bigger hull's squadron is smaller).
 function lsHullRise(h, t) { const hb = { type: t, bigger: h.bigger }; return lsCapOf(hb) * lsTypeCraft(t) - lsCapOf(h) * lsTypeCraft(h.type); }
 // Would a card adding `rise` to the full size keep it within blueCap? (Always, with the cards not bounding.)
 function lsCardFits(rise) { return !lsCardsBound() || rise <= 0 || lsFullFleet() + rise <= LAST_STAND.governor.blueCap; }
@@ -96969,7 +97011,7 @@ function lsSendWave() {
   if (lastStand.wave === LAST_STAND.winWave && !lastStand.won) { lsVictory(); return; }   // (v100.4) wave 30 survived: the win, before wave 31
   const n = ++lastStand.wave;
   lastStand.nextWaveAt = simTime + LAST_STAND.waveSeconds;
-  if (n > 1) lsWaveGrowth();                                  // (v101.4) the station's yards grow every squadron a little with each wave
+  // (v264.2, Alex) squadrons no longer grow with each wave (v101.4 to v264.1 grew them 15% a wave): they are always at their stars' full size
   const room = lsWaveRoom(), plan = lsWavePlan(n, room), W = SETTINGS.worldWidth, H = SETTINGS.worldHeight;
   lsFrenzyAfterWave(n, room);                                 // (v258.3, section 8h5) the frenzy level, from the wave the Swarm first hit its cap
   let sent = 0, groups = 0;
@@ -97082,7 +97124,7 @@ function lsOfficerName(rank) {
   return name;
 }
 // A hangar of the station: a design, how many ships its squadron has, and the squadron's officer. Its bays are made by lsAddBays.
-function lsNewHangar(type, rank, temper) { const name = lsOfficerName(rank || lsRankFor(type)); return { type: type, size: lsHullRow(type).start, rank: rank || lsRankFor(type), officer: name, temper: temper || olLsTemper(name, 'neutral'), bays: [] }; }   // (v106.1: a library officer's temperament)
+function lsNewHangar(type, rank, temper) { const name = lsOfficerName(rank || lsRankFor(type)); return { type: type, size: lsSquadFull(type, 1), rank: rank || lsRankFor(type), officer: name, temper: temper || olLsTemper(name, 'neutral'), bays: [] }; }   // (v106.1: a library officer's temperament)
 
 // ---- XP and levels ----
 function lsXpNeed(level) { return LAST_STAND.xpFirst * Math.pow(LAST_STAND.xpGrowth, level - 1); }
@@ -97118,24 +97160,6 @@ function lsCarrierMade(c) {
 }
 function lsStationCarrier() { return lastStand && lastStand.carrier >= 0 ? fgCarriers[lastStand.carrier] : null; }
 // n more bays for hangar hi, ready to launch at once.
-// (v101.4) Each new wave, every squadron of the station gets this share more ships (at least one), up to its hull's cap. The waves grow by 22% a wave, so
-// cards alone (one or two a wave) could never keep the fleet up with them; now the cards choose what the fleet is, and the yards keep it growing.
-function lsWaveGrowth() {
-  const L = lastStand;
-  const want = L.hangars.map(function (h) { return Math.min(lsCapOf(h) - h.size, Math.max(1, Math.round(h.size * LAST_STAND.waveGrowth))); });
-  // (v245.3) under our fleet's ceiling: when the growth would go past it, every squadron gets the same share of what room is left
-  let scale = 1;
-  if (lsCeilingOn()) {
-    let heads = 0; L.hangars.forEach(function (h, i) { if (want[i] > 0) heads += want[i] * lsTypeHeads(h.type); });
-    const room = lsBlueRoom();
-    if (heads > room) { scale = heads > 0 ? Math.max(0, room) / heads : 0; lsNoteCeiling(); }
-  }
-  L.hangars.forEach(function (h, i) {
-    const add = scale === 1 ? want[i] : Math.floor(want[i] * scale);
-    if (add <= 0) return;
-    h.size += add; lsAddBays(i, add);
-  });
-}
 function lsAddBays(hi, n) {
   const c = lastStand.v2 ? ls2CarrierOf(hi) : lsStationCarrier(), h = lastStand.hangars[hi];   // (v102.5) version 2: its Fleet's station
   if (!c || c.state !== 'live') return;
@@ -97176,7 +97200,7 @@ function lsCandidates() {
   // New squadron: one per design the level allows (the bigger hulls a little more often once they open)
   if (freeSq > 0) {
     const offer = lsOfferable();
-    for (const t of offer) if (lsCardFits(lsHullRow(t).cap * lsTypeCraft(t))) out.push({ kind: 'squadron', type: t, weight: (lsIsMine(t) ? LAST_STAND.mineWeight : 1) * 3 / Math.max(1, offer.length / 3) });   // (v233.0: your own designs more often)
+    for (const t of offer) if (lsCardFits(lsSquadFull(t, 1) * lsTypeCraft(t))) out.push({ kind: 'squadron', type: t, weight: (lsIsMine(t) ? LAST_STAND.mineWeight : 1) * 3 / Math.max(1, offer.length / 3) });   // (v233.0: your own designs more often)
   }
   // (v233.0) THE TECH CARDS: the next hull size (the only card that lets new designs in), and the upgrade cards that could be played now
   // (version 2: on a Fleet, from the hand; version 1: for the whole run). See the section "THE RUN'S TECH" below.
@@ -97187,7 +97211,7 @@ function lsCandidates() {
   // Bigger squadron: each hangar below its cap
   // (v102.2) version 2: Bigger squadron and Bigger hull are general cards for the hand, played on a squadron you choose (ls2UpgradeCandidates)
   if (L.v2) { ls2UpgradeCandidates(out); ls2WeaponCandidates(out); }   // (v102.3: and the weapon cards)
-  else L.hangars.forEach(function (h, i) { if (lsCardFits(lsBiggerRise(h))) out.push({ kind: 'bigger', hangar: i, weight: 2.5 / Math.max(1, L.hangars.length / 2) }); });   // (v128.0: it raises the cap, so it always fits)
+  else L.hangars.forEach(function (h, i) { if (lsCanStarUp(h) && lsCardFits(lsBiggerRise(h))) out.push({ kind: 'bigger', hangar: i, weight: LAST_STAND.biggerWeight / Math.max(1, L.hangars.length / 2) }); });   // (v264.2: only below 3 stars, never a titan)
   // (v100.3) Bigger hull: a squadron moves up to the next hull size that has a design of its job (its officer is promoted when the hull needs it).
   // (v128.0, Alex 8 Nov: "remove it entirely") there is no Promotion card any more: a rank only ever mattered for the hull, and Bigger hull promotes.
   if (!L.v2) L.hangars.forEach(function (h, i) {
@@ -97234,15 +97258,16 @@ function lsCardText(c) {
     out.officer = lsOfficerName(rank); out.rank = rank; out.temper = olLsTemper(out.officer, lsTemperFor(L.dealt * 7 + (c.type | 0)));
     out.label = 'New squadron' + (lsIsMine(c.type) ? ' · your design' : ''); out.title = typeName[c.type];
     const st = BLUE * TYPE_COUNT + c.type;
-    out.text = 'A new hangar at the station with ' + row.start + ' ' + typeName[c.type] + (row.start === 1 ? '' : 's') + ' (' + lsHullOf(c.type) + '), led by ' + (rk ? rk.name + ' ' : '') + out.officer + ' (' + lsTemperName(out.temper) + '). Up to ' + row.cap + ' with Bigger squadron; a lost ship is rebuilt in ' + Math.round(row.rebuild * L.rebuildMul) + ' s.';
+    const s1 = lsSquadFull(c.type, 1);
+    out.text = 'A new hangar at the station with ' + plural(s1, typeName[c.type]) + ' (' + lsHullOf(c.type) + ', 1 star, at full strength from the start), led by ' + (rk ? rk.name + ' ' : '') + out.officer + ' (' + lsTemperName(out.temper) + '). ' + lsStarsLine(c.type) + ' A lost ship is rebuilt in ' + Math.round(row.rebuild * L.rebuildMul) + ' s.';
     out.facts = lsShipFacts(c.type);   // (v134.0) the ship's weapons and numbers, listed on the card
   } else if (L.v2 && c.kind === 'gate') ls2GateText(c, out);       // (v102.4) version 2's research played on a Fleet
   else if (L.v2 && c.kind === 'weapon') ls2WeaponText(c, out);   // (v102.3) version 2's weapon cards
   else if (L.v2 && c.general) ls2UpgradeText(c, out);        // (v102.2) version 2's general upgrade cards
   else if (c.kind === 'bigger') {
     const h = L.hangars[c.hangar], add = lsBiggerBy(h, 1);
-    out.label = 'Bigger squadron'; out.title = typeName[h.type] + ': ' + h.size + ' to ' + (h.size + add);
-    out.text = (rankById(h.rank) ? rankById(h.rank).name + ' ' : '') + h.officer + '\'s squadron gets ' + add + ' more ' + typeName[h.type] + (add === 1 ? '' : 's') + ', and its cap rises from ' + lsCapOf(h) + ' to ' + lsCapOf(h, 1) + '.';
+    out.label = 'Bigger squadron'; out.title = typeName[h.type] + ': ' + h.size + ' to ' + (h.size + add) + ' (' + lsStarsText(lsStarsOf(h) + 1) + ')';
+    out.text = (rankById(h.rank) ? rankById(h.rank).name + ' ' : '') + h.officer + '\'s squadron goes up to ' + lsStarsWords(lsStarsOf(h) + 1) + ': ' + add + ' more ' + typeName[h.type] + (add === 1 ? '' : 's') + ', at full strength at once.';
   } else if (c.kind === 'hull') {
     const h = L.hangars[c.hangar], size = lsHullSwapSize(h, c.type), st = BLUE * TYPE_COUNT + c.type;
     out.label = 'Bigger hull' + (lsIsMine(c.type) ? ' · your design' : ''); out.title = typeName[h.type] + ' to ' + typeName[c.type];
@@ -97307,13 +97332,34 @@ function lsShipFacts(t) {
 }
 // The same, in one line of words (a hand card's or a squadron's hover note).
 function lsShipFactsWords(t) { return lsShipFacts(t).map(function (f) { return f[0] + ': ' + f[1]; }).join('. ') + '.'; }
-// (v128.0) more = 1: the ships a Bigger squadron card adds, with the cap the card itself raises.
-function lsBiggerBy(h, more) { const row = lsHullRow(h.type); const n = Math.max(1, Math.min(lsCapOf(h, more) - h.size, Math.max(row.start, Math.ceil(h.size * LAST_STAND.biggerShare))));
+// =====================================================================
+// (v264.2) SQUADRON SIZE: THE ONE RULE (Alex, 17 Nov)
+//   A squadron has 1 to 3 stars (1 + the Bigger squadron cards it has taken, h.bigger) and is always the size its hull's row gives for them
+//   (LAST_STAND.hullRows[hull].stars). A new squadron starts at 1 star at full strength; nothing grows by itself; a Bigger squadron card adds a
+//   star (at most two cards a squadron); a Bigger hull card keeps the stars and takes the new hull's size for them; titans are 1 at every star.
+//   Every size in Last Stand (new hangars, the cards, the hull swap, our fleet's bound, the squadron cards) is read from here.
+// =====================================================================
+// The full size of a squadron of type t with this many stars.
+function lsSquadFull(t, stars) { const s = lsHullRow(t).stars; return s[Math.max(1, Math.min(s.length, LAST_STAND.maxStars, stars | 0)) - 1]; }
+// A squadron's stars (1 to maxStars).
+function lsStarsOf(h) { return Math.max(1, Math.min(LAST_STAND.maxStars, 1 + (h.bigger | 0))); }
+// A squadron's full size; more = Bigger squadron cards not yet counted. (The name is from v128.0, when it was the squadron's growing cap.)
+function lsCapOf(h, more) { return lsSquadFull(h.type, lsStarsOf(h) + (more | 0)); }
+// Can squadron h take a Bigger squadron card? Below the most stars, and only when the next star adds ships (never for titans).
+function lsCanStarUp(h) { return !!h && lsStarsOf(h) < LAST_STAND.maxStars && lsCapOf(h, 1) > lsCapOf(h); }
+// more = 1: the ships a Bigger squadron card adds (0 when it cannot take one).
+function lsBiggerBy(h, more) { const n = Math.max(0, lsCapOf(h, more) - h.size);
   if (!lsCeilingOn()) return n;
-  return Math.max(0, Math.min(n, Math.floor(lsBlueRoom() / lsTypeHeads(h.type)))); }   // (v245.3) no more than fits under our fleet's ceiling (the cap still rises)
-// (v128.0, Alex 8 Nov: "the bigger squadrons card should raise the ship size cap for that squad") A squadron's cap: its hull's cap, raised by half of it
-// (LAST_STAND.biggerCapShare) for each Bigger squadron card it has taken (h.bigger; more = cards not yet counted). It moves with the squadron to a bigger hull.
-function lsCapOf(h, more) { const row = lsHullRow(h.type); return Math.round(row.cap * (1 + LAST_STAND.biggerCapShare * ((h.bigger | 0) + (more | 0)))); }
+  return Math.max(0, Math.min(n, Math.floor(lsBlueRoom() / lsTypeHeads(h.type)))); }   // (v245.3, only with the old hard ceiling, blueByCards 0) no more than fits under it
+// Stars in words and signs: "2 stars", "★★☆".
+function lsStarsWords(n) { return n === 1 ? '1 star' : n + ' stars'; }
+function lsStarsText(n) { let s = ''; for (let k = 1; k <= LAST_STAND.maxStars; k++) s += k <= n ? '\u2605' : '\u2606'; return s; }
+// What a design's squadron is at each star, for its card: "Bigger squadron cards make it 32, then 48 (2 and 3 stars)." / titans: alone.
+function lsStarsLine(t) {
+  const s = []; for (let k = 1; k <= LAST_STAND.maxStars; k++) s.push(lsSquadFull(t, k));
+  if (s[s.length - 1] === s[0]) return 'Titans always fly alone: Bigger squadron cards do not apply.';
+  return 'Bigger squadron cards make it ' + s.slice(1).join(', then ') + ' (' + s.slice(1).map(function (_, i) { return i + 2; }).join(' and ') + ' stars, two cards at most).';
+}
 // The player picks card k (0, 1 or 2): it is applied, and the battle carries on (or the next level's cards are dealt).
 function lsPick(k) {
   const L = lastStand;
@@ -97340,9 +97386,9 @@ function lsPick(k) {
     if (L.v2) ls2ApplyFleet(L.hangars.length - 1);         // (v102.4) built to its Fleet's research
     logEvent(BLUE, 'Level ' + L.level + ': a new squadron of ' + plural(h.size, typeName[h.type]) + ' under ' + h.officer + ' launches from the station.');
   } else if (c.kind === 'bigger') {
-    const h = L.hangars[c.hangar], add = lsBiggerBy(h, 1);
-    h.bigger = (h.bigger | 0) + 1; h.size += add; lsAddBays(c.hangar, add);
-    logEvent(BLUE, 'Level ' + L.level + ': ' + h.officer + '\'s squadron grows to ' + plural(h.size, typeName[h.type]) + '.');
+    const h = L.hangars[c.hangar];
+    if (lsCanStarUp(h)) { const add = lsBiggerBy(h, 1); h.bigger = (h.bigger | 0) + 1; h.size += add; lsAddBays(c.hangar, add); }
+    logEvent(BLUE, 'Level ' + L.level + ': ' + h.officer + '\'s squadron goes up to ' + lsStarsWords(lsStarsOf(h)) + ': ' + plural(h.size, typeName[h.type]) + '.');
   } else if (c.kind === 'hull') {
     const h = L.hangars[c.hangar], was = typeName[h.type];
     if (!lsRankAllows(h.rank, c.type)) h.rank = lsRankFor(c.type);   // (v101.4) promoted with the card
@@ -97795,11 +97841,8 @@ function lsBiggerHulls(h) {
   const same = at.filter(function (t) { return lsJobOf(t) === job; });
   return same.length > 0 ? same : at;
 }
-// The squadron's size after the swap: the same share of its size cap (at least the new hull's starting size). (v128.0: its own cap, raised by its Bigger squadron cards)
-function lsHullSwapSize(h, t) {
-  const was = lsCapOf(h), now = lsCapOf({ type: t, bigger: h.bigger });
-  return Math.max(lsHullRow(t).start, Math.min(now, Math.round(h.size * now / Math.max(1, was))));
-}
+// The squadron's size after the swap: (v264.2) it keeps its stars and takes the new hull's size for them (section "SQUADRON SIZE: THE ONE RULE").
+function lsHullSwapSize(h, t) { return lsCapOf({ type: t, bigger: h.bigger }); }
 // The swap: every bay of the hangar now holds the new design, and the squadron's ships in flight are refitted to it on the spot (as a research
 // refit is: their damage kept as a share of the hull). Bays beyond the new size are closed (a ship of a closed bay flies on but is not rebuilt).
 function lsSwapHull(hi, t) {
@@ -99371,7 +99414,7 @@ function ls2Move(hi, t) {
 // (v102.2, stage 3) THE UPGRADE CARDS
 //   Bigger squadron and Bigger hull (and Promotion, until v128.0 removed it) are no longer dealt for one squadron: each is a general card for the hand, dropped on the squadron
 //   you choose (it glows when the card fits it).
-//     Bigger squadron: the squadron gets more ships (as version 1's card: lsBiggerBy), and (v128.0) its cap rises by half its hull's cap (lsCapOf).
+//     Bigger squadron: (v264.2) the squadron goes up a star, to that star's full size at once (lsBiggerBy, lsCapOf); at most 3 stars, never a titan.
 //     Bigger hull: the squadron moves up to the next hull size, a design of the same job where there is one (your own design first); its officer is
 //       promoted when the bigger hull needs it, and its ships in flight are refitted on the spot (lsSwapHull).
 // =====================================================================
@@ -99392,7 +99435,7 @@ function ls2HullFor(h) {
 // where lsFullFleet already counts it, so its own share comes off first.
 function ls2UpgradeFits(kind, h, dealing) {
   if (!h) return false;
-  if (kind === 'bigger') return lsCardFits(lsBiggerRise(h) - (dealing || ls2InHand('bigger') === 0 ? 0 : lsSmallestRise()));   // (v128.0) it raises the squadron's cap; (v251.0) while our full fleet stays within its bound
+  if (kind === 'bigger') return lsCanStarUp(h) && lsCardFits(lsBiggerRise(h) - (dealing || ls2InHand('bigger') === 0 ? 0 : lsSmallestRise()));   // (v264.2) below 3 stars and not a titan; (v251.0) while our full fleet stays within its bound
   if (kind === 'hull') return ls2HullFor(h) >= 0;          // (v255.0, Alex: "bigger hull lowers ship number, so should be available regardless") never held back by our bound
   return false;
 }
@@ -99401,12 +99444,12 @@ function ls2UpgradeCandidates(out) {
   const L = lastStand;
   if (L.hand.length >= LS2.handSize) return;
   const any = function (kind) { return L.hangars.some(function (h) { return ls2UpgradeFits(kind, h, true); }); };
-  if (any('bigger')) out.push({ kind: 'bigger', general: true, weight: 2.5 });
+  if (any('bigger')) out.push({ kind: 'bigger', general: true, weight: LAST_STAND.biggerWeight });   // (v264.2: 1.5, was 2.5)
   if (any('hull')) out.push({ kind: 'hull', general: true, weight: 2 });
 }
 // (lsCardText) what a general upgrade card says.
 function ls2UpgradeText(c, out) {
-  if (c.kind === 'bigger') { out.label = 'Bigger squadron'; out.title = 'Bigger squadron'; out.text = 'A squadron of your choice gets about two fifths as many ships again (at least its starting size), and its cap rises by two fifths of its hull\'s cap, so the waves keep growing it.' + (lsCardsBound() ? ' It can go on a squadron while your fleet at full strength stays within ' + fmtWhole(LAST_STAND.governor.blueCap) + ' ships.' : ''); }
+  if (c.kind === 'bigger') { out.label = 'Bigger squadron'; out.title = 'Bigger squadron'; out.text = 'A squadron of your choice goes up one star, to full strength at once: as many ships again as it started with (a 24-Dart squadron becomes 48, then 72). Two cards at most a squadron (3 stars). Titans always fly alone.' + (lsCardsBound() ? ' It can go on a squadron while your fleet at full strength stays within ' + fmtWhole(LAST_STAND.governor.blueCap) + ' ships.' : ''); }
   else if (c.kind === 'hull') { out.label = 'Bigger hull'; out.title = 'Bigger hull'; out.text = 'A squadron of your choice moves up to the next open hull size: one of your own designs of the same job where there is one, else a stock one. Its officer is promoted if the bigger hull needs it, and its ships are refitted on the spot.'; }
 }
 // Plays an upgrade card on hangar hi.
@@ -99416,7 +99459,7 @@ function ls2Upgrade(kind, hi) {
   if (kind === 'bigger') {
     const add = lsBiggerBy(h, 1);
     h.bigger = (h.bigger | 0) + 1; h.size += add; lsAddBays(hi, add);
-    logEvent(BLUE, h.officer + '\'s squadron grows to ' + plural(h.size, typeName[h.type]) + ' (room for ' + lsCapOf(h) + ').');
+    logEvent(BLUE, h.officer + '\'s squadron goes up to ' + lsStarsWords(lsStarsOf(h)) + ': ' + plural(h.size, typeName[h.type]) + '.');
   } else if (kind === 'hull') {
     const t = ls2HullFor(h), was = typeName[h.type];
     if (!lsRankAllows(h.rank, t)) h.rank = lsRankFor(t);
@@ -100150,10 +100193,12 @@ function ls2SquadCard(hi, f, d, s) {
   const cnt = ls2Count(h), alive = cnt.fight, rk = rankById(h.rank);
   const sq = ls2SquadOf(hi), sel = sq > 0 && bsSelectedSq === sq ? ' sel' : '';
   const held = ls2Held !== null && ls2Held.hangar === hi ? ' held' : '';
-  const title = typeName[h.type] + ' squadron (' + lsHullOf(h.type) + '): ' + alive + ' of ' + h.size + ' fighting' + ls2CountWords(cnt) + '. Full strength ' + h.size + ' (it can grow to ' + lsCapOf(h) + '). Led by ' + (rk ? rk.name + ' ' : '') + h.officer +
+  const solo = lsSquadFull(h.type, LAST_STAND.maxStars) === lsSquadFull(h.type, 1);   // (v264.2) titans: one ship at every star, so no stars shown
+  const stars = solo ? '' : '<span class="ls2-stars s' + lsStarsOf(h) + '" title="' + lsStarsWords(lsStarsOf(h)) + ' of ' + LAST_STAND.maxStars + '">' + lsStarsText(lsStarsOf(h)) + '</span>';
+  const title = typeName[h.type] + ' squadron (' + lsHullOf(h.type) + '): ' + alive + ' of ' + h.size + ' fighting' + ls2CountWords(cnt) + '. Full strength ' + h.size + (solo ? ' (titans always fly alone)' : ', ' + lsStarsWords(lsStarsOf(h)) + ' of ' + LAST_STAND.maxStars) + (lsCanStarUp(h) ? ' (a Bigger squadron card makes it ' + lsCapOf(h, 1) + ')' : '') + '. Led by ' + (rk ? rk.name + ' ' : '') + h.officer +
                 ' (' + lsTemperName(h.temper) + '). ' + lsShipFactsWords(h.type) + ' Click to select it; drag it to another slot to move it.';   // (v134.0) its weapons and numbers too
   return '<div class="ls2-card ls2-squad' + sel + held + ls2Ok({ kind: 'slot', f: f, d: d, s: s }) + (alive === 0 ? ' down' : '') + '" draggable="true" data-hangar="' + hi + '" data-f="' + f + '" data-d="' + d + '" data-s="' + s + '" title="' + ls2Esc(title) + '">' +
-         shipIconHtml(shipIconFor(h.type, BLUE), 20) + '<span class="ls2-count">' + alive + '/' + h.size + '</span><span class="ls2-type">' + ls2Esc(typeName[h.type]) + '</span></div>';
+         shipIconHtml(shipIconFor(h.type, BLUE), 20) + '<span class="ls2-countrow"><span class="ls2-count">' + alive + '/' + h.size + '</span>' + stars + '</span><span class="ls2-type">' + ls2Esc(typeName[h.type]) + '</span></div>';
 }
 // The rest of a squadron, in words for its card's tooltip: "; 2 broken off (...), 1 docked for repair or rearming, 3 lost (...)".
 function ls2CountWords(c) {
@@ -113125,6 +113170,41 @@ stationDesignsInstall();
   if (CAMPAIGN_V3_STOCK.indexOf('Tambora') < 0) CAMPAIGN_V3_STOCK.push('Tambora');   // installed in every war, hidden like the other stock designs unless Unlock everything is on
 })();
 // =====================================================================
+// (v264.1, Alex 17 Nov 2026) STOCK CARRIER CRAFT AND THE CARRIERS THAT CARRY THEM: "a decent player would optimize the design for the job.
+// we should mimick this with some default designs". The fighter is the Dart we already have (35f3); here are the gunship CUTLASS (Small craft,
+// from the Wasp: two fixed Light Cannon), the bomber TALON (Corvette, from the Picket: two Medium missile launchers; on a carrier it STRIKES, 17b2),
+// and two carriers: OSPREY (cruiser, from the Partisan: a Cutlass and seven Darts, its Heavy spinal laser kept) and CONDOR (capital, from the
+// Bastion: two Talons, a Cutlass and Darts, two of its five launchers kept). Each is a bit plainer than a good player design (first-generation weapons, plain
+// warheads, Steel plate). Installed in every war, hidden like the other stock designs unless Unlock everything is on.
+// Written by tools/v264.1/make-carrier-craft.js: do not edit by hand, run it again.
+// =====================================================================
+(function () {
+  STOCK_DESIGNS_V3.push({ name: "Cutlass", side: 'human', role: "Small craft", icon: "H03", era: "start",
+    note: "a gunship: two fixed Light Cannon at the nose, a chemical rocket, plated; carried in a Small craft hangar (Local)",
+    hull: "small", frames: ["std_small"], jumps: 0,
+    parts: [["cockpit",6,1,0],["battery",10,2,0],["radiator",7,0,0],["chemrocket",0,1,0],["chemrocket",0,3,0],["tank_vol",3,0,0,1,3,null],["bulkhead",3,3,0],["bulkhead",4,3,0],["bulkhead",5,3,0],["tank_vol",3,4,0],["tank_vol",4,4,0],["armour",1,0,0],["armour",2,0,0],["armour",6,0,0],["armour",5,4,0],["armour",6,4,0],["armour",7,4,0],["armour",8,4,0],["armour",1,5,0],["armour",2,5,0],["armour",3,5,0],["armour",4,5,0],["armour",5,5,0],["armour",6,5,0],["armour",7,5,0],["armour",8,5,0],["gun",13,2,0,1,1,{"family":"chem","role":"cannon","size":"light","mount":"fixed","shell":"standard"}],["gun",10,4,0,1,1,{"family":"chem","role":"cannon","size":"light","mount":"fixed","shell":"standard"}],["magazine",12,0,0],["magazine",12,1,0],["armour",9,5,0]],
+    trackCells: {"conduit":[10,1,12,2],"hoist":[12,2,12,3]} });
+  if (CAMPAIGN_V3_STOCK.indexOf("Cutlass") < 0) CAMPAIGN_V3_STOCK.push("Cutlass");
+  STOCK_DESIGNS_V3.push({ name: "Talon", side: 'human', role: "Corvette", icon: "H07", era: "start",
+    note: "a bomber: two Medium missile launchers at the nose and two point defence mounts on batteries; on a carrier it strikes the enemy's big ships (Local)",
+    hull: "corvette", frames: ["std_corvette"], jumps: 0,
+    parts: [["cockpit",16,3,1],["quarters_m",14,3,0],["chemrocket",0,3,0],["chemrocket",0,7,0],["radiator_s",13,1,1],["radiator_s",13,9,1],["rcs",14,1,0],["rcs",14,10,0],["sensors",11,1,0],["sensors",11,9,0],["battery",12,3,0],["battery",12,7,0],["battery",14,7,0],["lifesupport",14,5,0],["tank_vol",3,2,0,1,3,null],["tank_vol",3,7,0,1,3,null],["armour",11,8,0],["chemrocket",0,5,0],["bulkhead",5,5,2,1,2,null],["bulkhead",6,4,2],["bulkhead",6,3,2],["bulkhead",6,7,2],["bulkhead",6,8,2],["bulkhead",10,3,2],["bulkhead",10,4,2],["bulkhead",10,5,2],["bulkhead",10,6,2],["bulkhead",10,7,2],["bulkhead",10,8,2],["bulkhead",14,9,2],["bulkhead",15,9,2],["bulkhead",16,9,2],["bulkhead",17,9,2],["bulkhead",18,9,2],["bulkhead",18,2,2],["bulkhead",17,2,2],["bulkhead",15,2,2],["bulkhead",14,2,2],["bulkhead",16,2,2],["armour",7,1,2,1,2,null],["armour",9,9,2,1,2,null],["armour",7,9,2,1,2,null],["armour",2,2,2],["armour",2,1,2],["armour",3,1,2],["armour",4,1,2],["armour",5,1,2],["armour",6,1,2],["armour",6,2,2],["armour",2,9,2],["armour",2,10,2],["armour",3,10,2],["armour",4,10,2],["armour",5,10,2],["armour",6,10,2],["armour",6,9,2],["armour",16,10,2],["armour",17,10,2],["armour",18,10,2],["armour",18,1,2],["armour",17,1,2],["armour",16,1,2],["armour",18,8,2],["armour",11,4,2],["armour",11,5,2],["armour",11,6,2],["armour",11,7,2],["tank_vol",7,3,2,1,3,null],["tank_vol",7,6,2,1,3,null],["tank_vol",3,5,2,1,2,null],["armour",18,7,2],["quarters_m",16,7,2],["quarters",13,5,3],["quarters",12,5,3],["lifesupport",9,1,0],["launcher",25,4,0,1,1,{"size":"medium","type":"standard","warhead":"he","motor":"chem","shape":"plain"}],["launcher",20,7,0,1,1,{"size":"medium","type":"standard","warhead":"he","motor":"chem","shape":"plain"}],["pd",20,1,0],["pd",22,1,0],["missilemag_medium",19,10,0],["armour",24,2,0],["armour",25,2,0],["armour",26,2,0],["armour",26,8,0],["armour",26,9,0]],
+    trackCells: {"conduit":[14,2,15,2,16,2,17,2,18,2,19,2,20,2,21,2,22,2,23,2,14,9,15,9,16,9,17,9,18,9,19,9,22,3,22,4,22,5,22,6,23,4,24,4,25,7,26,7,11,3,19,8,19,7,19,6,20,6,21,6],"hoist":[22,4,23,4,24,4,25,7,26,7,22,5,22,6,22,3,22,2,21,2,23,2,19,9,19,8,19,7,19,6,20,6,21,6],"fuelline":[6,4,6,7]} });
+  if (CAMPAIGN_V3_STOCK.indexOf("Talon") < 0) CAMPAIGN_V3_STOCK.push("Talon");
+  STOCK_DESIGNS_V3.push({ name: "Osprey", side: 'human', role: "Cruiser", icon: "H13", era: "tier2", needs: ["Cutlass","Dart"],
+    note: "a cruiser carrier: a Cutlass gunship and seven Darts in its hangars, and a Heavy spinal laser at the nose (Tier 2)",
+    hull: "cruiser", frames: ["sec_cruiser_thrust","sec_cruiser_hull","sec_cruiser_prow"], jumps: 1,
+    parts: [["emitter",52,10,0,2,1,{"size":"heavy","mount":"spinal","lens":"medium","wave":"visible","beam":"steady","kind":"laser","optics":"none"}],["tank_he3",0,10,0,3,2,null],["tank_he3",2,10,0,3,2,null],["quarters_m",49,15,0],["airlock",49,19,0],["fusiontorch",0,4,0],["fusiontorch",0,15,0],["fusiontorch",0,7,0],["fusiontorch",0,12,0],["bulkhead",8,4,0],["bulkhead",8,17,0],["bulkhead",8,5,0],["bulkhead",8,16,0],["bulkhead",8,6,0],["bulkhead",8,15,0],["bulkhead",8,7,0],["bulkhead",8,14,0],["bulkhead",8,8,0],["bulkhead",8,13,0],["bulkhead",8,9,0],["bulkhead",8,12,0],["reactor_fusion",9,5,0],["reactor_fusion",9,12,0],["radiator_drop_l",9,1,0],["radiator_drop_l",9,17,0],["radiator_drop_m",13,1,0],["radiator_drop_m",13,19,0],["heatsink",14,9,0],["heatsink",14,12,0],["heatsink",15,9,0],["heatsink",15,12,0],["heatsink",16,9,0],["heatsink",16,12,0],["quarters_deck",26,8,0],["quarters_deck",26,12,0],["sensors",55,3,0],["sensors",55,17,0],["supplyport",57,3,0],["supplyport",57,18,0],["pd",59,3,0],["pd",59,18,0],["pd",61,3,0],["pd",61,18,0],["pd",62,4,0],["pd",62,17,0],["tank_he3",5,4,0,3,3,null],["tank_he3",5,15,0,3,3,null],["tank_he3",5,7,0,3,3,null],["tank_he3",5,12,0,3,3,null],["lifesupport_4",45,12,0],["dc_3",55,13,0],["capacitor_3",59,13,0],["quarters_m",62,6,0],["capacitor_3",59,6,0],["lifesupport_4",55,6,0],["bridge_combat",45,4,0],["tank_he3",18,8,0,3,2,null],["tank_he3",18,12,0,3,2,null],["tank_he3",20,8,0,3,2,null],["tank_he3",20,12,0,3,2,null],["tank_he3",22,8,0,3,2,null],["tank_he3",22,12,0,3,2,null],["tank_he3",24,8,0,3,1,null],["tank_he3",24,13,0,3,1,null],["tank_he3",24,9,0,3,1,null],["tank_he3",24,12,0,3,1,null],["armour",5,1,0,1,3,null],["armour",5,18,0,1,3,null],["armour",65,6,0,1,3,null],["armour",65,13,0,1,3,null],["armour",53,1,0,1,2,null],["armour",53,19,0,1,2,null],["armour",3,1,0,1,2,null],["armour",3,19,0,1,2,null],["armour",55,1,0],["armour",55,20,0],["armour",52,1,0],["armour",52,20,0],["armour",52,2,0],["armour",52,19,0],["armour",53,3,0],["armour",53,18,0],["armour",52,3,0],["armour",52,18,0],["armour",4,3,0],["armour",4,18,0],["armour",60,5,0],["armour",60,16,0],["armour",64,6,0],["armour",64,15,0],["armour",64,7,0],["armour",64,14,0],["armour",64,8,0],["armour",64,13,0],["armour",63,8,0],["armour",63,13,0],["armour",69,9,0],["armour",69,12,0],["armour",69,10,0],["armour",69,11,0],["dc",52,6,0],["dc",52,14,0],["bulkhead",52,4,0],["bulkhead",52,17,0],["smallhangar",17,1,0,1,1,null,"Cutlass"],["smallhangar",28,15,0,1,1,null,"Dart,Dart,Dart,Dart"],["fighterhangar",34,1,0,1,1,null,"Dart"],["fighterhangar",19,18,0,1,1,null,"Dart"],["fighterhangar",43,1,0,1,1,null,"Dart"]],
+    trackCells: {"passage":[54,4,54,5,54,6,54,7,54,8,54,9,51,12,51,13,52,13,53,13,54,13,54,14,54,15,54,16,54,17,5,10,6,10,7,10,8,10,9,10,10,10,11,10,12,10,13,10,14,10,15,10,16,10,17,10,18,10,19,10,20,10,21,10,22,10,23,10,24,10,25,10,26,10,27,10,28,10,29,10,30,10,31,10,32,10,33,10,34,10,35,10,36,10,37,10,38,10,39,10,40,10,41,10,42,10,43,10,44,10,45,10,46,10,47,10,48,10,49,10,50,10,51,10,5,11,6,11,7,11,8,11,9,11,10,11,11,11,12,11,13,11,14,11,15,11,16,11,17,11,18,11,19,11,20,11,21,11,22,11,23,11,24,11,25,11,26,11,27,11,28,11,29,11,30,11,31,11,32,11,33,11,34,11,35,11,36,11,37,11,38,11,39,11,40,11,41,11,42,11,43,11,44,11,45,11,46,11,47,11,48,11,49,11,50,11,51,11,17,7,17,8,17,9,17,17,17,16,17,15,17,14,17,13,17,12,26,7,26,17,26,16,26,15,26,14,35,4,35,5,35,6,35,7,35,14,44,4,44,5,44,6,44,7,44,8,44,9,44,17,44,16,44,15,44,14,44,13,44,12,51,9,51,8,52,8,53,8,48,19,48,18,48,17,51,19,51,18,51,17,51,16,52,16,53,16,45,17,46,17,47,17,25,8,25,13,58,13,25,7,4,10,4,9,25,14,25,15,25,16,25,17,57,4,58,4,59,4,60,4,61,4,61,5,62,5,4,11,4,12,57,17,58,17,59,17,60,17,61,17,16,4,15,4,15,3,14,3,13,3,4,8,4,7,4,6,4,13,4,14,4,15,16,17,15,17,15,18,14,17,13,17],"conduit":[4,10,4,11,54,4,54,5,54,6,54,7,54,8,54,9,51,12,51,13,52,13,53,13,54,13,54,14,54,15,54,16,54,17,4,4,4,5,4,6,4,7,4,8,4,9,4,17,4,16,4,15,4,14,4,13,4,12,5,10,6,10,7,10,8,10,9,10,10,10,11,10,12,10,13,10,14,10,15,10,16,10,17,10,18,10,19,10,20,10,21,10,22,10,23,10,24,10,25,10,26,10,27,10,28,10,29,10,30,10,31,10,32,10,33,10,34,10,35,10,36,10,37,10,38,10,39,10,40,10,41,10,42,10,43,10,44,10,45,10,46,10,47,10,48,10,49,10,50,10,51,10,5,11,6,11,7,11,8,11,9,11,10,11,11,11,12,11,13,11,14,11,15,11,16,11,17,11,18,11,19,11,20,11,21,11,22,11,23,11,24,11,25,11,26,11,27,11,28,11,29,11,30,11,31,11,32,11,33,11,34,11,35,11,36,11,37,11,38,11,39,11,40,11,41,11,42,11,43,11,44,11,45,11,46,11,47,11,48,11,49,11,50,11,51,11,17,7,17,8,17,9,17,17,17,16,17,15,17,14,17,13,17,12,26,7,26,17,26,16,26,15,26,14,35,4,35,5,35,6,35,7,35,14,44,4,44,5,44,6,44,7,44,8,44,9,44,17,44,16,44,15,44,14,44,13,44,12,55,5,55,16,25,17,25,16,25,15,25,7,25,14,25,8,25,13,25,9,25,12,51,9,51,8,52,8,53,8,56,16,57,16,58,16,59,16,59,17,62,15,62,16,61,16,61,17,56,5,57,5,58,5,59,5,59,4,61,5,62,5,61,4,43,4,42,4,41,4],"fuelline":[4,10,4,11,4,4,4,5,4,6,4,7,4,8,4,9,4,17,4,16,4,15,4,14,4,13,4,12,5,10,6,10,7,10,8,10,9,10,10,10,11,10,12,10,13,10,5,11,6,11,7,11,8,11,9,11,10,11,11,11,12,11,13,11,54,5,55,5,14,10,15,10,16,10,17,10,18,10,19,10,20,10,21,10,22,10,23,10,24,10,25,10,26,10,27,10,28,10,29,10,30,10,31,10,32,10,33,10,34,10,35,10,36,10,37,10,38,10,39,10,40,10,41,10,42,10,43,10,44,10,45,10,46,10,47,10,48,10,49,10,50,10,51,10,51,13,52,13,53,13,54,13,54,16,55,16,44,4,44,5,44,6,44,7,44,8,44,9,54,4,54,14,54,15,51,11,51,12,18,11,57,4,57,5,56,5,53,5,52,5,51,5,51,6,51,7,51,8,51,9,56,16,57,16,57,17]} });
+  if (CAMPAIGN_V3_STOCK.indexOf("Osprey") < 0) CAMPAIGN_V3_STOCK.push("Osprey");
+  STOCK_DESIGNS_V3.push({ name: "Condor", side: 'human', role: "Capital ship", icon: "H18", era: "tier2", needs: ["Talon","Cutlass","Dart"],
+    note: "a capital carrier: two Talon bombers, a Cutlass gunship and Darts in its hangars, two Capital missile launchers and point defence lasers (Tier 2)",
+    hull: "capital", frames: ["sec_capital_thrust","sec_capital_hull","sec_capital_hull","sec_capital_prow"], jumps: 1,
+    parts: [["tank_he3",0,14,0,3,2,null],["tank_he3",2,14,0,3,2,null],["bridge_command",84,12,0],["hangar",17,1,0,1,1,null,"Talon"],["fusiontorch",0,8,0],["fusiontorch",0,19,0],["fusiontorch",0,11,0],["fusiontorch",0,16,0],["bulkhead",10,7,0],["bulkhead",10,8,0],["bulkhead",10,21,0],["bulkhead",10,9,0],["bulkhead",10,20,0],["bulkhead",10,10,0],["bulkhead",10,19,0],["bulkhead",10,11,0],["bulkhead",10,18,0],["bulkhead",10,12,0],["bulkhead",10,17,0],["bulkhead",10,13,0],["bulkhead",10,16,0],["quarters_deck",19,12,0],["quarters_deck",19,16,0],["lifesupport_plant",11,16,0],["dc_4",43,13,0],["dc_4",38,13,0],["supplyport",80,4,1],["supplyport",80,24,1],["rcs",89,8,0],["rcs",89,21,0],["tank_he3",5,3,0,3,3,null],["tank_he3",5,24,0,3,3,null],["tank_he3",5,7,0,3,3,null],["tank_he3",5,20,0,3,3,null],["tank_he3",5,10,0,3,3,null],["tank_he3",5,17,0,3,3,null],["armour",86,8,0],["armour",86,21,0],["armour",90,12,0],["armour",91,12,0],["armour",92,12,0],["fusiontorch",0,5,0],["fusiontorch",0,22,0],["hangar",17,19,0,1,1,null,"Talon"],["launcher",72,14,1,3,1,{"size":"capital","type":"standard","warhead":"he","motor":"chem","shape":"plain"}],["launcher",66,14,1,3,1,{"size":"capital","type":"standard","warhead":"he","motor":"chem","shape":"plain"}],["missilemag_capital",66,10,2],["missilemag_capital",66,9,2],["missilemag_capital",50,10,2],["missilemag_capital",50,9,2],["missilemag_capital",66,8,2],["missilemag_capital",50,8,2],["armour",15,27,2,3,2,null],["armour",13,27,2,3,2,null],["armour",11,27,2,3,2,null],["armour",17,11,2,3,1,null],["armour",19,11,2,3,1,null],["armour",46,11,2,3,1,null],["armour",45,11,2,3,1,null],["armour",44,11,2,3,1,null],["armour",43,11,2,3,1,null],["armour",42,11,2,3,1,null],["armour",41,11,2,3,1,null],["armour",39,11,2,3,1,null],["armour",38,11,2,3,1,null],["armour",37,11,2,3,1,null],["armour",40,11,2,3,1,null],["armour",36,11,2,3,1,null],["armour",35,11,2,3,1,null],["armour",34,11,2,3,1,null],["armour",33,11,2,3,1,null],["armour",32,11,2,3,1,null],["armour",31,11,2,3,1,null],["armour",30,11,2,3,1,null],["armour",29,11,2,3,1,null],["armour",28,11,2,3,1,null],["armour",27,11,2,3,1,null],["armour",26,11,2,3,1,null],["armour",25,11,2,3,1,null],["armour",24,11,2,3,1,null],["armour",23,11,2,3,1,null],["armour",22,11,2,3,1,null],["armour",21,11,2,3,1,null],["armour",20,11,2,3,1,null],["tank_he3",8,24,2,3,3,null],["tank_he3",11,24,2,3,3,null],["tank_he3",8,17,2,3,2,null],["tank_he3",8,19,2,3,2,null],["tank_he3",8,21,2,3,2,null],["tank_he3",8,11,2,3,2,null],["tank_he3",8,9,2,3,2,null],["tank_he3",8,7,2,3,2,null],["tank_he3",8,3,2,3,3,null],["tank_he3",11,3,2,3,3,null],["tank_he3",14,3,2,3,2,null],["tank_he3",14,5,2,3,2,null],["tank_he3",14,23,2,3,2,null],["tank_he3",14,25,2,3,2,null],["bulkhead",9,16,2],["bulkhead",8,16,2],["bulkhead",7,16,2],["bulkhead",6,16,2],["bulkhead",5,16,2],["bulkhead",5,23,2],["bulkhead",6,23,2],["bulkhead",7,23,2],["bulkhead",8,23,2],["bulkhead",9,23,2],["bulkhead",10,23,2],["bulkhead",10,22,2],["bulkhead",13,22,2],["bulkhead",14,22,2],["bulkhead",15,22,2],["bulkhead",16,22,2],["bulkhead",13,7,2],["bulkhead",14,7,2],["bulkhead",17,12,2],["bulkhead",17,13,2],["bulkhead",17,16,2],["bulkhead",17,17,2],["bulkhead",9,13,2],["bulkhead",5,13,2],["bulkhead",6,13,2],["bulkhead",7,13,2],["bulkhead",8,13,2],["bulkhead",5,6,2],["bulkhead",6,6,2],["bulkhead",7,6,2],["bulkhead",9,6,2],["bulkhead",8,6,2],["bulkhead",10,6,2],["bulkhead",13,6,2],["bulkhead",16,6,2],["bulkhead",16,5,2],["bulkhead",16,4,2],["bulkhead",16,3,2],["bulkhead",16,23,2],["bulkhead",16,24,2],["bulkhead",16,25,2],["bulkhead",16,26,2],["bulkhead",4,5,2],["bulkhead",4,6,2],["bulkhead",4,7,2],["bulkhead",4,8,2],["bulkhead",4,9,2],["bulkhead",4,10,2],["bulkhead",4,11,2],["bulkhead",4,12,2],["bulkhead",4,13,2],["bulkhead",4,14,2],["bulkhead",4,15,2],["bulkhead",4,16,2],["bulkhead",4,17,2],["bulkhead",4,18,2],["bulkhead",4,19,2],["bulkhead",4,20,2],["bulkhead",4,21,2],["bulkhead",4,22,2],["bulkhead",4,23,2],["bulkhead",4,24,2],["bulkhead",13,23,2],["bulkhead",11,22,2,1,2,null],["bulkhead",11,6,2,1,2,null],["airlock",82,24,2],["airlock",82,4,2],["pd_laser",86,4,2],["pd_laser",86,6,2],["pd_laser",92,8,2],["pd_laser",92,10,2],["pd_laser",92,18,2],["pd_laser",92,20,2],["pd_laser",86,22,2],["pd_laser",86,24,2],["reactor_fusion",11,8,0,2,1,null],["supplyport",3,25,2],["supplyport",3,4,2],["missilemag_capital",66,6,2],["missilemag_capital",66,5,2],["missilemag_capital",64,4,2],["radiator_drop_m",84,23,1],["radiator_drop_m",84,4,1],["armour",9,27,1,3,2,null],["armour",7,27,1,3,2,null],["armour",5,27,1,3,2,null],["armour",3,27,1,3,2,null],["armour",15,1,1,3,2,null],["armour",13,1,1,3,2,null],["armour",11,1,1,3,2,null],["armour",9,1,1,3,2,null],["armour",7,1,1,3,2,null],["armour",5,1,1,3,2,null],["armour",3,1,1,3,2,null],["armour",3,3,1,3,1,null],["armour",4,3,1,3,1,null],["armour",3,26,1,3,1,null],["armour",4,26,1,3,1,null],["bulkhead",15,10,1,1,2,null],["bulkhead",15,12,1,1,2,null],["bulkhead",15,8,1,1,2,null],["bulkhead",15,7,1],["armour",16,7,1,3,1,null],["bulkhead_hardened",11,13,1],["bulkhead_hardened",13,13,1],["armour",17,18,1,3,1,null],["armour",19,18,1,3,1,null],["armour",20,18,1,3,1,null],["armour",21,18,1,3,1,null],["armour",22,18,1,3,1,null],["armour",23,18,1,3,1,null],["armour",24,18,1,3,1,null],["armour",26,18,1,3,1,null],["armour",27,18,1,3,1,null],["armour",25,18,1,3,1,null],["armour",28,18,1,3,1,null],["armour",29,18,1,3,1,null],["armour",30,18,1,3,1,null],["armour",31,18,1,3,1,null],["armour",32,18,1,3,1,null],["armour",33,18,1,3,1,null],["armour",34,18,1,3,1,null],["armour",35,18,1,3,1,null],["armour",36,18,1,3,1,null],["armour",37,18,1,3,1,null],["armour",38,18,1,3,1,null],["armour",39,18,1,3,1,null],["armour",40,18,1,3,1,null],["armour",41,18,1,3,1,null],["armour",42,18,1,3,1,null],["armour",43,18,1,3,1,null],["armour",44,18,1,3,1,null],["armour",45,18,1,3,1,null],["armour",46,18,1,3,1,null],["armour",47,18,1,3,1,null],["armour",47,21,1,3,1,null],["armour",47,20,1,3,1,null],["armour",47,19,1,3,1,null],["armour",47,7,1,3,2,null],["armour",47,9,1,3,2,null],["bulkhead",50,7,1],["bulkhead",51,7,1],["bulkhead",52,7,1],["bulkhead",54,7,1],["bulkhead",55,7,1],["bulkhead",53,7,1],["bulkhead",56,7,1],["bulkhead",57,7,1],["bulkhead",59,7,1],["bulkhead",58,7,1],["bulkhead",60,7,1],["bulkhead",62,7,1],["bulkhead",61,7,1],["bulkhead",66,7,1],["bulkhead",67,7,1],["bulkhead",68,7,1],["bulkhead",69,7,1],["bulkhead",70,7,1],["bulkhead",71,7,1],["bulkhead",72,7,1],["bulkhead",73,7,1],["bulkhead",74,7,1],["bulkhead",75,7,1],["bulkhead",76,7,1],["bulkhead",77,7,1],["bulkhead",78,7,1],["bulkhead",78,11,1],["bulkhead",77,11,1],["bulkhead",76,11,1],["bulkhead",75,11,1],["bulkhead",74,11,1],["bulkhead",73,11,1],["bulkhead",72,11,1],["bulkhead",71,11,1],["bulkhead",70,11,1],["bulkhead",69,11,1],["bulkhead",68,11,1],["bulkhead",67,11,1],["bulkhead",66,11,1],["bulkhead",50,11,1],["bulkhead",51,11,1],["bulkhead",52,11,1],["bulkhead",47,11,1],["bulkhead",48,11,1],["bulkhead",53,11,1],["bulkhead",54,11,1],["bulkhead",55,11,1],["bulkhead",56,11,1],["bulkhead",57,11,1],["bulkhead",58,11,1],["bulkhead",59,11,1],["bulkhead",60,11,1],["bulkhead",61,11,1],["bulkhead",62,11,1],["bulkhead",63,10,1,1,2,null],["bulkhead",63,8,1,1,2,null],["bulkhead",79,10,1,1,2,null],["bulkhead",79,8,1,1,2,null],["bulkhead",79,6,1,1,2,null],["bulkhead",63,6,1,1,2,null],["armour",87,8,1,3,1,null],["armour",88,8,1,3,1,null],["armour",91,8,1,3,1,null],["armour",93,12,1,3,1,null],["armour",94,12,1,3,1,null],["armour",90,13,1,3,5,null],["armour",82,16,1,3,2,null],["armour",82,18,1,3,2,null],["armour",84,18,1,3,2,null],["armour",86,18,1,3,2,null],["armour",88,18,1,3,2,null],["armour",90,18,1,3,2,null],["armour",90,10,1,3,2,null],["armour",88,10,1,3,2,null],["armour",86,10,1,3,2,null],["armour",84,10,1,3,2,null],["armour",82,10,1,3,2,null],["armour",82,7,1,3,2,null],["armour",84,7,1,3,2,null],["armour",82,12,1,3,2,null],["armour",82,21,1,3,2,null],["armour",84,21,1,3,2,null],["armour",79,16,1,3,2,null],["armour",79,18,1,3,2,null],["armour",79,20,1,3,2,null],["bulkhead",78,16,1],["bulkhead",78,17,1],["bulkhead",78,18,1],["bulkhead",78,19,1],["bulkhead",78,20,1],["bulkhead",78,21,1],["bulkhead",78,14,1,1,2,null],["armour",87,21,1,3,1,null],["armour",88,21,1,3,1,null],["armour",91,21,1,3,1,null],["smallhangar",48,23,0,1,1,null,"Cutlass"],["smallhangar",47,1,0,1,1,null,"Dart,Dart,Dart,Dart"],["fighterhangar",70,1,0,1,1,null,"Dart"],["quarters",48,15,0],["quarters",50,14,0],["quarters",50,16,0],["quarters",52,15,0],["quarters",49,18,0],["quarters",52,17,0],["quarters",49,20,0],["quarters",54,14,0],["quarters",54,16,0]],
+    trackCells: {"passage":[5,14,6,14,7,14,8,14,9,14,10,14,11,14,12,14,13,14,14,14,15,14,16,14,17,14,18,14,19,14,20,14,21,14,22,14,23,14,24,14,25,14,26,14,27,14,28,14,29,14,30,14,31,14,32,14,33,14,34,14,35,14,36,14,37,14,42,14,81,14,82,14,83,14,5,15,6,15,7,15,8,15,9,15,10,15,11,15,12,15,13,15,14,15,15,15,16,15,17,15,18,15,19,15,20,15,21,15,22,15,23,15,24,15,25,15,26,15,27,15,28,15,29,15,30,15,31,15,32,15,33,15,34,15,35,15,36,15,37,15,42,15,81,15,82,15,83,15,18,11,18,12,18,13,18,18,18,17,18,16,49,7,49,8,49,9,49,10,49,11,49,12,49,13,65,5,65,6,65,7,65,8,65,9,65,10,65,11,65,12,65,13,81,4,81,5,81,6,81,7,81,8,81,9,81,10,81,11,81,12,81,13,81,25,81,24,81,23,81,22,81,21,81,20,81,19,81,18,81,17,81,16,47,13,48,13,50,13,51,13,52,13,53,13,54,13,55,13,56,13,57,13,58,13,59,13,60,13,61,13,62,13,63,13,64,13,66,13,67,13,68,13,69,13,70,13,71,13,72,13,73,13,74,13,75,13,76,13,77,13,78,13,79,13,80,13,80,12,79,12,78,12,77,12,76,12,75,12,74,12,73,12,72,12,71,12,70,12,69,12,68,12,67,12,66,12,64,12,63,12,62,12,61,12,60,12,59,12,58,12,57,12,56,12,55,12,54,12,53,12,52,12,51,12,50,12,48,12,47,12,46,12,45,12,44,12,43,12,80,14,80,15,37,13,37,12,38,12,39,12,40,12,41,12,42,12,37,16,37,17,47,17,47,16,47,15,47,14,46,17,45,17,44,17,43,17,42,17,41,17,40,17,39,17,38,17,42,16,42,13,82,6,83,6,82,9,83,9,84,9,85,9,86,9,87,9,88,9,89,9,90,9,91,9,82,20,83,20,84,20,85,20,86,20,87,20,88,20,89,20,90,20,91,20,82,23,83,23,12,13,14,13,47,23,63,1,64,1,65,1,66,1,67,1,68,1,69,1,50,15,52,14,50,17,52,16,49,19,54,15],"conduit":[4,14,4,15,4,5,4,6,4,7,4,8,4,9,4,10,4,11,4,12,4,13,4,24,4,23,4,22,4,21,4,20,4,19,4,18,4,17,4,16,5,14,6,14,7,14,8,14,9,14,10,14,11,14,12,14,13,14,14,14,15,14,16,14,17,14,18,14,19,14,20,14,21,14,22,14,23,14,24,14,25,14,26,14,27,14,28,14,29,14,30,14,31,14,32,14,33,14,34,14,35,14,36,14,37,14,42,14,81,14,82,14,83,14,5,15,6,15,7,15,8,15,9,15,10,15,11,15,12,15,13,15,14,15,15,15,16,15,17,15,18,15,19,15,20,15,21,15,22,15,23,15,24,15,25,15,26,15,27,15,28,15,29,15,30,15,31,15,32,15,33,15,34,15,35,15,36,15,37,15,42,15,81,15,82,15,83,15,18,11,18,12,18,13,18,18,18,17,18,16,49,7,49,8,49,9,49,10,49,11,49,12,49,13,65,5,65,6,65,7,65,8,65,9,65,10,65,11,65,12,65,13,81,4,81,5,81,6,81,7,81,8,81,9,81,10,81,11,81,12,81,13,81,25,81,24,81,23,81,22,81,21,81,20,81,19,81,18,81,17,81,16,82,6,83,6,82,23,83,23,82,9,83,9,84,9,85,9,86,9,87,9,88,9,89,9,90,9,91,9,82,20,83,20,84,20,85,20,86,20,87,20,88,20,89,20,90,20,91,20,47,13,48,13,50,13,51,13,52,13,53,13,54,13,55,13,56,13,57,13,58,13,63,13,64,13,62,13,61,13,60,13,59,13,66,13,67,13,68,13,69,13,70,13,71,13,72,13,73,13,74,13,75,13,76,13,77,13,78,13,43,12,44,12,45,12,46,12,47,12,48,12,50,12,51,12,52,12,53,12,54,12,55,12,56,12,57,12,58,12,60,12,61,12,62,12,59,12,63,12,64,12,66,12,67,12,68,12,69,12,70,12,71,12,72,12,73,12,74,12,75,12,76,12,77,12,78,12,79,12,80,12,79,13,80,13,80,14,80,15,37,13,37,12,38,12,39,12,40,12,41,12,42,12,37,16,37,17,38,17,39,17,40,17,41,17,42,17,43,17,44,17,45,17,46,17,47,17,47,16,47,15,47,14,12,13,14,13,80,6,79,6,79,5,79,4,78,4,77,4,48,17,48,18,48,19,48,20,48,21,48,22],"hoist":[49,8,49,9,49,10,49,11,49,12,49,7,49,13,50,13,51,13,52,13,55,13,56,13,57,13,58,13,59,13,60,13,54,13,53,13,61,13,62,13,63,13,64,13,65,13,66,13,67,13,68,13,69,13,70,13,71,13,72,13,73,13,74,13,75,13,76,13,65,8,65,9,65,10,65,11,65,12,61,12,62,12,63,12,64,12,60,12,59,12,58,12,57,12,56,12,55,12,54,12,53,12,52,12,51,12,50,12,48,12,47,12,48,13,75,12,76,12,77,12,74,12,73,12,72,12,71,12,70,12,69,12,68,12,67,12,66,12,81,5,81,6,81,7,81,8,81,9,81,10,81,11,81,12,80,12,79,12,78,12,77,13,78,13,79,13,80,13,81,13,81,14,81,15,81,16,81,17,81,18,81,19,81,20,81,21,81,22,81,23,81,24,81,25,65,5,65,6,65,7],"fuelline":[4,14,4,15,4,5,4,6,4,7,4,8,4,9,4,10,4,11,4,12,4,13,4,24,4,23,4,22,4,21,4,20,4,19,4,18,4,17,4,16,5,14,6,14,7,14,8,14,9,14,10,14,11,14,12,14,13,14,14,14,15,14,16,14,17,14,5,15,6,15,7,15,8,15,9,15,10,15,11,15,12,15,13,15,14,15,15,15,16,15,17,15,11,6,12,13,14,13]} });
+  if (CAMPAIGN_V3_STOCK.indexOf("Condor") < 0) CAMPAIGN_V3_STOCK.push("Condor");
+})();
+// =====================================================================
 // 10g. THE TEST RANGE  (Bureau v2 stop 5; the Bureau v2 screen's "Test range" page, section 10e)
 //
 //   WHAT IT DOES. A quick trial of the design on the sheet: a few copies of it (TEST_RANGE_COPIES, by size class) against the current enemy's ship closest
@@ -113391,7 +113471,7 @@ BUREAU2_SCREEN_API.testRange = { run: testRangeRun, state: testRange, plan: func
 //   adopted habits come along in its copy code and into every new campaign. A doctrine changed in the Bureau after the save updates the plan's copy.
 //   DOCTRINE TEMPLATES (LIBRARY.templates: [{ name, doctrine, savedAt }]) live here too, so they carry over as well. A plan from before v37 has no doctrine: Auto.
 // =====================================================================
-const GAME_VERSION = 'v264.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
+const GAME_VERSION = 'v264.2';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
 const LIBRARY_KEY = 'engineersWar.library';
 const LIBRARY_FORMAT = 1;
 const LIBRARY_CODE_SHIP = 'EW-SHIP-1:', LIBRARY_CODE_LIB = 'EW-LIB-1:';
