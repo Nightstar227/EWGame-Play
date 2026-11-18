@@ -798,6 +798,216 @@ hr.rule { border:0; border-top:var(--line-w) solid var(--line); margin:var(--sp-
 }
 </style>
 <style>
+/* =====================================================================================================================
+   THE WAR ROOM LOOK: WHAT THINGS ARE MADE OF (v278.0, the master copy; the build puts it into the game after the theme)
+   =====================================================================================================================
+   The game has two looks (Settings > Display > Look): Plain, and War room. This file is the whole War room look's paint.
+
+   HOW TO USE IT
+     A thing on a screen says what it is made of:   <div data-mat="wall"> ... </div>
+     and it is painted that way while the page's root says   <html data-ui-skin="room">.
+     With Plain on (data-ui-skin="plain", the default) NOTHING in this file is used, apart from the list of colours
+     just below, which nothing else reads. A phone (html.ew-phone-ui) always keeps the plain look.
+
+   THE MATERIALS
+     wall      the bunker wall behind the battle's screens (look up)
+     table     the dark walnut plotting table under the strategy screens (look down)
+     tabletop  the war map itself: a walnut rim (10 px), the chart sunk into it
+     clear     nothing of its own: the thing lies straight on the wall or the table (the row of plates)
+     screen    a monitor on the wall: a dark bezel with rounded corners (add "glass" for scanlines and glare,
+               "small" for a side monitor's thinner bezel)
+     well      a dark slot sunk into metal or wood (the radio's read-out)
+     inlay     a dark panel let into the table, with a bronze hairline
+     plate     a dark steel plate (a tab or a label); the current one (aria-current="page"), or one marked "brass", is lit
+               white (v278.3, Alex: the first brass and tan plates read as "piss yellow"; plates are neutral steel now)
+     bookmark  the index tab of a dossier (a department's tab): dark pressboard, the open one bone card
+     metal     a steel faceplate (the instrument rail, the radio set)
+     lamp      a glowing amber read-out (the clock)
+     switch    a row of rocker switches (the speed buttons); the one that is on is lit
+
+   RULES
+     * A material paints surfaces only: background, edge, corner, shadow, and for plate / lamp / switch the letter colour.
+       It never changes a place, a word, or the colours of the two sides. A bezel or rim may take a few pixels
+       (the battle map gives up about 2.5% of its area to its monitor frame; the check measures it). The war map gives up about 4% to its walnut rim. Only screen, tabletop and
+       lamp set an edge's width; every other material keeps the width the thing already had and only colours it.
+     * The surface lines carry "!important" on purpose: a material must win over whatever the screen's own look says,
+       or it would have to be repeated screen by screen.
+     * Every rule below starts with the same guard (root says "room", and is not a phone). The check
+       tools/v278.0/war-room-switch-check.js fails if a rule is ever added without it.
+   ===================================================================================================================== */
+
+:root {
+  --room-wall-hi: #2b2e2c;      --room-wall-lo: #141514;      /* painted concrete, top to bottom */
+  --room-wood-hi: #6d4a27;      --room-wood: #5a3c1f;         --room-wood-lo: #4a3119;   /* the walnut rim */
+  --room-table-hi: #261a0f;     --room-table: #1c130b;        --room-table-lo: #170f08;  /* the table's top, away from the lamp */
+  --room-brass-hi: #d8b25a;     --room-brass: #9c7a2e;        --room-bronze: #4a3a1c;    /* polished brass, and its dull edge lines */
+  --room-steel-hi: #3a3d3b;     --room-steel: #262928;        --room-steel-line: #555a57;
+  --room-bezel: #101211;        --room-bezel-line: #4b504d;   /* a monitor's frame */
+  --room-inlay-hi: #17130f;     --room-inlay-lo: #0e0c0a;     /* a panel sunk into the table */
+  --room-amber: #ffb84a;        --room-amber-glow: rgba(255, 170, 60, .7);                /* lamps and lit read-outs */
+  --room-brass-ink: #1a1204;    --room-plate-ink: #cfd6dc;    --room-lit-ink: #0d1114;   /* letters on a lit switch, on a dark steel plate, on a lit plate */
+}
+
+/* ---- wall: the bunker wall (look up) ---- */
+:root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="wall"] {
+  background:
+    radial-gradient(1200px 500px at 50% -8%, rgba(255, 214, 150, .10), transparent 70%),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, .22) 0 2px, transparent 2px 320px),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, .18) 0 2px, transparent 2px 225px),
+    linear-gradient(var(--room-wall-hi), #1b1d1c 60%, var(--room-wall-lo)) !important;
+}
+
+/* ---- table: the dark walnut plotting table (look down) ---- */
+:root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="table"] {
+  background:
+    radial-gradient(1000px 640px at 40% 54%, rgba(255, 200, 130, .10), transparent 72%),
+    radial-gradient(1400px 900px at 50% 50%, transparent 55%, rgba(0, 0, 0, .55)),
+    repeating-linear-gradient(91deg, rgba(0, 0, 0, .22) 0 1px, transparent 1px 6px, rgba(255, 255, 255, .018) 6px 7px, transparent 7px 23px),
+    repeating-linear-gradient(89deg, rgba(0, 0, 0, .14) 0 2px, transparent 2px 61px),
+    linear-gradient(90deg, var(--room-table), var(--room-table-hi) 30%, #20160c 62%, var(--room-table-lo)) !important;
+}
+
+/* ---- tabletop: the chart in its walnut rim ---- */
+:root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="tabletop"] {
+  border-color: #6b5426 !important; border-radius: 4px !important; padding: 10px !important;
+  /* the wood is ONLY the rim: the inside is always the chart's own dark ground, however the chart is sized (v278.3: on a wide screen the wood showed
+     through beside the chart) */
+  background:
+    linear-gradient(var(--map-bg, #03060b), var(--map-bg, #03060b)) content-box,
+    repeating-linear-gradient(90.6deg, rgba(0, 0, 0, .20) 0 1px, transparent 1px 9px, rgba(255, 230, 180, .06) 9px 10px, transparent 10px 27px) border-box,
+    linear-gradient(90deg, var(--room-wood), var(--room-wood-hi) 28%, #5c3e20 60%, var(--room-wood-lo)) border-box !important;
+  box-shadow: inset 0 1px 0 rgba(255, 220, 160, .18), inset 0 -3px 8px rgba(0, 0, 0, .6), 0 14px 30px rgba(0, 0, 0, .75) !important;
+}
+
+/* what lies in the rim (the map's own bar, the chart, its key) is sunk: a dark line, then a bronze one */
+:root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="tabletop"] > * { box-shadow: 0 0 0 1px #0a0705, 0 0 0 2px #6b5426; }
+
+/* ---- clear: lies straight on the wall or the table ---- */
+:root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="clear"] { background: transparent !important; border-color: transparent !important; box-shadow: none !important; }
+
+/* ---- screen: a monitor on the wall ---- */
+:root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="screen"] {
+  border: 8px solid var(--room-bezel) !important; border-radius: 16px !important; overflow: hidden;
+  box-shadow: 0 0 0 2px var(--room-bezel-line), 0 0 0 5px #232625, 0 10px 26px rgba(0, 0, 0, .8) !important;
+}
+:root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="glass"]::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 6;
+  background:
+    linear-gradient(115deg, rgba(255, 255, 255, .07) 0%, rgba(255, 255, 255, .015) 18%, transparent 32%),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, .13) 0 1px, transparent 1px 3px);
+  box-shadow: inset 0 0 90px rgba(0, 0, 0, .75);
+}
+
+:root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="screen"][data-mat~="small"] {
+  border-width: 5px !important; border-radius: 12px !important; background: #0b100f !important;
+  box-shadow: 0 0 0 2px var(--room-bezel-line), 0 8px 18px rgba(0, 0, 0, .7) !important;
+}
+:root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="small"][data-mat~="glass"]::after { box-shadow: inset 0 0 40px rgba(0, 0, 0, .6); }
+/* a monitor's own heading sits on the glass, not on a strip of its own */
+:root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="screen"] > .panel-head { background: transparent !important; }
+
+/* ---- well: a dark slot sunk into metal or wood ---- */
+:root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="well"] {
+  background: linear-gradient(#0c0b09, #131110) !important; border-color: var(--room-bronze) !important; box-shadow: inset 0 2px 6px #000 !important;
+}
+
+/* ---- inlay: a dark panel let into the table ---- */
+:root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="inlay"] {
+  background: linear-gradient(var(--room-inlay-hi), var(--room-inlay-lo)) !important;
+  border-color: var(--room-bronze) !important; border-radius: 3px !important;
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, .6), 0 0 0 3px #0c0805, 0 10px 20px rgba(0, 0, 0, .6) !important;
+}
+
+/* ---- plate: a dark steel plate; the current one is lit white ---- */
+:root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="plate"] {
+  background: linear-gradient(#272b2e, #17191b) !important; color: var(--room-plate-ink) !important;
+  border-color: #3d444a !important; border-radius: 3px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), inset 0 -2px 4px rgba(0, 0, 0, .6), 0 2px 4px rgba(0, 0, 0, .6) !important;
+}
+:root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="plate"][aria-current="page"],
+:root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="plate"][data-mat~="brass"] {
+  background: linear-gradient(#eef2f5, #c9d1d8) !important; color: var(--room-lit-ink) !important; border-color: #f4f7f9 !important;
+}
+
+/* ---- bookmark: the index tab of a dossier (v278.3, Alex: "try making these tabs look like folio dossier bookmarks") ----
+   Dark pressboard with rounded top corners and a cloth band along the top; the open dossier's tab is bone card, standing a little taller.
+   Used for the departments (Dispatches, Council Room, Research, Officers, Design Bureau); Back to battle and Map stay plates. */
+:root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="bookmark"] {
+  background: linear-gradient(#5b6670 0 3px, #2e3338 3px, #1f2326) !important; color: #d5dade !important;
+  border-color: #454d54 !important; border-radius: 9px 9px 0 0 !important; margin-left: 3px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .04), 2px 0 3px rgba(0, 0, 0, .5) !important;
+}
+:root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="bookmark"][aria-current="page"] {
+  background: linear-gradient(#8e2f24 0 3px, #e9e6dd 3px, #d2cfc5) !important; color: var(--room-lit-ink) !important; border-color: #f1eee6 !important;
+  box-shadow: 0 -3px 0 #e9e6dd, 0 -6px 0 #8e2f24, 2px 0 4px rgba(0, 0, 0, .6) !important;
+}
+:root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="bookmark"][aria-current="page"] * { color: var(--room-lit-ink) !important; }
+
+/* ---- metal: a steel faceplate ---- */
+:root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="metal"] {
+  background: linear-gradient(var(--room-steel-hi), var(--room-steel)) !important;
+  border-color: var(--room-steel-line) !important; border-radius: 4px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 4px 10px rgba(0, 0, 0, .6) !important;
+}
+
+/* ---- lamp: a glowing amber read-out ---- */
+:root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="lamp"] {
+  background: #0a0a09 !important; border: 2px solid #111 !important; border-radius: 3px !important;
+  box-shadow: inset 0 0 8px #000, 0 0 0 1px var(--room-steel-line) !important; padding: 2px 10px !important;   /* the one material with its own padding: a read-out needs a rim */
+  color: var(--room-amber) !important; text-shadow: 0 0 8px var(--room-amber-glow);
+}
+:root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="lamp"] * { color: inherit !important; }
+
+/* ---- switch: a row of rocker switches; the one that is on is lit ---- */
+:root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="switch"] button {
+  background: linear-gradient(#4a4d4b, #2a2c2b) !important; border: 1px solid #111 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18) !important; color: #cfd2cc !important;
+}
+:root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="switch"] button.active,
+:root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="switch"] button[aria-pressed="true"] {
+  background: linear-gradient(#ffcf66, #e09a1c) !important; color: var(--room-brass-ink) !important;
+  box-shadow: 0 0 12px rgba(255, 180, 60, .8) !important;
+}
+
+/* letters and drawn marks on a lit plate are dark */
+:root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="plate"][aria-current="page"] *,
+:root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="plate"][data-mat~="brass"] * { color: var(--room-lit-ink) !important; }
+
+/* =====================================================================================================================
+   THE DIGITAL PLOT (v278.4, Alex 18 Nov: "the map itself should be fully digital looking"): the war map is a military
+   plotting display sunk in the table. Section 7i4c draws it (a flat dark screen, a measured grid, line-drawn planets);
+   these are its colours and line weights, in one place. Side colours (ours blue, theirs red, amber warnings) are the
+   game's own and are not changed here.
+   ===================================================================================================================== */
+:root[data-ui-skin="room"]:not(.ew-phone-ui) { --plot-face: #02070c; --plot-line: #8fb9cf; --plot-dim: #4d7186; --plot-grid: #0c1c29; --plot-grid-main: #15303f; --plot-fill: #06121b; }
+:root[data-ui-skin="room"]:not(.ew-phone-ui) .plot-face { fill: var(--plot-face); }
+:root[data-ui-skin="room"]:not(.ew-phone-ui) .plot-grid-fine { fill: none; stroke: var(--plot-grid); stroke-width: 1; }
+:root[data-ui-skin="room"]:not(.ew-phone-ui) .plot-grid-main { fill: none; stroke: var(--plot-grid-main); stroke-width: 1.2; }
+:root[data-ui-skin="room"]:not(.ew-phone-ui) .plot-scan { fill: #9fd6f2; opacity: .022; }
+:root[data-ui-skin="room"]:not(.ew-phone-ui) .plot-body .pb-disc { fill: var(--plot-fill); stroke: var(--plot-line); stroke-width: 1.6; }
+:root[data-ui-skin="room"]:not(.ew-phone-ui) .plot-body .pb-wire { fill: none; stroke: var(--plot-dim); stroke-width: 1; }
+:root[data-ui-skin="room"]:not(.ew-phone-ui) .plot-body .pb-line { fill: none; stroke: var(--plot-line); stroke-width: 1.4; }
+:root[data-ui-skin="room"]:not(.ew-phone-ui) .plot-body .pb-dot { fill: var(--plot-line); }
+:root[data-ui-skin="room"]:not(.ew-phone-ui) .plot-sun { fill: var(--plot-fill); stroke: var(--plot-line); stroke-width: 1.6; }
+:root[data-ui-skin="room"]:not(.ew-phone-ui) .plot-ring { fill: none; stroke: var(--plot-dim); stroke-width: 1; stroke-dasharray: 3 9; opacity: .8; }
+:root[data-ui-skin="room"]:not(.ew-phone-ui) .plot-edge { fill: none; stroke: var(--plot-dim); stroke-width: 1; opacity: .75; }
+:root[data-ui-skin="room"]:not(.ew-phone-ui) .plot-tick { fill: none; stroke: var(--plot-line); stroke-width: 1.2; opacity: .8; }
+:root[data-ui-skin="room"]:not(.ew-phone-ui) .plot-rock { fill: none; stroke: var(--plot-dim); stroke-width: .8; }
+:root[data-ui-skin="room"]:not(.ew-phone-ui) .plot-note { font: 600 10px var(--font-data); letter-spacing: .12em; fill: var(--plot-dim); }
+/* the chart area beside a narrow map is the plot's own face, so the screen runs edge to edge inside the rim */
+:root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="tabletop"] { --map-bg: var(--plot-face); }
+
+/* =====================================================================================================================
+   THE MOVE: looking up at the screens, looking down at the table (v278.2). Section 7i4b puts room-look-up or
+   room-look-down on the page's root for half a second when Tab (or a button) swaps the battle and the strategy screen.
+   Not with Screen effects off, nor for a player who asked their computer for less motion (the script leaves the class off).
+   ===================================================================================================================== */
+@keyframes roomLookDown { from { transform: perspective(1400px) translateY(7%) rotateX(-9deg); opacity: .25; } to { transform: none; opacity: 1; } }
+@keyframes roomLookUp { from { transform: perspective(1400px) translateY(-7%) rotateX(9deg); opacity: .25; } to { transform: none; opacity: 1; } }
+:root[data-ui-skin="room"]:not(.ew-phone-ui).room-look-down [data-mat~="table"] { animation: roomLookDown .45s cubic-bezier(.2, .7, .2, 1); transform-origin: 50% 0; }
+:root[data-ui-skin="room"]:not(.ew-phone-ui).room-look-up [data-mat~="wall"] { animation: roomLookUp .45s cubic-bezier(.2, .7, .2, 1); transform-origin: 50% 100%; }
+</style>
+<style>
   /* (v17) The theme sets a few page-wide basics (box sizing, thin scroll bars, link and focus colours). The older screens (setup, designer,
      report, the pause and dossier panels, the old battle panel) keep their v16 look: these rules put those basics back as they were there.
      :where() adds nothing to how strong a rule is, so every older rule that sets box-sizing itself still wins. */
@@ -3594,8 +3804,8 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
 </div>
 
 <!-- (v17) THE BATTLE SCREEN (section 7h), laid out from the battle mockup. The map canvas (#screen) is moved into #bsMap when this screen is on. -->
-<div id="battleScreen" class="mode-front hidden">
-  <header class="bs-top">
+<div id="battleScreen" class="mode-front hidden" data-mat="wall">
+  <header class="bs-top" data-mat="metal">
     <!-- (v29, Alex's playtesters got stuck here) the way back sits top left, as the strategic map's Map tab does, and Menu top right -->
     <button type="button" class="bs-mapbtn" id="bsSetupButton" title="Leave the battle and go back to the setup screen"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.5"/><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="10" stroke-dasharray="2 3"/></svg><span id="bsSetupText">Setup</span></button>
     <div class="bs-objective hidden" id="bsObjective">
@@ -3603,8 +3813,8 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
       <span class="label" id="bsObjShieldLabel">Shield</span><span class="bar bar-shield" id="bsObjShieldBar"><i id="bsObjShield" style="--v:100%"></i></span>
       <span class="label">Hull</span><span class="bar bar-armor"><i id="bsObjHull" style="--v:100%"></i></span>
     </div>
-    <div class="bs-clock" id="bsClockBox"><span class="data-lg" id="bsClock">00:00</span></div>
-    <div class="bs-speed" role="group" aria-label="Speed">
+    <div class="bs-clock" id="bsClockBox" data-mat="lamp"><span class="data-lg" id="bsClock">00:00</span></div>
+    <div class="bs-speed" role="group" aria-label="Speed" data-mat="switch">
       <button type="button" id="bsStop" title="Stop the clock (the map stays live: look around, click ships). Press again, or a speed, to go on. Key: Space. In a war the strategic map shares this pause."><svg viewBox="0 0 14 14"><path d="M3 2h3v10H3zM8 2h3v10H8z" fill="currentColor"/></svg></button>
       <button type="button" id="bsSpeedQuarter" title="Slow motion: a quarter of normal speed">&frac14;&times;</button><button type="button" id="bsSpeedHalf" title="Slow motion: half of normal speed">&frac12;&times;</button><button type="button" id="bsSpeed1" title="1x (key 1)">1&times;</button><button type="button" id="bsSpeed4" title="4x (key 2)">4&times;</button><button type="button" id="bsSpeed16" title="16x (key 3)">16&times;</button><button type="button" id="bsSpeed64" title="64x (key 4): as fast as the computer allows in a big battle">64&times;</button><button type="button" id="bsSpeed256" title="256x (key 5): as fast as the computer allows in a big battle">256&times;</button>
     </div>
@@ -3615,7 +3825,7 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
   </header>
 
   <aside class="bs-col bs-left">
-    <section class="panel">
+    <section class="panel" data-mat="screen small glass">
       <div class="panel-head">Forces<button type="button" class="bs-fold" id="bsFoldLeft" title="Fold this column away (key [)">&laquo;</button></div>
       <div class="panel-body tight">
         <div class="bs-sides">
@@ -3638,13 +3848,13 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
         </div>
       </div>
     </section>
-    <section class="panel" id="bsAdmiralPanel">
+    <section class="panel" id="bsAdmiralPanel" data-mat="screen small glass">
       <div class="panel-head">Admiral<span class="panel-tag" id="bsAdmTag"></span></div>
       <div class="panel-body tight" id="bsAdmiralBody"></div>
     </section>
   </aside>
 
-  <main class="bs-map" id="bsMap">
+  <main class="bs-map" id="bsMap" data-mat="screen glass">
     <div class="bs-map-tools">
       <div class="bs-layers" id="bsLayers"><button type="button" class="bs-layer bs-tool-btn bs-layers-btn" id="bsLayersBtn" title="What the map shows: battle line, gun ranges, tags, names, moves, danger, minimap">Layers</button>
       <div class="bs-layers-list" id="bsLayersList">
@@ -3678,7 +3888,7 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
     <div class="bs-scale"><i id="bsScaleBar" style="width:100px"></i><span id="bsScaleText">1,000 u</span></div>
   </main>
 
-  <section class="panel bs-radio-panel">
+  <section class="panel bs-radio-panel" data-mat="metal">
     <div class="panel-head">Comms<span class="bs-chan" id="bsChan">CH 4 &middot; 121.5</span>
       <div class="tabs" role="tablist">
         <button class="tab is-active" type="button" role="tab" id="bsTabRadio">Radio</button>
@@ -3686,17 +3896,17 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
       </div>
       <button type="button" class="bs-fold bs-comms-size" id="bsCommsSize" title="Shrink Comms to one line (the newest call) and give the map the room (key \)">&#9662;</button>
     </div>
-    <div class="panel-body" id="bsCommsBody">
+    <div class="panel-body" id="bsCommsBody" data-mat="well">
       <div class="radio" id="bsRadio"></div>
     </div>
   </section>
 
   <aside class="bs-col bs-right">
-    <section class="panel hidden" id="bsUnitPanel">
+    <section class="panel hidden" id="bsUnitPanel" data-mat="screen small glass">
       <div class="panel-head"><span id="bsUnitHead">Selected Division</span><span class="panel-tag" id="bsUnitTag"></span></div>
       <div class="panel-body tight" id="bsUnitBody"></div>
     </section>
-    <section class="panel">
+    <section class="panel" data-mat="screen small glass">
       <div class="panel-head">Selected squadron<button type="button" class="bs-fold" id="bsFoldRight" title="Fold this column away (key ])">&raquo;</button></div>
       <div class="panel-body tight" id="bsSquadBody"><div class="bs-sq-empty">Click a ship on the map to see its squadron: its ships, its officer and the doctrine you set.</div></div>
     </section>
@@ -3742,7 +3952,7 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
     <section class="panel hidden" id="mmPanel"><div class="panel-head" id="mmPanelHead"></div><div class="panel-body" id="mmPanelBody"></div></section>
     <input type="file" id="mmFile" accept=".json,application/json,text/plain" class="hidden">
   </div>
-  <div class="mm-version" title="The version of the game you are playing">Version v275.0</div>
+  <div class="mm-version" title="The version of the game you are playing">Version v278.4</div>
 </div>
 
 <!-- (v31 A2, section 7l) the end of the war: the game-over screen (Earth's people are gone) or the victory screen (the aliens' home secured). It lies over
@@ -11262,6 +11472,8 @@ const SOUND_PICKS = {
     typeSpace:     'game|Typewriter key|Space',
     uiToggle:      'game|Switch|Toggle',
     uiPress:       'game|Switch|Press',
+    lookUp:        'game|Squelch|Click and beep',   // (v278.2, the war room look) looking up from the table at the battle's screens
+    lookDown:      'game|Switch|Toggle',            // (v278.2) looking down from the screens at the plotting table
     // the dc chime that goes with a hit inside the selected ship
     dcChime:       'hive|Alerts|Damage-control chime'
   },
@@ -13192,6 +13404,7 @@ const SETTINGS = {
   alienLoopsByArrival: 1,    // (v257.0) the Delver and Sylph per-ship checks (05g dvStep, syStep) run only once a ship that needs them has arrived in the battle; 0 = every step as before
   slowRegrowSeconds: 1,      // ... a regrowing ship grows back once every this many battle seconds (that much growth at once)
   slowSporeSteps: 10,        // ... the list of spore clouds is made every this many steps
+  sporeGrid: 1,              // (v276.0) 1 = a missile is checked only against the spore clouds near it (same result, far less work); 0 = against every cloud
   slowFireMapSteps: 30,      // ... the fire and danger maps are rebuilt every this many steps (30 = twice a second)
   slowGunRetrySeconds: 0.25, // ... a gun with nothing in reach looks for another target at most this often (seconds, before the officer's reaction)
   sleepLookEvery: 30,        // ... the look that decides it runs over 1/this of the ships each step (30 = each ship about twice a second)
@@ -13303,6 +13516,12 @@ const SETTINGS = {
   longLocalDockWeeks: 5,      //   ... one more for each this many weeks we have held it ...
   longLocalDockPerTier: 3,    //   ... this many more for each development tier above 1 ...
   longLocalDockMax: 16,       //   ... and never more than this at one station
+  // (v277.0, Alex 18 Nov) A DOCK KEEPS ITS OLD SHIP (06f2b). dockHoldModel 1: when a dock changes its design (a new version, a benched or outdated design,
+  // a Swarm hatchery combined or split) the ship it has in service stays its ship until lost; only then does the new design come out. 0 = as v276
+  // (the dock sent out a new ship at once and the old one fought on for free).
+  dockHoldModel: 1,
+  dockRepairRefit: 1,         // 1 = an old-version ship of ours that goes into a repair dock is rebuilt there as its dock's new design; 0 = it changes over only when lost
+  dockRepairRefitShare: 0.5,  // ... the rebuild takes the dock as long as mending this share of the new design's hull
   dockSpareDays: { tiny: 1, small: 2, corvette: 3, frigate: 5, destroyer: 7, cruiser: 10, capital: 14, titan: 21 },   // days a dock takes to build its next spare, by size class
   dockSpareSwarm: 0,          // 1 = the Swarm's hatcheries wait for spares too; 0 = they replace at once (its match floor works as before)
   scuttleOnLedger: 1,         // 1 = a scuttled ship counts as a loss of its design on the docks' ledger (06f3), as a ship the enemy destroyed does; 0 = not counted (v172.0)
@@ -14520,7 +14739,7 @@ const SETTING_MUST_BE_POSITIVE = ['commandThinkRate', 'moonOrbitMinutes', 'moonO
   'serviceLastMax', 'serviceHistoryMax', 'serviceEventsMax', 'recentChangeSeconds', 'dossierLastActions', 'reportOfficerRows', 'dossierChartMinSpan',
   'orbitRateHeadroom', 'orbitMinRate', 'facingLeadFactor', 'interceptMaxLead', 'orbitRangeFraction', 'orbitTurnMargin', 'tightOrbitSizeRatio', 'tightOrbitHulls', 'tightOrbitStraySeconds', 'tightOrbitSpacings', 'tacticMinSeconds', 'chaseGiveUpSeconds', 'noChaseSeconds',
   'shapeEnterFactor', 'shapeExitFactor', 'axisTurnRate'];
-const SETTING_MUST_BE_NON_NEGATIVE = ['dvWingMergeRange', 'dvWingMergeSeconds', 'rankSwapSeconds', 'noseArcDeg', 'noseNearFactor', 'noseNearMin', 'noseBackSeconds', 'turnRampSeconds', 'quietStepMul', 'quietMinSpeed', 'chainLagSeconds', 'chainSpreadSeconds', 'slowRegrowSeconds', 'slowSporeSteps', 'slowFireMapSteps', 'slowGunRetrySeconds', 'lineRankMinWidth', 'lineRankDepth', 'lineRankRotateAt', 'batteryDepthFactor', 'swarmSpreadWidth', 'swarmSpreadDepth', 'swarmSpreadRejig', 'swarmPressOdds', 'swarmFallBackOdds', 'bombardShieldShare', 'bombardHoldSeconds', 'swarmDockStallCap', 'swarmDockStallQuietShare', 'stationHullMendQuiet', 'alloysNeverIdleNote', 'towJobs', 'towWaitSeconds', 'towFreshSeconds', 'towLookSeconds', 'towFleetSeconds', 'towBoldSwing', 'towDangerRadius', 'towDangerOdds', 'aoMobilizeOdds', 'aoMobilizeBoldSwing', 'aoMobilizeReinSwing', 'aoMobilizeSeconds', 'aoMobilizeLossShare', 'aoMobilizeBeatenShare', 'aoMobilizeOtherShips', 'aoMobilizeEnemySpeed', 'aoMobilizeWaitSeconds', 'aoCharLineSwing', 'aoCharCommandSwing', 'aoCharMovePull', 'aoCharDisciplineSwing', 'aoPostureSeconds', 'aoPostureMinSeconds', 'aoMeetOdds', 'aoOddsOutShare', 'aoFallBackOdds', 'aoBoldLean', 'aoMeetReachSlots', 'aoMeetStandoff', 'aoEngageDist', 'aoGroupDist', 'aoEdgeSlots', 'aoInboundSlots', 'aoRetakeLooseShare', 'aoDangerDist', 'aoRetakeStayShare', 'aoRetakeGatherSeconds', 'aoDefenceSplitShips', 'aoFleetMax', 'aoGarrisonShare', 'aoForwardStationSpeed', 'aoRefitShare', 'divisionOwnerSeconds', 'divisionOwnerFirstSeconds', 'divisionOwnerCountBand', 'divisionOwnerJoinSeconds', 'admiralNeedsLean', 'admiralNeedsReachRatio', 'admiralNeedsDefenceRatio', 'admiralNeedsWorksRatio', 'admiralNeedsPdShare', 'scuttleKillShare', 'scuttleXpCost', 'campaignTidySeconds', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftPressed', 'coreLoopShiftQuiet', 'coreLoopShiftMax', 'coreLoopHiveHoldShare', 'coreLoopAssessSeconds', 'coreLoopAssaultMixShare', 'coreLoopReinSwing', 'coreLoopReserveShare', 'coreLoopStrikeShare', 'coreLoopBoldAbove', 'coreLoopVaSeconds', 'coreLoopVaSlack', 'coreLoopVaWornShare', 'coreLoopDefenceRatio', 'coreLoopFleetHoldSeconds', 'coreLoopDivisionMinShips', 'coreLoopAssaultRatio', 'coreLoopAssaultFloor', 'coreLoopPlaceDefenceWorth', 'placesHomeEdgeBias', 'placesBrokenBonus', 'coreLoopStreamWeeks', 'coreLoopStreamMinShips', 'coreLoopLineKeep', 'coreLoopLineSeconds', 'coreLoopLineLooks', 'coreLoopLineDepth', 'coreLoopLineStep', 'coreLoopLineWindow', 'coreLoopTipRatio', 'coreLoopClearSeconds', 'coreLoopBackSeconds', 'coreLoopHoldSeconds', 'coreLoopBerths', 'divisionMergeSlack', 'swarmNestRetakeKeep', 'swarmGrowWindowWeeks', 'swarmGrowLowLoss', 'swarmGrowHighLoss', 'swarmGrowFromShare', 'swarmGrowStep', 'swarmGrowSmallCut', 'swarmGrowBigGain', 'swarmSpreadWeeks', 'hangarRefillWeeks', 'hangarRestockShare', 'wingMaxTiny', 'wingLaunchRange', 'wingScreenRadius', 'wingStrikeRange', 'wingMaxSmall', 'wingSpread', 'hangarBuildMul', 'swarmMiteRegrowSeconds', 'swarmCraftRegrowSeconds', 'fighterTurnaroundSeconds', 'fighterLaunchSeconds', 'fighterLaunchRange', 'fighterTickSeconds', 'stationFighterGuardRadius', 'droneJamReach', 'droneJamScatterMul', 'droneJamLoseChance', 'dcNoRoomSeconds', 'cmdPaceFormSeconds', 'cmdPaceMinShare', 'cmdPaceLeadSeconds', 'cmdPaceMinMarch', 'divisionSpeedSort', 'divisionSlowBelow', 'divisionFastAbove', 'swarmPaceFormSeconds', 'swarmDrift', 'swarmDivDrift', 'wreckHitShare', 'repairPartsWeeks', 'repairAutoBelow', 'dockQueueWarnSeconds', 'crippledCheckSeconds', 'towSpeedShare', 'towMaxShare', 'towHealthyHull', 'feedHullBelow', 'feedSeconds', 'feedSquadSeconds', 'feedHullShare', 'feedAmmoShare', 'feedGrabRange', 'feedHungryHull', 'feedHungryAmmo', 'feedHatchlingRange', 'swarmInfestTierGain', 'swarmInfestGrowShare', 'swarmInfestStartShare', 'swarmSurfaceInfest', 'swarmBurnPerDps', 'swarmBurnHotMul', 'swarmBurnPerKill', 'swarmRegrowSeconds', 'swarmSporeEvery', 'swarmSporeShotsPer', 'swarmSporeDpsPerInf', 'swarmBileEvery', 'swarmBileFrom', 'swarmBileDpsPerInf', 'swarmConvertCap', 'swarmConvertAimShare', 'swarmConvertFromWeek', 'swarmConvertFullWeek', 'swarmConvertDepthShare', 'swarmConvertWaste', 'facingTwoSidedAngle', 'freshSideHoldSeconds', 'crossTEdge', 'crossTCreepFraction', 'crossTWidth', 'crossTTurnEdge', 'placesPicketSpread', 'placesPicketMove', 'placesPicketMax', 'placesWithdrawGatherSeconds', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerTargetShare', 'ledgerLineMin', 'ledgerLossMargin', 'ledgerSaveFloor', 'ledgerMinLoss', 'ledgerSurplusShare', 'withdrawRatio', 'withdrawHoldWeeks', 'ledgerAssaultWeeks', 'indDevShareSave', 'indDevShareIdle', 'dirPriorityMul', 'resourceHeldShare', 'devGraceWeeks', 'devCapStart', 'devCapAlien', 'devPotShare', 'devIdleWeeks', 'devMaxBuilds', 'bbAcidSeconds', 'bbAcidMaxPatches', 'bbRegrowQuiet', 'bbRegrowHull', 'bbRegrowPlate', 'bbRegrowHeatStop', 'bbBurstTouch', 'bbBurstDeathReach', 'bbBurstSeek', 'bbVolleySpread', 'bbMissileRetries', 'bbPdRoundsPerShot', 'bbPdFlakRounds', 'bbPdReadyRounds', 'bbPdLaserHeat', 'bbRadiatorFoldSeconds', 'bbSideWeight', 'deflectRatio', 'deflectCallSeconds', 'readyRoundsPerGun', 'boostFuEarth', 'boostFuOther', 'boostGrowth', 'alloysEarthStart', 'alloysEarthRampTo', 'alloysEarthRampWeeks', 'alloysGrowth', 'fissilesGrowth', 'alienAlloysStart', 'alienAlloysGrowth', 'alienAlloysPerStep', 'alienBoostPerStep', 'alienNodeLossShare', 'shipUpkeepMaxShare', 'berthIdleWeeks', 'berthBoostWeeks', 'berthMaxGrowth', 'campaignBuildDays', 'campaignLiveEnterShips', 'civilianNoteWeeks', 'leaderNewsCooldown', 'leaderNewsCombatGap', 'stationRebuildYardBonus', 'stationRebuildSecuredBonus', 'stationRebuildNearShare', 'stationRebuildAlloys', 'cmdAttackMaxSeconds', 'cmdPaceGap', 'radioQuietSeconds', 'cmdSummaryMinutes', 'designRemarkSeconds', 'cmdReviewBattles', 'huntMaxShips', 'huntGraceSeconds', 'pursuitFleeingBonus', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'dangerConeSeconds', 'placesAttackStallSeconds', 'campaignAttackStallSeconds', 'campaignStragglerShips', 'campaignStragglerShare', 'campaignStragglerSeconds', 'campaignStandoffSeconds', 'campaignStandoffWeeks', 'campaignRetakeWeeks', 'comebackMassWeeks', 'alienGarrisonCap', 'campaignFallenMax', 'campaignPoolCap', 'campaignGarrisonCap', 'campaignStartOwnShips', 'campaignAlienGarrison', 'campaignAdvanceKeep', 'campaignAdvanceRatio', 'campaignAdvanceTake', 'campaignAdvanceAfterWaves', 'campaignAdvanceHoldWeeks', 'campaignRearKeep', 'campaignFrontMoveMinShips', 'campaignFrontMoveShare', 'executiveMassRatio', 'executiveAssaultRatio', 'executiveAssaultMin', 'campaignPriorityWeight', 'alienShoveWeeks', 'alienGatherRatio', 'alienGatherTarget', 'alienGatherMinShips', 'alienGatherMaxWeeks', 'alienPullBackRatio', 'alienStateHoldWeeks', 'alienFirstPool', 'alienWaveJitter', 'alienWarnWeeks', 'alienWaveBoostWeeks', 'alienTargetWeakest', 'alienTargetMain', 'alienFirstWaveWeek', 'minLaunchShips', 'placesHoldClearOdds', 'campaignYardEvery', 'boostPerMarker', 'campaignRefuelShare', 'capitalBuildShare', 'assaultMaxWaitWeeks', 'repairPerWeek', 'campaignDesignBoostPerMass', 'campaignDesignBuildPerCost', 'campaignDesignAlloysShare', 'campaignDesignWeight', 'placesReachShare', 'placesFailRaise', 'placesContestShare', 'aoSecureShare', 'aoLoseShare', 'siegeBoostTrickle', 'boostFootholdShare', 'siegeGrowthFactor', 'siegeResourceFactor', 'placesReportMinutes', 'placesHysteresis', 'placesMaxOpposite', 'internalChance', 'internalFresh', 'externalCover', 'deepBelowHull', 'dcSeconds', 'blastToHull', 'blastToParts', 'profileNudgeMax', 'profileNudgeTurn', 'profileNudgeFiring', 'reactorWallShare', 'trackSquareCut', 'pressDryValue', 'pressFleetRatio', 'pressOdds', 'pressHealthEdge', 'pressOddsHealthy', 'pressDangerShare', 'pressHitChance', 'pressAfter', 'pressProgress', 'pressHold', 'pressStep', 'pressRingMin', 'lockFormShare', 'looseJitter', 'looseRein', 'lockSettleSeconds', 'lockRein', 'lockBreakHull', 'lockMinShare', 'closeRanksDelay', 'mergeBelow', 'mergeMaxOdds', 'disbandAt', 'stragglerSeconds', 'divisionLeash', 'pursuitBase', 'formBeforeAttack', 'gatherSeconds', 'fallenKeep', 'topUpBelow', 'stagingContactSeconds', 'stagingMaxWait', 'minNewSquadron', 'entryDangerRatio', 'entryCheckFactor', 'entryRetrySeconds', 'rallyInset', 'joinWornBelow', 'survivorEdgeMargin', 'flagKilled', 'flagWounded', 'flagSurviveSwing', 'woundedSkillPenalty', 'woundedBattles', 'replacementDelay', 'handoverSeconds', 'standInSkill', 'pinRenewSeconds', 'divisionTaskMinSeconds', 'rotateWornShare', 'divisionRefuseOdds', 'divisionRallyOdds', 'divisionCounterPressure', 'mainEffortMinOdds', 'mainEffortFreeRein', 'pinRenewFactor', 'supportSeconds', 'supportMaxTravelSeconds', 'divisionTargetBonus', 'localAttackOdds', 'memberCompactShare', 'recruitAxisSpread', 'recruitSkillLow', 'recruitSkillHigh', 'skillPerLevel', 'readinessXpPerRepair', 'medalSkillAdd', 'scarShakenBoldness', 'repertoirePull', 'spawnEdgeMargin', 'doctrinePull', 'matchupPull', 'experimentMinSeconds', 'experimentCooldown', 'tacticLearnStep', 'tacticWeightMax', 'exploreLearnBoost', 'spawnBandWidth', 'spawnVerticalMargin', 'shieldRechargeDelay', 'minArmorPassFraction', 'separationStrength',
+const SETTING_MUST_BE_NON_NEGATIVE = ['dvWingMergeRange', 'dockRepairRefitShare', 'dvWingMergeSeconds', 'rankSwapSeconds', 'noseArcDeg', 'noseNearFactor', 'noseNearMin', 'noseBackSeconds', 'turnRampSeconds', 'quietStepMul', 'quietMinSpeed', 'chainLagSeconds', 'chainSpreadSeconds', 'slowRegrowSeconds', 'slowSporeSteps', 'slowFireMapSteps', 'slowGunRetrySeconds', 'lineRankMinWidth', 'lineRankDepth', 'lineRankRotateAt', 'batteryDepthFactor', 'swarmSpreadWidth', 'swarmSpreadDepth', 'swarmSpreadRejig', 'swarmPressOdds', 'swarmFallBackOdds', 'bombardShieldShare', 'bombardHoldSeconds', 'swarmDockStallCap', 'swarmDockStallQuietShare', 'stationHullMendQuiet', 'alloysNeverIdleNote', 'towJobs', 'towWaitSeconds', 'towFreshSeconds', 'towLookSeconds', 'towFleetSeconds', 'towBoldSwing', 'towDangerRadius', 'towDangerOdds', 'aoMobilizeOdds', 'aoMobilizeBoldSwing', 'aoMobilizeReinSwing', 'aoMobilizeSeconds', 'aoMobilizeLossShare', 'aoMobilizeBeatenShare', 'aoMobilizeOtherShips', 'aoMobilizeEnemySpeed', 'aoMobilizeWaitSeconds', 'aoCharLineSwing', 'aoCharCommandSwing', 'aoCharMovePull', 'aoCharDisciplineSwing', 'aoPostureSeconds', 'aoPostureMinSeconds', 'aoMeetOdds', 'aoOddsOutShare', 'aoFallBackOdds', 'aoBoldLean', 'aoMeetReachSlots', 'aoMeetStandoff', 'aoEngageDist', 'aoGroupDist', 'aoEdgeSlots', 'aoInboundSlots', 'aoRetakeLooseShare', 'aoDangerDist', 'aoRetakeStayShare', 'aoRetakeGatherSeconds', 'aoDefenceSplitShips', 'aoFleetMax', 'aoGarrisonShare', 'aoForwardStationSpeed', 'aoRefitShare', 'divisionOwnerSeconds', 'divisionOwnerFirstSeconds', 'divisionOwnerCountBand', 'divisionOwnerJoinSeconds', 'admiralNeedsLean', 'admiralNeedsReachRatio', 'admiralNeedsDefenceRatio', 'admiralNeedsWorksRatio', 'admiralNeedsPdShare', 'scuttleKillShare', 'scuttleXpCost', 'campaignTidySeconds', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftPressed', 'coreLoopShiftQuiet', 'coreLoopShiftMax', 'coreLoopHiveHoldShare', 'coreLoopAssessSeconds', 'coreLoopAssaultMixShare', 'coreLoopReinSwing', 'coreLoopReserveShare', 'coreLoopStrikeShare', 'coreLoopBoldAbove', 'coreLoopVaSeconds', 'coreLoopVaSlack', 'coreLoopVaWornShare', 'coreLoopDefenceRatio', 'coreLoopFleetHoldSeconds', 'coreLoopDivisionMinShips', 'coreLoopAssaultRatio', 'coreLoopAssaultFloor', 'coreLoopPlaceDefenceWorth', 'placesHomeEdgeBias', 'placesBrokenBonus', 'coreLoopStreamWeeks', 'coreLoopStreamMinShips', 'coreLoopLineKeep', 'coreLoopLineSeconds', 'coreLoopLineLooks', 'coreLoopLineDepth', 'coreLoopLineStep', 'coreLoopLineWindow', 'coreLoopTipRatio', 'coreLoopClearSeconds', 'coreLoopBackSeconds', 'coreLoopHoldSeconds', 'coreLoopBerths', 'divisionMergeSlack', 'swarmNestRetakeKeep', 'swarmGrowWindowWeeks', 'swarmGrowLowLoss', 'swarmGrowHighLoss', 'swarmGrowFromShare', 'swarmGrowStep', 'swarmGrowSmallCut', 'swarmGrowBigGain', 'swarmSpreadWeeks', 'hangarRefillWeeks', 'hangarRestockShare', 'wingMaxTiny', 'wingLaunchRange', 'wingScreenRadius', 'wingStrikeRange', 'wingMaxSmall', 'wingSpread', 'hangarBuildMul', 'swarmMiteRegrowSeconds', 'swarmCraftRegrowSeconds', 'fighterTurnaroundSeconds', 'fighterLaunchSeconds', 'fighterLaunchRange', 'fighterTickSeconds', 'stationFighterGuardRadius', 'droneJamReach', 'droneJamScatterMul', 'droneJamLoseChance', 'dcNoRoomSeconds', 'cmdPaceFormSeconds', 'cmdPaceMinShare', 'cmdPaceLeadSeconds', 'cmdPaceMinMarch', 'divisionSpeedSort', 'divisionSlowBelow', 'divisionFastAbove', 'swarmPaceFormSeconds', 'swarmDrift', 'swarmDivDrift', 'wreckHitShare', 'repairPartsWeeks', 'repairAutoBelow', 'dockQueueWarnSeconds', 'crippledCheckSeconds', 'towSpeedShare', 'towMaxShare', 'towHealthyHull', 'feedHullBelow', 'feedSeconds', 'feedSquadSeconds', 'feedHullShare', 'feedAmmoShare', 'feedGrabRange', 'feedHungryHull', 'feedHungryAmmo', 'feedHatchlingRange', 'swarmInfestTierGain', 'swarmInfestGrowShare', 'swarmInfestStartShare', 'swarmSurfaceInfest', 'swarmBurnPerDps', 'swarmBurnHotMul', 'swarmBurnPerKill', 'swarmRegrowSeconds', 'swarmSporeEvery', 'swarmSporeShotsPer', 'swarmSporeDpsPerInf', 'swarmBileEvery', 'swarmBileFrom', 'swarmBileDpsPerInf', 'swarmConvertCap', 'swarmConvertAimShare', 'swarmConvertFromWeek', 'swarmConvertFullWeek', 'swarmConvertDepthShare', 'swarmConvertWaste', 'facingTwoSidedAngle', 'freshSideHoldSeconds', 'crossTEdge', 'crossTCreepFraction', 'crossTWidth', 'crossTTurnEdge', 'placesPicketSpread', 'placesPicketMove', 'placesPicketMax', 'placesWithdrawGatherSeconds', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerTargetShare', 'ledgerLineMin', 'ledgerLossMargin', 'ledgerSaveFloor', 'ledgerMinLoss', 'ledgerSurplusShare', 'withdrawRatio', 'withdrawHoldWeeks', 'ledgerAssaultWeeks', 'indDevShareSave', 'indDevShareIdle', 'dirPriorityMul', 'resourceHeldShare', 'devGraceWeeks', 'devCapStart', 'devCapAlien', 'devPotShare', 'devIdleWeeks', 'devMaxBuilds', 'bbAcidSeconds', 'bbAcidMaxPatches', 'bbRegrowQuiet', 'bbRegrowHull', 'bbRegrowPlate', 'bbRegrowHeatStop', 'bbBurstTouch', 'bbBurstDeathReach', 'bbBurstSeek', 'bbVolleySpread', 'bbMissileRetries', 'bbPdRoundsPerShot', 'bbPdFlakRounds', 'bbPdReadyRounds', 'bbPdLaserHeat', 'bbRadiatorFoldSeconds', 'bbSideWeight', 'deflectRatio', 'deflectCallSeconds', 'readyRoundsPerGun', 'boostFuEarth', 'boostFuOther', 'boostGrowth', 'alloysEarthStart', 'alloysEarthRampTo', 'alloysEarthRampWeeks', 'alloysGrowth', 'fissilesGrowth', 'alienAlloysStart', 'alienAlloysGrowth', 'alienAlloysPerStep', 'alienBoostPerStep', 'alienNodeLossShare', 'shipUpkeepMaxShare', 'berthIdleWeeks', 'berthBoostWeeks', 'berthMaxGrowth', 'campaignBuildDays', 'campaignLiveEnterShips', 'civilianNoteWeeks', 'leaderNewsCooldown', 'leaderNewsCombatGap', 'stationRebuildYardBonus', 'stationRebuildSecuredBonus', 'stationRebuildNearShare', 'stationRebuildAlloys', 'cmdAttackMaxSeconds', 'cmdPaceGap', 'radioQuietSeconds', 'cmdSummaryMinutes', 'designRemarkSeconds', 'cmdReviewBattles', 'huntMaxShips', 'huntGraceSeconds', 'pursuitFleeingBonus', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'dangerConeSeconds', 'placesAttackStallSeconds', 'campaignAttackStallSeconds', 'campaignStragglerShips', 'campaignStragglerShare', 'campaignStragglerSeconds', 'campaignStandoffSeconds', 'campaignStandoffWeeks', 'campaignRetakeWeeks', 'comebackMassWeeks', 'alienGarrisonCap', 'campaignFallenMax', 'campaignPoolCap', 'campaignGarrisonCap', 'campaignStartOwnShips', 'campaignAlienGarrison', 'campaignAdvanceKeep', 'campaignAdvanceRatio', 'campaignAdvanceTake', 'campaignAdvanceAfterWaves', 'campaignAdvanceHoldWeeks', 'campaignRearKeep', 'campaignFrontMoveMinShips', 'campaignFrontMoveShare', 'executiveMassRatio', 'executiveAssaultRatio', 'executiveAssaultMin', 'campaignPriorityWeight', 'alienShoveWeeks', 'alienGatherRatio', 'alienGatherTarget', 'alienGatherMinShips', 'alienGatherMaxWeeks', 'alienPullBackRatio', 'alienStateHoldWeeks', 'alienFirstPool', 'alienWaveJitter', 'alienWarnWeeks', 'alienWaveBoostWeeks', 'alienTargetWeakest', 'alienTargetMain', 'alienFirstWaveWeek', 'minLaunchShips', 'placesHoldClearOdds', 'campaignYardEvery', 'boostPerMarker', 'campaignRefuelShare', 'capitalBuildShare', 'assaultMaxWaitWeeks', 'repairPerWeek', 'campaignDesignBoostPerMass', 'campaignDesignBuildPerCost', 'campaignDesignAlloysShare', 'campaignDesignWeight', 'placesReachShare', 'placesFailRaise', 'placesContestShare', 'aoSecureShare', 'aoLoseShare', 'siegeBoostTrickle', 'boostFootholdShare', 'siegeGrowthFactor', 'siegeResourceFactor', 'placesReportMinutes', 'placesHysteresis', 'placesMaxOpposite', 'internalChance', 'internalFresh', 'externalCover', 'deepBelowHull', 'dcSeconds', 'blastToHull', 'blastToParts', 'profileNudgeMax', 'profileNudgeTurn', 'profileNudgeFiring', 'reactorWallShare', 'trackSquareCut', 'pressDryValue', 'pressFleetRatio', 'pressOdds', 'pressHealthEdge', 'pressOddsHealthy', 'pressDangerShare', 'pressHitChance', 'pressAfter', 'pressProgress', 'pressHold', 'pressStep', 'pressRingMin', 'lockFormShare', 'looseJitter', 'looseRein', 'lockSettleSeconds', 'lockRein', 'lockBreakHull', 'lockMinShare', 'closeRanksDelay', 'mergeBelow', 'mergeMaxOdds', 'disbandAt', 'stragglerSeconds', 'divisionLeash', 'pursuitBase', 'formBeforeAttack', 'gatherSeconds', 'fallenKeep', 'topUpBelow', 'stagingContactSeconds', 'stagingMaxWait', 'minNewSquadron', 'entryDangerRatio', 'entryCheckFactor', 'entryRetrySeconds', 'rallyInset', 'joinWornBelow', 'survivorEdgeMargin', 'flagKilled', 'flagWounded', 'flagSurviveSwing', 'woundedSkillPenalty', 'woundedBattles', 'replacementDelay', 'handoverSeconds', 'standInSkill', 'pinRenewSeconds', 'divisionTaskMinSeconds', 'rotateWornShare', 'divisionRefuseOdds', 'divisionRallyOdds', 'divisionCounterPressure', 'mainEffortMinOdds', 'mainEffortFreeRein', 'pinRenewFactor', 'supportSeconds', 'supportMaxTravelSeconds', 'divisionTargetBonus', 'localAttackOdds', 'memberCompactShare', 'recruitAxisSpread', 'recruitSkillLow', 'recruitSkillHigh', 'skillPerLevel', 'readinessXpPerRepair', 'medalSkillAdd', 'scarShakenBoldness', 'repertoirePull', 'spawnEdgeMargin', 'doctrinePull', 'matchupPull', 'experimentMinSeconds', 'experimentCooldown', 'tacticLearnStep', 'tacticWeightMax', 'exploreLearnBoost', 'spawnBandWidth', 'spawnVerticalMargin', 'shieldRechargeDelay', 'minArmorPassFraction', 'separationStrength',
   'separationMaxStepFraction', 'reengageMinGap', 'kiteEnterFactor', 'kiteExitFactor', 'kiteBackSpeed', 'debugMaxLines', 'formationHoldFraction', 'formationPaceMin',
   'formationBreakAngle', 'formationBreakSeconds', 'formationPassBend', 'leaderCloserMin', 'escortHoldFraction', 'escortStandOff', 'flankMarginFactor', 'flankAlong', 'flankContactFactor', 'flankArriveFactor', 'flankMapMarginFactor',
   'shotLengthSizes', 'minShipScreenPixels', 'maxTriangleShips', 'defaultReengage', 'defaultSeed',
@@ -14542,7 +14761,7 @@ const SETTING_WHOLE_NUMBERS = ['slowSporeSteps', 'slowFireMapSteps', 'lineRanks'
   'reportSquadronRows', 'reportPacketRows', 'reinforceMaxSquadrons', 'flankMaxSquadrons', 'counterMaxSquadrons', 'withdrawSamples', 'versionLogMax', 'serviceLastMax', 'serviceHistoryMax', 'serviceEventsMax', 'dossierLastActions', 'reportOfficerRows',
   'movementModel', 'hitModel', 'tacticsModel', 'flightAssist', 'retreatFiring', 'simultaneousFire', 'officerModel', 'strengthMapSteps', 'oddsCellsPerRadius', 'oddsMaxCells', 'maxRouts', 'maxBreakOffs', 'overheatFallback', 'smartTargetCandidates'];
 // The switches (section 1b, "The rules in force"): the values each may have, and the names the code uses for them.
-const SETTING_CHOICES = { dvWingModel: [0, 1], noseModel: [0, 1], rankSwap: [0, 1], devourerGrab: [0, 1], killRecordModel: [0, 1], priorityTargetModel: [0, 1], badMatchModel: [0, 1], acidMortar: [0, 1], frenzyGland: [0, 1], lsFrenzy: [0, 1], biteModel: [0, 1], lsMixModel: [0, 1], sizeHitModel: [0, 1], calmLookSkipAsleep: [0, 1], gunPace: [0, 1], alienLoopsByArrival: [0, 1], quietSteps: [0, 1], sleepLockedSquads: [0, 1], commandPace: [0, 1], placesByX: [0, 1], slowClock: [0, 1], lineRanks: [0, 1], swarmSpread: [0, 1], longSolarReach: [0, 1], longDockModel: [0, 1], swarmLine: [0, 1], warValves: [0, 1], bombardShield: [0, 1, 2], stationCrewWithStation: [0, 1], placeHoldFollow: [0, 1], aoMobilize: [0, 1], aoCharacter: [0, 1], aoAdmiral: [0, 1], cmdFormMoves: [0, 1], orderMovesObeyed: [0, 1], huntDetach: [0, 1], cmdStatLeans: [0, 1], huntDetachWhole: [0, 1], aoPostures: [0, 1], divisionOwner: [0, 1], admiralNeedsModel: [0, 1], longMapLine: [0, 1], cmdFormRealSize: [0, 1], cmdCapShare: [0, 1], cmdCapLongGuns: [0, 1], moonOrbits: [0, 1], dockModel: [0, 1], dockSpareModel: [0, 1], dockSpareSwarm: [0, 1], scuttleOnLedger: [0, 1], swarmDockModel: [0, 1], dockEvoModel: [0, 1], dockEvoSwarmSplit: [0, 1], matchupsInPlay: [0, 1], calmShips: [0, 1], cmRenderParts: [0, 1], simBudgetModel: [0, 1], simKeepPace: [0, 1], closeWarmAll: [0, 1], closeKeepPictures: [0, 1], allyShoveOff: [0, 1], allyNudge: [0, 1], divisionSpots: [0, 1], divisionSpotsInFight: [0, 1], campaignSensors: [0, 1], showBoost: [0, 1], coreLoop: [0, 1], coreLoopLine: [0, 1], coreLoopFleetCommand: [0, 1], coreLoopFleetDivisions: [0, 1], coreLoopRecompose: [0, 1], coreLoopAlienCommand: [0, 1], divisionMergeSmall: [0, 1], mergeFarOutOfContact: [0, 1], berthPairingModel: [0, 1], swarmNestModel: [0, 1], swarmGrowUpModel: [0, 1], swarmOpeningSpread: [0, 1], swarmLifeModel: [0, 1], swarmSurfaceModel: [0, 1], swarmEatsEnemies: [0, 1], swarmEatsHatchlings: [0, 1], fighterHangarModel: [0, 1], fighterLaunchModel: [0, 1], hangarRefillFromFleet: [0, 1], hangarRestock: [0, 1], wingModel: [0, 1], wingAirGroups: [0, 1], hangarRefillFree: [0, 1], swarmCarrierRegrow: [0, 1], hangarOrphansStay: [0, 1], tenderDocking: [0, 1], supplyRuns: [0, 1], cargoKept: [0, 1], ferryRuns: [0, 1], stationFighterGuard: [0, 1], stationNoSquadron: [0, 1], stationCrewSquad: [0, 1], stationPass: [0, 1], droneJamModel: [0, 1], divisionPaceModel: [0, 1], swarmFormations: [0, 1], facingVsTarget: [0, 1], facingTwoSided: [0, 1], freshSide: [0, 1], crossT: [0, 1], facingDodge: [0, 1], placesPicket: [0, 1], placesPicketSwarm: [0, 1], campaignStandoffPark: [0, 1], placesWithdrawOrder: [0, 1], placesWithdrawGuardDry: [0, 1], campaignLiveYardDawn: [0, 1], longMapReach: [0, 1], longMapLeash: [0, 1], longMapFog: [0, 1], sleepShips: [0, 1, 2], campaignResourceGate: [0, 1], bbAcid: [0, 1], bbRegrow: [0, 1], bbBurst: [0, 1], bbMissileStoreBySize: [0, 1], bbBeams: [0, 1], bbHeatModel: [0, 1], bbMissiles: [0, 1], bbPointDefence: [0, 1], bbLineOfFire: [0, 1], tightOrbit: [0, 1], campaignStartAtEarth: [0, 1], placesCrush: [0, 1], placesMassAttack: [0, 1], assaultSendAll: [0, 1], assaultReachOnly: [0, 1], frontReachOnly: [0, 1], placesNoLeapfrog: [0, 1], placesClaimKeeps: [0, 1], enemyWaitTurnBack: [0, 1], placesClaimFirm: [0, 1], placesSwarmPress: [0, 1], campaignSupplyLine: [0, 1], commandModel: [0, 1], stationRebuild: [0, 1], stationHullMend: [0, 1], cmdHelpMarches: [0, 1], cmdOpCommit: [0, 1, 2], cmdPassThrough: [0, 1, 2], orgScale: [0, 1], campaignLateAdmiral: [0, 1], campaignStartKit: [0, 1], placesFacilityApart: [0, 1], campaignFacilityApart: [0, 1], placesHoldClear: [0, 1], campaignHoldClear: [0, 1], campaignModel: [0, 1], officerCarryOver: [0, 1], campaignAutosave: [0, 1], placesRetry: [0, 1], placesSweep: [0, 1], placesDecisive: [0, 1], siegeYardSlowdown: [0, 1], placesModel: [0, 1], placesAllowAbandon: [0, 1], placesTheatre: [0, 1], designModel: [0, 1, 2], bureauBattle: [0, 1], moduleDamage: [0, 1], pressModel: [0, 1], partLossCall: [0, 1], survivalModel: [0, 1], allowAbandon: [0, 1], weaponModel: [0, 1], formationModel: [0, 1], lockStep: [0, 1], reorgModel: [0, 1], movementModel: [0, 1], hitModel: [0, 1, 2], tacticsModel: [0, 1], flightAssist: [0, 1], retreatFiring: [0, 1], overheatFallback: [0, 1], newSetupDefaults: [0, 1], unmannedRearGuard: [0, 1], simultaneousFire: [0, 1], officerModel: [0, 1], promoteNeedsVacancy: [0, 1], divisionTier: [0, 1], successionMode: [0, 1, 2], stagingModel: [0, 1] };
+const SETTING_CHOICES = { dvWingModel: [0, 1], noseModel: [0, 1], rankSwap: [0, 1], devourerGrab: [0, 1], killRecordModel: [0, 1], priorityTargetModel: [0, 1], badMatchModel: [0, 1], acidMortar: [0, 1], frenzyGland: [0, 1], lsFrenzy: [0, 1], biteModel: [0, 1], lsMixModel: [0, 1], sizeHitModel: [0, 1], calmLookSkipAsleep: [0, 1], gunPace: [0, 1], alienLoopsByArrival: [0, 1], quietSteps: [0, 1], sleepLockedSquads: [0, 1], commandPace: [0, 1], placesByX: [0, 1], slowClock: [0, 1], lineRanks: [0, 1], swarmSpread: [0, 1], longSolarReach: [0, 1], longDockModel: [0, 1], swarmLine: [0, 1], warValves: [0, 1], bombardShield: [0, 1, 2], stationCrewWithStation: [0, 1], placeHoldFollow: [0, 1], aoMobilize: [0, 1], aoCharacter: [0, 1], aoAdmiral: [0, 1], cmdFormMoves: [0, 1], orderMovesObeyed: [0, 1], huntDetach: [0, 1], cmdStatLeans: [0, 1], huntDetachWhole: [0, 1], aoPostures: [0, 1], divisionOwner: [0, 1], admiralNeedsModel: [0, 1], longMapLine: [0, 1], cmdFormRealSize: [0, 1], cmdCapShare: [0, 1], cmdCapLongGuns: [0, 1], moonOrbits: [0, 1], dockModel: [0, 1], dockHoldModel: [0, 1], dockRepairRefit: [0, 1], dockSpareModel: [0, 1], dockSpareSwarm: [0, 1], scuttleOnLedger: [0, 1], swarmDockModel: [0, 1], dockEvoModel: [0, 1], dockEvoSwarmSplit: [0, 1], matchupsInPlay: [0, 1], calmShips: [0, 1], cmRenderParts: [0, 1], simBudgetModel: [0, 1], simKeepPace: [0, 1], closeWarmAll: [0, 1], closeKeepPictures: [0, 1], allyShoveOff: [0, 1], allyNudge: [0, 1], divisionSpots: [0, 1], divisionSpotsInFight: [0, 1], campaignSensors: [0, 1], showBoost: [0, 1], coreLoop: [0, 1], coreLoopLine: [0, 1], coreLoopFleetCommand: [0, 1], coreLoopFleetDivisions: [0, 1], coreLoopRecompose: [0, 1], coreLoopAlienCommand: [0, 1], divisionMergeSmall: [0, 1], mergeFarOutOfContact: [0, 1], berthPairingModel: [0, 1], swarmNestModel: [0, 1], swarmGrowUpModel: [0, 1], swarmOpeningSpread: [0, 1], swarmLifeModel: [0, 1], swarmSurfaceModel: [0, 1], swarmEatsEnemies: [0, 1], swarmEatsHatchlings: [0, 1], fighterHangarModel: [0, 1], fighterLaunchModel: [0, 1], hangarRefillFromFleet: [0, 1], hangarRestock: [0, 1], wingModel: [0, 1], wingAirGroups: [0, 1], hangarRefillFree: [0, 1], swarmCarrierRegrow: [0, 1], hangarOrphansStay: [0, 1], tenderDocking: [0, 1], supplyRuns: [0, 1], cargoKept: [0, 1], ferryRuns: [0, 1], stationFighterGuard: [0, 1], stationNoSquadron: [0, 1], stationCrewSquad: [0, 1], stationPass: [0, 1], droneJamModel: [0, 1], divisionPaceModel: [0, 1], swarmFormations: [0, 1], facingVsTarget: [0, 1], facingTwoSided: [0, 1], freshSide: [0, 1], crossT: [0, 1], facingDodge: [0, 1], placesPicket: [0, 1], placesPicketSwarm: [0, 1], campaignStandoffPark: [0, 1], placesWithdrawOrder: [0, 1], placesWithdrawGuardDry: [0, 1], campaignLiveYardDawn: [0, 1], longMapReach: [0, 1], longMapLeash: [0, 1], longMapFog: [0, 1], sleepShips: [0, 1, 2], campaignResourceGate: [0, 1], bbAcid: [0, 1], bbRegrow: [0, 1], bbBurst: [0, 1], bbMissileStoreBySize: [0, 1], bbBeams: [0, 1], bbHeatModel: [0, 1], bbMissiles: [0, 1], bbPointDefence: [0, 1], bbLineOfFire: [0, 1], tightOrbit: [0, 1], campaignStartAtEarth: [0, 1], placesCrush: [0, 1], placesMassAttack: [0, 1], assaultSendAll: [0, 1], assaultReachOnly: [0, 1], frontReachOnly: [0, 1], placesNoLeapfrog: [0, 1], placesClaimKeeps: [0, 1], enemyWaitTurnBack: [0, 1], placesClaimFirm: [0, 1], placesSwarmPress: [0, 1], campaignSupplyLine: [0, 1], commandModel: [0, 1], stationRebuild: [0, 1], stationHullMend: [0, 1], cmdHelpMarches: [0, 1], cmdOpCommit: [0, 1, 2], cmdPassThrough: [0, 1, 2], orgScale: [0, 1], campaignLateAdmiral: [0, 1], campaignStartKit: [0, 1], placesFacilityApart: [0, 1], campaignFacilityApart: [0, 1], placesHoldClear: [0, 1], campaignHoldClear: [0, 1], campaignModel: [0, 1], officerCarryOver: [0, 1], campaignAutosave: [0, 1], placesRetry: [0, 1], placesSweep: [0, 1], placesDecisive: [0, 1], siegeYardSlowdown: [0, 1], placesModel: [0, 1], placesAllowAbandon: [0, 1], placesTheatre: [0, 1], designModel: [0, 1, 2], bureauBattle: [0, 1], moduleDamage: [0, 1], pressModel: [0, 1], partLossCall: [0, 1], survivalModel: [0, 1], allowAbandon: [0, 1], weaponModel: [0, 1], formationModel: [0, 1], lockStep: [0, 1], reorgModel: [0, 1], movementModel: [0, 1], hitModel: [0, 1, 2], tacticsModel: [0, 1], flightAssist: [0, 1], retreatFiring: [0, 1], overheatFallback: [0, 1], newSetupDefaults: [0, 1], unmannedRearGuard: [0, 1], simultaneousFire: [0, 1], officerModel: [0, 1], promoteNeedsVacancy: [0, 1], divisionTier: [0, 1], successionMode: [0, 1, 2], stagingModel: [0, 1] };
 // Rule switches that an imported file may lack: a missing one is read as 0 (the file was made before the rule existed), not as this version's default (stage 12).
 const SETTING_SWITCHES_OLD_FILES = ['commandModel', 'orgScale', 'movementModel', 'hitModel', 'tacticsModel', 'newSetupDefaults', 'simultaneousFire', 'officerModel', 'divisionTier', 'stagingModel', 'reorgModel', 'formationModel', 'lockStep', 'weaponModel', 'survivalModel', 'designModel', 'moduleDamage', 'pressModel', 'placesModel'];
 const MOVE_CLASSIC = 0, MOVE_THRUST = 1;
@@ -29708,7 +29927,7 @@ function bbSporeFieldsStep(dt) {
   // (v245.0, 05ve) the clouds' list is made every slowSporeSteps steps (the missiles are still checked against it every step)
   const nSp = slowEverySteps(SETTINGS.slowSporeSteps * SETTINGS.simStep);
   if (nSp > 1 && moveStepCounter - bbSporeBuiltAt < nSp && moveStepCounter >= bbSporeBuiltAt) { if (C.length === 0) return; }
-  else { bbSporeBuiltAt = moveStepCounter; C.length = 0;
+  else { bbSporeBuiltAt = moveStepCounter; C.length = 0; bbSporeGridStale = true;
   for (let i = 0; i < highWater; i++) {
     if (shipAlive[i] !== 1) continue;
     const info = bbTypeInfo(shipType[i]);
@@ -29726,10 +29945,29 @@ function bbSporeFieldsStep(dt) {
   }
   }
   if (C.length === 0) return;
+  // (v276.0) the clouds are sorted into squares as wide as the longest reach (once each time the list is made), so a missile is only checked
+  // against the clouds in its own square and the eight round it, not against every cloud on the map. The answer is the same: the strongest cloud it is in.
+  const fast = SETTINGS.sporeGrid === 1 && C.length > 5 * 16;
+  if (fast && bbSporeGridStale) bbSporeGridBuild();
+  const G = bbSporeGrid;
   for (let k = 0; k < mslHigh; k++) {
     if (mslAlive[k] === 0) continue;
     const side = Math.floor(mslSt[k] / TYPE_COUNT), x = mslX[k], y = mslY[k];
     let best = 0;
+    if (fast) {
+      const gx = Math.floor((x - G.ox) * G.inv), gy = Math.floor((y - G.oy) * G.inv);
+      if (gx < -1 || gy < -1 || gx > G.w || gy > G.h) continue;
+      const x0 = gx > 0 ? gx - 1 : 0, x1 = gx < G.w - 1 ? gx + 1 : G.w - 1, y0 = gy > 0 ? gy - 1 : 0, y1 = gy < G.h - 1 ? gy + 1 : G.h - 1;
+      for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) {
+        const cell = cy * G.w + cx;
+        for (let q = G.start[cell], e = G.start[cell + 1]; q < e; q++) {
+          const c = G.items[q];
+          if (C[c] === side || C[c + 4] <= best) continue;
+          const dx = x - C[c + 1], dy = y - C[c + 2];
+          if (dx * dx + dy * dy <= C[c + 3]) best = C[c + 4];
+        }
+      }
+    } else
     for (let c = 0; c < C.length; c += 5) {
       if (C[c] === side || C[c + 4] <= best) continue;
       const dx = x - C[c + 1], dy = y - C[c + 2];
@@ -29741,6 +29979,28 @@ function bbSporeFieldsStep(dt) {
     mslHp[k] -= eat;
     if (mslHp[k] <= 0) { if (bbStats) bbStats.sporeKills++; missileDowned(k); }
   }
+}
+// (v276.0) The clouds' squares: each cloud is listed in the one square its middle is in; a square is as wide as the longest reach, so any cloud that
+// can touch a point has its middle in that point's square or a neighbour.
+const bbSporeGrid = { ox: 0, oy: 0, inv: 1, w: 1, h: 1, start: new Int32Array(2), items: new Int32Array(0), fill: new Int32Array(1) };
+let bbSporeGridStale = true;   // true when the clouds' list was made again and the squares not yet
+function bbSporeGridBuild() {
+  const C = bbSporeClouds, G = bbSporeGrid, n = C.length / 5;
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity, r2 = 0;
+  for (let c = 0; c < C.length; c += 5) { const x = C[c + 1], y = C[c + 2]; if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; if (C[c + 3] > r2) r2 = C[c + 3]; }
+  let cs = Math.max(1, Math.sqrt(r2) * 1.0001);
+  while (((maxX - minX) / cs + 1) * ((maxY - minY) / cs + 1) > 65536) cs *= 2;
+  G.ox = minX; G.oy = minY; G.inv = 1 / cs; G.w = Math.floor((maxX - minX) * G.inv) + 1; G.h = Math.floor((maxY - minY) * G.inv) + 1;
+  const cells = G.w * G.h;
+  if (G.start.length < cells + 1) { G.start = new Int32Array(cells + 1); G.fill = new Int32Array(cells); }
+  if (G.items.length < n) G.items = new Int32Array(n + 256);
+  G.fill.fill(0, 0, cells);
+  for (let c = 0; c < C.length; c += 5) G.fill[Math.floor((C[c + 2] - G.oy) * G.inv) * G.w + Math.floor((C[c + 1] - G.ox) * G.inv)]++;
+  let sum = 0;
+  for (let c = 0; c < cells; c++) { G.start[c] = sum; sum += G.fill[c]; G.fill[c] = G.start[c]; }
+  G.start[cells] = sum;
+  for (let c = 0; c < C.length; c += 5) G.items[G.fill[Math.floor((C[c + 2] - G.oy) * G.inv) * G.w + Math.floor((C[c + 1] - G.ox) * G.inv)]++] = c;
+  bbSporeGridStale = false;
 }
 
 
@@ -37632,7 +37892,7 @@ function aoMobBarsMove(F, row) {
 //   THE WAR-ROOM VIEW (drawn over the map, nothing here writes to the battle):
 //     * the AO plate and the minimap, in the bottom-right corner: who holds the AO (or who is securing it, with the war-hours clock), each side's share of the
 //       strength, and a small map of the whole AO with the places in their owners' colours, every squadron as a dot, the fighting marked, the front line and
-//       the part the screen shows. A click on the minimap moves the view there.
+//       the part the screen shows. A press on the minimap snaps the view to that spot; hold and drag to sweep along it (v278.3).
 //     * "Jump to the fighting": the view goes to the heaviest fighting now (the squadrons that fired or were fired on in the last few seconds, in 4,000 u squares).
 //     * the FRONT LINE: between two places held by different sides, a grease-pencil line across the gap, halfway; places held by the same side are joined by a
 //       thin line in its colour.
@@ -37775,7 +38035,7 @@ function placesReportPanelRefresh() {
 }
 
 // ---- The war-room view ----
-const MINIMAP = { x: 0, y: 0, w: 0, h: 0, scale: 0, shown: false, long: false, labelH: 0, fight: null };   // (v178.0: long, labelH and fight for the long map's strip)
+const MINIMAP = { x: 0, y: 0, w: 0, h: 0, scale: 0, yScale: 0, shown: false, long: false, labelH: 0, fight: null, held: false };   // (v178.0: long, labelH and fight for the long map's strip)
 // The heaviest fighting now: the squadrons in a fight in the last `within` s, summed by value in 4,000 u squares; the middle of the best square's fighters, or null.
 function placesFightingPoint(within) {
   const S = 4000, cols = Math.max(1, Math.ceil(SETTINGS.worldWidth / S)), bins = new Map();
@@ -37804,22 +38064,47 @@ function placesJumpToFighting() {
   keepCameraInWorld();
   return true;
 }
-// A click at (px, py) on the canvas: on the minimap, the view moves there (true); anywhere else, false.
-function placesMinimapClick(px, py) {
+// ---- (v278.3, Alex 18 Nov: "click the mini map to snap to a location, click and hold and drag to move quickly") THE MINIMAP IS A HANDLE ----
+// Press on the minimap and the view snaps to THAT SPOT (the zoom stays as it is); keep holding and drag, and the view follows the pointer along the
+// minimap, so the whole battlefield goes by in one sweep. A drag that runs off the minimap's edge keeps going along that edge. A plain click on the
+// blinking "fighting" mark still jumps to the fighting. (Before: a click on the long map's strip jumped to the middle of the region and changed the
+// zoom; holding did nothing.) Display only. The mouse code is in section 7 (battleMouseDown / Move / Up); a finger does the same.
+// Is the canvas point (px, py) on the minimap (its names underneath count)?
+function placesMinimapHas(px, py) {
   const m = MINIMAP;
-  if (!m.shown || px < m.x || px > m.x + m.w || py < m.y || py > m.y + m.h + (m.labelH || 0)) return false;
-  if (m.long) {                                                   // (v178.0) the long map's strip: a click snaps the view to that region, or to the fighting
-    if (m.fight && Math.abs(px - m.fight.x) <= 12 && Math.abs(py - m.fight.y) <= 12) { placesJumpToFighting(); return true; }
-    const regions = longMapRegions(), col = Math.min(regions.length - 1, longMapSlotOf((px - m.x) / m.scale)), band = longMapRegionBand(col);
-    const slot = longMapSlotWidth(), H = SETTINGS.worldHeight, lim = zoomLimits();
-    camera.x = longMapRegionLeft(col) + slot / 2; camera.y = (band.top + band.height / 2) * H;
-    camera.zoom = clampNumber(Math.min(canvas.width / (slot * 1.15), canvas.height / (band.height * H * 1.1)), lim.min, lim.max);
-    keepCameraInWorld();
-    return true;
-  }
-  camera.x = (px - m.x) / m.scale; camera.y = (py - m.y) / m.scale;
+  return m.shown && px >= m.x && px <= m.x + m.w && py >= m.y && py <= m.y + m.h + (m.labelH || 0);
+}
+// The view goes to the spot under (px, py) on the minimap (a point outside it counts as the nearest point on its edge).
+function placesMinimapLook(px, py) {
+  const m = MINIMAP;
+  if (!m.shown || !(m.scale > 0)) return false;
+  const x = Math.min(m.x + m.w, Math.max(m.x, px)), y = Math.min(m.y + m.h, Math.max(m.y, py));
+  camera.x = (x - m.x) / m.scale; camera.y = (y - m.y) / (m.yScale > 0 ? m.yScale : m.scale);
   keepCameraInWorld();
   return true;
+}
+// A press at (px, py): on the minimap the view snaps there and the hold begins (true); anywhere else, false.
+function placesMinimapPress(px, py) {
+  if (!placesMinimapHas(px, py)) return false;
+  MINIMAP.held = true;
+  const f = MINIMAP.fight;
+  if (!(f && Math.abs(px - f.x) <= 12 && Math.abs(py - f.y) <= 12)) placesMinimapLook(px, py);   // on the fighting mark: wait and see if it is a click
+  return true;
+}
+// The pointer moved while held: the view follows it.
+function placesMinimapDrag(px, py) { if (MINIMAP.held) placesMinimapLook(px, py); return MINIMAP.held; }
+// Let go. moved: was it a drag (true) or a plain click (false)? A plain click on the fighting mark jumps to the fighting.
+function placesMinimapRelease(px, py, moved) {
+  if (!MINIMAP.held) return false;
+  MINIMAP.held = false;
+  const f = MINIMAP.fight;
+  if (!moved && f && Math.abs(px - f.x) <= 12 && Math.abs(py - f.y) <= 12) placesJumpToFighting();
+  return true;
+}
+// A click at (px, py) on the canvas: on the minimap, the view moves there (true); anywhere else, false. (Kept for anything that still asks for a whole click.)
+function placesMinimapClick(px, py) {
+  if (!placesMinimapPress(px, py)) return false;
+  return placesMinimapRelease(px, py, false);
 }
 function sideColour(s) { return s === BLUE ? lookColors.friendly : (s === RED ? lookColors.alien : lookColors.mapDim); }
 // Are places i and j neighbours? Yes unless a third place lies inside the circle drawn on the line between them (the place in between is the real neighbour of
@@ -37874,7 +38159,7 @@ function drawPlacesWarRoom(w, h, now) {
   // (v178.0) on the long map the minimap is a wide strip (about half the screen, the regions as boxes with their names under them); the plate keeps its width
   const pw = Math.min(280, Math.max(160, w * 0.22)), mw = long ? Math.min(w - 28, Math.max(pw, w * 0.5)) : pw, scale = mw / W, mh = long ? Math.max(64, H * scale) : H * scale, labelH = long ? 14 : 0, yScale = mh / H;   // (the long strip is stretched taller than true to be readable)
   const x0 = w - mw - 14, y0 = h - mh - labelH - 14, px0 = w - pw - 14;
-  MINIMAP.x = x0; MINIMAP.y = y0; MINIMAP.w = mw; MINIMAP.h = mh; MINIMAP.scale = scale; MINIMAP.shown = true; MINIMAP.long = long; MINIMAP.labelH = labelH; MINIMAP.fight = null;
+  MINIMAP.x = x0; MINIMAP.y = y0; MINIMAP.w = mw; MINIMAP.h = mh; MINIMAP.scale = scale; MINIMAP.yScale = yScale; MINIMAP.shown = true; MINIMAP.long = long; MINIMAP.labelH = labelH; MINIMAP.fight = null;
   // the plate above it: stencil letters, who holds the AO, the shares
   const plateH = 58, py = y0 - plateH - 4;
   ctx.globalAlpha = 0.92; ctx.fillStyle = 'rgba(6,10,16,.92)'; ctx.fillRect(px0, py, pw, plateH);
@@ -44775,6 +45060,8 @@ Object.assign(CAMPAIGN_API, {
 //   Alloys difference, paid once from the week's pot before the yards (a cheaper design costs nothing); when none fits it goes UP to the smallest class
 //   with an active design the place's tier allows, for the difference and dockUpgradeWeeks (its ship serves meanwhile). Refits take at most
 //   dockRefitMaxShare of the week's Alloys. The old ships are not scrapped: they fight on until lost, and are then not replaced.
+//   (v277.0, 06f2b) ... and each old ship stays its dock's ship (held) until it is lost or rebuilt in a repair dock; only then does the dock send out
+//   the new design. Before v277.0 the dock sent one out at once, so every redesign doubled the design's ships for free.
 //
 //   A DOCK AT A PLACE WE LOSE sleeps (campaignDockActive: our standing station, or Earth's surface): it replaces nothing and pays nothing until we take
 //   the place back. Its record stays.
@@ -44819,7 +45106,7 @@ function campaignDockFields(c, opts) {
   if (typeof d.seeded !== 'boolean') d.seeded = false;
   if (typeof d.nextId !== 'number') d.nextId = 1;
   if (!d.stats || typeof d.stats !== 'object') d.stats = {};
-  for (const key of ['built', 'replaced', 'refits', 'upgrades', 'seeded', 'granted', 'waited']) if (!Array.isArray(d.stats[key]) || d.stats[key].length !== 2) d.stats[key] = typeof d.stats[key] === 'number' ? [d.stats[key], 0] : [0, 0];   // (per side; a v170.0 save's single numbers were ours)
+  for (const key of ['built', 'replaced', 'refits', 'upgrades', 'seeded', 'granted', 'waited', 'holdsDone', 'repairRefits']) if (!Array.isArray(d.stats[key]) || d.stats[key].length !== 2) d.stats[key] = typeof d.stats[key] === 'number' ? [d.stats[key], 0] : [0, 0];   // (per side; a v170.0 save's single numbers were ours)
   if (!d.resTaken || typeof d.resTaken !== 'object') d.resTaken = {};
   if (!Array.isArray(d.short) || d.short.length !== 2) d.short = [0, 0];   // (v173.0) ships lost whose docks are still building their spares, per side
   // (v171.0) the Swarm's match: the stalemate factor and the AO the front has stood in since when
@@ -44839,6 +45126,7 @@ function campaignDockFields(c, opts) {
     if (r.spare !== undefined && !(typeof r.spare === 'number' && isFinite(r.spare))) delete r.spare;   // (v173.0) the week its next spare is ready   // (v172.0) a combined Swarm hatchery counts for this many ships
     if (r.refit !== undefined && r.refit !== null && (typeof r.refit !== 'object' || typeof r.refit.to !== 'string')) r.refit = null;
     if (r.upgrade !== undefined && r.upgrade !== null && (typeof r.upgrade !== 'object' || typeof r.upgrade.to !== 'string')) r.upgrade = null;
+    if (r.hold !== undefined) { const h = {}; if (r.hold && typeof r.hold === 'object' && !Array.isArray(r.hold)) for (const id in r.hold) if (typeof r.hold[id] === 'number' && r.hold[id] > 1e-9 && id !== r.design) h[id] = r.hold[id]; if (Object.keys(h).length) r.hold = h; else delete r.hold; }   // (v277.0) the old ships it still counts as its own (06f2b)
   }
   if (opts && opts.docks === true) d.on = true;
   else if (opts && d.list.length === 0 && SETTINGS.dockModel === 1) d.on = true;   // (a new war with the setting on)
@@ -44943,14 +45231,15 @@ function campaignDockActive(r) {
 // (v237.0) The side a dock's place builds for: its yard's (06f campaignYardSide); on the long map also a forward station of ours that stands, where
 // Local docks may be (06f5 longDockPlaceSide).
 function campaignDockPlaceSide(place) { return typeof longDockOn === 'function' && longDockOn() ? longDockPlaceSide(place) : campaignYardSide(place); }
-// A side's awake docks grouped by design: { designId: { n, places: { placeId: n } } }.
-function campaignDocksByDesign(side) {
+// A side's awake docks grouped by design: { designId: { n, places: { placeId: n } } }. (v277.0) skipHeld: leave out docks holding an old ship (06f2b).
+function campaignDocksByDesign(side, skipHeld) {
   const out = {}, list = campaign.docks.list, awake = {};
   for (let k = 0; k < list.length; k++) {
     const r = list[k];
     if (r.side !== side) continue;
     if (awake[r.place] === undefined) awake[r.place] = campaignDockPlaceSide(r.place) === side;
     if (!awake[r.place] || typeIndexById(r.design) < 0) continue;
+    if (skipHeld && campaignDockHolding(r)) continue;
     const e = out[r.design] || (out[r.design] = { n: 0, places: {} });
     e.n++; e.places[r.place] = (e.places[r.place] || 0) + 1;
   }
@@ -45035,8 +45324,10 @@ function campaignDockReplace() {
   const now = campaign.week;
   for (let side = 0; side < 2; side++) {
     if (!campaignDockSideOn(side)) continue;
-    const spare = campaignDockSpareOn(side);
-    const by = spare ? campaignDockReadyByDesign(side, now) : campaignDocksByDesign(side), alive = campaignShipsAliveByDesign(side), perPlace = {};
+    const spare = campaignDockSpareOn(side), alive = campaignShipsAliveByDesign(side);
+    campaignDockHoldSettle(side, alive);                          // (v277.0) the old ships still alive stay their docks' ships; the lost ones come off (06f2b)
+    const hold = dockHoldOn();
+    const by = spare ? campaignDockReadyByDesign(side, now, hold) : campaignDocksByDesign(side, hold), perPlace = {};
     let n = 0, short = 0;
     for (const id in by) {
       const e = by[id], lost = (spare ? e.all : e.n) - (alive[id] || 0);
@@ -45077,13 +45368,14 @@ function campaignDockSpareOn(side) { return SETTINGS.dockSpareModel === 1 && (si
 function campaignDockSpareWeeks(cls) { const t = SETTINGS.dockSpareDays || {}, d = typeof t[cls] === 'number' && isFinite(t[cls]) ? t[cls] : 0; return Math.max(0, d) / 7; }
 function campaignDockSpareReady(r, now) { return !(typeof r.spare === 'number' && r.spare > now + 1e-6); }
 // A side's awake docks by design, counting only those with a spare ready: { designId: { all (awake docks), n (ready), places: { placeId: ready }, recs: { placeId: [ready docks] } } }.
-function campaignDockReadyByDesign(side, now) {
+function campaignDockReadyByDesign(side, now, skipHeld) {
   const out = {}, list = campaign.docks.list, awake = {};
   for (let k = 0; k < list.length; k++) {
     const r = list[k];
     if (r.side !== side) continue;
     if (awake[r.place] === undefined) awake[r.place] = campaignDockPlaceSide(r.place) === side;
     if (!awake[r.place] || typeIndexById(r.design) < 0) continue;
+    if (skipHeld && campaignDockHolding(r)) continue;                // (v277.0) a dock holding an old ship sends out nothing (06f2b)
     const e = out[r.design] || (out[r.design] = { all: 0, n: 0, places: {}, recs: {} });
     e.all++;
     if (!campaignDockSpareReady(r, now)) continue;
@@ -45197,13 +45489,17 @@ function campaignDockDawn(pot) {
     // 1. upgrades whose week is up open at the new class with the new design
     for (const r of list) if (r.side === side && r.upgrade && r.upgrade.doneWeek >= 0 && r.upgrade.doneWeek <= today) {
       campaignLog('dock', 'A ' + berthClassName(r.cls).toLowerCase() + ' ' + who + ' at ' + campaignYardName(r.place) + ' is now a ' + berthClassName(r.upgrade.cls).toLowerCase() + ' ' + who + ' for the ' + campaignSupplyName(r.upgrade.to) + '.');
-      r.cls = r.upgrade.cls; r.design = r.upgrade.to; r.upgrade = null; d.stats.upgrades[side]++;
+      r.cls = r.upgrade.cls; campaignDockKeepShip(r, r.upgrade.to); r.design = r.upgrade.to; r.upgrade = null; d.stats.upgrades[side]++;   // (v277.0) its old ship stays its ship (06f2b)
     }
     // 2. a dock whose design is off the yards: a refit to a live design of its class or smaller (the fewest docks first), else an upgrade
     for (const r of list) {
       if (r.side !== side || r.refit || r.upgrade || campaignDockDesignLive(side, r.design, mix)) continue;
       const from = campaignShipInfo(r.design), fromAlloys = from ? from.alloys : 0, rank = berthRank(r.cls);
       let pick = null;
+      // (v277.0) a design that a newer version of itself replaced: its docks follow that version (the same size or smaller: a refit; bigger: an upgrade)
+      const fam = side === 0 && dockHoldOn() ? campaignDockNewVersion(r.design, active) : null;
+      if (fam && fam.rank <= rank) { r.refit = { to: fam.id, cost: Math.max(0, fam.alloys - fromAlloys), paid: 0 }; dockCount[fam.id] = (dockCount[fam.id] || 0) + 1; continue; }
+      if (fam && campaignDockSlotOk(side, r.place, fam.cls)) { r.upgrade = { to: fam.id, cls: fam.cls, cost: Math.max(0, fam.alloys - fromAlloys), paid: 0, doneWeek: -1 }; dockCount[fam.id] = (dockCount[fam.id] || 0) + 1; continue; }
       for (const a of active) { if (a.id === r.design || a.rank > rank) continue; if (pick === null || (dockCount[a.id] || 0) < (dockCount[pick.id] || 0) || ((dockCount[a.id] || 0) === (dockCount[pick.id] || 0) && a.rank > pick.rank)) pick = a; }
       if (pick) { r.refit = { to: pick.id, cost: Math.max(0, pick.alloys - fromAlloys), paid: 0 }; dockCount[pick.id] = (dockCount[pick.id] || 0) + 1; continue; }
       let up = null;
@@ -45222,7 +45518,8 @@ function campaignDockDawn(pot) {
       job.paid += take; budget -= take; spent += take;
       if (job.paid < job.cost - 1e-9) continue;                 // (not paid yet: the next dock may still be a free refit, so no stopping here)
       if (r.refit) {
-        campaignLog('dock', 'A ' + berthClassName(r.cls).toLowerCase() + ' ' + who + ' at ' + campaignYardName(r.place) + ' now keeps a ' + campaignSupplyName(r.refit.to) + ' (was the ' + campaignSupplyName(r.design) + (r.refit.cost > 0 ? '; the difference of ' + Math.round(r.refit.cost) + ' Alloys paid' : '') + ').');
+        campaignLog('dock', 'A ' + berthClassName(r.cls).toLowerCase() + ' ' + who + ' at ' + campaignYardName(r.place) + ' now keeps a ' + campaignSupplyName(r.refit.to) + ' (was the ' + campaignSupplyName(r.design) + (r.refit.cost > 0 ? '; the difference of ' + Math.round(r.refit.cost) + ' Alloys paid' : '') + ').' + (dockHoldOn() ? ' Its ' + campaignSupplyName(r.design) + ' serves on until it is lost or docks for repairs.' : ''));
+        campaignDockKeepShip(r, r.refit.to);                     // (v277.0) its old ship stays its ship (06f2b)
         r.design = r.refit.to; r.refit = null; d.stats.refits[side]++;
       } else {
         r.upgrade.doneWeek = today + Math.max(1, Math.round(+S.dockUpgradeWeeks || 1));
@@ -45299,6 +45596,7 @@ function campaignDockSummary(side) {
     out.byClass[r.cls] = (out.byClass[r.cls] || 0) + 1; out.byPlace[r.place] = (out.byPlace[r.place] || 0) + 1; out.byDesign[r.design] = (out.byDesign[r.design] || 0) + 1;
     if (r.refit) out.refits++; if (r.upgrade) out.upgrades++;
   }
+  out.held = campaignDockHeldCount(side);                     // (v277.0) old ships the docks still count as theirs (06f2b)
   if (side === 1) out.swarm = Object.assign({}, d.swarm);
   if (campaignDockSpareOn(side)) { const sp = campaignDockSpareCount(side); out.spares = { building: sp.building, soonDays: sp.soonDays, short: d.short ? d.short[side] : 0 }; }   // (v173.0)
   return out;
@@ -45312,7 +45610,8 @@ function campaignDockShipyardsHtml() {
   let h = '<div class="sec-h">Docks (test): ' + s.docks + ' keep ' + plural(s.awake, 'ship') + '</div><dl class="kv">' + rows.join('') +
          (places.length ? '<dt>Where</dt><dd>' + places.join(', ') + '</dd>' : '') +
          (s.refits || s.upgrades ? '<dt>Changing</dt><dd>' + (s.refits ? plural(s.refits, 'refit') : '') + (s.refits && s.upgrades ? ', ' : '') + (s.upgrades ? plural(s.upgrades, 'upgrade') : '') + '</dd>' : '') +
-         '<dt>Over the war</dt><dd>' + s.stats.built + ' built, ' + s.stats.replaced + ' ships replaced free</dd>' +
+         '<dt>Over the war</dt><dd>' + s.stats.built + ' built, ' + s.stats.replaced + ' ships replaced free' + (s.stats.repairRefits > 0 ? ', ' + plural(s.stats.repairRefits, 'old ship') + ' rebuilt to the new version in the repair docks' : '') + '</dd>' +
+         (s.held > 0 ? '<dt>Old versions</dt><dd><span data-n="docks:held" data-v="' + Math.round(s.held) + '">' + Math.round(s.held) + '</span> older-version ships still serve for their docks (each is rebuilt when it docks for repairs, or replaced by the new version when lost)</dd>' : '') +
          (s.spares ? '<dt>Spares</dt><dd><span data-n="docks:spares" data-v="' + s.spares.building + '">' + s.spares.building + '</span> being built' + (s.spares.short > 0 ? ', <span data-n="docks:short" data-v="' + s.spares.short + '">' + (s.spares.short === 1 ? '1 lost ship waits' : s.spares.short + ' lost ships wait') + '</span> for one' : '') + (s.spares.soonDays >= 0 ? ' (next ready in ' + plural(s.spares.soonDays, 'day') + ')' : '') + '</dd>' : '') +
          (s.docks > s.awake ? '<dt>Asleep</dt><dd>' + (s.docks - s.awake) + ' at places we have lost</dd>' : '') + '</dl>' + campaignEvoHtml(0);
   if (swarmDocksOn()) {
@@ -45340,6 +45639,194 @@ Object.assign(CAMPAIGN_API, {
   docksOn: function (on) { return campaignDockSet(on !== false); },      // switch the dock economy on (or off) in the running war
   dockList: function () { return campaign && campaign.docks ? copyJson(campaign.docks.list) : []; },
   dockYardsFor: function (id, side) { return campaignDockYardsFor(side === 1 ? 1 : 0, id); }    // where a design's docks would be built now, best first
+});
+// =====================================================================
+// 5z (continued). (v277.0) A DOCK KEEPS ITS OLD SHIP  (Alex 18 Nov, thread "Stop redesigns creating free ships"; SETTINGS.dockHoldModel)
+//
+//   WHAT WAS WRONG. A dock keeps one ship of its design alive (06f2). When the design left the yards (a new version saved in the Bureau, a design benched
+//   by the evolution, an outdated design) the dock switched to another design at dawn and, the next building day, counted ZERO ships of the new design, so
+//   it sent one out at once. The old ship was counted against no dock at all: it fought on, was never replaced, and paid no upkeep (upkeep is per dock).
+//   So every redesign doubled that design's ships for free. The Swarm's hatcheries did the same when they were combined into bigger ones or split back.
+//
+//   THE RULE NOW (dockHoldModel 1). Whenever a dock changes its design, the ship it had in service STAYS ITS SHIP: the dock writes it down as a HELD ship
+//   (r.hold = { designId: ships }). A dock with a held ship is covered: it sends out nothing. Each building day, before the replacing (06f2 campaignDockReplace),
+//   the living ships of each design are shared out: first to the docks of that design itself, then to the docks holding that design (oldest dock first).
+//   A held ship that is no longer alive comes off its dock's hold; a dock whose hold is empty is an ordinary dock of its new design again, and the replacing
+//   sends out a NEW-design ship for it (from its spare, as for any lost ship). So the fleet changes over to the new version as the old ships are lost,
+//   and never grows by it. A combined Swarm hatchery holds all the small ships it was made from (it hatches its big ship when the last one is lost); a
+//   split one shares its big ship between the hatcheries it became (they hatch their small ships when the big one is lost).
+//
+//   UPGRADE IN THE REPAIR DOCKS (dockRepairRefit 1; Alex's option B). When one of our old-version ships goes into a station's repair dock and one of our
+//   docks holds a ship of that design, the ship is rebuilt there as that dock's design: it comes out as the new version, at full hull, in a squadron of its
+//   own (the Admiral treats it as a new arrival). The dock's hold drops by one (the ship is now its own design), so nothing extra is built. The rebuild takes
+//   the dock as long as mending dockRepairRefitShare of the new design's hull (and loading its stores). The dock paid the Alloys difference when it switched
+//   design (06f2 campaignDockDawn), so the rebuild itself costs only the time. Fighters, Delver drone wings and carriers are not rebuilt this way (their bays
+//   and wings are kept by records of their own); they change over when lost.
+//
+//   Old saves: ships left over from a redesign before v277.0 belong to no dock; they fight on until lost, as before. dockHoldModel 0 = as v276.
+//   Check: tools/v277.0/dock-holds-check.js.
+// =====================================================================
+
+// Does the held-ship rule run in this war?
+function dockHoldOn() { return dockModelOn() && SETTINGS.dockHoldModel === 1; }
+// The ships a dock counts as its own now: its held ships, or one ship of its design.
+function campaignDockShipsOf(r) {
+  if (r.hold && typeof r.hold === 'object') { const out = {}; for (const id in r.hold) if (r.hold[id] > 1e-9) out[id] = r.hold[id]; if (Object.keys(out).length) return out; }
+  const one = {}; one[r.design] = 1; return one;
+}
+// Writes ships onto a dock's hold (ships = { designId: n }), leaving out its own design (a ship of its own design is simply its ship).
+function campaignDockHoldSet(r, ships) {
+  const h = {};
+  for (const id in ships) if (id !== r.design && ships[id] > 1e-9) h[id] = Math.round(ships[id] * 1e6) / 1e6;
+  if (Object.keys(h).length) r.hold = h; else delete r.hold;
+}
+// A dock is switching to another design: the ship it has in service stays its ship (held). Called just before r.design changes, with the new design.
+function campaignDockKeepShip(r, toDesign) {
+  if (!dockHoldOn()) return;
+  const ships = campaignDockShipsOf(r);
+  r.design = toDesign;
+  campaignDockHoldSet(r, ships);
+}
+// (06f2 campaignDockDawn) The newest version of a design's own family among the designs on the yards (active: 06f2's list), or null. A dock of an older
+// version follows it, instead of going to whichever design of its size has the fewest docks.
+function campaignDockNewVersion(id, active) {
+  const t = typeIndexById(id), rec = t >= 0 ? SHIP_TYPES[t] : null;
+  if (!rec || typeof designFamily !== 'function') return null;
+  const fam = String(designFamily(rec)).toLowerCase();
+  let best = null, bestV = -1;
+  for (const a of active) {
+    if (a.id === id) continue;
+    const at = typeIndexById(a.id), ar = at >= 0 ? SHIP_TYPES[at] : null;
+    if (!ar || String(designFamily(ar)).toLowerCase() !== fam) continue;
+    const v = designVersion(ar);
+    if (v > bestV) { best = a; bestV = v; }
+  }
+  return best;
+}
+// Does this dock hold a ship (so it sends out nothing)?
+function campaignDockHolding(r) { return !!(r.hold && typeof r.hold === 'object' && Object.keys(r.hold).length > 0); }
+
+// Each building day, before the replacing: the living ships of each design are shared out (own docks first, then the holding docks, oldest first);
+// held ships no longer alive come off. Only awake docks take part (a sleeping dock's hold waits with it). Returns how many docks were released.
+function campaignDockHoldSettle(side, alive) {
+  if (!dockHoldOn()) return 0;
+  const list = campaign.docks.list, awake = {}, own = {}, holders = [];
+  for (const r of list) {
+    if (r.side !== side) continue;
+    if (awake[r.place] === undefined) awake[r.place] = campaignDockPlaceSide(r.place) === side;
+    if (!awake[r.place]) continue;
+    if (campaignDockHolding(r)) holders.push(r); else own[r.design] = (own[r.design] || 0) + 1;
+  }
+  if (!holders.length) return 0;
+  const avail = {};
+  for (const id in alive) avail[id] = Math.max(0, (alive[id] || 0) - (own[id] || 0));
+  holders.sort(function (a, b) { return a.id - b.id; });
+  let released = 0;
+  for (const r of holders) {
+    const h = {};
+    for (const id in r.hold) {
+      const give = Math.min(r.hold[id], avail[id] || 0);
+      if (give > 1e-9) { h[id] = give; avail[id] -= give; }
+    }
+    campaignDockHoldSet(r, h);
+    if (!campaignDockHolding(r)) released++;
+  }
+  if (released > 0) campaign.docks.stats.holdsDone[side] += released;
+  return released;
+}
+// How many ships a side's docks hold now (for the War Room and the tests).
+function campaignDockHeldCount(side) {
+  let n = 0;
+  for (const r of campaign.docks.list) if (r.side === side && campaignDockHolding(r)) for (const id in r.hold) n += r.hold[id];
+  return Math.round(n * 100) / 100;
+}
+
+// ---- The upgrade in the repair docks (17 serveRepairPoint, as a ship moves into a dock) ----
+// rec is the repair record of the ship moving in. When one of its side's docks holds a ship of its design and builds a live design, the ship is
+// rebuilt as that design (see the header). Returns true when it was.
+function campaignDockRepairRefit(rec) {
+  if (!dockHoldOn() || SETTINGS.dockRepairRefit !== 1 || typeof campaignBattleActive === 'undefined' || !campaignBattleActive) return false;
+  if (!rec || rec.bay >= 0 || rec.wingN > 0 || rec.carrier >= 0) return false;      // (fighters, drone wings and carriers keep records of their own)
+  const side = rec.side, old = SHIP_TYPES[rec.type];
+  if (!old || !campaignDockSideOn(side)) return false;
+  let dock = null;
+  for (const r of campaign.docks.list) {
+    if (r.side !== side || !campaignDockHolding(r) || !(r.hold[old.id] >= 1 - 1e-9)) continue;
+    if (!campaignDockActive(r) || !campaignDockDesignLive(side, r.design, null)) continue;
+    if (dock === null || r.id < dock.id) dock = r;
+  }
+  if (!dock) return false;
+  const t = typeIndexById(dock.design);
+  if (t < 0 || t === rec.type) return false;
+  const st = side * TYPE_COUNT + t, share = clampNumber(+SETTINGS.dockRepairRefitShare || 0, 0, 1);
+  // the dock's hold drops by one: this ship is now its own design
+  const h = Object.assign({}, dock.hold); h[old.id] -= 1; campaignDockHoldSet(dock, h);
+  // the ship leaves the fleet record it came from (the battle's own lists count it as the new design from now on)
+  if (rec.campRec) { if (typeof campaignTidyOn === 'function' && campaignTidyOn()) { const g = campaignTagGroup(rec.campRec, rec.type); if (g) campaignGroupDropOne(g); } rec.campRec = null; }
+  // its old squadron lets go of its place; it comes back in a squadron of its own
+  const sq = rec.sq;
+  if (sq > 0 && rec.place >= 0 && sqAway[sq] > 0) {
+    const idx = sqStart[sq] + rec.place;
+    sqMemberAway[idx] = 0; sqMembers[idx] = -1; sqAway[sq]--;
+    if (sqAlive[sq] === 0 && sqAway[sq] === 0 && admirals[sqSide[sq]] !== null) squadronDestroyed(sq);
+  }
+  rec.sq = -1; rec.place = -1; rec.newSquad = true;
+  // a new ship of the new design: built up from part of its hull, with its stores to load
+  rec.type = t; rec.parts = null; rec.ammo = null; rec.cargoShort = 0; rec.everRetreated = 0;
+  rec.missing = stHull[st] * share; rec.hp = stHull[st] - rec.missing;
+  rec.storeMissing = SETTINGS.weaponModel === 1 && stStore[st] > 0 ? stStore[st] : 0;
+  rec.refitFrom = old.id;
+  campaign.docks.stats.repairRefits[side]++;
+  return true;
+}
+
+// ---- (06q2 campaignSwarmConvertWeek) The Swarm's ships at the rear feed on each other and grow ----
+// The conversion eats `per` small ships for each big one. With hatcheries on, the hatcheries of the eaten ships are combined the same way (into one
+// hatchery of the big design, worth what they were worth), so the hatcheries do not hatch the eaten ships again for nothing. rows = the conversion's rows.
+function campaignDockConverted(rows) {
+  if (!dockHoldOn() || !swarmDocksOn() || !rows || !rows.length) return 0;
+  const list = campaign.docks.list;
+  let made = 0;
+  for (const row of rows) {
+    const info = campaignShipInfo(row.to);
+    if (!info) continue;
+    const mine = list.filter(function (r) { return r.side === 1 && r.design === row.from && !campaignDockHolding(r) && !r.refit && !r.upgrade; });
+    mine.sort(function (p, q) { return p.place < q.place ? -1 : (p.place > q.place ? 1 : p.id - q.id); });
+    let used = 0;
+    for (let k = 0; k < row.made; k++) {
+      const group = mine.slice(used, used + row.per);
+      if (!group.length) break;
+      used += group.length;
+      const first = group[0], cls = info.berth || info.sizeClass;
+      let place = campaignDockSlotOk(1, first.place, cls) ? first.place : '';
+      if (!place) { const ys = campaignDockYardsFor(1, row.to); place = ys.length ? ys[0].id : first.place; }
+      let worth = 0, x1 = 0;
+      for (const r of group) { worth += r.worth > 0 ? r.worth : 1; x1 += campaignDockX1(r); list.splice(list.indexOf(r), 1); }
+      const n = campaignDockAdd(1, place, row.to, info); n.worth = worth;
+      if (Math.abs(x1 - worth) > 1e-6) n.x1 = Math.round(x1 * 10000) / 10000;   // (the testing sliders' share comes along, as in 06f3)
+      made++;
+    }
+  }
+  return made;
+}
+
+// ---- For the tests: ships alive beyond what the docks count as theirs (should stay 0 in a war started with v277.0) ----
+function campaignDockOrphans(side) {
+  const alive = campaignShipsAliveByDesign(side), cover = {}, awake = {};
+  for (const r of campaign.docks.list) {
+    if (r.side !== side) continue;
+    if (awake[r.place] === undefined) awake[r.place] = campaignDockPlaceSide(r.place) === side;
+    const sh = campaignDockShipsOf(r);
+    for (const id in sh) cover[id] = (cover[id] || 0) + sh[id];
+  }
+  const out = {};
+  let n = 0;
+  for (const id in alive) { const x = Math.round((alive[id] - (cover[id] || 0)) * 100) / 100; if (x > 0.01) { out[id] = x; n += x; } }
+  return { n: Math.round(n * 100) / 100, by: out };
+}
+Object.assign(CAMPAIGN_API, {
+  dockOrphans: function (side) { return campaign && campaign.docks ? campaignDockOrphans(side === 1 ? 1 : 0) : null; },   // (v277.0) ships no dock counts as its own
+  dockHeld: function (side) { return campaign && campaign.docks ? campaignDockHeldCount(side === 1 ? 1 : 0) : 0; }        // (v277.0) old ships the docks still count as theirs
 });
 // =====================================================================
 // 5z (continued). (v172.0) EVOLUTION: THE DOCKS LEARN FROM THE FIGHTING  (Alex 9 Nov; notes/plans/campaign/dock-economy.md, "Evolution")
@@ -45560,8 +46047,10 @@ function campaignEvoSwarm(mix) {
         let place = campaignDockSlotOk(1, first.place, B.info.berth || B.info.sizeClass) ? first.place : '';
         if (!place) { const rows = campaignDockYardsFor(1, B.id); if (!rows.length) break; place = rows[0].id; }
         let worth = 0, x1 = 0;
-        for (const r of group) { worth += r.worth > 0 ? r.worth : 1; x1 += campaignDockX1(r); list.splice(list.indexOf(r), 1); }
+        const held = {};                                         // (v277.0) the small ships they keep in service stay the combined hatchery's ships (06f2b)
+        for (const r of group) { worth += r.worth > 0 ? r.worth : 1; x1 += campaignDockX1(r); const sh = campaignDockShipsOf(r); for (const id in sh) held[id] = (held[id] || 0) + sh[id]; list.splice(list.indexOf(r), 1); }
         const n = campaignDockAdd(1, place, B.id, B.info); n.worth = worth;
+        if (dockHoldOn()) campaignDockHoldSet(n, held);
         if (Math.abs(x1 - worth) > 1e-6) n.x1 = Math.round(x1 * 10000) / 10000;   // (v218.0) the testing sliders' share comes along (24l campaignDebugX1Share)
         used += k; made++;
       }
@@ -45584,9 +46073,10 @@ function campaignEvoSwarm(mix) {
         if (done >= n) break;
         const place = campaignDockSlotOk(1, r.place, Sm.info.berth || Sm.info.sizeClass) ? r.place : (campaignDockYardsFor(1, Sm.id)[0] || {}).id;
         if (!place) continue;
-        const w = Math.round(r.worth), x1 = campaignDockX1(r);
+        const w = Math.round(r.worth), x1 = campaignDockX1(r), sh = campaignDockShipsOf(r), part = {};
+        for (const id in sh) part[id] = sh[id] / Math.max(1, w);   // (v277.0) the big ship stays in service, shared by the hatcheries it splits into (06f2b)
         list.splice(list.indexOf(r), 1);
-        for (let q = 0; q < w; q++) { const d = campaignDockAdd(1, place, Sm.id, Sm.info); if (Math.abs(x1 - r.worth) > 1e-6) d.x1 = Math.round(x1 / Math.max(1, w) * 10000) / 10000; }   // (v218.0)
+        for (let q = 0; q < w; q++) { const d = campaignDockAdd(1, place, Sm.id, Sm.info); if (dockHoldOn()) campaignDockHoldSet(d, part); if (Math.abs(x1 - r.worth) > 1e-6) d.x1 = Math.round(x1 / Math.max(1, w) * 10000) / 10000; }   // (v218.0)
         done++; back += w;
       }
       if (done > 0) {
@@ -52598,6 +53088,7 @@ function campaignSwarmConvertWeek() {
     if (row) { row.used += k * per; row.made += k; } else rows.push({ from: e.info.id, to: to.id, used: k * per, made: k, per: per });
   }
   s.convert = { week: week, ships: ships, cap: cap, over: over, quota: quota, rows: rows };
+  if (typeof campaignDockConverted === 'function') campaignDockConverted(rows);   // (v277.0) with hatcheries, the eaten ships' hatcheries combine too (06f2b)
   if (rows.length) {
     const nm = function (id) { const t = typeIndexById(id); return t >= 0 ? typeName[t] || SHIP_TYPES[t].name || id : id; };
     campaignLog('aliens', 'Swarm ships at the rear feed on each other and grow: ' + rows.map(function (r) { return plural(r.used, nm(r.from)) + ' became ' + plural(r.made, nm(r.to)); }).join(', ')
@@ -67548,6 +68039,7 @@ function serveRepairPoint(p) {
   while (p.docks.length < p.capacity && p.queue.length > 0) {
     const rec = p.queue.shift();
     rec.startedAt = simTime;
+    if (typeof campaignDockRepairRefit === 'function') campaignDockRepairRefit(rec);   // (v277.0) an old-version ship whose dock now builds the new version is rebuilt as it here (06f2b)
     rec.rate = repairRateFor(p, rec);                        // (v15) the officer's Readiness changes how fast the ship is mended
     rec.doneAt = simTime + (rec.missing > 0 ? rec.missing / rec.rate : 0);
     if (rec.storeMissing > 0) { const dst = rec.side * TYPE_COUNT + rec.type; if (stDockRefill[dst] > 0) rec.doneAt = Math.max(rec.doneAt, simTime + rec.storeMissing / stDockRefill[dst]); }   // (v18) rearming takes its own time
@@ -67623,7 +68115,7 @@ function returnShip(rec, cx, cy, k, hp, why, quiet) {
   if (quiet) { }
   else if (hp < 0) { statRepaired[st]++; repairSideStats[side].mended++; if (rec.sq > 0) sqRepaired[rec.sq]++; } else repairSideStats[side].ejected++;
   const sq = rec.sq;
-  if (sq > 0 && sqAway[sq] > 0) {                                           // back into its own squadron, in its old place
+  if (sq > 0 && sqAway[sq] > 0 && !rec.newSquad) {                         // back into its own squadron, in its old place
     const idx = sqStart[sq] + rec.place;
     sqMembers[idx] = slot; sqMemberAway[idx] = 0;
     shipSquad[slot] = sq;
@@ -67634,7 +68126,7 @@ function returnShip(rec, cx, cy, k, hp, why, quiet) {
       sqLeader[sq] = slot; sqFlagship[sq] = slot; sqLeaderAt[sq] = rec.place; sqNextThink[sq] = simTime; sqTarget[sq] = -1; sqFormation[sq] = 0;
       quietReport(sq, 'returned', why);                                     // the Admiral gives it a place (the rule Arrivals)
     }
-  } else if (sq > 0) {                                                      // its squadron is gone: the ship forms a squadron of its own, and the Admiral treats it as a new arrival
+  } else if (sq > 0 || rec.newSquad) {                                      // its squadron is gone (or (v277.0) it was rebuilt as a new design in the docks, 06f2b): the ship forms a squadron of its own, and the Admiral treats it as a new arrival
     const nsq = addSquadron(side, type, [slot]);
     quietReport(nsq, 'returned', why);
   }
@@ -76355,13 +76847,13 @@ const UI_SETTINGS = {
   shotDetail: 'normal',      // (v101.5, section 6w) how many shots the map draws when it is crowded: 'few', 'normal' or 'lots' (x0.5, x1, x2 the budget)
   closeHull: 1,              // (v180.0, section 6v) 1 = zoomed right in, our ships wear their outer HULL (UI/hull-art.js); 0 = the module view (every part showing, as before). Key H, or the Modules button
   closeLook: 'grit',         // (v33) the close look: 'grit' Workhorse (worn hull paint, the default), 'paint' Hull paint (clean), 'blue' Blueprint (the designer's drawings)
-  uiSkin: 'plain',           // (v215.0, section 7i4) the look of the two layers (live battle / command table); 'plain' today, a diegetic look later (notes/plans/ux-screens/diegetic-ui-plan.md)
+  uiSkin: 'plain',           // (v278.0, section 7i4b) the game's look: 'plain' (as it always was) or 'room' (the war room look: the battle on a wall of screens, the war map on a plotting table). Settings > Display > Look. notes/plans/ux-screens/diegetic-ui-plan.md
   mapGrid: false             // (worked out, not saved) draw the plotting-table grid under the ships
 };
 // The choices offered for the side colours (the mockup's swatches). Shapes tell the sides apart too, so any pair works for colour-blind players.
 const OUR_COLOR_CHOICES = [['Blue', '#4D9DFF'], ['Cyan', '#35D6E0'], ['Green', '#4FD67E'], ['Bone', '#DCD0A6'], ['White', '#E8EEF4']];
 const ENEMY_COLOR_CHOICES = [['Red', '#FF5A3C'], ['Orange', '#FF9A2E'], ['Magenta', '#FF4FC3'], ['Violet', '#A87CFF'], ['Acid', '#B8F03A']];
-const UI_SAVED_KEYS = ['closeDetail', 'closeHull', 'closeLook', 'shotDetail', 'engineGlow', 'icons', 'palette', 'ourColor', 'enemyColor', 'delverColor', 'sylphColor', 'echoColor', 'effects', 'layerLine', 'layerRange', 'layerTags', 'layerDanger', 'layerMinimap', 'layerDivNames', 'layerFleetNames', 'layerMoves', 'layerRetreat', 'layerFacing', 'tipDismissed', 'foldLeft', 'foldRight', 'commsSmall', 'layoutV105', 'movesOffV125', 'backdrops', 'starfield', 'dispatchPause', 'cmLayerOverlay', 'cmLayerDivNames'];
+const UI_SAVED_KEYS = ['closeDetail', 'closeHull', 'closeLook', 'shotDetail', 'engineGlow', 'icons', 'palette', 'ourColor', 'enemyColor', 'delverColor', 'sylphColor', 'echoColor', 'effects', 'layerLine', 'layerRange', 'layerTags', 'layerDanger', 'layerMinimap', 'layerDivNames', 'layerFleetNames', 'layerMoves', 'layerRetreat', 'layerFacing', 'tipDismissed', 'foldLeft', 'foldRight', 'commsSmall', 'layoutV105', 'movesOffV125', 'backdrops', 'starfield', 'dispatchPause', 'cmLayerOverlay', 'cmLayerDivNames', 'uiSkin'];
 const UI_STORE_PREFIX = 'engineersWar.ui.';
 
 // Reads the saved display settings (a browser that blocks storage simply keeps the defaults).
@@ -76377,6 +76869,7 @@ const UI_STORE_PREFIX = 'engineersWar.ui.';
   if (['full', 'subtle', 'off'].indexOf(UI_SETTINGS.effects) < 0) UI_SETTINGS.effects = 'full';
   if (['grit', 'paint', 'blue'].indexOf(UI_SETTINGS.closeLook) < 0) UI_SETTINGS.closeLook = 'grit';
   if (['few', 'normal', 'lots'].indexOf(UI_SETTINGS.shotDetail) < 0) UI_SETTINGS.shotDetail = 'normal';
+  if (['plain', 'room'].indexOf(UI_SETTINGS.uiSkin) < 0) UI_SETTINGS.uiSkin = 'plain';   // (v278.0) only the looks the game has
   if (UI_SETTINGS.layoutV105 !== 1) {              // (v105.0) once per browser: the new layout's defaults, whatever was saved before (the player can change them again)
     UI_SETTINGS.commsSmall = 1; UI_SETTINGS.foldRight = 0; UI_SETTINGS.layoutV105 = 1;
     try { for (const k of ['commsSmall', 'foldRight', 'layoutV105']) localStorage.setItem(UI_STORE_PREFIX + k, JSON.stringify(UI_SETTINGS[k])); } catch (e) { /* storage blocked */ }
@@ -80864,7 +81357,7 @@ function closeKeepCanvas(canvas, key, meta) {
 // (CLOSE_LOOK.keepDrawn). what: everything the picture is drawn from, as text (the art, the design, the size, the livery). It is filed under that and
 // the build's fingerprint (CLOSE_BUILD_PRINT, made by tools/build.js from every source file), so a picture drawn by older art is never read back.
 // cb(pic): the same { canvas, ... } as make() gives (read back: a fresh canvas with the kept measurements), or null when it could not be drawn.
-const CLOSE_BUILD_PRINT = '682f62bb9787';
+const CLOSE_BUILD_PRINT = '9acf6e76cde5';
 function closeKeptPicture(what, make, cb) {
   const fresh = function (key) {
     let pic = null;
@@ -84692,19 +85185,24 @@ backButton.addEventListener('click', showSetupScreen);
 reportBackButton.addEventListener('click', showSetupScreen);
 reportToggleButton.addEventListener('click', function () { reportPanel.classList.toggle('hidden'); });
 
+// (v278.3) A press on the minimap snaps the view to that spot, and holding and dragging there sweeps the view along the battlefield (section 5y).
 // Mouse: drag to pan, wheel to zoom (zooming toward the mouse pointer), (v267.0) Shift+wheel to scroll sideways. A click without a drag picks a ship for the inspector (section 7g).
 // (v17) The canvas may sit inside the battle screen's map cell, so the mouse is measured from the canvas's own corner.
 function canvasPoint(e) { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
 let dragging = false, lastMouseX = 0, lastMouseY = 0, pressX = 0, pressY = 0;
 function battleMouseDown(e) {
+  if (screenMode === 'battle') {                                 // (v278.3, section 5y) a press on the minimap snaps the view there and starts a hold: the map is not dragged
+    const p = canvasPoint(e);
+    if (placesMinimapPress(p.x, p.y)) { camFollowStop(); camGlide.on = false; dragging = false; lastMouseX = pressX = e.clientX; lastMouseY = pressY = e.clientY; return; }
+  }
   dragging = true;
   lastMouseX = pressX = e.clientX;
   lastMouseY = pressY = e.clientY;
 }
 function battleMouseUp(e) {
+  if (MINIMAP.held) { const p = canvasPoint(e); placesMinimapRelease(p.x, p.y, Math.abs(e.clientX - pressX) >= 4 || Math.abs(e.clientY - pressY) >= 4); dragging = false; return; }   // (v278.3) the end of a hold on the minimap
   if (dragging && screenMode === 'battle' && Math.abs(e.clientX - pressX) < 4 && Math.abs(e.clientY - pressY) < 4) {
     const p = canvasPoint(e);
-    if (placesMinimapClick(p.x, p.y)) { camFollowStop(); dragging = false; return; }   // (v21, section 5y) a click on the minimap moves the view there
     inspectShipAt(p.x, p.y);
     bsSelectedSq = inspectSlot >= 0 ? shipSquad[inspectSlot] : 0;          // (v17) the battle screen's Selected squadron (section 7k)
     if (typeof bsShipPick === 'function') bsShipPick(inspectSlot);        // (v98.9) and that one ship, shown up close in the column (section 7k)
@@ -84713,6 +85211,7 @@ function battleMouseUp(e) {
   dragging = false;
 }
 function battleMouseMove(e) {
+  if (MINIMAP.held) { const p = canvasPoint(e); camGlide.on = false; placesMinimapDrag(p.x, p.y); return; }   // (v278.3, section 5y) held on the minimap: the view follows the pointer along it
   if (!dragging) return;
   if (camFollowOn && (Math.abs(e.clientX - pressX) >= 4 || Math.abs(e.clientY - pressY) >= 4)) camFollowStop();   // (v175.0, section 7i2) panning by hand stops the follow
   camGlide.on = false;                                           // (v267.0, section 7i2b) a drag takes over from an edge arrow's glide
@@ -85189,6 +85688,7 @@ function buildDisplayBox(into) {                // into: where to build it (the 
     });
     row(label).appendChild(box);
   };
+  segment('Look', [['Plain', 'plain'], ['War room', 'room']], 'uiSkin', uiSkinApply);   // (v278.0, section 7i4b) the war room look, or the game as it always was
   swatches('Our ships', OUR_COLOR_CHOICES, 'ourColor', false);
   swatches('Swarm', ENEMY_COLOR_CHOICES, 'enemyColor', true);          // (v101.1) each enemy faction its own colour
   swatches('Delvers', ENEMY_COLOR_CHOICES, 'delverColor', true);
@@ -86792,6 +87292,111 @@ function uiScreenSync() {
   root.setAttribute('data-ui-screen', now);
   for (const fn of WAR_CLOCK.listeners) { try { fn(now, before); } catch (e) { console.error(e); } }
 }
+// =====================================================================================================================
+// 7i4b. (v278.0, Alex 18 Nov: "lets tackle the diegetic ui") THE WAR ROOM LOOK: the switch, and what each thing is made of
+// =====================================================================================================================
+//   The game has two looks, picked in Settings > Display > Look and kept in this browser (UI_SETTINGS.uiSkin):
+//     'plain'  the game as it always was (the default; nothing in this file or in UI/materials.css changes it), and
+//     'room'   the war room: you look UP at the battle on a wall of screens and DOWN at the war map on a dark plotting table.
+//
+//   HOW IT WORKS (one system for the whole game, not paint for each screen):
+//     * The page's root element says which look is on: <html data-ui-skin="plain|room"> (uiSkinApply, below).
+//     * A thing on a screen says WHAT IT IS MADE OF with data-mat="...": wall, table, and from the next steps screen, inlay,
+//       plate, metal, lamp, switch, well. The materials themselves (their colours, edges and shine) are drawn once, in UI/materials.css,
+//       and only while the root says "room". So a new screen gets the look by naming its materials; no new paint.
+//     * The look never moves, renames or hides anything, never touches the war clock (section 7i4) and never gives an order.
+//       It only changes surfaces. A phone keeps the plain look (materials.css leaves html.ew-phone-ui alone).
+//
+//   v278.2, LOOK DOWN AND THE MOVE: the strategy screen's parts are tagged where it is built (24f cmBuild): the war map the tabletop, the tabs plates,
+//   the resources strip and the Dispatches line wells, the side panel an inlay, the clock a lamp, the speeds switches. And the move (below).
+//   v278.1, LOOK UP: the battle screen's parts are tagged in page.html (the map a monitor, the side panels small monitors, the top bar a steel
+//   rail, the clock a lamp, the speed buttons switches, Comms a radio set). The map's monitor frame takes about 2.5% of the map's area.
+//   v278.0 was the first step: the switch, the materials and the two rooms' backgrounds (the wall behind the battle screen,
+//   the table under the strategy screens). The screens' own frames come in the next steps.
+//   Plan: notes/plans/ux-screens/diegetic-ui-plan.md. Check: tools/v278.0/war-room-switch-check.js
+const UI_SKINS = ['plain', 'room'];
+// Puts the chosen look on the page's root at once (called when the page opens and when the Settings switch is pressed;
+// uiScreenSync, section 7i4, keeps it in step every frame of a war as before).
+function uiSkinApply() {
+  const skin = UI_SKINS.indexOf(UI_SETTINGS.uiSkin) >= 0 ? UI_SETTINGS.uiSkin : 'plain';
+  document.documentElement.setAttribute('data-ui-skin', skin);
+  if (typeof WAR_CLOCK !== 'undefined') WAR_CLOCK.skin = skin;
+  return skin;
+}
+uiSkinApply();
+
+// ---- (v278.2) THE MOVE: look up at the screens, look down at the table ----
+// When the battle and the strategy screen swap (Tab, M, the buttons: section 7i4 tells us), the screen coming in tilts into place for under half a
+// second, with a click from the sound bank (SOUND_PICKS.events.lookUp / lookDown). Only with the War room look; not with Screen effects off, and not
+// for a player whose computer asks for less motion. It is a picture only: the war clock and the keys never wait for it.
+const ROOM_MOVE = { ms: 450, timer: 0, count: 0 };
+function roomMoveAllowed() {
+  if (UI_SETTINGS.uiSkin !== 'room' || document.documentElement.classList.contains('ew-phone-ui')) return false;
+  if (UI_SETTINGS.effects === 'off') return false;
+  return !(typeof reducedMotionQuery !== 'undefined' && reducedMotionQuery && reducedMotionQuery.matches);
+}
+function roomMove(now, before) {
+  const root = document.documentElement;
+  root.classList.remove('room-look-up', 'room-look-down');
+  if (!roomMoveAllowed()) return;
+  const down = now === 'strategy' && before === 'battle', up = now === 'battle' && before === 'strategy';
+  if (!down && !up) return;
+  void root.offsetWidth;                                   // so the same move twice in a row starts again
+  root.classList.add(down ? 'room-look-down' : 'room-look-up');
+  ROOM_MOVE.count++;
+  clearTimeout(ROOM_MOVE.timer);
+  ROOM_MOVE.timer = setTimeout(function () { root.classList.remove('room-look-up', 'room-look-down'); }, ROOM_MOVE.ms + 60);
+  if (typeof sndUiSound === 'function') sndUiSound(down ? 'lookDown' : 'lookUp');
+}
+uiScreenOnChange(roomMove);
+// =====================================================================================================================
+// 7i4c. (v278.4, Alex 18 Nov: "the map itself should be fully digital looking ... do an entire military digital strategic
+//       plot pass on the map") THE DIGITAL PLOT: how the strategy map is drawn with the War room look
+// =====================================================================================================================
+//   With the War room look the war map is a military plotting display sunk in the table: a flat dark screen with a
+//   measured grid, every planet and moon a line-drawn symbol (no painted pictures, no stars, no glowing Sun), crisp
+//   region lines and faint screen lines. With the Plain look the map is the painted one, as it always was.
+//
+//   ONE RULE FOR EVERY MAP: a map never asks "which look is on". It asks this file:
+//     plotOn()                      is the digital plot on? (the War room look, not on a phone)
+//     plotBodySvg(id, size)         the symbol of one body (a planet, a moon, the Sun) at radius 1, to be scaled like the paintings
+//     plotScreenSvg(px)             the screen itself: its dark face, grid and screen lines (px = a prefix of the map's own, so two
+//                                   maps on one page never share a pattern, as with the paintings)
+//   The strategic map (24f cmSolBackground) and the map of places (24f cmRenderAo) both draw from these, through
+//   cmBodySvg (24f), so a new map gets the plot by drawing its bodies with cmBodySvg and its field with plotScreenSvg.
+//   The colours and line weights are in UI/materials.css (the "plot" classes), so they change in one place.
+//   Nothing moves: every symbol sits where its painting sat, at the same size, and every label and button is the same.
+//   Check: tools/v278.4/digital-plot-check.js
+function plotOn() {
+  return typeof UI_SETTINGS !== 'undefined' && UI_SETTINGS.uiSkin === 'room' && !document.documentElement.classList.contains('ew-phone-ui');
+}
+// What each main body's symbol adds to the plain globe: bands (a gas giant), a ring, or the Sun's own mark.
+const PLOT_BODY = { jupiter: 'bands', saturn: 'ring', uranus: 'ringUp', neptune: 'bands', sun: 'sun' };
+// One body at radius 1. size = how many map units its radius is drawn at, so a small moon gets a simpler symbol
+// than a planet (a globe's lines would only be a smudge at that size). Lines keep one width however big the body.
+function plotBodySvg(id, size) {
+  const NS = ' vector-effect="non-scaling-stroke"', kind = PLOT_BODY[id] || '';
+  let s = '<g class="plot-body">';
+  if (kind === 'sun') return s + '<circle r="1" class="pb-disc"' + NS + '/><circle r=".55" class="pb-wire"' + NS + '/><path d="M-1.35 0H-1.12M1.12 0H1.35M0 -1.35V-1.12M0 1.12V1.35" class="pb-line"' + NS + '/></g>';
+  if (kind === 'ring') s += '<ellipse rx="2.05" ry=".5" transform="rotate(-16)" class="pb-wire"' + NS + '/>';
+  s += '<circle r="1" class="pb-disc"' + NS + '/>';
+  if (size >= 8) s += '<path d="M-1 0H1" class="pb-wire"' + NS + '/><ellipse rx=".42" ry="1" class="pb-wire"' + NS + '/>';   // the equator and one meridian: a globe
+  else s += '<circle r=".22" class="pb-dot"/>';
+  if (size >= 20) s += '<path d="M-.87 -.5H.87M-.87 .5H.87" class="pb-wire"' + NS + '/>';                                  // a planet: two more lines of latitude
+  if (kind === 'bands' && size >= 20) s += '<path d="M-.97 -.25H.97M-.97 .25H.97" class="pb-wire"' + NS + '/>';
+  if (kind === 'ring') s += '<path d="M-2.05 0A2.05 .5 0 0 0 2.05 0" transform="rotate(-16)" class="pb-line"' + NS + '/>';   // the near half of the ring, over the globe
+  if (kind === 'ringUp') s += '<ellipse rx=".34" ry="1.55" transform="rotate(12)" class="pb-line"' + NS + '/>';
+  return s + '</g>';
+}
+// The screen: its dark face, a measured grid (a fine square every 25 map units, a stronger line every 100) and faint
+// screen lines. It is drawn far past the map's own edges, so a wide window shows more plot, never the table.
+function plotScreenSvg(px) {
+  return '<defs><pattern id="' + px + 'plot-grid" width="100" height="100" patternUnits="userSpaceOnUse">' +
+      '<path d="M25 0V100M50 0V100M75 0V100M0 25H100M0 50H100M0 75H100" class="plot-grid-fine"/><path d="M0 0V100M0 0H100" class="plot-grid-main"/></pattern>' +
+    '<pattern id="' + px + 'plot-scan" width="4" height="3" patternUnits="userSpaceOnUse"><rect width="4" height="1" class="plot-scan"/></pattern></defs>' +
+    '<rect x="-1500" y="-800" width="4300" height="2300" class="plot-face"/><rect x="-1500" y="-800" width="4300" height="2300" fill="url(#' + px + 'plot-grid)"/>' +
+    '<rect x="-1500" y="-800" width="4300" height="2300" fill="url(#' + px + 'plot-scan)"/>';
+}
 // =====================================================================
 // 7i5. GAME MODES: ONE MODE OWNS THE GAME AT A TIME  (v228.0, Alex 12 Nov)
 //   Alex: "changing the way pause works broke last stand. pausing there currently can open up the campaign map". A playtester found the war itself
@@ -86928,7 +87533,7 @@ function feedbackScreenWords() {
 // Everything the game adds to a note by itself. Each line is a short label and a value.
 function feedbackContext() {
   const c = {};
-  c.build = typeof GAME_VERSION !== 'undefined' ? GAME_VERSION : 'v275.0';
+  c.build = typeof GAME_VERSION !== 'undefined' ? GAME_VERSION : 'v278.4';
   c.where = feedbackScreenWords();
   if (typeof campaign !== 'undefined' && campaign && typeof gameModeNow === 'function' && gameModeNow() === 'campaign') {
     c.warWeek = Math.floor(campaign.week || 0);
@@ -88372,28 +88977,28 @@ function cmBuild() {
   cmState.built = true;
   cmEl.className = 'mode-front hidden';
   cmEl.innerHTML =
-    '<div class="cm-screen" id="cmScreen">' +
-    '<nav class="tabbar" aria-label="Campaign tabs">' +
-      '<div class="brand"><b>Engineer\'s War</b><span id="cmBrand">Campaign</span></div>' +
+    '<div class="cm-screen" id="cmScreen" data-mat="table">' +
+    '<nav class="tabbar" aria-label="Campaign tabs" data-mat="clear">' +
+      '<div class="brand" data-mat="plate"><b>Engineer\'s War</b><span id="cmBrand">Campaign</span></div>' +
       // (v177.0, Alex 10 Nov) the battle is the main screen: this map is pulled up from it, and this button (or M, or Esc) closes it again
-      '<button class="tb hidden" type="button" data-cm="live" id="cmBackBattle" title="Back to the battle (Tab, M or Esc); the war clock stays as it is"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>Back to battle</button>' +
-      '<button class="tb" type="button" data-cm="tab" data-id="map"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.5"/><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="10" stroke-dasharray="2 3"/></svg>Map</button>' +
-      '<button class="tb" type="button" data-cm="tab" data-id="dispatches"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg>Dispatches <span class="badge zero" id="cmBadge">0</span></button>' +
-      '<button class="tb" type="button" data-cm="tab" data-id="council" title="(stop 8) The War Council: its minutes, and the offices of its members, where they ask you to back their move"><svg viewBox="0 0 24 24"><path d="M4 20V9l8-5 8 5v11"/><path d="M9 20v-6h6v6"/></svg>Council Room</button>' +
-      '<button class="tb hidden" type="button" data-cm="tab" data-id="research" id="cmTabResearch" title="Research: who pays for which project, and what each one opens (the war waits while it is open)"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M8.5 6h7M7.3 8.2l3.5 7.6M16.7 8.2l-3.5 7.6"/></svg>Research</button>' +   // (v30 C3: the Research tab, section 7u; shown once research runs or the Luna deposit is known)
-      '<button class="tb" type="button" data-cm="tab" data-id="officers" title="Your officers: their dossiers, and the library of officers you keep from war to war (the war waits while it is open)"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-4 3-6.5 7-6.5s7 2.5 7 6.5"/><path d="M9 3.5l3-1.5 3 1.5"/></svg>Officers</button>' +   // (v106.0, section 10j2)
-      '<button class="tb" type="button" data-cm="tab" data-id="bureau" title="The Design Bureau: mark which designs Earth\'s yards may build"><svg viewBox="0 0 24 24"><path d="M3.5 3.5h17v17h-17z"/><path d="M3.5 9.5h17M9.5 3.5v17" stroke-dasharray="2 2"/><path d="M12 13l3 5h-6z"/></svg>Design Bureau</button>' +
+      '<button class="tb hidden" data-mat="plate" type="button" data-cm="live" id="cmBackBattle" title="Back to the battle (Tab, M or Esc); the war clock stays as it is"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>Back to battle</button>' +
+      '<button class="tb" data-mat="plate" type="button" data-cm="tab" data-id="map"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.5"/><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="10" stroke-dasharray="2 3"/></svg>Map</button>' +
+      '<button class="tb" data-mat="bookmark" type="button" data-cm="tab" data-id="dispatches"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg>Dispatches <span class="badge zero" id="cmBadge">0</span></button>' +
+      '<button class="tb" data-mat="bookmark" type="button" data-cm="tab" data-id="council" title="(stop 8) The War Council: its minutes, and the offices of its members, where they ask you to back their move"><svg viewBox="0 0 24 24"><path d="M4 20V9l8-5 8 5v11"/><path d="M9 20v-6h6v6"/></svg>Council Room</button>' +
+      '<button class="tb hidden" data-mat="bookmark" type="button" data-cm="tab" data-id="research" id="cmTabResearch" title="Research: who pays for which project, and what each one opens (the war waits while it is open)"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M8.5 6h7M7.3 8.2l3.5 7.6M16.7 8.2l-3.5 7.6"/></svg>Research</button>' +   // (v30 C3: the Research tab, section 7u; shown once research runs or the Luna deposit is known)
+      '<button class="tb" data-mat="bookmark" type="button" data-cm="tab" data-id="officers" title="Your officers: their dossiers, and the library of officers you keep from war to war (the war waits while it is open)"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-4 3-6.5 7-6.5s7 2.5 7 6.5"/><path d="M9 3.5l3-1.5 3 1.5"/></svg>Officers</button>' +   // (v106.0, section 10j2)
+      '<button class="tb" data-mat="bookmark" type="button" data-cm="tab" data-id="bureau" title="The Design Bureau: mark which designs Earth\'s yards may build"><svg viewBox="0 0 24 24"><path d="M3.5 3.5h17v17h-17z"/><path d="M3.5 9.5h17M9.5 3.5v17" stroke-dasharray="2 2"/><path d="M12 13l3 5h-6z"/></svg>Design Bureau</button>' +
       // (v60, Alex 29 Oct) no Proving grounds tab here any more: the Proving grounds are on the main menu (and the Menu's sheet)
-      '<div class="clockbox"><div class="date" id="cmDateBox"><b id="cmDate">WEEK 0 · DAY 1</b></div>' +   // (v253.0) the slim bar: no small word above the date, no caption by the speeds
-        '<div class="speed" role="group" aria-label="War speed">' +
+      '<div class="clockbox" data-mat="metal"><div class="date" id="cmDateBox" data-mat="lamp"><b id="cmDate">WEEK 0 · DAY 1</b></div>' +   // (v253.0) the slim bar: no small word above the date, no caption by the speeds
+        '<div class="speed" role="group" aria-label="War speed" data-mat="switch">' +
           '<button type="button" data-cm="speed" data-id="0" title="Pause the war (Space)"><svg viewBox="0 0 14 14"><path d="M3 2h3v10H3zM8 2h3v10H8z" fill="currentColor"/></svg></button>' +
           '<button type="button" data-cm="speed" data-id="1" id="cmSp1">1&times;</button><button type="button" data-cm="speed" data-id="2" id="cmSp2">2&times;</button><button type="button" data-cm="speed" data-id="4" id="cmSp4">4&times;</button>' +
           '<button type="button" data-cm="speed" data-id="16" id="cmSp16">16&times;</button><button type="button" data-cm="speed" data-id="64" id="cmSp64">64&times;</button></div>' +
         '<button class="menu-btn" type="button" data-cm="menu" title="New, load, import, export, sound and display (Esc)">Menu</button></div>' +
-      '<div class="rates" id="cmRates" aria-label="Resource rates a week"></div>' +                        // (v27 B3) every resource as a weekly rate (section 7s)
+      '<div class="rates" id="cmRates" data-mat="well" aria-label="Resource rates a week"></div>' +                        // (v27 B3) every resource as a weekly rate (section 7s)
       '<div class="sup-drop" id="cmSupply" hidden></div>' +                                                  // (v67) the supply return drops down under the strip (section 7v)
     '</nav>' +
-    '<main class="map" id="cmMap"><div class="toolbar">' +
+    '<main class="map" id="cmMap" data-mat="tabletop"><div class="toolbar">' +
         '<div class="crumbs"><button type="button" class="btn btn-ghost hidden" data-cm="back" id="cmBack">&larr; All AOs</button><span>SOL &rsaquo; <b id="cmCrumb">ALL AOs</b></span></div>' +
         '<label class="layer cm-aoonly" title="The AO plate and what each place makes, over the battlefield"><input type="checkbox" data-cm="layer" data-id="cmLayerOverlay">AO overlay</label>' +   // (v27 B3)
         '<label class="layer cm-aoonly" title="Each Division\'s bracket, name and order over its ships while the battle is live (the battle screen has its own switch, next to Squadron tags)"><input type="checkbox" data-cm="layer" data-id="cmLayerDivNames">Division names</label>' +
@@ -88412,8 +89017,8 @@ function cmBuild() {
     '<section class="feed hidden" id="cmFeed"></section>' +
     '<section class="council hidden" id="cmCouncil"></section>' +          // (stop 8) the Council Room (section 7n)
     '<section class="research mode-blueprint hidden" id="cmResearch" aria-label="Research"></section>' +   // (v30 C3) the Research tab (section 7u)
-    '<aside class="side"><section class="panel"><div class="panel-head"><span id="cmSideHead">The war</span><span class="panel-tag" id="cmSideTag"></span></div><div class="panel-body tight" id="cmSide"></div></section></aside>' +
-    '<section class="ticker" id="cmTicker"></section>' +
+    '<aside class="side"><section class="panel" data-mat="inlay"><div class="panel-head"><span id="cmSideHead">The war</span><span class="panel-tag" id="cmSideTag"></span></div><div class="panel-body tight" id="cmSide"></div></section></aside>' +
+    '<section class="ticker" id="cmTicker" data-mat="well"></section>' +
     '</div>' +
     '<div class="sheet" id="cmSheet"></div>';
   cmEl.addEventListener('click', cmClick);
@@ -88427,7 +89032,7 @@ function cmBuild() {
     if (e.key === 'Escape' && !cmState.sheet && cmState.view === 'map' && !cmState.sel && cmBattleIsHome()) { cmOpenBattle(); e.preventDefault(); e.stopPropagation(); return; }
     if (e.key === 'Escape') { if (cmState.sheet === 'debug' || cmState.sheet === 'settings') cmSheetAction('menu'); else if (cmState.sheet) cmCloseSheet(); else if (cmState.view === 'council' && councilRoomEsc()) cmRender(true); else if (cmState.view !== 'map' || cmState.sel) { cmState.view = 'map'; cmState.sel = null; cmRender(true); } else cmOpenSheet('menu'); e.preventDefault(); }
   });
-  cmState.bgKey = cmLayout().key; document.getElementById('cmBg').innerHTML = cmSolBackground();
+  cmState.bgKey = cmBgKey(cmLayout()); document.getElementById('cmBg').innerHTML = cmSolBackground();
   document.getElementById('cmKey').innerHTML = cmKeyHtml();
 }
 
@@ -88740,7 +89345,7 @@ function cmRender(force) {
     return;
   }
   const live = campaignBattleLive(), front = campaignFrontId(), frontName = campaignAoName(front), L = cmLayout();
-  if (cmState.bgKey !== L.key) { cmState.bgKey = L.key; document.getElementById('cmBg').innerHTML = cmSolBackground(); }   // (the set of AOs changed: a new map)
+  if (cmState.bgKey !== cmBgKey(L)) { cmState.bgKey = cmBgKey(L); document.getElementById('cmBg').innerHTML = cmSolBackground(); }   // (the set of AOs changed, or the look did: a new map)
   scr.classList.toggle('paused', !(campaign.speed > 0));
   setText(document.getElementById('cmBrand'), (campaign.ai && campaign.ai.marsOnly ? 'Mars test campaign' : 'Campaign') + ' · seed ' + campaign.rngSeed);
   const dateEl = document.getElementById('cmDate');
@@ -88805,8 +89410,47 @@ function cmRenderAoArrows() {
   });
 }
 
+// (v278.4) One body on any of the campaign's maps: the painted picture with the Plain look, the line-drawn symbol on the War room look's
+// digital plot (section 7i4c). size = the radius it is drawn at, in map units (a small moon gets a simpler symbol).
+function cmBodySvg(id, px, size) { return plotOn() ? plotBodySvg(id, size) : planetArtSvg(id, px); }
+function cmBgKey(L) { return L.key + (plotOn() ? '|plot' : ''); }
+// (v278.4) The full map as a digital plot: the same places and sizes as the painted one below, drawn as a plotting display. The Sun is an
+// outline with range rings, each region's edge a crisp line with its number at the foot, and nothing is painted.
+function cmSolPlotBackground() {
+  let s = '<defs><pattern id="cm-hatch" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0V10" stroke="var(--alien)" stroke-width="2.2" opacity=".5"/></pattern>' +
+    '<pattern id="cm-hatch-s" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0V6" stroke="var(--alien)" stroke-width="2"/></pattern></defs>' + plotScreenSvg('m');
+  s += '<circle cx="-240" cy="345" r="216" class="plot-sun"/>';
+  for (const rr of [281, 380, 475]) s += '<circle cx="-240" cy="345" r="' + rr + '" class="plot-ring"/>';
+  const L = cmLayout(), MOONS = [[-40, -32], [42, -26], [-34, 36], [40, 34], [0, -46]];
+  L.order.forEach(function (id, i) {
+    if (i) s += '<path d="' + cmPolyD(cmArcPts(CM_SL0 + L.slw * i)) + '" class="plot-edge"/>';
+    s += '<text class="plot-note" x="' + cmF(cmEdgeX(CM_SL0 + L.slw * i, 668) + 8) + '" y="672">' + String(i + 1).padStart(2, '0') + '</text>';
+  });
+  s += '<text class="plot-note" x="1290" y="22" text-anchor="end">SOL SYSTEM PLOT &#183; NOT TO SCALE</text>';
+  L.order.forEach(function (id) {
+    const m = L.map[id], ao = cmNodeById(id);
+    s += '<text class="m-ao" x="' + cmF(m.x) + '" y="62" text-anchor="middle" style="fill:var(--map-text)">' + esc(ao.name.toUpperCase()) + '</text>';
+    if (ao.sanctuary === true) {
+      let q = 0;
+      for (const loc of ao.locations) { if (loc.big || loc.art === ao.art) continue; const sz = q ? 13 : 9; s += '<g transform="translate(' + cmF(m.x - 24 + q * 40) + ' ' + (CM_PY + (q ? -6 : 8)) + ') scale(' + sz + ')">' + plotBodySvg(loc.art || 'moon', sz) + '</g>'; q++; }
+      return;
+    }
+    s += '<path d="M' + cmF(m.x - m.R - 14) + ' ' + CM_PY + 'h8M' + cmF(m.x + m.R + 6) + ' ' + CM_PY + 'h8M' + cmF(m.x) + ' ' + (CM_PY - m.R - 14) + 'v8M' + cmF(m.x) + ' ' + (CM_PY + m.R + 6) + 'v8" class="plot-tick"/>';
+    s += '<g transform="translate(' + cmF(m.x) + ' ' + CM_PY + ')"><g transform="scale(' + m.R + ')">' + plotBodySvg(aoArtId(id), m.R) + '</g></g>';
+    let k = 0;
+    for (const loc of ao.locations) {
+      if (loc.big || loc.art === ao.art || k >= MOONS.length) continue;
+      const sz = k === 0 ? 6 : 4.5;
+      s += '<g transform="translate(' + cmF(m.x + MOONS[k][0]) + ' ' + (CM_PY + MOONS[k][1]) + ') scale(' + sz + ')">' + plotBodySvg(loc.art || 'moon', sz) + '</g>';
+      k++;
+    }
+    if (id === 'belt') { const rk = cmRng(7); for (let q = 0; q < 16; q++) { const a = rk() * 6.28, d = m.R + 10 + rk() * 14; s += '<circle cx="' + cmF(m.x + Math.cos(a) * d * 1.2) + '" cy="' + cmF(CM_PY + Math.sin(a) * d * 0.8) + '" r="' + (1 + rk() * 1.8).toFixed(1) + '" class="plot-rock"/>'; } }
+  });
+  return s;
+}
 // ---- The full map: the static picture (stars, the Sun, the slices, the planets) ----
 function cmSolBackground() {
+  if (plotOn()) return cmSolPlotBackground();   // (v278.4) the War room look's digital plot
   const r = cmRng(20261011);
   let s = '<defs>' + planetArtDefs('m') +
     '<radialGradient id="cm-neb"><stop offset="0" stop-color="#5A2A6E" stop-opacity=".35"/><stop offset="1" stop-color="#5A2A6E" stop-opacity="0"/></radialGradient>' +
@@ -89019,10 +89663,13 @@ function cmLongRegionCounts() { const aoId = campaignFrontId(), live = campaignB
 // (v27 C3) THE TUTORIAL'S EARTH-ONLY MAP: everything beyond Earth's AO is dimmed (and not clickable) until the tutorial hands the war over, with a contact
 // marker far out (the tutorial moves it in when the large contact heads for Luna: campaign.tutorial.data.contact 'far' or 'luna'). (v187.0) The long map's
 // war map draws it too, over its regions (cmRenderLongSol).
+// (v278.4) Where the enemy's side (its tint and hatching) and the tutorial's dark end on the right: just past the painted map, or, on the
+// digital plot (which fills a wide window edge to edge), far past it.
+function cmFarEdgeD() { return plotOn() ? ' L2800 720 L2800 -40 Z' : ' L1360 720 L1360 -40 Z'; }
 function cmEarthOnlyDark(c, L) {
   let s = '';
   if (c.earthOnly && L.order.length > 1) {
-    const X1 = CM_SL0 + L.slw * ((L.map.earth ? L.map.earth.i : 0) + 1), dimD = cmPolyD(cmArcPts(X1)) + ' L1360 720 L1360 -40 Z';
+    const X1 = CM_SL0 + L.slw * ((L.map.earth ? L.map.earth.i : 0) + 1), dimD = cmPolyD(cmArcPts(X1)) + cmFarEdgeD();
     s += '<path class="cm-dark" d="' + dimD + '" fill="#05080c" opacity=".78"><title>Beyond Earth\'s watch: our telescopes only cover Earth\'s AO for now</title></path>';
     s += '<text class="m-st" x="' + cmF(X1 + 40) + '" y="40" style="fill:var(--map-dim)">BEYOND EARTH\'S WATCH</text>';
     const where = c.tutorial && c.tutorial.data ? c.tutorial.data.contact : '';
@@ -89047,7 +89694,7 @@ function cmRenderLongSol() {
   const earthI = regions.findIndex(function (r) { return r.id === 'earth'; });
   if (c.earthOnly && earthI >= 0) fi = earthI + 1;                  // (v187.0) the tutorial on the long map: our hold ends at Earth's region, and the rest is unknown
   const FX = CM_SL0 + L.slw * fi, FP = cmArcPts(FX), fpath = cmPolyD(FP);
-  s += '<path d="' + fpath + ' L1360 720 L1360 -40 Z" fill="color-mix(in srgb,var(--alien) 6%,transparent)"/><path d="' + fpath + ' L1360 720 L1360 -40 Z" fill="url(#cm-hatch)" opacity=".16"/>';
+  s += '<path d="' + fpath + '' + cmFarEdgeD() + '" fill="color-mix(in srgb,var(--alien) 6%,transparent)"/><path d="' + fpath + '' + cmFarEdgeD() + '" fill="url(#cm-hatch)" opacity=".16"/>';
   cut('hatch');
   regions.forEach(function (r, i) {
     const x = info[i], m = L.map[r.id], st = c.earthOnly && earthI >= 0 && i > earthI ? ['Unknown', 'unknown'] : x.status, isFront = i === (c.earthOnly && earthI >= 0 ? earthI : fi), sel = cmState.longRegion === r.id && cmState.view === 'ao';
@@ -89112,7 +89759,7 @@ function cmRenderSol() {
   campaignSightRemember();                                              // (v85.5) what our sensors see now is remembered for later (06t)
   // the front line: after the front AO when we have it secured and quiet, else before it; beyond it, the enemy's side, hatched
   const held = fs && fs.securedBy === 0 && !fs.besieged, fi = fm.i + (held ? 1 : 0), FX = CM_SL0 + L.slw * fi, FP = cmArcPts(FX), fpath = cmPolyD(FP);
-  s += '<path d="' + fpath + ' L1360 720 L1360 -40 Z" fill="color-mix(in srgb,var(--alien) 6%,transparent)"/><path d="' + fpath + ' L1360 720 L1360 -40 Z" fill="url(#cm-hatch)" opacity=".16"/>';
+  s += '<path d="' + fpath + '' + cmFarEdgeD() + '" fill="color-mix(in srgb,var(--alien) 6%,transparent)"/><path d="' + fpath + '' + cmFarEdgeD() + '" fill="url(#cm-hatch)" opacity=".16"/>';
   cut('hatch');
   // the slices: each one a button
   L.order.forEach(function (id, i) {
@@ -89275,9 +89922,11 @@ function cmRenderAo() {
   const longAo = cmLongAoMode(), W0 = campaignWorldWidth(), sc = longAo ? cmLongPanel(0).w / longMapSlotWidth() : CM_FW / W0;        // (the battlefield's width: PLACES_SETTINGS, 81,000 u since v29; v153.0: the long map's own, 06d2; v176.0: a region panel's)
   let g = '<defs>' + planetArtDefs('a') + '<pattern id="cm-hz" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0v8" stroke="var(--alien)" stroke-width="1.2" opacity=".2"/></pattern>' +
     '<marker id="cm-ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--friendly)"/></marker></defs>';
-  const r = cmRng(11);
-  for (let k = 0; k < 140; k++) g += '<circle cx="' + cmF(r() * 1300) + '" cy="' + cmF(r() * 680) + '" r="' + cmF(0.4 + r() * 0.9) + '" fill="#C9D6E6" opacity="' + cmF(0.15 + r() * 0.35) + '"/>';
-  g += '<rect x="0" y="0" width="1300" height="680" fill="#000" opacity=".3"/><rect x="' + CM_FX + '" y="' + CM_FY + '" width="' + CM_FW + '" height="' + CM_FH + '" fill="var(--map-bg)" opacity=".75"/>';
+  const r = cmRng(11), plot = plotOn();   // (v278.4) on the War room look's digital plot: no stars, the plot's screen and line-drawn bodies
+  if (plot) g += plotScreenSvg('a');
+  for (let k = 0; k < (plot ? 0 : 140); k++) g += '<circle cx="' + cmF(r() * 1300) + '" cy="' + cmF(r() * 680) + '" r="' + cmF(0.4 + r() * 0.9) + '" fill="#C9D6E6" opacity="' + cmF(0.15 + r() * 0.35) + '"/>';
+  if (!plot) g += '<rect x="0" y="0" width="1300" height="680" fill="#000" opacity=".3"/>';
+  if (!plot) g += '<rect x="' + CM_FX + '" y="' + CM_FY + '" width="' + CM_FW + '" height="' + CM_FH + '" fill="var(--map-bg)" opacity=".75"/>';
   const nb = cmAoNeighbours(aoId);
   if (longAo) {
     // the region panels: a frame each, its name and who holds it, the gap strip beyond it; the region clicked on the war map is lit
@@ -89310,7 +89959,7 @@ function cmRenderAo() {
     const sel = cmState.sel && cmState.sel.kind === 'place' && cmState.sel.id === p.id;
     g += '<g class="hit place' + (sel ? ' on' : '') + '" data-cm="place" data-id="' + p.id + '"><title>' + esc(p.name) + ': click for the place</title>' +
       '<circle cx="' + cmF(cx) + '" cy="' + cmF(cy) + '" r="' + cmF(rad) + '" fill="color-mix(in srgb,var(--map-text) 3%,transparent)" stroke="var(--map-dim)" stroke-width=".8" stroke-dasharray="2 5"/>' +
-      '<g transform="translate(' + cmF(cx) + ' ' + cmF(cy) + ') scale(' + cmF(Math.max(b, 6)) + ')">' + planetArtSvg(placeArtId(p) || 'luna', 'a') + '</g>' +
+      '<g transform="translate(' + cmF(cx) + ' ' + cmF(cy) + ') scale(' + cmF(Math.max(b, 6)) + ')">' + cmBodySvg(placeArtId(p) || 'luna', 'a', Math.max(b, 6)) + '</g>' +
       '<g data-n="place:' + p.id + ':owner" data-v="' + owner + '">' + cmOwnMark(owner, cx, cy, rad + 6) + '</g>';
     const sx = cx + Math.max(b, 6) * 0.7 + 12, sy = cy - Math.max(b, 6) * 0.7 - 12, s9 = 9;
     const oct = 'M' + cmF(sx - s9) + ' ' + cmF(sy - s9 * 0.4) + 'L' + cmF(sx - s9 * 0.4) + ' ' + cmF(sy - s9) + 'H' + cmF(sx + s9 * 0.4) + 'L' + cmF(sx + s9) + ' ' + cmF(sy - s9 * 0.4) + 'V' + cmF(sy + s9 * 0.4) + 'L' + cmF(sx + s9 * 0.4) + ' ' + cmF(sy + s9) + 'H' + cmF(sx - s9 * 0.4) + 'L' + cmF(sx - s9) + ' ' + cmF(sy + s9 * 0.4) + 'Z';
@@ -109546,7 +110195,8 @@ function b2Leave() {
 // ---------------------------------------------------------------------
 function b2Build() {
   const root = b2El('bureau2Screen');
-  root.classList.add('fx-grain');
+  // (v278.3, Alex 18 Nov: "the design bureau tab still has an old filter over it, which is no longer needed") the film grain, scan lines and dark
+  // corners (fx-grain) are gone from the Bureau: it is as clean as the other tabs now.
   root.innerHTML =
     '<nav class="b2-tabbar" aria-label="Design Bureau">' +
       '<div class="brand"><b>UNSF Design Bureau</b><span>Drawing office</span></div>' +
@@ -111185,7 +111835,7 @@ function b2Save() {
   // (v93.3, AI testers) in the campaign the words are the campaign's: no "setup screen", no "Activate" (the button is "Ready for the yards")
   const inWar = typeof campaign !== 'undefined' && campaign && SETTINGS.campaignModel === 1;
   b2.msg = family === '' ? (inWar ? 'Saved as a new design: "' + name + '". Press "Ready for the yards" when you want the yards to build it.' : 'Saved as ship type "' + name + '". It now has a column on the setup screen; Activate marks it ready for the yards.') :
-    (inBattle ? 'Saved as a new version: "' + rec.name + '". It has joined the battle: the next arrivals are the new version.' : 'Saved as a new version: "' + rec.name + '" (the old one is kept).' + (inWar ? (rec.yardsReady ? ' The yards build the new version from now on.' : '') : ' The setup screen now uses the new version.'));
+    (inBattle ? 'Saved as a new version: "' + rec.name + '". It has joined the battle: the next arrivals are the new version.' : 'Saved as a new version: "' + rec.name + '" (the old one is kept).' + (inWar ? (rec.yardsReady ? ' The yards build the new version from now on.' + (typeof dockHoldOn === 'function' && dockHoldOn() ? ' Ships of the old version serve on: each is rebuilt to the new version when it docks for repairs, or replaced by it when lost.' : '') : '') : ' The setup screen now uses the new version.'));
   if (typeof libBureauOn === 'function' && libBureauOn()) b2.msg = toLibrary ? 'Saved to your design library as "' + toLibrary.name + '". Every war can bring it in from its Library tab.' : 'Saved. The very same design is already in your design library.';   // (v234.0)
   if (carried) b2.msg += ' ' + carried;
   if (a.warnings.length > 0) b2.msg += ' Note: ' + b2Plural(a.warnings.length, 'warning') + ' still to look at.';
@@ -115822,7 +116472,7 @@ BUREAU2_SCREEN_API.testRange = { run: testRangeRun, state: testRange, plan: func
 //   adopted habits come along in its copy code and into every new campaign. A doctrine changed in the Bureau after the save updates the plan's copy.
 //   DOCTRINE TEMPLATES (LIBRARY.templates: [{ name, doctrine, savedAt }]) live here too, so they carry over as well. A plan from before v37 has no doctrine: Auto.
 // =====================================================================
-const GAME_VERSION = 'v275.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
+const GAME_VERSION = 'v278.4';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
 const LIBRARY_KEY = 'engineersWar.library';
 const LIBRARY_FORMAT = 1;
 const LIBRARY_CODE_SHIP = 'EW-SHIP-1:', LIBRARY_CODE_LIB = 'EW-LIB-1:';
