@@ -893,9 +893,11 @@ hr.rule { border:0; border-top:var(--line-w) solid var(--line); margin:var(--sp-
 :root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="glass"]::after {
   content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 6;
   background:
-    linear-gradient(115deg, rgba(255, 255, 255, .07) 0%, rgba(255, 255, 255, .015) 18%, transparent 32%),
-    repeating-linear-gradient(0deg, rgba(0, 0, 0, .13) 0 1px, transparent 1px 3px);
-  box-shadow: inset 0 0 90px rgba(0, 0, 0, .75);
+    /* (v278.5, Alex: "tone down the glare on the battle map screen a bit") the shine across the top-left corner is about a third of what it was,
+       and the screen lines and dark corners are lighter too, so the map reads clean */
+    linear-gradient(115deg, rgba(255, 255, 255, .025) 0%, rgba(255, 255, 255, .006) 14%, transparent 24%),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, .07) 0 1px, transparent 1px 3px);
+  box-shadow: inset 0 0 70px rgba(0, 0, 0, .55);
 }
 
 :root[data-ui-skin="room"]:not(.ew-phone-ui) [data-mat~="screen"][data-mat~="small"] {
@@ -1006,6 +1008,17 @@ hr.rule { border:0; border-top:var(--line-w) solid var(--line); margin:var(--sp-
 @keyframes roomLookUp { from { transform: perspective(1400px) translateY(-7%) rotateX(9deg); opacity: .25; } to { transform: none; opacity: 1; } }
 :root[data-ui-skin="room"]:not(.ew-phone-ui).room-look-down [data-mat~="table"] { animation: roomLookDown .45s cubic-bezier(.2, .7, .2, 1); transform-origin: 50% 0; }
 :root[data-ui-skin="room"]:not(.ew-phone-ui).room-look-up [data-mat~="wall"] { animation: roomLookUp .45s cubic-bezier(.2, .7, .2, 1); transform-origin: 50% 100%; }
+
+/* =====================================================================================================================
+   THE ADMIRAL PANEL'S FLEET TREE (v283.0). In the War room look a picked row is lit steel, not yellow (Alex: no yellow
+   or brass on the room's chrome); the small colour square keeps the yellow ring so the row still matches the ships
+   picked out on the map.
+   ===================================================================================================================== */
+:root[data-ui-skin="room"]:not(.ew-phone-ui) .bs-units .bs-unit.sel { background: linear-gradient(var(--room-steel-hi), var(--room-steel)); border-color: var(--room-plate-ink); }
+:root[data-ui-skin="room"]:not(.ew-phone-ui) .bs-units .bs-unit:hover:not(.empty) { background: var(--room-steel); border-color: var(--room-steel-line); }
+/* A side column's panels keep their full height and the column scrolls, as in Plain (a material's overflow:hidden
+   would otherwise let the column squeeze a long panel, such as an opened fleet tree, and cut off its bottom rows). */
+:root[data-ui-skin="room"]:not(.ew-phone-ui) .bs-col > [data-mat] { flex-shrink: 0; }
 </style>
 <style>
   /* (v17) The theme sets a few page-wide basics (box sizing, thin scroll bars, link and focus colours). The older screens (setup, designer,
@@ -1494,6 +1507,21 @@ hr.rule { border:0; border-top:var(--line-w) solid var(--line); margin:var(--sp-
   .bs-units .bs-unit.in { padding-left: 18px; }
   .bs-units .bs-unit.sel { background: color-mix(in srgb, var(--select) 14%, transparent); border-color: var(--select); }
   .bs-units .bs-unit.sel .sw { outline: 2px solid var(--select); outline-offset: 1px; }
+  /* (v283.0) the list is a tree: Fleets > Divisions > squadrons. An arrow at the front opens a row; squadrons show their role glyph and word */
+  .bs-units.bs-tree .bs-unit { grid-template-columns: 12px 12px 1fr auto; }
+  .bs-units.bs-tree .bs-unit.sq { grid-template-columns: 12px 16px 1fr auto; padding-left: 34px; font-size: 11.5px; }
+  .bs-tree-kids.in1 .bs-unit.sq { padding-left: 18px; }
+  .bs-units .tw { width: 12px; text-align: center; color: var(--dim); font-size: 11px; line-height: 1; }
+  .bs-units .tw:hover { color: var(--text); }
+  .bs-units .tw.none { visibility: hidden; }
+  .bs-units .bs-unit.sq .rg { display: flex; align-items: center; }
+  .bs-units .bs-unit.sq .rg svg { display: block; }
+  .bs-units .bs-unit.empty { opacity: .6; cursor: default; }
+  .bs-units .bs-unit.empty:hover { background: transparent; border-color: transparent; border-bottom-color: var(--line); }
+  .bs-divs .bs-tree-kids { display: flex; flex-direction: column; gap: 2px; }
+  .bs-units.bs-tree .bs-unit > span { min-width: 0; }
+  .bs-units.bs-tree .bs-unit .data { white-space: nowrap; }
+  .bs-tree-head { margin-top: 10px; }
   .bs-unit-sub { margin-top: 6px; font: 700 11px var(--font-display); letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
   #bsUnitPanel { border-color: var(--select); }
   .bs-unit-card .bs-kv { margin-top: 8px; }
@@ -2697,6 +2725,10 @@ hr.rule { border:0; border-top:var(--line-w) solid var(--line); margin:var(--sp-
 #bureau2Screen .sheetw { position: relative; flex: 1; min-height: 0; overflow: hidden; background: var(--sheet-bg); }
 #bureau2Screen .sheetw canvas.sheet { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; }
 #bureau2Screen .sheetw canvas.sheet.pan { cursor: grab; }
+/* (v279.0) the old Bureau filter (fx-grain from the theme: film grain, scan lines, dark corners) on the blueprint sheet only. Its two layers
+   sit just over the drawing (z-index 1) and under everything laid on top of the sheet (rules note, title block, stamp, zoom, toast: z-index 2+),
+   so the buttons and words stay crisp. Clicks pass through it (the theme sets pointer-events: none). */
+#bureau2Screen .sheetw.fx-grain::before, #bureau2Screen .sheetw.fx-grain::after { z-index: 1; }
 #bureau2Screen .sheetw .bwarn, #bureau2Screen .sheetw .simple { position: absolute; left: 10px; top: 10px; z-index: 3; max-width: min(340px, calc(100% - 20px)); padding: 6px 9px;
   font: 500 12px/1.4 var(--font-data); color: var(--text); }
 #bureau2Screen .sheetw .bwarn { border: 1.5px solid var(--warn); background: rgba(20, 16, 6, .92); }
@@ -3952,7 +3984,7 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
     <section class="panel hidden" id="mmPanel"><div class="panel-head" id="mmPanelHead"></div><div class="panel-body" id="mmPanelBody"></div></section>
     <input type="file" id="mmFile" accept=".json,application/json,text/plain" class="hidden">
   </div>
-  <div class="mm-version" title="The version of the game you are playing">Version v278.4</div>
+  <div class="mm-version" title="The version of the game you are playing">Version v284.0</div>
 </div>
 
 <!-- (v31 A2, section 7l) the end of the war: the game-over screen (Earth's people are gone) or the victory screen (the aliens' home secured). It lies over
@@ -11312,12 +11344,12 @@ const COUNCIL_LINES = [
   { id: 'c.sec.present.01', key: 'council.min.present', who: 'sec', text: "All five seats. In the chair: T. Kallis.", tags: {}, weight: 1 },
   { id: 'c.sec.present.emergency', key: 'council.min.present.emergency', who: 'sec', text: "Four seats; the Industrialist by link from the foundry.", tags: {}, weight: 1 },
   // ---- (v25 stop 5c) the chain of command: how our designs did at their roles, and the review of the Vice Admirals ----
-  { id: 'c.fact.design.results', key: 'council.fact.design.results', who: 'any', text: "The reports from Mars are in: the {designBest} has done best at its work as {designBestRole}, the {designWorst} worst, as {designWorstRole}.", tags: {}, weight: 1 },
+  { id: 'c.fact.design.results', key: 'council.fact.design.results', who: 'any', text: "The reports from the front are in: the {designBest} has done best at its work as {designBestRole}, the {designWorst} worst, as {designWorstRole}.", tags: {}, weight: 1 },
   { id: 'c.cos.memo.design', key: 'council.memo.design', who: 'cos', to: "To the Design Bureau", text: "RE: the {designBest}. It does what a {designBestRole} ship should. More of them, please, and fewer {designWorst}s.", stamp: "", tags: {}, weight: 1 },
   { id: 'c.ind.memo.design', key: 'council.memo.design', who: 'ind', to: "To the Council", text: "RE: the {designWorst}. A costly hull for what it does as {designWorstRole}. Kask Works can build you something better for the money.", stamp: "Disputed", tags: {}, weight: 1 },
   { id: 'c.cos.move.design', key: 'council.move.design', who: 'cos', text: "It leans on the {designBest}s: they have done well as {designBestRole}.", tags: {}, weight: 1 },
   { id: 'c.ind.move.design', key: 'council.move.design', who: 'ind', text: "Kask Works' {designBest}s will carry it.", tags: {}, weight: 1 },
-  { id: 'c.chair.move.design', key: 'council.move.design', who: 'chair', text: "Send the {designBest}s first. They come home.", tags: {}, weight: 1 },
+  { id: 'c.chair.move.design', key: 'council.move.design', who: 'chair', text: "Send the {designBest}s first. They do their job.", tags: {}, weight: 1 },
   { id: 'c.sec.vadm.praised', key: 'council.min.vadm.praised', who: 'sec', text: "{va}, {fleet}: COMMENDED by the Chief of Staff ({why}).", tags: {}, weight: 1 },
   { id: 'c.sec.vadm.reprimanded', key: 'council.min.vadm.reprimanded', who: 'sec', text: "{va}, {fleet}: REPRIMANDED ({why}).", tags: {}, weight: 1 },
   { id: 'c.sec.vadm.replaced', key: 'council.min.vadm.replaced', who: 'sec', text: "{va} RELIEVED of the {fleet} ({why}) and returned to the rank of Commodore. {successor}{promoted} takes command.", tags: {}, weight: 1 },
@@ -11820,6 +11852,11 @@ function partBlurb(m) { return m ? (PART_BLURBS[m.id] || PART_BLURBS_BY_NAME[m.n
 //   GAPS the game fills in: {design} our design, {enemy} theirs, {kills} {lost} {n} {of} numbers, {pct} a percentage with its % sign, {ratio} like 2.4,
 //   {weapon} a weapon's name, {cause} why shots missed, {front} where the fighting is, {week} the war week.
 //
+//   CLAIM TAGS (v280.0, the evidence rule, section 0e of the game). A line that says more than its own figures starts with a tag in square brackets,
+//   such as [mostOf] for "most of" or [heavyLosses] for "paying for it". The game only uses the line when the figures back every tag; the tags are
+//   never shown. The tags and what each needs are listed in src/js/00e-0e-claims.js. A line with no tag must only state its own figures. The card and
+//   pointer lists of every finding keep at least one line with no tag, so there is always something true to say (tools/v280.0/claims-check.js checks).
+//
 //   VARIETY (Alex, 18 Nov: "make sure there are plenty of variety with the quotes"). Every finding has several lines per speaker. The Gazette never uses a
 //   line again until every other line for that finding and speaker has been used (the war remembers which: campaign.reading.used).
 // =====================================================================
@@ -11840,45 +11877,45 @@ const BATTLE_READING_LINES = {
     sub: ['Numbers count: every ship of ours faced {ratio} of theirs.'],
     pointer: ['Our ships face {ratio} enemy ships each.'],
     q: {
-      front: ['There are just more of them. Always more of them.', 'We kill one and two take its place.', 'You cannot hold a line when they come {ratio} to one.'],
-      brandt: ['We are outnumbered {ratio} to one. Every ship the yards send matters.', 'Numbers win battles, and they have the numbers.'],
+      front: ['There are just more of them. Always more of them.', '[hardFight] We kill one and two take its place.', '[hardFight] You cannot hold a line when they come {ratio} to one.', '[winningFight] They come {ratio} to one, and we still send more of them home in pieces.'],
+      brandt: ['We are outnumbered {ratio} to one. Every ship the yards send matters.', '[hardFight] Numbers win battles, and they have the numbers.', '[winningFight] They have the numbers. We have the better ships: {kills} of theirs for {lost} of ours.'],
       kask: ['The front wants more hulls. I hear it every day.']
     }
   },
   sweep: {
     card: ['Not one ship lost. {kills} of theirs destroyed.', 'A clean fight: {kills} kills and every ship of ours came home.'],
     sub: ['Nothing of ours was destroyed.'],
-    pointer: ['No losses at all this week. Whatever is working, it is working.'],
+    pointer: ['[spanWeek] No losses at all this week. Whatever is working, it is working.', 'No losses at all. Whatever is working, it is working.'],
     q: {
       brandt: ['Every ship came home. I do not get to say that often.', 'Not a single loss. Write that down, it will not last.', 'A clean sheet. The crews earned their rest.'],
       front: ['We went in, we did the job, and we all came back.', 'Quietest casualty list I have ever signed. It was empty.', 'Not a scratch on the squadron worth reporting.'],
-      kallis: ['A good week for the families. No telegrams went out.', 'The Council takes no losses as the best news there is.']
+      kallis: ['[spanMonth] A good month for the families. No telegrams went out.', 'The Council takes no losses as the best news there is.']
     }
   },
   star: {
-    card: ['The {design} carried the fight: {kills} kills for {lost} lost.', 'The {design} did the heavy lifting: {kills} kills, {lost} lost.', 'Most of the killing was the {design}: {kills} kills for {lost} lost.'],
+    card: ['The {design} carried the fight: {kills} kills for {lost} lost.', 'The {design} did the heavy lifting: {kills} kills, {lost} lost.', '[mostOf] Most of the killing was the {design}: {kills} kills for {lost} lost.'],
     sub: ['{pct} of all our kills were made by {design}s.', 'That is {pct} of everything we destroyed.'],
     pointer: ['The {design} made {pct} of our kills ({kills} for {lost} lost).'],
     q: {
       brandt: ['The {design} is the ship of the hour. {kills} kills for {lost} losses. Build more of them.', 'Give me {design}s. {kills} kills, {lost} lost. The numbers speak.', 'The {design} is carrying this front. {pct} of our kills are theirs.', 'If the yards can turn out {design}s, the Fleet will take every one.'],
       engineer: ['The {design} is doing exactly what we drew it to do. {kills} kills for {lost} lost.', 'We got the {design} right. {pct} of the kills, and the crews trust it.', 'Every so often a sheet leaves the office and just works. The {design} is one.'],
-      front: ['Put me in a {design} any day. She hits hard and brings you home.', 'The {design}s did most of the work out there. I watched it.', 'When the {design}s open up, the enemy line just thins out.'],
+      front: ['[lightLosses] Put me in a {design} any day. She hits hard and brings you home.', '[mostOf] The {design}s did most of the work out there. I watched it.', 'When the {design}s open up, the enemy line just thins out.'],
       halloran: ['The Bureau has a winner in the {design}. {kills} kills, {lost} lost.', 'The {design} is the design everyone at the front asks for by name.']
     }
   },
   weakTrade: {
     card: ['The {design} traded badly against {enemy}s: {kills} killed for {lost} lost.', '{enemy}s had the better of the {design}: {kills} kills for {lost} losses.'],
-    sub: ['Against everything else the {design} did better.', 'This is the {design}\'s worst pairing.'],
+    sub: ['[betterElse] Against everything else the {design} did better.', '[worstPairing] This is the {design}\'s worst pairing.'],
     pointer: ['{design} against {enemy}: {kills} kills for {lost} lost.', 'The {design} loses more than it kills when it meets {enemy}s ({kills} for {lost}).'],
     q: {
-      front: ['The {enemy}s eat {design}s alive. We need something else on that line.', 'Every time a {design} squares up to a {enemy}, I lose a crew.', 'The {design} is fine until the {enemy}s come. Then it is not.'],
+      front: ['[heavyLosses] The {enemy}s eat {design}s alive. We need something else on that line.', '[heavyLosses] When a {design} squares up to a {enemy}, it is usually us who lose a crew.', '[betterElse] The {design} is fine until the {enemy}s come. Then it is not.', 'The {enemy}s get the better of our {design}s. {lost} lost, {kills} of theirs.'],
       engineer: ['The {design} was never meant for {enemy}s, and it shows. {kills} for {lost}.', 'We have a problem with {enemy}s. The {design} loses that fight more often than it wins it.'],
       brandt: ['{lost} {design}s lost to {enemy}s for {kills} of theirs. That trade cannot go on.', 'I want an answer to the {enemy}. The {design} is not it.']
     }
   },
   hurtMost: {
     card: ['{enemy}s did us the most harm: {n} of our {of} losses.', 'The {enemy} was the killer: {n} of our {of} ships lost were theirs.'],
-    sub: ['No other enemy design came close.'],
+    sub: ['[clearLead] No other enemy design came close.'],
     pointer: ['{enemy}s destroyed {n} of our {of} lost ships.'],
     q: {
       front: ['It is the {enemy}s you watch for. They are the ones that kill you.', 'When a {enemy} gets in among us, somebody does not come back.'],
@@ -11887,29 +11924,32 @@ const BATTLE_READING_LINES = {
     }
   },
   poorAim: {
-    card: ['The {design}s hit only {pct} of their shots, mostly because {cause}.', '{design} gunnery struggled: {pct} of shots hit, most misses because {cause}.'],
+    card: ['[causeMostly] The {design}s hit only {pct} of their shots, mostly because {cause}.', '[causeMostly] {design} gunnery struggled: {pct} of shots hit, most misses because {cause}.',
+           'The {design}s hit only {pct} of their shots. The biggest single reason for the misses: {cause}.'],
     sub: ['{n} shots fired. The odds promised {of}.'],
-    pointer: ['The {design} hits {pct}. Most of its misses: {cause}.'],
+    pointer: ['[causeMostly] The {design} hits {pct}. Most of its misses: {cause}.', 'The {design} hits {pct}. Its biggest single reason for missing: {cause}.'],
     q: {
-      gunnery: ['The {design} crews are not the problem. {pct} hit, because {cause}.', 'You can drill a crew for months and still miss when {cause}. {design}s land {pct}.', 'My gunners on the {design} hit {pct}. The guns, not the gunners.', 'Four in ten is not good enough, and the {design} is under it.'],
-      front: ['We fire and fire and they just are not there. {pct} hits, if that.', 'The {design}\'s turrets cannot keep up. You watch the shots go behind them.', 'Half our shots go into empty space.'],
-      engineer: ['The {design} misses because {cause}. We know where to look.', 'A {pct} hit rate on the {design}. That one is on the drawing board.']
+      gunnery: ['[causeMostly] The {design} crews are not the problem. {pct} hit, because {cause}.', 'You can drill a crew for months and still miss when {cause}. {design}s land {pct}.', 'My gunners on the {design} hit {pct}. The guns, not the gunners.', 'Four in ten is not good enough, and the {design} is under it.'],
+      front: ['We fire and fire and they just are not there. {pct} hits, if that.', '[causeTrack] The {design}\'s turrets cannot keep up. You watch the shots go behind them.', 'Two shots in three go into empty space.'],
+      engineer: ['[causeMostly] The {design} misses because {cause}. We know where to look.', 'A {pct} hit rate on the {design}. That one is on the drawing board.']
     }
   },
   sharpAim: {
-    card: ['Sharp shooting: the {design}s hit {pct} of their shots.', 'The {design}s shot well, {pct} of shots on target.'],
+    card: ['[sharpAim] Sharp shooting: the {design}s hit {pct} of their shots.', '[sharpAim] The {design}s shot well, {pct} of shots on target.',
+           '[beatOdds] The {design}s beat their odds: {pct} of shots hit where {of} was promised.', 'The {design}s hit {pct} of their shots, against odds of {of}.'],
     sub: ['The odds promised {of}.', 'Their hit chances averaged {of}.'],
-    pointer: ['The {design} hits {pct}, better than its odds ({of}).'],
+    pointer: ['[beatOdds] The {design} hits {pct}, better than its odds ({of}).', 'The {design} hits {pct}; its odds were {of}.'],
     q: {
-      gunnery: ['Our gunnery officers are exceptionally accurate. {pct} of {design} shots hit, by our own count.', 'The {design} crews hit {pct}. I could not ask for more.', 'Tell the families: their sons and daughters can shoot. {pct} on target.', 'The {design} batteries beat the odds this month. {pct} hits.'],
-      brandt: ['{pct} on target from the {design}s. That is a Fleet that knows its trade.', 'Good gunnery wins wars. The {design}s hit {pct}.'],
-      front: ['When we fire, we hit. {pct} of our shots, they tell me.', 'The {design}\'s gunners are the best I have served with.']
+      gunnery: ['[sharpAim] Our gunnery officers are exceptionally accurate. {pct} of {design} shots hit, by our own count.', '[sharpAim] The {design} crews hit {pct}. I could not ask for more.', '[sharpAim] Tell the families: their sons and daughters can shoot. {pct} on target.', '[beatOdds spanMonth] The {design} batteries beat the odds this month. {pct} hits.',
+                '[beatOdds] The {design} crews beat their odds: {pct} on target where the sums said {of}.'],
+      brandt: ['[sharpAim] {pct} on target from the {design}s. That is a Fleet that knows its trade.', '[sharpAim] Good gunnery wins wars. The {design}s hit {pct}.', '[beatOdds] {pct} where the sums said {of}. The {design} crews are earning their pay.'],
+      front: ['[sharpAim] When we fire, we hit. {pct} of our shots, they tell me.', '[sharpAim] The {design}\'s gunners are the best I have served with.', '[beatOdds] We land more than the plot says we should.']
     }
   },
   belowOdds: {
     card: ['The {design}s hit {pct} where the odds promised {of}.', 'The {design}s landed fewer hits than the odds said: {pct} against {of}.'],
     sub: ['Something the odds do not see is costing hits: {cause}.'],
-    pointer: ['The {design} hits {pct}, below its odds of {of}. Most of the gap: {cause}.'],
+    pointer: ['[causeMostly] The {design} hits {pct}, below its odds of {of}. Most of the gap: {cause}.', 'The {design} hits {pct}, below its odds of {of}. The biggest single reason: {cause}.'],
     q: {
       gunnery: ['On paper the {design} hits {of}. In the field, {pct}. The gap is {cause}.', 'The {design} should hit more than it does. {pct} against {of}.'],
       engineer: ['The {design} falls short of its sums. {pct} against {of}.']
@@ -11921,7 +11961,7 @@ const BATTLE_READING_LINES = {
     pointer: ['{n} of {of} missiles from the {design} ran out of fuel ({pct}).'],
     q: {
       engineer: ['{pct} of the {design}\'s missiles burn out before they arrive. We are watching that closely.', 'A missile that runs dry is a missile wasted. The {design} wastes {pct}.'],
-      front: ['You watch the missiles chase, and chase, and then just drift.', 'Half the {design}\'s missiles give up before they get there.'],
+      front: ['You watch the missiles chase, and chase, and then just drift.', '[halfOf] Half the {design}\'s missiles give up before they get there.'],
       lin: ['The missiles are not reaching. {pct} of them run out of fuel on the way.']
     }
   },
@@ -11942,17 +11982,17 @@ const BATTLE_READING_LINES = {
     q: {
       front: ['We just don\'t have enough point defence on the field to stop everything they throw at us.', 'The missiles keep coming and we cannot stop enough of them.', 'You see the missile, you hear the PD, and then you feel the hit anyway.', '{n} in 10 of their missiles get through. Every crew out here knows it.'],
       brandt: ['{pct} of the enemy\'s missiles reach our hulls. I want that number cut in half.', 'Point defence is the gap in our armour. {pct} of their missiles get through.'],
-      engineer: ['Point defence is where we are losing ships. {pct} of their missiles hit home.', 'We are out-missiled. The fix is on our side of the table.'],
+      engineer: ['Point defence is our weak spot. {pct} of their missiles hit home.', 'We are out-missiled. The fix is on our side of the table.'],
       kallis: ['The Council has heard about the missiles. {pct} of them reach our ships. That must change.']
     }
   },
   pdStrong: {
-    card: ['Our point defence held: {pct} of their missiles were shot down.', 'Their missiles mostly failed: our point defence stopped {pct}.'],
+    card: ['Our point defence held: {pct} of their missiles were shot down.', '[mostOf] Their missiles mostly failed: our point defence stopped {pct}.'],
     sub: ['{n} of their {of} missiles shot down.'],
     pointer: ['Our point defence stops {pct} of enemy missiles.'],
     q: {
-      front: ['Their missiles come in and our PD just eats them.', 'I have stopped flinching at missile alarms. The PD has it.', 'Their missiles look frightening on the plot and do almost nothing.'],
-      gunnery: ['Point defence crews stopped {pct} of everything fired at us. Superb work.', 'The PD gunners are the quiet heroes. {pct} of their missiles, gone.'],
+      front: ['[nearlyAll] Their missiles come in and our PD just eats them.', '[nearlyAll] I have stopped flinching at missile alarms. The PD has it.', '[nearlyAll] Their missiles look frightening on the plot and do almost nothing.', 'Their missiles come in and our PD takes {pct} of them.'],
+      gunnery: ['Point defence crews stopped {pct} of the missiles fired at us. Superb work.', 'The PD gunners are the quiet heroes. {pct} of their missiles, gone.'],
       engineer: ['The point defence fit is paying for itself. {pct} of their missiles stopped.']
     }
   },
@@ -11961,9 +12001,9 @@ const BATTLE_READING_LINES = {
     sub: ['Much of the fire on them came from beyond their guns\' reach.'],
     pointer: ['The enemy fires from about {n} units; the {design} from about {of}.'],
     q: {
-      front: ['They sit out where we cannot touch them and pick us apart.', 'We spend half the fight closing the distance, and pay for every unit of it.', 'They outrange us. Simple as that.'],
+      front: ['They sit out where we cannot touch them and pick us apart.', 'We spend the fight closing the distance, and pay for every unit of it.', 'They outrange us. Simple as that.'],
       brandt: ['The enemy is fighting at a range of his choosing. That is how wars are lost.', 'I need ships that can reach out and touch them. The {design}s cannot.'],
-      engineer: ['They engage at {n}; the {design} engages at {of}. That is the whole story of the fight.', 'Reach is the {design}\'s problem. The enemy has more of it.']
+      engineer: ['They engage at {n}; the {design} engages at {of}. That gap shaped the fight.', 'Reach is the {design}\'s problem. The enemy has more of it.']
     }
   },
   flank: {
@@ -11982,11 +12022,11 @@ const BATTLE_READING_LINES = {
     pointer: ['{n} of our {of} lost ships were alone or ahead of their line when they died.'],
     q: {
       brandt: ['Too many ships lost alone. Keep the line together.', '{n} of our losses were ships that wandered off. Discipline wins wars.'],
-      front: ['The ones we lose are the ones that get ahead of the rest. Every time.', 'Out in front on your own, you last about a minute.']
+      front: ['[nearlyAll] The ones we lose are the ones that get ahead of the rest. Every time.', 'Out in front on your own, you last about a minute.']
     }
   },
   heldFire: {
-    card: ['The {design}s held their fire most of the fight: the odds were too poor to shoot.', 'The {design}s rarely fired: {n} salvos held back for {of} fired.'],
+    card: ['[mostOf] The {design}s held their fire most of the fight: the odds were too poor to shoot.', 'The {design}s rarely fired: {n} salvos held back for {of} fired.'],
     sub: ['Officers only fire when the chance of a hit is worth the round.'],
     pointer: ['The {design} held back {n} salvos and fired {of}. The odds were too poor.'],
     q: {
@@ -11996,10 +12036,10 @@ const BATTLE_READING_LINES = {
   },
   neverFought: {
     card: ['The {design}s never got into the fight: {n} sent, no shots fired.', '{n} {design}s were there and fired nothing.'],
-    sub: ['They never reached a target they could shoot.'],
-    pointer: ['{n} {design}s fought and fired no shots.'],
+    sub: ['[noTarget] They never reached a target they could shoot.'],
+    pointer: ['{n} {design}s were there and fired no shots.'],
     q: {
-      front: ['The {design}s never got close enough to matter.', 'I do not know what the {design}s were doing out there. Not fighting.'],
+      front: ['[noTarget] The {design}s never got close enough to matter.', 'I do not know what the {design}s were doing out there. Not fighting.'],
       halloran: ['The Fleet asks what the {design} is for. It never fired a shot.']
     }
   },
@@ -12008,8 +12048,8 @@ const BATTLE_READING_LINES = {
     sub: ['We lost more than we destroyed.'],
     pointer: ['We lost {lost} ships and destroyed {kills}.'],
     q: {
-      front: ['We are holding, but it is costing us. {lost} ships this month.', 'Every week the list of names gets longer.', 'We are tired, and there are fewer of us than there were.'],
-      kallis: ['{lost} ships lost. The Council grieves with every family.', 'The cost of this war is in the Roll. {lost} hulls this month.'],
+      front: ['[spanMonth] Every ship counts, and we lost {lost} this month.', 'Every week the list of names gets longer.', 'We are tired, and there are fewer of us than there were.'],
+      kallis: ['{lost} ships lost. The Council grieves with every family.', '[spanMonth] The cost of this war is in the Roll. {lost} hulls this month.'],
       brandt: ['{lost} losses for {kills} kills. That is not a trade I can keep making.']
     }
   },
@@ -12028,7 +12068,8 @@ const BATTLE_READING_LINES = {
     sub: [''],
     pointer: ['{n} hulls built, {of} lost.'],
     q: {
-      kask: ['My yards posted {n} hulls. The front lost {of}. We are ahead, but not by much.', '{n} new hulls this month. Kask Orbital Works keeps its promises.', 'Give my yards the Alloys and they will give you ships. {n} this month.'],
+      kask: ['[slimMargin] My yards posted {n} hulls. The front lost {of}. We are ahead, but not by much.', '[builtSome spanMonth] {n} new hulls this month. Kask Orbital Works keeps its promises.', '[builtSome spanMonth] Give my yards the Alloys and they will give you ships. {n} this month.',
+             'My yards posted {n} hulls and the front lost {of}. Kask Orbital Works keeps up.'],
       kask_behind: ['The front lost {of} and my yards built {n}. I cannot build faster than they die.', '{of} lost, {n} built. Somebody tell the Admirals the yards are not bottomless.', 'We are building {n} and losing {of}. Those numbers have to change.']
     }
   }
@@ -12449,6 +12490,75 @@ if (window.EW_PHONE) {
 // of the game on the phone, so it opens without a connection; it always tries the newest game first. Opening the game from a file does nothing here.
 if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+}
+// =====================================================================
+// 0e. (v280.0, Alex 19 Nov: "we need to hash out the incorrect feedback dispatches") THE EVIDENCE RULE
+//
+//   Every line of feedback the game writes (Dispatches, the battle reading's cards and pointers, the Gazette's quotes, the radio's remarks on our
+//   designs, the council's notes on them) may only say what its own figures show. The trouble it fixes: a line was picked for a finding, but the
+//   words said more than the finding had checked ("The Siren is fighting as a battery and paying for it. We lost 0 of 35.").
+//
+//   HOW IT WORKS. A line that makes a claim beyond its plain figures carries a TAG in square brackets at its front, naming the claim:
+//       '[mostOf] Most of the killing was the {design}: {kills} kills for {lost} lost.'
+//   Each tag is one row of CLAIMS below: what the words claim, in plain English, and the test the line's figures must pass. Before a line is used,
+//   claimPick (or claimHolds) runs the tests of all its tags; a line whose tags do not all pass is never shown. A line without tags only states its
+//   own figures and can always be said. A figure the test needs that is missing counts as a fail: when in doubt, the line is not said.
+//   The tags never reach the screen (claimText strips them).
+//
+//   tools/v280.0/claims-check.js reads every line bank through this rule: it flags strong words (most, half, every time, paying for it ...) on a line
+//   without the tag that checks them, unknown tags, and a finding left with no line it can always say.
+//   Words only: nothing here changes a battle or draws a random number.
+// =====================================================================
+function claimNum(v) { return typeof v === 'number' && isFinite(v) ? v : NaN; }
+const CLAIMS = {
+  // ---- losses ----
+  lostSome:     { says: 'we lost ships ("we lost {lost} of {ships}")',                                     test: function (d) { return claimNum(d.lost) >= 1; } },
+  lostNone:     { says: 'nothing of ours was lost',                                                        test: function (d) { return claimNum(d.lost) === 0; } },
+  heavyLosses:  { says: 'the losses hurt ("paying for it", "coming apart", "arrive and die", "keep losing")', test: function (d) { const l = claimNum(d.lost), s = claimNum(d.ships); return l >= 2 && s > 0 && l / s >= 0.2; } },
+  lightLosses:  { says: 'ships come home ("brings you home", "they come home")',                           test: function (d) { const l = claimNum(d.lost), s = claimNum(d.ships); return l >= 0 && s > 0 && l / s <= 0.1; } },
+  // ---- shares (d.share, 0 to 1: the part of the whole the line talks about) ----
+  mostOf:       { says: '"most of", "mostly", "did most of the work"',                                     test: function (d) { return claimNum(d.share) >= 0.5; } },
+  halfOf:       { says: '"half" of something',                                                             test: function (d) { return claimNum(d.share) >= 0.45; } },
+  nearlyAll:    { says: '"every time", "almost nothing gets through"',                                     test: function (d) { return claimNum(d.share) >= 0.75; } },
+  clearLead:    { says: '"no other came close": the top is at least twice the next (d.top, d.second)',      test: function (d) { const t = claimNum(d.top), s = claimNum(d.second); return t > 0 && s >= 0 && t >= 2 * s; } },
+  // ---- gunnery (d.hitRate and d.odds, 0 to 1; d.causeId and d.causeShare: the main reason for misses) ----
+  beatOdds:     { says: 'hit more than the odds promised ("better than its odds", "beat the odds")',       test: function (d) { const h = claimNum(d.hitRate), o = claimNum(d.odds); return h > o + 0.02; } },
+  sharpAim:     { says: 'a high hit rate ("sharp shooting", "exceptionally accurate", "when we fire, we hit")', test: function (d) { return claimNum(d.hitRate) >= 0.6; } },
+  causeTrack:   { says: 'the turrets could not follow ("turrets cannot keep up", "shots go behind them")',  test: function (d) { return d.causeId === 'track'; } },
+  causeMostly:  { says: 'one cause explains most misses ("mostly because", "most misses because")',        test: function (d) { return claimNum(d.causeShare) >= 0.5; } },
+  // ---- pairings (weakTrade) ----
+  worstPairing: { says: '"this is its worst pairing"',                                                     test: function (d) { return d.worstPair === true; } },
+  betterElse:   { says: 'it did better against everything else ("fine until the X come")',                 test: function (d) { return d.betterElse === true; } },
+  // ---- our designs (section 7r) ----
+  underFire:    { says: 'the ships are taking hits ("too close to the fighting", "can\'t find a safe spot")', test: function (d) { return claimNum(d.fireShare) >= 0.3; } },
+  // ---- the fight as a whole (d.kills theirs destroyed, d.lost ours) ----
+  hardFight:    { says: 'a gloomy line ("we kill one and two take its place", "they have the numbers"): we are not winning the exchange', test: function (d) { const k = claimNum(d.kills), l = claimNum(d.lost); return l >= 1 && k < 2 * l; } },
+  winningFight: { says: 'we are winning the exchange (at least 2 of theirs for each of ours, and 3 or more)', test: function (d) { const k = claimNum(d.kills), l = claimNum(d.lost); return k >= 3 && k >= 2 * Math.max(1, l); } },
+  // ---- other ----
+  noTarget:     { says: '"never reached a target it could shoot" (it held no salvos back either)',          test: function (d) { return claimNum(d.held) === 0; } },
+  slimMargin:   { says: '"ahead, but not by much": built at least as many as lost, and not half as many again', test: function (d) { const n = claimNum(d.n), o = claimNum(d.of); return n >= o && n <= 1.5 * o + 1; } },
+  builtSome:    { says: 'the yards built something ("{n} new hulls")',                                     test: function (d) { return claimNum(d.n) >= 1; } },
+  spanMonth:    { says: '"this month" (the line covers a month)',                                          test: function (d) { return d.span === 'month'; } },
+  spanWeek:     { says: '"this week" (the line covers a week)',                                            test: function (d) { return d.span === 'week'; } }
+};
+const CLAIM_TAG_RE = /^\s*\[([A-Za-z ]+)\]\s*/;
+// The tags at a line's front: [] when it has none.
+function claimTags(line) { const m = CLAIM_TAG_RE.exec(String(line || '')); return m ? m[1].trim().split(/\s+/) : []; }
+// The words a player sees: the line without its tags.
+function claimText(line) { return String(line || '').replace(CLAIM_TAG_RE, ''); }
+// True when every claim the line makes holds for these figures (an unknown tag never holds).
+function claimHolds(line, d) {
+  const tags = claimTags(line);
+  for (let k = 0; k < tags.length; k++) { const C = CLAIMS[tags[k]]; if (!C || !C.test(d || {})) return false; }
+  return true;
+}
+// The lines of a list that may be said with these figures (tags kept, so the caller can still read them).
+function claimAllowed(list, d) { return (Array.isArray(list) ? list : []).filter(function (t) { return t && claimHolds(t, d); }); }
+// One line that may be said, picked by `seed` (a whole number) among those allowed, without its tags; '' when none may be said.
+function claimPick(list, d, seed) {
+  const ok = claimAllowed(list, d);
+  if (!ok.length) return '';
+  return claimText(ok[Math.abs(seed | 0) % ok.length]);
 }
 // =====================================================================
 // 1. SETTINGS AND RULES  (every tuning number lives in this section)
@@ -14156,6 +14266,9 @@ const SETTINGS = {
   // The rules in force (the Combat Update, v14). Each is a number, and the setup screen has a box for the first three. 0 = the rules of v13.5 ("classic").
   // With all three at 0 every battle runs exactly as it did in v13.5 (the fingerprint in the report proves it).
   // The three rule switches. From stage 12 of the Combat Update the new rules are on; 0 / 0 / 0 gives exactly the battles of v13.5 (the setup screen's Movement / Gunnery / Tactics boxes).
+  placePull: 0.08,           // (v282.0, v282.1, section 4b10) fake gravity wells round planets, moons and asteroids: at a body's surface a ship flying straight down
+                             // its well is this much faster (0.08 = 8%), climbing straight out this much slower; across it, no change. 0 = off (the battles of before)
+  placeWellReach: 10,        // ... a body's well reaches this many times its radius (Jupiter about 42,000 u, a small asteroid about 4,500 u), fading to nothing at its edge
   movementModel: 1,          // 0 = classic (a ship turns, then moves at its speed: no momentum), 1 = thrusters (momentum, braking, backing off and sliding sideways: section 4)
   hitModel: 1,               // 0 = every shot hits, 1 = dice (each shot rolls against its hit chance: section 5), 2 = smooth (every shot does hit chance x damage: no luck)
   tacticsModel: 1,           // 0 = classic, 1 = smart (ships and squadrons choose to stand off, kite, close, orbit or fall back from the matchup: sections 5b and 5h)
@@ -23886,8 +23999,10 @@ function flyGlideStep(i, st, target, dt) {
 
   let vx = shipVX[i], vy = shipVY[i];
   if (stSpeed[st] > 0) {
-    const bm = boostActive() ? boostSpeedOf(i) : 1;                           // (v258.3, section 5vi) a boosted ship flies faster (as 4c)
-    let wvx = flyWX * bm, wvy = flyWY * bm;
+    let bm = boostActive() ? boostSpeedOf(i) : 1;                             // (v258.3, section 5vi) a boosted ship flies faster (as 4c)
+    let wm = bm;
+    if (placePullK > 0) { bm *= placePullOf(i, flyWX, flyWY); if (flyKind[i] !== 1) wm = bm; }   // (v282.1, 4b10) fake gravity wells round the bodies (as 4c: a ship keeping its formation slot gets only the higher limits)
+    let wvx = flyWX * wm, wvy = flyWY * wm;
     { const wf = wvx * c + wvy * s, wl = -wvx * s + wvy * c;            // the thruster envelope (as 4c)
       const capF = (wf >= 0 ? stSpeed[st] : stSpeedRev[st]) * bm;
       const k = Math.max(Math.abs(wf) / capF, Math.abs(wl) / (stSpeedLat[st] * bm));
@@ -24047,6 +24162,68 @@ function turnStep(i, diff, maxTurn, dt) {
   shipSpin[i] = w;
   return d;
 }
+// ---- (v282.0, v282.1) 4b10. FAKE GRAVITY WELLS ROUND PLANETS, MOONS AND ASTEROIDS ----
+// Alex, 19 Nov: "give ships a slight speed boost when moving to places, and a slight speed penalty when flying away, scale this with distance (fake
+// gravity). It doesn't need to be strong." Then: "I meant places like planets and asteroids, to mimic their gravity wells."
+// (v282.0 pulled each ship toward its squadron's ordered spot; v282.1 replaced that with real wells round the bodies.)
+// THE WELLS. Every place on the map with a body (Earth, Luna, Mars, Ceres, Jupiter, Arrokoth ...: battlePlaces, their x, y and body radius; a moon's
+// well moves with the moon) has a gravity well. The well reaches placeWellReach x the body's radius (so Jupiter's reaches about 42,000 u, a small
+// asteroid's about 4,500 u: big bodies pull from farther away) and is strongest at the body's surface, fading smoothly to nothing at its edge:
+//   strength = (1 - d / reach) squared   (d = distance from the body's middle, never counted as less than its radius)
+// Where wells overlap (a planet and its moons) their pulls add up, as arrows, capped at full strength.
+// THE EFFECT is a speed multiplier on the ship's engines, used exactly like a ship boost (section 5vi): its top speed, sideways speed and thrust are
+// all multiplied, so its motion still looks like thrusters (it reaches the new speed through its own jets, never jumps):
+//   multiplier = 1 + placePull x (the pull, as an arrow) . (the way the ship wants to fly, as a unit arrow)
+//   so flying straight down a well at a planet's surface is placePull (8%) faster, climbing straight out is 8% slower, flying across it no change.
+// Every ship, both sides, every battle that has places with bodies (the campaign's maps). A battle with no places (Last Stand, stock battles) has no wells.
+// A ship keeping its formation slot gets only the higher limits, not a faster wanted speed: it already follows its pulled leader, and multiplying
+// again made it overshoot its slot and slowed the whole squadron (found in v282.0's tests).
+// SETTINGS.placePull 0 = no wells (exactly the battles of before).
+const placePullStats = { toward: 0, away: 0, sumUp: 0, sumDown: 0 };   // ship-moves sped up / slowed, and the sum of their changes (for tools/v282.1)
+let placePullK = 0;                                                  // this step's strength (0 = off)
+let wellN = 0, wellReachMax = 0;                                    // this step's wells, sorted by x
+let wellX = new Float64Array(0), wellY = new Float64Array(0), wellR = new Float64Array(0), wellReach = new Float64Array(0);
+
+// Once a movement step: reads the settings and lays out the wells (thrusters only: the classic movement has no engines to boost).
+function placePullStep() {
+  placePullK = 0; wellN = 0; wellReachMax = 0;
+  if (SETTINGS.movementModel !== MOVE_THRUST || !(SETTINGS.placePull > 0) || battlePlaces.length === 0) return;
+  const n = battlePlaces.length, mul = SETTINGS.placeWellReach;
+  if (wellX.length < n) { wellX = new Float64Array(n); wellY = new Float64Array(n); wellR = new Float64Array(n); wellReach = new Float64Array(n); }
+  const order = [];
+  for (let k = 0; k < n; k++) if (battlePlaces[k].body > 0) order.push(k);
+  order.sort((a, b) => battlePlaces[a].x - battlePlaces[b].x);
+  for (const k of order) {
+    const p = battlePlaces[k];
+    wellX[wellN] = p.x; wellY[wellN] = p.y; wellR[wellN] = p.body; wellReach[wellN] = p.body * mul;
+    if (wellReach[wellN] > wellReachMax) wellReachMax = wellReach[wellN];
+    wellN++;
+  }
+  if (wellN > 0) placePullK = SETTINGS.placePull;
+}
+// Ship i's speed multiplier from the wells, when it wants to fly at (wvx, wvy). 1 = none.
+function placePullOf(i, wvx, wvy) {
+  if (placePullK <= 0) return 1;
+  const w2 = wvx * wvx + wvy * wvy;
+  if (w2 < 1e-6) return 1;
+  const x = shipX[i], y = shipY[i];
+  // the first well whose x is within the widest reach (wells are sorted by x)
+  let lo = 0, hi = wellN;
+  while (lo < hi) { const m = (lo + hi) >> 1; if (wellX[m] < x - wellReachMax) lo = m + 1; else hi = m; }
+  let gx = 0, gy = 0;
+  for (let k = lo; k < wellN && wellX[k] <= x + wellReachMax; k++) {
+    const dx = wellX[k] - x, dy = wellY[k] - y, d2 = dx * dx + dy * dy, R = wellReach[k];
+    if (d2 >= R * R || d2 < 1e-6) continue;
+    const d = Math.sqrt(d2), f = 1 - Math.max(d, wellR[k]) / R, s = f * f / d;
+    gx += dx * s; gy += dy * s;
+  }
+  if (gx === 0 && gy === 0) return 1;
+  const g2 = gx * gx + gy * gy;
+  if (g2 > 1) { const q = 1 / Math.sqrt(g2); gx *= q; gy *= q; }
+  const g = placePullK * (gx * wvx + gy * wvy) / Math.sqrt(w2);
+  if (g > 0) { placePullStats.toward++; placePullStats.sumUp += g; } else if (g < 0) { placePullStats.away++; placePullStats.sumDown -= g; }
+  return 1 + g;
+}
 // ---------------------------------------------------------------------
 // 4c. Moving
 // ---------------------------------------------------------------------
@@ -24173,6 +24350,7 @@ function updateMovementAndTargeting(dtStep) {
   const passAlongMax = SETTINGS.formationPassAlongMax, passFadeIn = SETTINGS.formationPassFadeIn, passFadeOut = SETTINGS.formationPassFadeOut, passBend = SETTINGS.formationPassBend;
   const parity = (moveStepCounter++) & 1;
   const thrusters = SETTINGS.movementModel === MOVE_THRUST;
+  placePullStep();                                 // (v282.0, v282.1, 4b10) fake gravity wells round the bodies: this step's wells
   if (thrusters && SETTINGS.noseModel === 1) noseRefresh();   // (v261.8, 4b9) each squadron of ours: the way to the nearest enemy, once a second
   const slotGain = SETTINGS.slotGain, keepPace = SETTINGS.matchTargetVelocity, ringMax = SETTINGS.ringMaxFraction / (1 + SETTINGS.ringBandFraction);
   const edgeLook = SETTINGS.edgeLookSeconds, edgeMX = SETTINGS.edgeMarginFraction * worldW, edgeMY = SETTINGS.edgeMarginFraction * worldH;
@@ -24774,11 +24952,17 @@ function updateMovementAndTargeting(dtStep) {
         }
         // (v258.2, section 5vh) a SURGE (the Leviathan's lunge): straight at its target at the surge speed, the engines pushed past their usual top speed and thrust
         const surge = surgeUntil.length > i && surgeUntil[i] > 0 ? surgeWant(i) : 0;
-        const bm = boostActive() ? boostSpeedOf(i) : 1;     // (v258.3, section 5vi) a boosted ship (Last Stand's frenzy) flies faster: speeds and thrust x bm
+        let bm = boostActive() ? boostSpeedOf(i) : 1;       // (v258.3, section 5vi) a boosted ship (Last Stand's frenzy) flies faster: speeds and thrust x bm
+        let wm = bm;                                        // what the wanted velocity is multiplied by (bm, unless the pull below says otherwise)
+        if (placePullK > 0) {                               // (v282.1, 4b10) fake gravity wells: a little faster falling toward a planet, moon or asteroid, slower climbing away
+          const g = placePullOf(i, wvx, wvy);
+          bm *= g;                                          // its top speeds and thrust
+          if (!follower) wm = bm;                           // a ship keeping a formation slot already wants its leader's (pulled) speed: only its limits move, so it keeps up without overshooting
+        }
         if (surge > 0) { wvx = surgeWX; wvy = surgeWY; }
         // The thruster envelope: full speed only along the nose; the reverse and sideways speeds set the rest.
         else {
-          if (bm !== 1) { wvx *= bm; wvy *= bm; }
+          if (wm !== 1) { wvx *= wm; wvy *= wm; }
           const wf = wvx * c + wvy * s, wl = -wvx * s + wvy * c;
           const capF = (wf >= 0 ? stSpeed[st] : stSpeedRev[st]) * bm;
           const k = Math.max(Math.abs(wf) / capF, Math.abs(wl) / (stSpeedLat[st] * bm));
@@ -33264,7 +33448,8 @@ function placeRebuildSeconds(p, side) {
     const q = battlePlaces[k];
     if (q !== p && q.yard && q.owner === side && q.facilityState === 'standing') { speed *= 1 + SETTINGS.stationRebuildYardBonus; break; }
   }
-  if (placesMapMode && aoState.holder === side) speed *= 1 + SETTINGS.stationRebuildSecuredBonus;
+  const longReg = typeof longMapOn === 'function' && longMapOn() ? longRegionStateAt(p.id) : null;   // (v284.0) on the long map: the side that holds the station's region
+  if (placesMapMode && (longReg ? longReg.securedBy === side : aoState.holder === side)) speed *= 1 + SETTINGS.stationRebuildSecuredBonus;
   if (side === 0 && typeof aoForwardBuilding === 'function' && aoForwardBuilding(p.id)) speed *= Math.max(1, SETTINGS.aoForwardStationSpeed);   // (v210.0, 06c7) the Advance's forward station comes first: the work goes there before anything else
   return SETTINGS.stationRebuildSeconds * (p.yard ? SETTINGS.stationRebuildYardFactor : 1) / speed;
 }
@@ -37931,6 +38116,8 @@ function aoTick() {
   aoState.share[0] = tot > 0 ? s0 / tot : 0.5; aoState.share[1] = tot > 0 ? s1 / tot : 0.5;
   const mobile = function (s) { return shipCount[s] - facilityCount[s]; };
   for (let s = 0; s < 2; s++) if (mobile(s) > 0) aoState.seen[s] = true;
+  // (v284.0) the long map's one battle area (the whole system) is never secured by anybody: the shares are still measured (for the plate), but nobody holds it
+  if (typeof campaignAoFlagsAllowed === 'function' && campaignOn() && campaignBattleActive && !campaignAoFlagsAllowed()) { if (aoState.holder >= 0) aoState.holder = -1; aoState.clockSide = -1; aoState.clockSince = -1; return; }
   const h = aoState.holder;
   if (h >= 0) {
     if (aoState.share[h] < SETTINGS.aoLoseShare) aoChange(-1, SIDE_NAMES[h] + '\'s share of the strength fell to ' + Math.round(100 * aoState.share[h]) + '%');
@@ -38813,7 +39000,7 @@ function longMapRegions() {
 }
 // (v189.0) THE STATE OF A PLACE'S REGION ON THE LONG MAP. Off the long map every place belongs to an AO, and the campaign's rules ask the AO's state
 // (campaign.ao[id]: securedBy, besieged, securedSince) before they build a colony, grow a station, count a lab, send settlers and so on. On the long map
-// there is ONE AO, the whole system, which is never secured by anybody and always "besieged" while the war lasts: so Earth's orbit read as lost from the
+// there is ONE AO, the whole system, which is never secured by anybody and (until v284.0) was always "besieged" while the war lasted: so Earth's orbit read as lost from the
 // first day, every building job was "under siege", no colony was ever started and no settlers ever left Earth. Now those rules ask for the state of the
 // place's REGION (the old AO it sat in): SECURED BY the side that holds every place of it that can be held (-1 while they are shared or free), and
 // BESIEGED while the other side has ships in it (with nobody holding it: while both sides have). A ship counts in a region from half a region's width
@@ -38852,6 +39039,22 @@ function longRegionStates() {
   c.longRegions = { stamp: stamp, rows: rows };
   return rows;
 }
+// (v284.0) The region whose slice an x position of the long map is in (the same edges as the ship count above), or null (off the long map, or in a gap).
+function longRegionStateAtX(x) {
+  const rows = longRegionStates();
+  if (!rows) return null;
+  const regs = longMapRegions(), slot = longMapSlotWidth();
+  for (const r of regs) { const left = longMapRegionLeft(r.col); if (x >= left - 0.5 * slot && x <= left + 1.5 * slot) return rows[r.id] || null; }
+  return null;
+}
+// (v284.0, Alex: "entirely remove the entire map flag") NO WHOLE-MAP SIEGE ON THE LONG MAP. The long map's one battle area (the whole system) used to count
+// as besieged whenever both sides had a ship anywhere in it, which was all war long: it showed a red siege ring and a "besieged" bar, counted
+// "besieged (weeks)", capped every ship's refuelling at one transfer and kept the front from ever reading as quiet. Sieges on the long map are the
+// REGIONS' (above) and nothing else, so the one battle area's own flag is simply never set there. Every place that sets an AO's siege asks this.
+// The same goes for the whole-map "SECURED" flag (v284.0, same pass): the one battle area counted as secured by the Swarm the moment our last mobile ship
+// anywhere died, or while it held 70% of the system's strength, and then Earth's yard built nothing (its owner was not the "securer"). On the long map
+// nobody ever secures the one battle area: who holds what is the places' and the regions' (above), and the war is won when we hold every place.
+function campaignAoFlagsAllowed() { return !longMapOn(); }
 // The region's state for a place of the long map (null off it, or for a place with no region).
 function longRegionStateAt(locId) {
   const rows = longRegionStates();
@@ -39303,6 +39506,7 @@ function campaignArrive(f) {
 function campaignSetSecured(aoId, side) {
   if (!campaign || !campaign.ao[aoId]) return false;
   const a = campaign.ao[aoId];
+  if (!campaignAoFlagsAllowed()) side = -1;                      // (v284.0) the long map's one area is never secured (its places still change hands below only when side >= 0)
   a.securedBy = side; a.securedSince = campaign.week; a.besieged = false;
   if (side >= 0) { a.defender = side; for (let k = 0; k < a.places.length; k++) a.places[k].owner = side; }
   campaignLog('ao', campaignAoName(aoId) + (side >= 0 ? ' is secured by ' + SIDE_NAMES[side] + '.' : ' is no longer secured.'));
@@ -39337,7 +39541,7 @@ function campaignCheckOver() {
   // (v187.0) On the long map the one AO is both sides' home, so "secured" alone is not a win (the tutorial's first fight secured it): the long map's war
   // is won, as its start says, when we hold every place. Nothing is won while the tutorial holds the war at Earth.
   if (longMapOn() && (campaign.earthOnly || !campaign.ao[theirs.id].places.every(function (r) { return r.owner === 0; }))) return;
-  if (theirs && campaign.ao[theirs.id] && campaign.ao[theirs.id].securedBy === 0) over = { winner: 0, week: Math.round(campaign.week * 1000) / 1000, why: 'we have secured ' + theirs.name + ', the aliens\' home' };
+  if (theirs && campaign.ao[theirs.id] && (campaign.ao[theirs.id].securedBy === 0 || longMapOn())) over = { winner: 0, week: Math.round(campaign.week * 1000) / 1000, why: longMapOn() ? 'we hold every place in the system' : 'we have secured ' + theirs.name + ', the aliens\' home' };
   if (!over) return;
   campaign.over = over;
   campaign.speed = 0;
@@ -39732,7 +39936,7 @@ function campaignWakeBattle(why, peek) {
     if (isFinite(row.facilityShield) && row.facilityShield < 1) shipShield[o.slot] = Math.max(0, row.facilityShield * stShield[s]);
   }
   campaignStationsWake();                                       // (v25.1) a station's rebuild carries on from the campaign's rows
-  if (st.securedBy >= 0) { aoState.holder = st.securedBy; aoState.since = 0; }
+  if (st.securedBy >= 0 && campaignAoFlagsAllowed()) { aoState.holder = st.securedBy; aoState.since = 0; }   // (v284.0: never on the long map)
   // The fleets at the front enter: garrisons at their places, the rest by their edges.
   for (let k = 0; k < fleetsIn.length; k++) campaignFleetEnters(fleetsIn[k], '');
   link.quietSince = 0; link.nextCheck = 0; link.rosterLen = OFFICER_ROSTER.length; link.rosterKnown = new Set(OFFICER_ROSTER.map(function (r) { return r.id; })); link.secondsSettled = 0;   // (v274.0: who was on the roster, and the battle time already in the AO's record: 06e part 3 campaignSettleCounts)
@@ -39866,7 +40070,7 @@ function campaignFrontQuietSecure() {
   }
   for (let k = 0; k < st.places.length; k++) if (st.places[k].owner >= 0) holds[st.places[k].owner] = true;
   for (let side = 0; side < 2; side++) {
-    if (!(here[side] || holds[side]) || here[1 - side] || holds[1 - side]) continue;
+    if (!(here[side] || holds[side]) || here[1 - side] || holds[1 - side] || !campaignAoFlagsAllowed()) continue;   // (v284.0: the long map's one area is never secured)
     st.securedBy = side; st.securedSince = campaign.week; st.defender = side; st.besieged = false;
     campaignLog('ao', campaignAoName(front) + ' is secured by ' + SIDE_NAMES[side] + ': only ' + SIDE_NAMES[side] + ' is left in the AO.');
     campaignCheckOver();
@@ -40073,7 +40277,7 @@ function campaignLinkStep() {
     campaignCheckOver();
   }
   const present = [campaignEnemyPresent(0), campaignEnemyPresent(1)];
-  const besieged = present[0] && present[1];
+  const besieged = present[0] && present[1] && campaignAoFlagsAllowed();   // (v284.0) never on the long map: its sieges are the regions'
   if (besieged !== ao.besieged) { ao.besieged = besieged; if (!longMapOn()) campaignLog('ao', besieged ? name + ' is besieged: both sides are in the AO.' : 'The siege of ' + name + ' is over: only ' + (present[0] ? 'Blue' : (present[1] ? 'Red' : 'nobody')) + ' is in the AO.'); }
   // The places' owners.
   for (let k = 0; k < battlePlaces.length; k++) {
@@ -40462,7 +40666,7 @@ function campaignParkBattle(why, stragglers, standoff) {
     campaignLog('battle', 'The battle at ' + name + ' is parked after ' + fmtClock(simTime) + ' of battle time' + (why ? ': ' + why : '') + '. At ' + name + ': Blue ' + counts[0] + ' ships, Red ' + counts[1] + '.');
   } else campaignLog('battle', 'The battle at ' + name + ' is parked' + (why ? ': ' + why : '') + '.');
   c.battle.state = 'parked'; c.battle.savedLive = false;
-  st.besieged = !!standoff;                                     // (stop 7) a standoff park leaves both sides at the front: still besieged
+  st.besieged = !!standoff && campaignAoFlagsAllowed();         // (stop 7) a standoff park leaves both sides at the front: still besieged (v284.0: never on the long map)
   c.battle.standoffSince = standoff ? c.week : -1;
   campaignCheckOver();
   return true;
@@ -40852,6 +41056,8 @@ function campaignImportObject(data) {
     walk(campaign, 0);
     if (typeof OFFICER_ROSTER !== 'undefined') walk(OFFICER_ROSTER, 0);
   }
+  // (v284.0) a long-map save from before v284.0 kept the one battle area's whole-map siege flag on: it is cleared (the long map's sieges are its regions')
+  if (typeof longMapOn === 'function' && longMapOn()) for (const id in campaign.ao) { campaign.ao[id].besieged = false; campaign.ao[id].securedBy = -1; }   // (and its whole-map 'secured')
   if (typeof longMapOn === 'function' && longMapOn() && campaign.battle.state === 'parked' && coreLoopNeverParks()) campaignWakeBattle('the long map never parks');   // (v176.0) a loaded long map is live at once, not parked until the first tick
   return { ok: true, messages: messages };
 }
@@ -41314,7 +41520,7 @@ function coreLoopMoveFront(aoId, why) {
   // the old front stays contested when both sides are still there
   const here = [false, false];
   for (const f of campaign.fleets) if (f.at === old && !f.transit && fleetShipCount(f) > 0) here[f.side] = true;
-  if (campaign.ao[old]) campaign.ao[old].besieged = here[0] && here[1];
+  if (campaign.ao[old]) campaign.ao[old].besieged = here[0] && here[1] && campaignAoFlagsAllowed();
   const wake = campaignWakeCheckAt(aoId, true);
   if (campaign.battle.state === 'parked') campaignWakeBattle(wake || why);
 }
@@ -42975,7 +43181,7 @@ function frontQuietTake(aoId, side) {
     const loc = campaignLocationById(r.id);
     campaignLog('place', SIDE_NAMES[side] + ' takes ' + (loc ? loc.loc.name : r.id) + ' without a fight: ' + SIDE_NAMES[1 - side] + ' has no ship, station or people there.');
   }
-  if (took > 0 && st.securedBy !== side && !st.places.some(function (r) { return r.owner === 1 - side; })) {
+  if (took > 0 && st.securedBy !== side && campaignAoFlagsAllowed() && !st.places.some(function (r) { return r.owner === 1 - side; })) {   // (v284.0: never the long map's one area)
     st.securedBy = side; st.securedSince = campaign.week; st.defender = side; st.besieged = false;
     campaignLog('ao', campaignAoName(aoId) + ' is secured by ' + SIDE_NAMES[side] + ': ' + SIDE_NAMES[1 - side] + ' has nothing left there.');
     campaignCheckOver();
@@ -44764,15 +44970,18 @@ function campaignRefuelable(f) {
 }
 // While the battle is live: the side that gets the front AO's boost tops up its squadrons in the battle, squadron by squadron, each ship's top-up paid like a
 // refuel. The defender under siege tops up only to 1 jump (the trickle is "enough to refuel ships for a retreat"); a side that has secured the AO tops up to full.
+// (v284.0) On the long map "under siege" is the squadron's own REGION's siege (06d2 longRegionStateAtX, where its centre is), not the whole map's: a
+// squadron in a quiet region behind the front tops up to full, one in a region with enemy ships in it only to 1 jump.
 function campaignRefuelLive() {
   if (!campaignBattleLive()) return;
   const front = campaignFrontId();
   for (let side = 0; side < 2; side++) {
     if (!coreLoopOn() && !(campaign.boost[front][side].perWeek > 0)) continue;   // (v79: boost off in the core loop, both sides refuel in the battle)
-    const target = campaignFrontSnap().besieged ? 1 : Infinity;
+    const long = longMapOn(), aoTarget = campaignFrontSnap().besieged ? 1 : Infinity;
     let short = 0;
     for (let sq = 1; sq < squadronCount; sq++) {
       if (sqSide[sq] !== side || sqRetired[sq] === 1 || !(sqAlive[sq] > 0)) continue;
+      const reg = long ? longRegionStateAtX(sqCenterX[sq]) : null, target = long ? (reg && reg.besieged ? 1 : Infinity) : aoTarget;
       const fuel = campaignJumpsOf(sq, sqType[sq]), want = Math.min(campaignRefuelTop({ type: typeId[sqType[sq]], design: '', jumpsMax: fuel.jumpsMax }), target) - fuel.jumps;   // (v94.4) only up to what its port-joined tanks hold
       if (!(want > 0)) continue;
       const per = campaignRefuelCost(typeId[sqType[sq]]) * want * sqAlive[sq];
@@ -45021,7 +45230,7 @@ Object.assign(CAMPAIGN_API, {
   setWaveStep: function (n) { if (campaign && typeof n === 'number') { campaign.waveStep = Math.max(0, Math.floor(n)); campaignUpdateBoost(); } return campaign ? campaign.waveStep : -1; },   // (stop 3, for tests; stop 4 raises it)
   setBesieged: function (aoId, on, defender) {                                      // (stop 3, for tests) marks an AO besieged or not by hand (the live battle normally sets it)
     if (!campaign || !campaign.ao[aoId]) return false;
-    campaign.ao[aoId].besieged = !!on;
+    campaign.ao[aoId].besieged = !!on && campaignAoFlagsAllowed();                   // (v284.0) not on the long map: its sieges are the regions'
     if (defender === 0 || defender === 1) campaign.ao[aoId].defender = defender;
     campaignUpdateBoost();
     return true;
@@ -48370,6 +48579,7 @@ function councilViewOf(view) {
   if (!view || !longMapOn()) return view;
   const F = councilLongFront(), v = Object.assign({}, view);
   v.front = F.id; v.frontName = F.name; v.securedBy = F.securedBy; v.besieged = F.besieged;
+  v.settled = F.securedBy === 0 && !F.besieged;                  // (v284.0) quiet = the front REGION all ours with no enemy ship in it (the one battle never parks, so the old test was never true)
   v.places = view.places.filter(function (p) { return F.ids.indexOf(p.id) >= 0; });
   v.rear = F.rear; v.target = F.target; v.targetName = F.target ? campaignAreaName(F.target) : '';
   return v;
@@ -50171,7 +50381,7 @@ function popCheerLine(kind, gaps) {
 //     to the others. It stays until that project is finished, then goes blank.
 //   A FINISHED PROJECT (researchFinish): its `opens` (gathered from A2's tags in 02c by bureauTechOpens, so the data stays in one place) go into the
 //     campaign's kit (campaignV3Open, 06k); `crew` multiplies a crew number for every design (Automated loaders: weapon crew x0.8; Hot bunking: what
-//     quarters sleep x1.25); `spin` raises a weekly rate (Alloys at Earth, all Alloys, boost, research at Earth) or the drive efficiency step. The design
+//     quarters sleep x1.25); `spin` raises a weekly rate (Alloys at Earth, all Alloys, boost) or the drive efficiency step. The design
 //     model reads the crew and drive numbers through researchDesignMods (35d), and every human design is worked out again (researchSyncDesigns). The
 //     campaign log gets a line of kind 'research' (with `research: id`); C3 turns it into a Dispatch with researchDesignsThatCouldUse(id).
 //   THE LUNA PROTOTYPE: free (the crash site's node, 02c CRASH_PROTOTYPES). Once it is known, the full node it names (`halves`, e.g. Coilguns, Tier 2)
@@ -50196,10 +50406,15 @@ const RESEARCH_RULES = {
   price: { new: 50, option: 25, mark: 25, hull: 60 },   // tech-tree s13b: new tech 50, options and marks 25, a hull 60 (a row's own `price` wins)
   price2: { new: 90, option: 45, mark: 45, hull: 100 },   // (v68, Tier 2 plan s2a) a Tier 2 project (its row says tier: 2): about 1.8 times a Tier 1 one
   price3: { new: 160, option: 80, mark: 80, hull: 180 },  // (v90, Tier 3 plan notes/plans/ships/tier3-numbers-plan.md s2a) a Tier 3 project: about 1.8 times a Tier 2 one
-  // (v99.4, Alex 2026-11-04: "early techs a bit cheaper, late game ones more expensive") THE PRICE CURVE: every project's price above is multiplied by
-  // the number for its column on the Research tab (its `step`, 1 to 7). Steps 1-3 are Tier 1, 4-5 Tier 2, 6-7 Tier 3. 1 = the price as listed.
-  // The Luna prototype is left out (it is nearly free on purpose).
-  stepMul: { 1: 0.7, 2: 0.8, 3: 0.9, 4: 1, 5: 1.1, 6: 1.25, 7: 1.4 },
+  // THE PRICE CURVE: every project's price above is multiplied by the number for its column on the Research tab (its `step`, 1 to 7).
+  // Steps 1-3 are Tier 1, 4-5 Tier 2, 6-7 Tier 3. 1 = the price as listed. The Luna prototype is left out (it is nearly free on purpose).
+  // (v99.4, Alex 4 Nov) first curve: 0.7 / 0.8 / 0.9 / 1 / 1.1 / 1.25 / 1.4.
+  // (v281.0, Alex 19 Nov) the Laboratory networks are gone, so Earth's 10 research points a week never grow (the old tree was priced for up to 16).
+  //   Every price came down to fit, and the curve leans harder towards the early columns: Tier 1 costs about 43% less than before, the last column
+  //   about 29% less. The whole tree is now about 6,500 RP (was about 10,000): a hands-off war finishes it around week 650 (was about 800), and the
+  //   Titan lands around week 530 (was about 670).
+  //   tools/v281.0/research-timing.js prints the finish week of the key projects.
+  stepMul: { 1: 0.4, 2: 0.45, 3: 0.5, 4: 0.6, 5: 0.7, 6: 0.82, 7: 1.0 },
   trickle: { he3: 0.1 },                                   // (v68, s4d; v96 a share) a rate at or under this many for every 100 of our week's Alloys counts as "only a trickle" for the red warning (Luna's Helium-3 feeds no fusion fleet)
   aheadPenalty: 4,           // a councillor's score loses this for each unfinished prerequisite step of a project picked ahead
   diceMax: 2,                // the little dice: 0 to this, added to every score
@@ -50229,7 +50444,7 @@ const RESEARCH_BRANCHES = [
 // tags     for the councillors' picks (s13e)
 // uses     resources a project makes use of (a new one arriving doubles its score: A2d)
 // crew     { weapon: x, quarters: x } a campaign-wide crew multiplier for every design (automation)
-// spin     the civilian spin-off (s8), each a weekly rate: alloysEarth / alloys / boost / researchEarth / (v59) fissiles / (v68) he3 (+ shares), startDriveEff (the drive efficiency step)
+// spin     the civilian spin-off (s8), each a weekly rate: alloysEarth / alloys / boost / (v59) fissiles / (v68) he3 (+ shares), startDriveEff (the drive efficiency step)
 // crew     (v68) also hull: x the hull's own crew (Maintenance robots); life: x what life support keeps alive (Recycling life support)
 // massProd (v68) { alloys: 0.8, time: 0.7 }: small craft, corvettes and carried craft cost x0.8 Alloys and take x0.7 the berth time (35d passNumbersV3, 06f)
 // dev      { cap: n }: the highest tier our places can be built to (06n campaignDevCap). develop: a development site's node to open (06d2 campaignDevelop)
@@ -50293,7 +50508,6 @@ const RESEARCH_PROJECTS = [
   // Automation and home
   { id: 'autoload',   name: 'Automated loaders',         branch: 'home', step: 1, kind: 'option', needs: [], tags: ['Automation', 'Crew safety'], crew: { weapon: 0.8 }, text: 'Automatic loaders. Every weapon needs a fifth fewer hands, in every design at once.' },
   { id: 'hotbunk',    name: 'Hot bunking',               branch: 'home', step: 1, kind: 'option', needs: [], tags: ['Automation'], crew: { quarters: 1.25 }, text: 'Hot bunking. Quarters sleep a quarter more crew, in every design at once.' },
-  { id: 'labnet1',    name: 'Laboratory network I',             branch: 'home', step: 1, kind: 'option', needs: [], tags: ['Research', 'Civilian'], spin: { researchEarth: 0.20 }, text: 'More laboratories at home.', spec: '+20% research at Earth' },
   // (v65, Alex 29 Oct) the Luna deposit's prototype (whichever the find is: 02c CRASH_PROTOTYPES). Shown only once the find is known, at the top of the
   // Research tab; only YOUR priority pays for it (the councillors never pick it), and its small price makes it take a few weeks (your fifth of Earth's
   // 10 RP is 2 a week, so 6 RP is 3 weeks). Finishing it opens the find's parts (researchLunaFinished).
@@ -50355,7 +50569,6 @@ const RESEARCH_PROJECTS = [
   { id: 'robots',     name: 'Maintenance robots',        tier: 2, branch: 'home', step: 4, kind: 'option', needs: ['autoload'], tags: ['Automation', 'Crew safety'], crew: { hull: 0.75 }, text: 'Robots walk the hull. Every hull needs a quarter fewer crew of its own, in every design at once.' },
   { id: 'recycling',  name: 'Recycling life support',    tier: 2, branch: 'home', step: 4, kind: 'option', needs: ['hotbunk'], tags: ['Automation', 'Crew safety'], crew: { life: 1.5 }, text: 'Closed-loop air and water. Life support keeps half again as many alive, in every design at once.' },
   { id: 'massprod',   name: 'Mass production',           tier: 2, branch: 'home', step: 4, kind: 'option', needs: ['destroyer'], tags: ['Shipyards', 'Civilian', 'Automation'], massProd: { alloys: 0.8, time: 0.7 }, text: 'Production lines for the small hulls. Small craft, corvettes and carried craft come off the line cheaper and faster.', spec: 'x0.8 Alloys · x0.7 build time' },
-  { id: 'labnet2',    name: 'Laboratory network II',             tier: 2, branch: 'home', step: 5, kind: 'option', needs: ['labnet1', 'cruiser'], tags: ['Research', 'Civilian'], spin: { researchEarth: 0.20 }, text: 'More laboratories at home.', spec: 'Another +20% research at Earth' },
   { id: 'venus',      name: 'Venus orbital works',       tier: 2, branch: 'home', step: 5, kind: 'option', needs: ['cruiser'], tags: ['Civilian', 'Shipyards'], develop: 'dev.venusWorks', text: 'Orbital works above Venus. The site becomes ours and starts working.', spec: '200 Alloys a week' },
   { id: 'deeparray',  name: 'Deep-space array',          tier: 2, branch: 'home', step: 4, kind: 'option', needs: ['sigint'], tags: ['Command', 'Research'], sight: { fleets: 3, bases: 2 }, text: 'Listening posts far out on our ground. We see alien bases two AOs out and their fleets three AOs out.' },   // (v85.5)
   { id: 'interfero',  name: 'Interferometry net',        tier: 2, branch: 'home', step: 5, kind: 'option', price: 90, needs: ['deeparray'], tags: ['Command', 'Research'], sight: { fleets: 99, bases: 99 }, text: 'Every dish we own works as one telescope. We see every alien base and fleet in the system.' },   // (v85.5; moves to Tier 3 when Tier 3 is built)
@@ -50420,7 +50633,6 @@ const RESEARCH_PROJECTS = [
   { id: 'titanrake',  name: 'Rake titan',                tier: 3, branch: 'hulls', step: 7, kind: 'option', needs: ['titan', 'lanceshape', 'amwarheads'], tags: ['Shipyards', 'Missiles'], uses: ['Antimatter'], text: 'The Rake. A half-moon with four siege launchers firing astern.', spec: 'Each siege missile bursts 500 wide' },
   { id: 'titanwheel', name: 'Wheel titan',               tier: 3, branch: 'hulls', step: 7, kind: 'option', needs: ['titan', 'repairbay'], tags: ['Shipyards', 'Crew safety'], uses: ['Rare earths'], text: 'The Wheel. A moving repair station with a repair field and two dozen repair drones.', spec: '24 drones' },
   { id: 'titanflattop', name: 'Flattop titan',           tier: 3, branch: 'hulls', step: 7, kind: 'option', needs: ['titan', 'titanhangars'], tags: ['Shipyards'], uses: ['Rare earths'], text: 'The Flattop. The super carrier.', spec: '100 fighters · 12 corvettes' },
-  { id: 'labnet3',    name: 'Laboratory network III',             tier: 3, branch: 'home', step: 6, kind: 'option', needs: ['labnet2', 'capital'], tags: ['Research', 'Civilian'], spin: { researchEarth: 0.20 }, text: 'The great laboratories at home.', spec: 'Another +20% research at Earth' },
   { id: 'collectors', name: 'Solar collectors',          tier: 3, branch: 'home', step: 7, kind: 'option', needs: ['amprod'], tags: ['Civilian', 'Power'], spin: { amStage: 1 }, text: 'The full collector ring in close orbit of the Sun. Enough Antimatter for every ship we build.', spec: 'Fourth and last collector stage · built over 15 weeks · no new ship part' },
 ];
 const RESEARCH_BY_ID = {};
@@ -50455,16 +50667,16 @@ const RESEARCH_BY_NAME = {};
 // weights     a weight per tag (Weapons and Defence weigh a whole area); favourites: project id -> bonus; favLine: the reason when a favourite decides it.
 const COUNCIL_RESEARCH_TASTE = {
   chair: { weights: { 'Crew safety': 4, 'Armour': 3, 'Civilian': 2, 'Defence': 1, 'Point defence': 1, 'Research': 1 },
-           favourites: { dc: 5, spaced: 4, hardened: 3, reactive: 3, iridium: 4, largedc: 3, crewdecks: 3 },   // (v68) Tier 2: the Chair backs armour, damage control and crew decks
+           favourites: { dc: 5, spaced: 4, hardened: 3, reactive: 3, iridium: 4, largedc: 3, crewdecks: 3, destroyer: 3, cruiser: 4, capital: 5 },   // (v68) Tier 2: the Chair backs armour, damage control and crew decks; (v281.3, Alex 19 Nov) and larger ships (big ships bring more crews home)
            favLine: 'I promised the Assembly we would bring more of our crews home' },
-  cos:   { weights: { 'Guns': 4, 'Shipyards': 3, 'Missiles': 2, 'Command': 2, 'Armour': 1, 'Weapons': 1 },
-           favourites: { turret: 5, frigate: 4, heavyguns: 3, culverin: 3, cruiser: 4, capitalguns: 4, coilguns: 3, smallhangar: 3, ecm: 3 },   // (v68) Tier 2: guns, hangars, ECM
+  cos:   { weights: { 'Guns': 4, 'Shipyards': 3, 'Missiles': 2, 'Command': 2, 'Fuel': 3, 'Armour': 1, 'Weapons': 1 },   // (v281.3, Alex 19 Nov) 'Fuel': the transfer techs (tanks, drives, propellants) too, to some degree
+           favourites: { turret: 5, frigate: 4, heavyguns: 3, culverin: 3, cruiser: 4, capital: 2, iondrive: 2, capitalguns: 4, coilguns: 3, smallhangar: 3, ecm: 3 },   // (v68) Tier 2: guns, hangars, ECM; (v281.2, Alex 19 Nov) a mild liking for the Capital
            favLine: 'the fleet has asked me for this since the first battle' },
-  res:   { weights: { 'Lasers': 4, 'New tech': 4, 'Research': 3, 'Power': 2, 'Point defence': 1, 'Weapons': 1 },
-           favourites: { irlaser: 5, laserpd: 4, bigcaps: 3, labnet1: 3, fusion: 5, droplet: 3, visible: 3 },   // (v68) Tier 2: the new tech
+  res:   { weights: { 'Lasers': 4, 'New tech': 4, 'Research': 3, 'Power': 2, 'Fuel': 3, 'Point defence': 1, 'Weapons': 1 },   // (v281.3) 'Fuel': the transfer techs too, to some degree
+           favourites: { irlaser: 5, laserpd: 4, bigcaps: 3, fusion: 5, droplet: 3, visible: 3 },   // (v68) Tier 2: the new tech
            favLine: 'the directorate has had this on the bench for years' },
   ind:   { weights: { 'Mark': 3, 'Power': 3, 'Fuel': 3, 'Civilian': 3, 'Automation': 3, 'Shipyards': 2, 'Drives': 2, 'Weapons': 1 },
-           favourites: { fissionmk2: 5, propellant: 4, autoload: 5, frigate: 3, massprod: 5, scoops: 4, fusionmk2: 3 },   // (v68) Tier 2: marks, scoops, Mass production
+           favourites: { fissionmk2: 5, propellant: 4, iondrive: 3, bigtanks: 3, tanks2: 3, ntr: 3, autoload: 5, frigate: 3, massprod: 5, scoops: 4, fusionmk2: 3 },   // (v68) Tier 2: marks, scoops, Mass production; (v281.4, Alex 19 Nov) the Mars kit: Ion drives, Tanks Mk II, Large tanks, NTR (with Better propellants and fission, done by about week 50)
            favLine: 'Kask Works could build it tomorrow' }
 };
 // The reason when one tag decides a pick (the biggest factor).
@@ -50472,7 +50684,7 @@ const RESEARCH_TAG_LINES = {
   'Guns': 'more ways to build a gun for the fleet', 'Missiles': 'the missile crews want more from their launchers', 'Lasers': 'lasers are the coming weapon',
   'Point defence': 'something has to stop what they throw at us', 'Armour': 'our hulls must take more punishment', 'Crew safety': 'our crews deserve a better chance of coming home',
   'Command': 'better bridges make better captains', 'Power': 'every ship wants more power', 'Fuel': 'fuel decides how far the fleet can go', 'Drives': 'cheaper transfers for every ship',
-  'Shipyards': 'the yards need bigger hulls', 'Automation': 'fewer hands for the same ship', 'Civilian': 'the home front gains from it too', 'Research': 'the labs pay for themselves',
+  'Shipyards': 'the yards need bigger hulls', 'Automation': 'fewer hands for the same ship', 'Civilian': 'the home front gains from it too', 'Research': 'we need to know more about the enemy',
   'New tech': 'a whole new field to open', 'Mark': 'better versions of what we already build', 'Weapons': 'the fleet needs more firepower', 'Defence': 'the fleet needs to last longer'
 };
 // The situations (A2d): the tags each doubles, and its reason line ({what}, {weeks} filled in).
@@ -50541,6 +50753,12 @@ function campaignResearchFields(c, on) {
   if (!r.sit || typeof r.sit !== 'object') r.sit = { alienWeek: -1, alienWhat: '', resWeek: -1, resWhat: '', lost: [] };
   if (!Array.isArray(r.sit.lost)) r.sit.lost = [];
   if (!Array.isArray(r.log)) r.log = [];
+  // (v281.0) An old save may name projects that are gone from the game (the three Laboratory networks, removed by Alex 19 Nov): they are forgotten here,
+  // so they are not counted as done, nobody keeps paying for them, and a councillor who had picked one picks again.
+  r.done = r.done.filter(function (id) { return !!RESEARCH_BY_ID[id]; });
+  for (const id in r.progress) if (!RESEARCH_BY_ID[id]) delete r.progress[id];
+  for (const id in r.doneWeek) if (!RESEARCH_BY_ID[id]) delete r.doneWeek[id];
+  for (const s of RESEARCH_SEATS) if (r.picks[s].goal && !RESEARCH_BY_ID[r.picks[s].goal]) { r.picks[s].goal = ''; r.picks[s].reason = ''; }
   researchMergeSync(c);   // (v112.0) an old save on the halved tree (06m2)
 }
 // Research starts now (the tutorial's hand-over). Harmless when it already runs.
@@ -50574,13 +50792,14 @@ function researchLabs() {
   return out;
 }
 function researchRpWeek() {
-  const earth = RESEARCH_RULES.earthRP * (1 + researchRate('researchEarth')) * campaignDebugMul('research');   // (v78.2) x the debug menu's Earth research points (7w)
+  // (v281.0, Alex 19 Nov) Earth's research points never grow: no project gives research points (the Laboratory networks are gone).
+  const earth = RESEARCH_RULES.earthRP * campaignDebugMul('research');   // (v78.2) x the debug menu's Earth research points (7w)
   let labs = 0; for (const l of researchLabs()) labs += l.rp;
   return { total: Math.round((earth + labs) * 100) / 100, earth: Math.round(earth * 100) / 100, labs: Math.round(labs * 100) / 100 };
 }
 
 // ---- What finished research changes: the spin-off rates and the design numbers ----
-const RESEARCH_MODS_NONE = Object.freeze({ weaponCrew: 1, quarters: 1, hullCrew: 1, lifeSupport: 1, massProd: null, startDriveEff: 0, alloys: 0, alloysEarth: 0, boost: 0, researchEarth: 0, fissiles: 0, he3: 0,
+const RESEARCH_MODS_NONE = Object.freeze({ weaponCrew: 1, quarters: 1, hullCrew: 1, lifeSupport: 1, massProd: null, startDriveEff: 0, alloys: 0, alloysEarth: 0, boost: 0, fissiles: 0, he3: 0,
                                            allCrew: 1, commandCrew: 1, fcAccuracy: 0, crewSlowHalf: false, antimatter: 0, antimatterOn: 0, antimatterSun: 0 });   // (v68) hullCrew, lifeSupport, massProd, he3; (v91) the implants, the interfaces, the antimatter spin-offs
 function researchMods() {
   const r = researchState();
@@ -50595,7 +50814,7 @@ function researchMods() {
   }
   return m;
 }
-// A weekly rate's research bonus as a share (+0.1 = +10%): 'alloys', 'alloysEarth', 'boost', 'researchEarth', 'fissiles', (v68) 'he3', (v91) 'antimatter' (and
+// A weekly rate's research bonus as a share (+0.1 = +10%): 'alloys', 'alloysEarth', 'boost', 'fissiles', (v68) 'he3', (v91) 'antimatter' (and
 // 'antimatterOn': 1 once Antimatter production is done, 'antimatterSun': the Sun's extra share). 06f reads the rates.
 function researchRate(key) { const v = researchMods()[key]; return typeof v === 'number' && isFinite(v) ? v : 0; }
 // (35d) the numbers the design model reads: weaponCrew (x a built weapon's crew), quarters (x what quarters sleep), startDriveEff (a starting-tech drive's
@@ -50848,7 +51067,6 @@ function researchOpensText(id) {
     if (s.amStage) t += ' Adds a collector stage at the Sun: more Antimatter.';   // (v96) the stages: 06f CAMPAIGN_ANTIMATTER_STAGES
     if (s.boost && !boostRetired()) t += ' +' + Math.round(s.boost * 100) + '% boost.';
     if (s.startDriveEff) t += ' Chemical drives burn less (fuel efficiency x' + s.startDriveEff + ').';
-    if (s.researchEarth) t += ' +' + Math.round(s.researchEarth * 100) + '% research at Earth.';
   }
   if (p.sight) t += ' Sensors: ' + (p.sight.bases >= 99 ? 'every alien base and fleet in the system' : 'alien bases ' + p.sight.bases + ' AO' + (p.sight.bases === 1 ? '' : 's') + ' out, fleets ' + p.sight.fleets + ' AO' + (p.sight.fleets === 1 ? '' : 's') + ' out' + (p.sight.incoming === 'eyes' ? ', and every fleet heading for an AO we hold' : '')) + '.';   // (v85.5, 06t)
   if (p.map && p.map.alienBoost && !boostRetired()) t += ' The strategic map now shows the aliens\' boost lines.';
@@ -50996,7 +51214,7 @@ CAMPAIGN_API.research = {
 // =====================================================================
 // 5z (continued). THE HALVED RESEARCH TREE  (v112.0, Alex 6 Nov: "research tree - go, prices can be merged and mounts can be merged in to guns")
 //
-//   WHAT THIS IS. The Research tab used to show 148 projects. This file folds them into 87 (31 in Tier 1, 29 in Tier 2, 27 in Tier 3), as the
+//   WHAT THIS IS. The Research tab used to show 148 projects. This file folds them into 87 (31 in Tier 1, 29 in Tier 2, 27 in Tier 3; 84 since v281.0 removed the three Laboratory networks), as the
 //   proposal "Halving the research tree" (https://claude.ai/artifact/BEZbKhY52ycRpNgXCHSJwM) laid out and Alex approved.
 //   Switch: SETTINGS.researchTreeModel (2 = the halved tree, the default; 1 = the old tree of 148, exactly as before).
 //
@@ -51013,6 +51231,10 @@ CAMPAIGN_API.research = {
 //   - The transfer techs stay on their own (Alex, 4 Nov: "too important to tie to bloat"): Better propellants, Ion drives, Large tanks, every Tanks
 //     mark, Nuclear thermal rockets, the Fusion torch and the Antimatter drive.
 //
+//   (v281.1, Alex 19 Nov: "remove the capital needing hangars. we will make carrier type craft entirely optional. capitals can also be battleships")
+//   Carrier craft are optional: no project outside the carrier line needs a hangar or fighter project. Corvette hangars, Titan hangars, the Compact
+//   torpedo rail and Ship minds left their merged projects (Capital, Titan fittings, Missiles Mk IV, Cybernetics) and stand on their own, so the
+//   Capital, the flag bridge, Missiles Mk IV and Cybernetics no longer wait on Small craft hangars, fighters or drones.
 //   OLD SAVES (researchMergeSync, run when a campaign loads and every research week): a merged project counts as finished when all its members are; the
 //   RP already paid into its members counts towards it (a finished member counts as paid in full); a councillor's or your pick on a member moves to its
 //   merged project. Nothing already finished is lost.
@@ -51060,14 +51282,14 @@ const RESEARCH_MERGES = [
   { id: 'm_dronesys',  name: 'Drone systems',                 branch: 'hulls',    step: 4, needs: ['m_fighters'], members: ['defdrones', 'crewcpu', 'crewcpu2'], text: 'A bay of tiny drones that throw themselves in front of missiles, and helper computers that do a crewman\'s work.' },
   { id: 'm_controlrooms', name: 'Big-ship control rooms',     branch: 'defence',  step: 5, needs: ['m_cruiser', 'm_destroyer', 'm_dcmed'], members: ['firecontrol', 'commanddeck', 'largedc'], text: 'Fire control, the command deck and a damage control hall for the big ships.' },
   { id: 'm_cruiser',   name: 'Cruiser',                       branch: 'hulls',    step: 4, needs: ['m_destroyer'], members: ['cruiser', 'crewdecks'], text: 'The cruiser hull and its frame sections, with crew decks and a life support plant. Big worlds can grow a size larger.' },
-  { id: 'm_capital',   name: 'Capital',                       branch: 'hulls',    step: 5, needs: ['m_cruiser', 'smallhangar'], members: ['capital', 'corvhangar'], text: 'The capital ship hull and its frame sections, and a hangar for a corvette of our own design. Big worlds can grow to their largest.' },
+  { id: 'm_capital',   name: 'Capital',                       branch: 'hulls',    step: 5, needs: ['m_cruiser'], members: ['capital'], text: 'The capital ship hull and its frame sections: a battleship or a carrier. Big worlds can grow to their largest.' },   // (v281.1) no hangars needed; Corvette hangars is its own project
   { id: 'm_crew2',     name: 'Crew efficiency II',            branch: 'home',     step: 4, needs: ['m_crew'], members: ['robots', 'recycling'], text: 'Maintenance robots and recycling life support: fewer crew for every hull, more kept alive.' },
   { id: 'm_industry',  name: 'Industry II',                   branch: 'home',     step: 5, needs: ['m_destroyer', 'm_cruiser'], members: ['massprod', 'venus'], text: 'Production lines for the small hulls, and orbital works above Venus.' },
   { id: 'm_deepspace', name: 'Deep-space listening',          branch: 'home',     step: 5, needs: ['m_radar'], members: ['deeparray', 'interfero'], text: 'Listening posts far out on our ground, then every dish working as one telescope: we see every alien base and fleet.' },
   // ---- Tier 3 ----
   { id: 'm_supercond', name: 'Superconductors',               branch: 'power',    step: 6, needs: ['m_fastcaps', 'm_cooling'], members: ['supercaps', 'cryosinks'], text: 'Superconducting capacitors, and cryo sinks that hold twice the heat.' },
   { id: 'm_collector', name: 'Collector ring',                branch: 'power',    step: 7, needs: ['amprod', 'amcells'], members: ['belttraps', 'ammk2', 'collectors'], text: 'The collector ring round the Sun, smaller Mk II antimatter cells, and the full ring: enough Antimatter for every ship.' },
-  { id: 'm_missilemk4', name: 'Missiles Mk IV',               branch: 'missiles', step: 7, needs: ['missilemk3', 'm_fighters'], members: ['missilemk4', 'torprail'], text: 'Mk IV launchers, and a compact torpedo rail so a fighter can carry a torpedo.' },
+  { id: 'm_missilemk4', name: 'Missiles Mk IV',               branch: 'missiles', step: 7, needs: ['missilemk3'], members: ['missilemk4'], text: 'Mk IV launchers.' },   // (v281.1) the Compact torpedo rail (for fighters) is its own project
   { id: 'm_fusshield', name: 'Fusion and shields marks',      branch: 'power',    step: 6, needs: ['m_advfusion'], members: ['fusionmk3', 'shieldmk2'], text: 'Smaller Mk III fusion reactors, and smaller Mk II shield emitters once we have shields.' },
   { id: 'm_railguns',  name: 'Railguns',                      branch: 'guns',     step: 7, needs: ['coilguns', 'm_bigguns', 'm_supercond'], members: ['railguns', 'sniperrail'], text: 'Railguns (slugs from the magazines, thrown by the capacitors), and the railgun Culverin: the longest-reaching gun we can build.' },
   { id: 'm_plasma',    name: 'Plasma',                        branch: 'guns',     step: 7, needs: ['fusion', 'm_gunroles'], members: ['plasma', 'heavyplasma'], text: 'Plasma guns that melt the plate they hit, and the huge plasma Carronade.' },
@@ -51075,9 +51297,9 @@ const RESEARCH_MERGES = [
   { id: 'm_optics',    name: 'Large optics',                  branch: 'lasers',   step: 7, needs: ['m_beams', 'm_cruiser'], members: ['largelens', 'hugemirror', 'adaptive'], text: 'A large lens, a huge mirror for cruisers and up, and adaptive optics that keep the beam on fast ships.' },
   { id: 'm_particle',  name: 'Particle beams',                branch: 'lasers',   step: 7, needs: ['amcells', 'm_capweapons'], members: ['particle', 'pscreen'], text: 'The particle beam, a second kind of emitter, and the particle screen that burns missiles and small craft.' },
   { id: 'm_fusionwh',  name: 'Fusion warheads and late shapes', branch: 'missiles', step: 6, needs: ['nuclear', 'fusion', 'm_newmissiles'], members: ['fusionwh', 'lanceshape', 'lingershape'], text: 'The fusion warhead, the bomb-pumped Lance missile and the Lingering missile that leaves a burning cloud.' },
-  { id: 'm_cyber',     name: 'Cybernetics',                   branch: 'home',     step: 7, needs: ['m_crew2', 'm_dronesys'], members: ['implants', 'neural', 'shipminds'], text: 'Implants for every crewman, crews wired straight into their posts, and the ship mind.' },
+  { id: 'm_cyber',     name: 'Cybernetics',                   branch: 'home',     step: 7, needs: ['m_crew2'], members: ['implants', 'neural'], text: 'Implants for every crewman, and crews wired straight into their posts.' },   // (v281.1) Ship minds (after the drone line) is its own project
   { id: 'm_titan',     name: 'Titan',                         branch: 'hulls',    step: 7, needs: ['m_capital', 'amprod', 'm_capweapons'], members: ['titan', 'titanguns'], text: 'The titan hull, the Colossus and the Slip, and titan guns and launchers.' },
-  { id: 'm_titanfit',  name: 'Titan fittings',                branch: 'hulls',    step: 7, needs: ['m_controlrooms', 'm_titan', 'm_capital'], members: ['flagbridge', 'titanhangars'], text: 'The flag bridge, and a titan hangar that carries a frigate of our own design.' },
+  { id: 'm_titanfit',  name: 'Flag bridge for titans',        branch: 'hulls',    step: 7, needs: ['m_controlrooms', 'm_titan'], members: ['flagbridge'], text: 'The flag bridge for titans: while it stands, our Divisions on the field reach twice as far for their targets.' },   // (v281.1) Titan hangars is its own project
   { id: 'm_halo',      name: 'Halo titan',                    branch: 'hulls',    step: 7, needs: ['m_titan', 'm_particle'], members: ['titanhalo', 'megacannon'], text: 'The Halo, a ring with the grand lance through its hole, and the Mega particle cannon.' }
 ];
 const RESEARCH_MERGE_BY_ID = {};      // merged id -> its row (built below)
@@ -52843,7 +53065,7 @@ function swarmClaimPlace(placeId) {
   if (!st || !row) return false;
   const was = row.owner;
   row.owner = 1; row.facility = 'standing'; row.facilityHull = 1; row.facilityShield = 1;
-  if (st.securedBy < 0 && !st.places.some(function (p) { return p.owner === 0; })) {
+  if (st.securedBy < 0 && campaignAoFlagsAllowed() && !st.places.some(function (p) { return p.owner === 0; })) {   // (v284.0: never the long map's one area)
     st.securedBy = 1; st.securedSince = campaign.week; st.defender = 1; st.besieged = false;
     swarmDwNote(aoId, '', 1);
   }
@@ -75639,8 +75861,10 @@ function docFindingsCheck(C, week) {
       C.findings.push(f);
       while (C.findings.length > 40) C.findings.shift();
       const et = typeIndexById(enemy);
-      campaignLog('doctrine', (who || 'Our officers') + ' found ' + (DOC_OPTION_VERB[o] || docOptionWords(o).toLowerCase() + ' against') + ' ' + (et >= 0 ? docTypeName(et) + 's' : 'the enemy') + ' works better than your doctrine for the ' + rec.name + ' (' + docScoreWords(m) + ' against ' + docScoreWords(docM) + ', ' + plural(O.battles, 'battle') + ').');
-      const row = campaign.log[campaign.log.length - 1]; if (row) row.doc = { kind: 'finding', design: rec.id, finding: f.id, who: who || 'Our officers', how: (DOC_OPTION_VERB[o] || docOptionWords(o).toLowerCase() + ' against') + ' ' + (et >= 0 ? docTypeName(et) + 's' : 'the enemy') };   // (v99.6: who and how, for the Dispatch's own words)
+      // (v280.0, the evidence rule) "better than your doctrine" only when the doctrine has a record of its own (3 judged moves or more); else "works well"
+      const vsDoc = L.doc.n >= 3;
+      campaignLog('doctrine', (who || 'Our officers') + ' found ' + (DOC_OPTION_VERB[o] || docOptionWords(o).toLowerCase() + ' against') + ' ' + (et >= 0 ? docTypeName(et) + 's' : 'the enemy') + (vsDoc ? ' works better than your doctrine for the ' + rec.name + ' (' + docScoreWords(m) + ' against ' + docScoreWords(docM) + ', ' : ' works well for the ' + rec.name + ' (' + docScoreWords(m) + ', ') + plural(O.battles, 'battle') + ').');
+      const row = campaign.log[campaign.log.length - 1]; if (row) row.doc = { kind: 'finding', design: rec.id, finding: f.id, who: who || 'Our officers', how: (DOC_OPTION_VERB[o] || docOptionWords(o).toLowerCase() + ' against') + ' ' + (et >= 0 ? docTypeName(et) + 's' : 'the enemy'), vsDoc: vsDoc };   // (v99.6: who and how, for the Dispatch's own words)
     }
   }
 }
@@ -81357,7 +81581,7 @@ function closeKeepCanvas(canvas, key, meta) {
 // (CLOSE_LOOK.keepDrawn). what: everything the picture is drawn from, as text (the art, the design, the size, the livery). It is filed under that and
 // the build's fingerprint (CLOSE_BUILD_PRINT, made by tools/build.js from every source file), so a picture drawn by older art is never read back.
 // cb(pic): the same { canvas, ... } as make() gives (read back: a fresh canvas with the kept measurements), or null when it could not be drawn.
-const CLOSE_BUILD_PRINT = '9acf6e76cde5';
+const CLOSE_BUILD_PRINT = 'bf856d2343ee';
 function closeKeptPicture(what, make, cb) {
   const fresh = function (key) {
     let pic = null;
@@ -86285,28 +86509,58 @@ function hullListHtml(rows, kTag, vTag) {
 }
 
 // ---- The list in the left column (called from refreshAdmiralPanel, section 7h) ----
+// (v283.0, Alex 19 Nov: "this needs to list all the fleets, be clickable to expand the fleets and see divisions, then divisions clickable to see squadrons")
+// The list is a tree read straight from the live chain of command (the same Fleets, Divisions and squadrons the AI officers command):
+//   every Fleet of ours, the empty ones too (shown "no ships yet") > its Divisions > each Division's squadrons (role, design, ships, officer).
+// Clicking a Fleet or Division row opens it AND picks out its ships on the map; clicking an open, picked row again closes it and clears the pick;
+// the small arrow at the front only opens or closes. Clicking a squadron row shows it in the Selected squadron column (as a click on the map would).
+// What is open is kept for the battle in bsTreeOpen ('f:<Fleet id>' or 'd:<Division id>'); display only.
+const bsTreeOpen = new Set();
+function bsTreeArrow(key, canOpen) {
+  if (!canOpen) return '<span class="tw none"></span>';
+  return '<span class="tw' + (bsTreeOpen.has(key) ? ' open' : '') + '" data-tog="' + key + '" title="Open or close">' + (bsTreeOpen.has(key) ? '&#9662;' : '&#9656;') + '</span>';
+}
+// A squadron's row: its role (the role glyph and word the chain of command fights it by), its design, ships in the fight and its officer.
+function bsSquadRowHtml(sq) {
+  const role = roleById(cmdRoleOfSquadron(sq)), t = SHIP_TYPES[sqType[sq]];
+  const inFight = sqInFightCount(sq), alive = sqAlive[sq], o = sqOfficer[sq];
+  const sel = bsSelectedSq === sq;
+  const roleWord = role ? role.name : 'Squadron';
+  return '<button type="button" class="bs-unit sq' + (sel ? ' sel' : '') + '" data-unit="s:' + sq + '" title="' + esc(roleWord + (role ? ' (' + role.napoleonic + ')' : '') + ' squadron of ' + (t ? t.name : 'ships') + (o ? ', led by ' + officerShortName(o, '') : '') + ' - click to look at it') + '">' +
+    '<span class="tw none"></span><span class="rg">' + (role ? roleGlyphSvg(role.id) : '') + '</span><span>' + esc(roleWord + ' · ' + (t ? t.name : '?') + (o ? ' · ' + officerShortName(o, '') : '')) + '</span>' +
+    '<span class="data">' + (inFight < alive ? fmtWhole(inFight) + '/' : '') + plural(alive, 'ship') + '</span></button>';
+}
 function bsDivisionRowHtml(dv, indent) {
   const sel = bsSelectedUnit !== null && bsSelectedUnit.kind === 'division' && bsSelectedUnit.id === dv.id;
   const what = placesActive() && dv.place >= 0 && battlePlaces[dv.place] ? (dv.placeTask === 'sweep' ? 'sweep from ' : (dv.placeTask || 'hold') + ' ') + battlePlaces[dv.place].name
     : (placesActive() && dv.placeTask === 'assemble' ? 'assemble' : (dv.cmd && dv.cmd.order ? cmdOrderName(dv.cmd.order.id) : (divisionTaskById(dv.task.id) ? divisionTaskById(dv.task.id).name : dv.task.id)));
   const form = dv.cmd && dv.cmd.form && cmdFormationOn() ? ' · ' + dv.cmd.form.name.toLowerCase() : '';   // (v35) the Division formation it stands in
-  return '<button type="button" class="bs-unit' + (indent ? ' in' : '') + (sel ? ' sel' : '') + '" data-unit="d:' + dv.id + '" title="' + esc(divisionLabel(dv)) + ' - click to pick out its ships">' +
-    '<span class="sw" style="background:' + divisionColor(dv) + '"></span><span>' + esc(dv.name + ' · ' + officerShortName(dv.officer, 'Cdre') + ' · ' + what + form) + '</span>' +
-    '<span class="data">' + plural(divisionAliveSquads(dv).length, 'sq') + '</span></button>';
+  const key = 'd:' + dv.id, squads = divisionAliveSquads(dv), open = bsTreeOpen.has(key);
+  let html = '<button type="button" class="bs-unit div' + (indent ? ' in' : '') + (sel ? ' sel' : '') + '" data-unit="' + key + '" title="' + esc(divisionLabel(dv)) + ' - click to open it and pick out its ships">' +
+    bsTreeArrow(key, squads.length > 0) + '<span class="sw" style="background:' + divisionColor(dv) + '"></span><span>' + esc(dv.name + ' · ' + officerShortName(dv.officer, 'Cdre') + ' · ' + what + form) + '</span>' +
+    '<span class="data">' + plural(squads.length, 'sq') + '</span></button>';
+  if (open && squads.length > 0) {
+    html += '<div class="bs-tree-kids' + (indent ? ' in2' : ' in1') + '">';
+    for (let k = 0; k < squads.length; k++) html += bsSquadRowHtml(squads[k]);
+    html += '</div>';
+  }
+  return html;
 }
 function bsUnitListHtml() {
   const fleet = fleets[BLUE];
   let html = '';
   const done = new Set();
   if (cmdOn()) {
-    const live = gameFleetsInKeyOrder();             // (v194.0) in the order of their F keys: the Assault Fleet first, then the Defence Fleet
+    const live = gameFleetsInKeyOrder();             // (v194.0) in the order of their F keys: the Assault Fleet first, then the Defence Fleet(s)
     for (let k = 0; k < live.length; k++) {
       const F = live[k], sel = bsSelectedUnit !== null && bsSelectedUnit.kind === 'fleet' && bsSelectedUnit.id === F.id;
-      const divs = cmdFleetDivisions(F), fkey = gameFleetKeyOf(F);   // (v194.0, section 7i3) its F key
-      if (F.purpose === 'assault' && divs.length === 0) continue;                 // (v189.2) an Assault Fleet with no ships is not listed
-      html += '<button type="button" class="bs-unit fleet' + (sel ? ' sel' : '') + '" data-unit="f:' + F.id + '" title="' + esc(cmdFleetLabel(F)) + ' - click to pick out its ships' + (fkey ? ' (key ' + fkey + ' jumps the view to it)' : '') + '">' +
-        '<span class="sw" style="background:' + fleetShadeOf(F) + '"></span><span>' + esc(F.name + ' · ' + officerShortName(F.officer, 'VAdm.')) + '</span><span class="data">' + (fkey ? fkey + ' · ' : '') + fmtWhole(cmdFleetShips(F)) + ' ships</span></button>';
-      for (let d = 0; d < divs.length; d++) { html += bsDivisionRowHtml(divs[d], true); done.add(divs[d].id); }
+      const divs = cmdFleetDivisions(F), fkey = gameFleetKeyOf(F), key = 'f:' + F.id;   // (v194.0, section 7i3) its F key
+      const empty = divs.length === 0;                 // (v283.0) an empty Fleet is listed too (it was hidden from v189.2): every Fleet of ours shows
+      html += '<button type="button" class="bs-unit fleet' + (sel ? ' sel' : '') + (empty ? ' empty' : '') + '" data-unit="' + key + '" title="' + esc(cmdFleetLabel(F)) + (empty ? ' - no ships in it yet' : ' - click to open it and pick out its ships' + (fkey ? ' (key ' + fkey + ' jumps the view to it)' : '')) + '">' +
+        bsTreeArrow(key, !empty) + '<span class="sw" style="background:' + fleetShadeOf(F) + '"></span><span>' + esc(F.name + ' · ' + officerShortName(F.officer, 'VAdm.')) + '</span>' +
+        '<span class="data">' + (fkey ? fkey + ' · ' : '') + (empty ? 'no ships yet' : fmtWhole(cmdFleetShips(F)) + ' ships') + '</span></button>';
+      for (let d = 0; d < divs.length; d++) done.add(divs[d].id);
+      if (!empty && bsTreeOpen.has(key)) for (let d = 0; d < divs.length; d++) html += bsDivisionRowHtml(divs[d], true);
     }
   }
   let loose = '';
@@ -86317,7 +86571,28 @@ function bsUnitListHtml() {
   }
   if (loose !== '' && html !== '') html += '<div class="bs-unit-sub">Not in a Fleet</div>';
   html += loose;
-  return html === '' ? '' : '<div class="bs-divs bs-units">' + html + '</div>';
+  return html === '' ? '' : '<div class="bs-unit-sub bs-tree-head">Our Fleets</div><div class="bs-divs bs-units bs-tree">' + html + '</div>';
+}
+// A click on a Fleet or Division row (see the note above the list): opens and picks, or closes and clears.
+function bsTreeClick(kind, id, arrowOnly) {
+  const key = (kind === 'fleet' ? 'f:' : 'd:') + id, open = bsTreeOpen.has(key);
+  if (arrowOnly) { if (open) bsTreeOpen.delete(key); else bsTreeOpen.add(key); bsEl.bsAdmiralBody.lastHtml = null; refreshAdmiralPanel(); return; }
+  const picked = bsSelectedUnit !== null && bsSelectedUnit.kind === kind && bsSelectedUnit.id === id;
+  if (open && picked) { bsTreeOpen.delete(key); bsSelectUnit(kind, id); return; }   // (bsSelectUnit clears a second pick of the same row)
+  bsTreeOpen.add(key);
+  if (!picked) bsSelectUnit(kind, id); else { bsEl.bsAdmiralBody.lastHtml = null; refreshAdmiralPanel(); }
+}
+// A click on a squadron row: the same as clicking its leader on the map (the Selected squadron column and the ship card).
+function bsTreeSquadClick(sq) {
+  if (!(sqAlive[sq] > 0)) return;
+  let slot = sqLeader[sq] >= 0 && shipAlive[sqLeader[sq]] === 1 ? sqLeader[sq] : -1;
+  for (let j = 0; slot < 0 && j < sqSize[sq]; j++) { const m = sqMembers[sqStart[sq] + j]; if (shipAlive[m] === 1 && shipSquad[m] === sq) slot = m; }
+  if (slot < 0) return;
+  inspectSlot = slot; bsSelectedSq = sq;
+  if (typeof bsShipPick === 'function') bsShipPick(slot);
+  if (typeof refreshInspector === 'function') refreshInspector();
+  hudRefreshNow = true;
+  bsEl.bsAdmiralBody.lastHtml = null; refreshAdmiralPanel();
 }
 // The card of the selected Fleet or Division (the top of the right column; refreshed with the panels, four times a second).
 const bsUnitEl = { panel: document.getElementById('bsUnitPanel'), head: document.getElementById('bsUnitHead'), tag: document.getElementById('bsUnitTag'), body: document.getElementById('bsUnitBody') };
@@ -86372,7 +86647,9 @@ bsEl.bsAdmiralBody.addEventListener('click', function (e) {
   const b = e.target.closest ? e.target.closest('[data-unit]') : null;
   if (!b) return;
   const p = b.getAttribute('data-unit').split(':');
-  bsSelectUnit(p[0] === 'f' ? 'fleet' : 'division', Number(p[1]));
+  if (p[0] === 's') { bsTreeSquadClick(Number(p[1])); return; }
+  const arrow = e.target.closest('[data-tog]') !== null;
+  bsTreeClick(p[0] === 'f' ? 'fleet' : 'division', Number(p[1]), arrow);
 });
 
 // ---- Division names and Fleet banners on the map (from drawMapOverlays, section 7i) ----
@@ -87533,7 +87810,7 @@ function feedbackScreenWords() {
 // Everything the game adds to a note by itself. Each line is a short label and a value.
 function feedbackContext() {
   const c = {};
-  c.build = typeof GAME_VERSION !== 'undefined' ? GAME_VERSION : 'v278.4';
+  c.build = typeof GAME_VERSION !== 'undefined' ? GAME_VERSION : 'v284.0';
   c.where = feedbackScreenWords();
   if (typeof campaign !== 'undefined' && campaign && typeof gameModeNow === 'function' && gameModeNow() === 'campaign') {
     c.warWeek = Math.floor(campaign.week || 0);
@@ -91288,7 +91565,7 @@ const DISPATCH_LINES = {
   'brief.enemy.sylphCrit':     { kind: 'enemy', crit: true,  from: 'Naval Intelligence',  title: '{title}', text: '{text}' },
   'brief.enemy.swarmGathers':  { kind: 'enemy', crit: false, from: 'Naval Intelligence',  title: 'The Swarm gathers at {rear}', text: 'The Swarm is holding its ships back at {rear}, about {ships} of them, instead of feeding them in. When the surge comes at {ao}, it comes all at once.' },
   // (v37) doctrine: the button opens the design's Doctrine tab
-  'brief.off.docFinding':      { kind: 'off',   crit: false, from: 'Officers\' notes',     title: 'A better way to fight the {design}', text: '{who} found that {how} works better than your standing orders for the {design}. Her Doctrine tab has it ready to adopt.' },
+  'brief.off.docFinding':      { kind: 'off',   crit: false, from: 'Officers\' notes',     title: 'A better way to fight the {design}', text: '{who} found that {how} {cmp} for the {design}. Her Doctrine tab has it ready to adopt.' },   // (v280.0) {cmp}: "works better than your standing orders" only when the standing orders have a record of their own to compare with
   'brief.off.docReview':       { kind: 'off',   crit: true,  from: 'Officers\' notes',     title: 'Doctrine review asked: {design}', text: '{who} asks for a doctrine review. The {design} is {how}.' },
   'brief.off.docAide':         { kind: 'off',   crit: false, from: 'Capt. Halloran',       title: 'Doctrine: {design}',      text: 'The {design} still fights on Auto, Chief. Her Doctrine tab sets her standing orders, and a change reaches the front within seconds.' },
   'brief.perf.swarmPullsBack': { kind: 'perf',  crit: true,  from: '{ao} Command',        title: 'The Swarm pulls back',    text: 'The Swarm is pulling its garrison out of {ao} toward {rear}. Their line there has broken. The AO is ours to take.' }
@@ -91728,7 +92005,8 @@ function dispatchWatch() {
     else if (line.kind === 'dev' && line.dev) dispatchDevLine(line);   // (v31 A2) bombardment, the last stand, colonies founded and burnt out, tiers
     else if (line.kind === 'doctrine' && line.doc) {                   // (v37, section 5kd) from the facts on the line (line.doc)
       const t = typeIndexById(line.doc.design), nm = t >= 0 ? SHIP_TYPES[t].name : line.doc.design, k = line.doc.kind;
-      const d = { design: nm, who: line.doc.who || (k === 'review' ? 'The ' + nm + ' squadrons' : 'Our officers'), how: line.doc.how || 'another way of fighting' };
+      const d = { design: nm, who: line.doc.who || (k === 'review' ? 'The ' + nm + ' squadrons' : 'Our officers'), how: line.doc.how || 'another way of fighting',
+                  cmp: line.doc.vsDoc === false ? 'works well' : 'works better than your standing orders' };   // (v280.0, the evidence rule)
       if (k === 'review' && !line.doc.who) d.who = 'The ' + nm + ' squadrons';
       dispatchAdd(k === 'finding' ? 'brief.off.docFinding' : (k === 'review' ? 'brief.off.docReview' : 'brief.off.docAide'), d, 'doctrine:' + line.doc.design);
     }
@@ -91882,14 +92160,18 @@ function gazetteWrite(prev, now) {
   const frontMoved = prev.front !== now.front;
   // the designs: the month's stretches (kills and losses per design), what was built, what fought
   const des = {};
-  const row = function (id) { if (!des[id]) des[id] = { id: id, name: gazetteTypeName(id), built: 0, fought: 0, lost: 0, kills: 0, rating: '', score: 0, n: 0 }; return des[id]; };
+  const row = function (id) { if (!des[id]) des[id] = { id: id, name: gazetteTypeName(id), built: 0, fought: 0, lost: 0, kills: 0, rating: '', score: 0, n: 0, miscast: 0 }; return des[id]; };
   for (const id in now.producedTypes) { const d = now.producedTypes[id] - gazetteNum(prev.producedTypes[id]); if (d > 0) row(id).built = d; }
   for (const id in now.scars) { const a = prev.scars[id] || [0, 0, 0], b = now.scars[id]; if (b[0] - a[0] > 0 || b[1] - a[1] > 0) { const r = row(id); r.fought = Math.max(0, b[0] - a[0]); r.lost = Math.max(0, b[1] - a[1]); } }
-  if (c.cmd && Array.isArray(c.cmd.stretches)) for (const st of c.cmd.stretches) { if (!(st.week > from && st.week <= to)) continue; for (const r of st.designs || []) { const d = row(r.id); d.kills += gazetteNum(r.kills); d.score += gazetteNum(r.score); d.n++; d.rating = r.rating || d.rating; } }
+  if (c.cmd && Array.isArray(c.cmd.stretches)) for (const st of c.cmd.stretches) { if (!(st.week > from && st.week <= to)) continue; for (const r of st.designs || []) { const d = row(r.id); d.ships = Math.max(d.ships || 0, gazetteNum(r.ships)); if (r.rating === 'quiet') { d.kills += gazetteNum(r.kills); continue; } d.kills += gazetteNum(r.kills); d.score += gazetteNum(r.score); d.n++; if (r.miscast) d.miscast++; } }
+  // (v280.0, the evidence rule) the month's word for a design is its average score over the month's stretches (60+ did well, under 30 did badly), not the
+  // word of whichever week came last; "miscast" only when the chain of command called it that in at least half the month's stretches
+  for (const id in des) { const d = des[id]; d.fought = Math.max(d.fought, d.ships || 0, d.lost);   /* (v280.0) never fewer "fought" than lost or on hand */ if (d.n > 0) { const avg = d.score / d.n; d.rating = avg >= 60 ? 'well' : (avg < 30 ? 'badly' : 'fair'); if (d.rating === 'badly' && d.kills >= 3 && d.kills >= 3 * Math.max(1, d.lost)) d.rating = 'fair';   /* (v280.0) a winning trade is never "did badly" */ d.miscast = 2 * d.miscast >= d.n ? 1 : 0; } }
   const designs = Object.keys(des).map(function (k) { return des[k]; }).filter(function (d) { return d.built > 0 || d.fought > 0 || d.kills > 0; });
   designs.sort(function (a, b) { return (b.kills - a.kills) || (b.fought - a.fought) || (b.built - a.built) || (a.name < b.name ? -1 : 1); });
-  const best = designs.find(function (d) { return d.kills > 0 && d.fought > 0; }) || null;
-  const worst = designs.slice().filter(function (d) { return d.fought >= 5 && d.lost > 0; }).sort(function (a, b) { return (b.lost / b.fought) - (a.lost / a.fought); })[0] || null;
+  const best = designs.find(function (d) { return d.kills > 0 && d.fought > 0 && d.kills > d.lost; }) || null;
+  // (v280.0, the evidence rule) "ship of the month" needs a winning trade (more kills than losses); "had the worst of it" needs real losses (2 or more, a tenth of those that fought)
+  const worst = designs.slice().filter(function (d) { return d.fought >= 5 && d.lost >= 2 && d.lost >= 0.1 * d.fought; }).sort(function (a, b) { return (b.lost / b.fought) - (a.lost / a.fought); })[0] || null;
   // what the Bureau drew this month
   const drawn = [];
   for (let t = 0; t < SHIP_TYPES.length; t++) { const r = SHIP_TYPES[t]; if (r && r.design && typeof r.savedWeek === 'number' && r.savedWeek > from && r.savedWeek <= to && !r.stockV3 && !r.campaignStock) drawn.push(r.name); }
@@ -91919,18 +92201,18 @@ function gazetteWrite(prev, now) {
   // ---- the words ----
   let headline, standfirst;
   if (c.over && c.over.winner === 0) { headline = 'THE WAR IS WON'; standfirst = 'The ' + enemy + ' are beaten. ' + (c.over.why ? c.over.why.charAt(0).toUpperCase() + c.over.why.slice(1) : '') + '.'; }
-  else if (won.length) { headline = won.join(' AND ').toUpperCase() + (won.length > 1 ? ' ARE OURS' : ' IS OURS'); standfirst = 'The ' + enemy + ' are pushed back and the front is ' + front + '. ' + gazetteCount(ours, 'ship') + ' of ours paid for it.'; }
+  else if (won.length) { headline = won.join(' AND ').toUpperCase() + (won.length > 1 ? ' ARE OURS' : ' IS OURS'); standfirst = 'The ' + enemy + ' are pushed back and the front is ' + front + '. ' + (ours > 0 ? gazetteCount(ours, 'ship') + ' of ours paid for it.' : 'Not one ship of ours was lost.'); }   // (v280.0: no "0 ships paid for it")
   else if (lostAos.length) { headline = lostAos.join(' AND ').toUpperCase() + (lostAos.length > 1 ? ' FALL' : ' FALLS'); standfirst = 'The ' + enemy + ' take ' + lostAos.join(' and ') + ' and the front is now ' + front + '. The Fleet fights on.'; }
-  else if (best && best.kills > best.lost * 2) { headline = best.name.toUpperCase() + ' HOLDS THE LINE AT ' + front.toUpperCase(); standfirst = 'The ' + best.name + ' trades ' + gazetteCount(best.kills, 'kill') + ' for ' + gazetteCount(best.lost, 'loss', 'losses') + ' this month. ' + gazetteCount(waves, 'wave') + ' beaten.'; }
+  else if (best && best.kills > best.lost * 2) { headline = best.name.toUpperCase() + ' HOLDS THE LINE AT ' + front.toUpperCase(); standfirst = 'The ' + best.name + ' trades ' + gazetteCount(best.kills, 'kill') + ' for ' + gazetteCount(best.lost, 'loss', 'losses') + ' this month.' + (waves > 0 ? ' ' + gazetteCount(waves, 'wave') + ' beaten.' : ''); }   // (v280.0) no "0 waves beaten"
   else if (ours > killed && ours > 0) { headline = 'A HARD MONTH AT ' + front.toUpperCase(); standfirst = gazetteCount(ours, 'ship') + ' lost for ' + gazetteCount(killed, 'enemy hull') + '. The yards posted ' + gazetteCount(built, 'new hull') + '. The Bureau is open all night.'; }
-  else if (killed > 0) { headline = front.toUpperCase() + ' HOLDS'; standfirst = gazetteCount(killed, 'enemy hull') + ' destroyed for ' + gazetteCount(ours, 'loss', 'losses') + '. ' + gazetteCount(waves, 'wave') + ' beaten.'; }
+  else if (killed > 0) { headline = front.toUpperCase() + ' HOLDS'; standfirst = gazetteCount(killed, 'enemy hull') + ' destroyed for ' + gazetteCount(ours, 'loss', 'losses') + '.' + (waves > 0 ? ' ' + gazetteCount(waves, 'wave') + ' beaten.' : ''); }
   else { headline = 'A QUIET MONTH ON THE ' + front.toUpperCase() + ' FRONT'; standfirst = 'No enemy hull was destroyed and none of ours lost. The yards posted ' + gazetteCount(built, 'hull') + '.'; }
   const lead = [];
   lead.push('Between week ' + from + ' and week ' + to + ' the Fleet fought the ' + enemy + ' at ' + front + (frontMoved ? ', the front having moved from ' + gazetteAreaName(prev.front) : '') + '. ' +
     (ours + killed > 0 ? 'The month\'s count has ' + gazetteCount(killed, 'enemy hull') + ' destroyed and ' + gazetteCount(ours, 'ship') + ' of ours lost' + (killed > 0 && ours > 0 ? ', ' + (killed >= ours ? Math.round(killed / ours * 10) / 10 + ' of theirs for every one of ours' : 'one of theirs for every ' + Math.round(ours / killed * 10) / 10 + ' of ours') : '') + '.' : 'No ship was lost on either side.') +
     (waves > 0 ? ' ' + gazetteCount(waves, 'alien wave') + ' broke on the line.' : '') + (assaults > 0 ? ' Fleet Command launched ' + gazetteCount(assaults, 'assault') + '.' : ''));
-  if (best) lead.push('The ' + best.name + ' is the ship of the month: ' + gazetteCount(best.kills, 'kill') + ' for ' + gazetteCount(best.lost, 'loss', 'losses') + ' across ' + gazetteCount(best.fought, 'ship') + ' that fought' + (best.rating === 'well' ? ', and the chain of command says it did well.' : (best.rating === 'badly' ? ', though the chain of command says it was miscast.' : '.')));
-  if (worst && worst !== best) lead.push('The ' + worst.name + ' had the worst of it: ' + worst.lost + ' of the ' + worst.fought + ' that fought did not come back. ' + (drawn.length ? 'The Bureau has a new sheet on the table.' : 'The Bureau has not yet answered.'));
+  if (best) lead.push('The ' + best.name + ' is the ship of the month: ' + gazetteCount(best.kills, 'kill') + ' for ' + gazetteCount(best.lost, 'loss', 'losses') + ' across ' + gazetteCount(best.fought, 'ship') + ' that fought' + (best.rating === 'well' ? ', and the chain of command says it did well.' : (best.miscast ? ', though the chain of command says it is miscast.' : (best.rating === 'badly' ? ', though the chain of command rates it badly at its job.' : '.'))));   // (v280.0: "badly" is not "miscast")
+  if (worst && worst !== best) lead.push('The ' + worst.name + (designs.filter(function (d) { return d.fought >= 5; }).length > 1 ? ' had the worst of it: ' : ' took the month\'s losses: ') + worst.lost + ' of the ' + worst.fought + ' that fought did not come back. ' + (drawn.length ? 'The Bureau has a new sheet on the table.' : 'The Bureau has not yet answered.'));
   if (built > 0) lead.push('The yards posted ' + gazetteCount(built, 'new hull') + ' this month on ' + Math.round(alloysIn).toLocaleString('en-GB') + ' Alloys of income.' + (designs.filter(function (d) { return d.built > 0; }).length ? ' Most built: ' + designs.filter(function (d) { return d.built > 0; }).sort(function (a, b) { return b.built - a.built; }).slice(0, 3).map(function (d) { return d.name + ' (' + d.built + ')'; }).join(', ') + '.' : ''));
   const home = [];
   home.push((alloysIn > 0 ? 'Earth and the colonies gave ' + Math.round(alloysIn / Math.max(1, to - from)).toLocaleString('en-GB') + ' Alloys a week' + (spent > 0 ? ', ' + Math.round(spent).toLocaleString('en-GB') + ' of it spent on ships' : '') + '.' : 'Earth\'s Alloys are not yet flowing.') +
@@ -92196,9 +92478,11 @@ function crTechAndAsk(id, d) {
   return tech + (ask ? ' ' + ask : '');
 }
 // (v25 stop 5c) The design gaps of the council's lines: the best and the worst of our designs over the war at their roles, and one that seems miscast (section 7r).
+// (v280.0, the evidence rule) every line that uses these names both a best and a worst design, so there are details only when both are known and are two
+// different designs (cmdDesignStanding names a best only when it did well and a worst only when it did badly). Before, a lone design was named both.
 function crDesignDetails(n) {
-  if (!n || !n.best) return null;
-  return { designBest: n.best.name, designBestRole: n.best.role, designWorst: n.worst ? n.worst.name : n.best.name, designWorstRole: n.worst ? n.worst.role : n.best.role,
+  if (!n || !n.best || !n.worst || n.worst.name === n.best.name) return null;
+  return { designBest: n.best.name, designBestRole: n.best.role, designWorst: n.worst.name, designWorstRole: n.worst.role,
            designMiscast: n.miscast ? n.miscast.name : '', designMiscastRole: n.miscast ? n.miscast.role : '' };
 }
 // (v30 C1) A seat's research pick in its own words: the engine's one-line reason (06m), or a plain line when it has none.
@@ -92362,7 +92646,10 @@ function crMinutesHtml(m) {
   if (m.vadm && m.vadm.length) h += '<div class="k">Vice Admirals</div>' + m.vadm.map(function (r) {     // (v25 stop 5c) the Chief of Staff's review of each Fleet's Vice Admiral
     return '<div>' + line('council.min.vadm.' + r.verdict, { va: r.va, fleet: r.fleet, why: r.why, successor: r.successor, promoted: r.promoted ? ' is promoted to Vice Admiral and' : '' }) + '</div>';
   }).join('');
-  if (m.designs && m.designs.best) h += '<div class="k">Our designs</div><div>' + line('council.min.designs', crDesignDetails(m.designs)) + (m.designs.miscast ? ' ' + line('council.min.designs.miscast', crDesignDetails(m.designs)) : '') + '</div>';
+  if (m.designs && (crDesignDetails(m.designs) || m.designs.miscast)) {   // (v280.0) best and worst only when both are known; the miscast note on its own
+    const dd = crDesignDetails(m.designs), mz = { designMiscast: m.designs.miscast ? m.designs.miscast.name : '', designMiscastRole: m.designs.miscast ? m.designs.miscast.role : '' };
+    h += '<div class="k">Our designs</div><div>' + [dd ? line('council.min.designs', dd) : '', m.designs.miscast ? line('council.min.designs.miscast', mz) : ''].filter(function (x) { return x; }).join(' ') + '</div>';
+  }
   h += '<div class="k">The Bureau\'s marker</div><div>' + (m.markerPlace ? line(m.marker ? (m.markerAdopted ? 'council.min.marker.counts' : 'council.min.marker.deferred') : 'council.min.marker.off', { move: m.marker ? councilMoveName(m.marker) : '', place: crPlaceText(m.markerPlace) }) : line('council.min.marker.none', {})) + '</div>';
   const shade = [34, 22, 12, 28, 8];   // (v30 C1: one shade a slice, by its place in the split)
   h += '<div class="k">Research money</div>' + (m.research.length ? '<div class="rsplit">' + m.research.map(function (p, n) { return '<i style="width:' + p.share + '%;background:color-mix(in srgb,var(--ink) ' + shade[n % shade.length] + '%,transparent)">' + p.share + '%</i>'; }).join('') + '</div>' +
@@ -93466,7 +93753,7 @@ function tutorialHandOver() {
   campaignRevealCrashSite();                                 // the crash site's resource known (B2)
   bureauUnlockCrashPrototype();                              // (v27 C2) its free prototype node: the matching prototype part in the Bureau's kit (35d); (v65) only once the player has researched it
   const cs = campaignCrashSiteRow(), at = cs ? campaignAoOf(cs.id) : '', row = at ? campaignPlaceRow(at, cs.id) : null;
-  if (row && row.owner < 0 && campaign.ao[at] && campaign.ao[at].securedBy === 0) { row.owner = 0; row.facility = 'standing'; row.facilityHull = 1; row.facilityShield = 1; }   // Luna ours, if the Luna fight has not taken it
+  if (row && row.owner < 0 && campaign.ao[at] && campaignStateAt(cs.id) && campaignStateAt(cs.id).securedBy === 0) {   /* (v284.0: on the long map, Luna's region) */ row.owner = 0; row.facility = 'standing'; row.facilityHull = 1; row.facilityShield = 1; }   // Luna ours, if the Luna fight has not taken it
   campaignV3UnlockCorvette();                                // the corvette in the Bureau (A2's kit: until the Mars-assault beat exists it opens here)
   if (campaign.docks && campaign.docks.atHandOver) { delete campaign.docks.atHandOver; campaignDockSet(true); }   // (v186.0) the dock economy chosen with the tutorial: on now, every ship the player built gets its own dock
   campaignEconWeek();                                        // this week's Alloys a week, at once
@@ -96005,8 +96292,8 @@ function cmdDesignScore(side, t, since) {
     measure = plural(A.sweeps, 'sweep') + ' carried out, ' + plural(A.huntKills, 'hunt kill');
   } else if (role === 'line') {
     const held = A.fireSec > 0 ? A.heldSec / A.fireSec : 1;
-    score = A.fireSec < 30 ? 45 : 70 * held + 15 * Math.min(2, exch);
-    measure = A.fireSec < 30 ? 'hardly under fire' : 'held ' + Math.round(100 * held) + '% of its time under fire (' + fmtWhole(A.fireSec / 60) + ' ship-minutes)';
+    score = A.fireSec < 120 ? 45 : 70 * held + 15 * Math.min(2, exch);   // (v280.0: a verdict on holding needs 2 ship-minutes under fire, not half of one)
+    measure = A.fireSec < 120 ? 'hardly under fire' : 'held ' + Math.round(100 * held) + '% of its time under fire (' + fmtWhole(A.fireSec / 60) + ' ship-minutes)';
   } else if (role === 'skirmish') {
     const screen = A.screenSec / Math.max(1, A.shipSec), soak = A.lost > 0 ? A.soaked / A.lost : 0;
     score = 60 * Math.min(1, 2 * screen) + 40 * (A.soaked > 0 ? Math.max(soak, 0.5) : 0);
@@ -96018,6 +96305,17 @@ function cmdDesignScore(side, t, since) {
   score = Math.round(clampNumber(score, 0, 100));
   let rating = score >= 60 ? 'well' : (score < 30 ? 'badly' : 'fair');
   if (lossShare >= 0.6 && score < 50) rating = 'badly';
+  // (v280.0, the evidence rule; Alex 19 Nov: "the game will often laud a design while also saying it did poorly, even with tons of kills and no losses")
+  // QUIET: a stretch where the design neither dealt nor lost anything and was hardly under fire says nothing about it: no verdict ('quiet'), never "badly".
+  // Before, a quiet week scored 0 for most roles and was called "did badly". WINNING TRADE: a design that killed 3 or more and at least 3 for every one
+  // it lost is never called "badly" (at worst "fair"), whatever its role's measure, so a report can no longer praise its kills and call it poor.
+  const quiet = A.dealt === 0 && A.lost === 0 && kills === 0 && lost === 0 && A.fireSec < 30;
+  const winning = kills >= 3 && kills >= 3 * Math.max(1, lost);
+  // LOSING TRADE, the other way round: a design that lost 2 or more, a third of its ships or more, and killed fewer than it lost is never "did well".
+  const losing = lost >= 2 && lossShare >= 1 / 3 && kills < lost;
+  if (quiet) rating = 'quiet';
+  else if (winning && rating === 'badly') rating = 'fair';
+  else if (losing && rating === 'well') rating = 'fair';
   const dep = []; for (let k = 0; k < TYPE_COUNT; k++) dep[k] = statDeployed[side * TYPE_COUNT + k] || 0;
   const suggested = cmdSuggestRole(side, t, dep);                   // (the suggestion on the ships it deployed, not on the ones left)
   const box = cmdRoleDoc[st] || 'auto';
@@ -96025,8 +96323,9 @@ function cmdDesignScore(side, t, since) {
   const roleName = roleById(role) ? roleById(role).name : role;
   return { id: typeId[t], name: typeName[t], role: role, roleName: roleName, suggested: suggested, box: box, ships: deployed, lost: lost, kills: kills, lossShare: Math.round(lossShare * 100) / 100,
            shipMinutes: Math.round(shipMin), score: score, rating: rating, miscast: miscast, measure: measure,
+           fireShare: A.shipSec > 0 ? Math.round(100 * A.fireSec / A.shipSec) / 100 : 0,   // (v280.0) the share of its time it was taking hits (the evidence rule, section 0e)
            line: typeName[t] + ' (' + roleName + '): ' + measure + '; ' + lost + ' of ' + deployed + ' lost, ' + kills + ' kills. ' +
-                 (miscast ? 'Seems miscast: its numbers suggest ' + (roleById(suggested) ? roleById(suggested).name : suggested) + '.' : (rating === 'well' ? 'Did well.' : (rating === 'badly' ? 'Did badly.' : 'Fair.'))) };
+                 (miscast ? 'Seems miscast: its numbers suggest ' + (roleById(suggested) ? roleById(suggested).name : suggested) + '.' : (rating === 'well' ? 'Did well.' : (rating === 'badly' ? 'Did badly.' : (rating === 'quiet' ? 'Saw no real fighting.' : 'Fair.')))) };
 }
 function cmdDesignResults(side, since) {
   const out = [];
@@ -96038,24 +96337,26 @@ function cmdDesignVibe() { if (!cmdOn()) return null; return cmdDesignResults(BL
 
 // ---- design.remark: now and then an officer says what they think of a design (a middle line on the radio) ----
 const DESIGN_REMARK_LINES = {
-  line:     { well: ['The {design}s are holding. Let them come.', 'Line of {design}s still standing. They can take it.'], badly: ['The {design}s won\'t hold much longer under this.', 'Our {design}s are coming apart in the line.'] },
-  battery:  { well: ['{design}s firing from good cover. Steady work.', 'The {design} battery is hitting them from where they can\'t hit back.'], badly: ['The {design}s are too close to the fighting. They are taking hits.', 'Our {design} battery can\'t find a safe spot.'] },
-  light:    { well: ['These {design}s turn on a coin.', 'The {design}s are round their flank already.'], badly: ['The {design}s can\'t keep up.', 'We keep losing {design}s on the turn.'] },
-  skirmish: { well: ['The {design} screen is soaking it up for the line.', '{design}s out front, drawing their fire.'], badly: ['The {design} screen is gone already.', 'Our {design}s aren\'t screening anything.'] },
-  dragoons: { well: ['The {design}s plugged the gap. Good ships.', '{design}s in, and the gap is shut.'], badly: ['The {design}s arrive and die.', 'Too few {design}s left to plug anything.'] },
+  // (v280.0) lines tagged [heavyLosses] or [underFire] are only said when the design's figures show it (the evidence rule, section 0e)
+  line:     { well: ['The {design}s are holding. Let them come.', 'Line of {design}s still standing. They can take it.'], badly: ['The {design}s won\'t hold much longer under this.', '[heavyLosses] Our {design}s are coming apart in the line.', 'The {design}s keep giving ground under fire.'] },
+  battery:  { well: ['{design}s firing from good cover. Steady work.', 'The {design} battery is hitting them from where they can\'t hit back.'], badly: ['[underFire] The {design}s are too close to the fighting. They are taking hits.', '[underFire] Our {design} battery can\'t find a safe spot.', 'The {design} battery isn\'t doing much from where it sits.'] },
+  light:    { well: ['These {design}s turn on a coin.', 'The {design}s are round their flank already.'], badly: ['The {design}s can\'t keep up.', '[heavyLosses] We keep losing {design}s on the turn.'] },
+  skirmish: { well: ['The {design} screen is soaking it up for the line.', '{design}s out front, drawing their fire.'], badly: ['[heavyLosses] The {design} screen is gone already.', 'Our {design}s aren\'t screening anything.'] },
+  dragoons: { well: ['The {design}s plugged the gap. Good ships.', '{design}s in, and the gap is shut.'], badly: ['[heavyLosses] The {design}s arrive and die.', '[heavyLosses] Too few {design}s left to plug anything.', 'The {design}s aren\'t winning their fights.'] },
   reserve:  { well: ['The {design}s did what the Guard is for.'], badly: ['The {design}s went in and broke.'] },
   miscast:  ['We are using the {design}s as {role}. They were never built for it.', 'Whoever put the {design}s in the {role} never flew one.']
 };
 function cmdDesignRemark() {
-  const res = cmdDesignResults(BLUE).filter(function (r) { return r.rating !== 'fair' && r.shipMinutes >= 2; });
+  const res = cmdDesignResults(BLUE).filter(function (r) { return (r.rating === 'well' || r.rating === 'badly') && r.shipMinutes >= 2; });
   if (res.length === 0) return;
   res.sort(function (a, b) { return (DS.remarked[a.id] || 0) - (DS.remarked[b.id] || 0) || Math.abs(b.score - 50) - Math.abs(a.score - 50); });
   const r = res[0];
   DS.remarked[r.id] = (DS.remarked[r.id] || 0) + 1;
   const h = displayHash(battleSeed, DS.remarks++, 97);
   const bank = r.miscast ? DESIGN_REMARK_LINES.miscast : ((DESIGN_REMARK_LINES[r.role] || DESIGN_REMARK_LINES.line)[r.rating] || []);
-  if (!bank.length) return;
-  const text = bank[h % bank.length].replace(/\{design\}/g, r.name).replace(/\{role\}/g, r.roleName);
+  const said = claimPick(bank, r, h);                                          // (v280.0) only a line its figures back (section 0e)
+  if (!said) return;
+  const text = said.replace(/\{design\}/g, r.name).replace(/\{role\}/g, r.roleName);
   // the speaker: a Commodore whose Division has the design
   const t = typeIndexById(r.id);
   let dv = null;
@@ -96146,12 +96447,15 @@ function cmdCampaignStretch(res) {
   const k = campaign.cmd;
   cmdRecordsCampaignFields(campaign);
   const day = Math.round(campaign.week * 1000) / 1000;
-  k.stretches.push({ no: ++k.stretchNo, week: day, seconds: res.t, designs: res.designs.map(function (r) { return { id: r.id, name: r.name, role: r.role, score: r.score, rating: r.rating, miscast: r.miscast, ships: r.ships, lost: r.lost, kills: r.kills, line: r.line }; }),
+  k.stretches.push({ no: ++k.stretchNo, week: day, seconds: res.t, designs: res.designs.map(function (r) { return { id: r.id, name: r.name, role: r.role, score: r.score, rating: r.rating, miscast: r.miscast, ships: r.ships, lost: r.lost, kills: r.kills, line: r.line,
+                    measure: r.measure, suggested: r.suggested, fireShare: r.fireShare, shipMinutes: r.shipMinutes }; }),   // (v280.0) the figures the Dispatch's words are checked against
                     summaries: res.summaries.map(function (s) { return s.text; }) });
   while (k.stretches.length > DESIGN_STRETCHES_KEEP) k.stretches.shift();
   for (const r of res.designs) {
-    const D = k.designs[r.id] || (k.designs[r.id] = { name: r.name, stretches: 0, well: 0, fair: 0, badly: 0, miscast: 0, scoreSum: 0, roles: {}, last: null });
+    if (r.rating === 'quiet') continue;                                        // (v280.0) a quiet stretch says nothing about a design: not counted in its war record
+    const D = k.designs[r.id] || (k.designs[r.id] = { name: r.name, stretches: 0, well: 0, fair: 0, badly: 0, miscast: 0, scoreSum: 0, roles: {}, last: null, ships: 0, lost: 0 });
     D.name = r.name; D.stretches++; D[r.rating]++; if (r.miscast) D.miscast++; D.scoreSum += r.score; D.roles[r.role] = (D.roles[r.role] || 0) + 1;
+    D.ships = (D.ships || 0) + (r.ships || 0); D.lost = (D.lost || 0) + (r.lost || 0);   // (v280.0) ships fielded and lost, summed over the stretches
     D.last = { week: day, role: r.role, score: r.score, rating: r.rating, miscast: r.miscast, line: r.line };
   }
 }
@@ -96170,8 +96474,12 @@ function cmdDesignStanding() {
   if (!rows.length) return null;
   rows.sort(function (a, b) { return b.avg - a.avg || (a.id < b.id ? -1 : 1); });
   const roleName = function (r) { const id = r.D.last ? r.D.last.role : ''; return roleById(id) ? roleById(id).name : id; };
-  const best = rows[0], worst = rows[rows.length - 1], mis = rows.find(function (r) { return r.D.last && r.D.last.miscast; }) || null;
-  return { best: { name: best.name, role: roleName(best), score: Math.round(best.avg) }, worst: rows.length > 1 ? { name: worst.name, role: roleName(worst), score: Math.round(worst.avg) } : null,
+  // (v280.0, the evidence rule) "best" and "worst" are only named when the figures say so: the best must have done well (average score 60 or more), the
+  // worst badly (under 30), and they must be two different designs. Before, a lone design was both "best" and "worst", and a poor design could be "best".
+  const best = rows[0].avg >= 60 ? rows[0] : null, last = rows[rows.length - 1], worst = rows.length > 1 && last.avg < 30 && last !== best && 2 * (last.D.badly || 0) >= last.D.stretches ? last : null;   // (and rated badly in at least half its stretches)
+  const mis = rows.find(function (r) { return r.D.last && r.D.last.miscast; }) || null;
+  if (!best && !worst && !mis) return null;
+  return { best: best ? { name: best.name, role: roleName(best), score: Math.round(best.avg) } : null, worst: worst ? { name: worst.name, role: roleName(worst), score: Math.round(worst.avg) } : null,
            miscast: mis ? { name: mis.name, role: roleName(mis) } : null, rows: rows.length };
 }
 
@@ -96357,11 +96665,30 @@ function cmdRecordText(res) {
 
 // ---- Dispatches: a design that did notably well or badly, or seems miscast; a Vice Admiral relieved or commended (from the Dispatch watcher, section 7m) ----
 Object.assign(DISPATCH_LINES, {
-  'brief.perf.designWell':    { kind: 'perf', crit: false, from: 'Flag, the front', title: 'The {design} proves itself', text: 'The {design} is doing good work as {roleA}. Crews trust her.' },
-  'brief.perf.designBadly':   { kind: 'perf', crit: false, from: 'Flag, the front', title: 'The {design} struggles', text: 'The {design} is letting us down as {roleA}. We lost {lost} of {ships}.' },
-  'brief.perf.designMiscast': { kind: 'perf', crit: true,  from: 'Flag, the front', title: 'The {design} seems miscast', text: 'The {design} is fighting as {roleA} and paying for it. We lost {lost} of {ships}. She would make a better {suggestedLow}.' },
+  // (v280.0, the evidence rule) the words come in pieces from DESIGN_REPORT_LINES below, each picked only when the design's figures back it
+  'brief.perf.designWell':    { kind: 'perf', crit: false, from: 'Flag, the front', title: 'The {design} proves itself', text: '{lead} {cost}' },
+  'brief.perf.designBadly':   { kind: 'perf', crit: false, from: 'Flag, the front', title: 'The {design} struggles', text: '{lead} {cost}' },
+  'brief.perf.designMiscast': { kind: 'perf', crit: true,  from: 'Flag, the front', title: 'The {design} seems miscast', text: '{lead} {cost} {hint}' },
   'brief.off.vadmReview':     { kind: 'off',  crit: false, from: 'Secretary to the Council', title: 'The Council {verdict} {va}', text: '{va} of the {fleet} is {verdictLong}.' }
 });
+// (v280.0) The design report's pieces. The lead says what the rating was judged on (its role's measure, the same words as the battle report's
+// "Your designs" line), the cost says what it lost, only as far as the figures go, the hint says which role its numbers suit. Tags: section 0e.
+// Before, the miscast report always said "paying for it", even when nothing was lost ("We lost 0 of 35"), because a design can rate badly on its role's
+// measure (a battery that fires while under fire) without losing a ship.
+const DESIGN_REPORT_LINES = {
+  lead: {
+    well:    ['The {design} is doing good work as {roleA}. Its record: {measure}.'],
+    badly:   ['The {design} is letting us down as {roleA}. Its record: {measure}.'],
+    miscast: ['The {design} is fighting as {roleA} and it shows. Its record: {measure}.']
+  },
+  cost: {
+    well:    ['[lightLosses] Crews trust her: we lost {lost} of {ships}.', '[lostSome] We lost {lost} of {ships}.', '[lostNone] Not one of the {ships} was lost.'],
+    badly:   ['[heavyLosses] It is costing us: we lost {lost} of {ships}.', '[lostSome] We lost {lost} of {ships}.', '[lostNone] None of the {ships} was lost, but the job is not getting done.']
+  },
+  hint: ['Her numbers suit {suggestedA} ship better.']
+};
+// The first piece whose claims hold (the lists are in order: the strongest true thing first).
+function designReportPiece(list, d) { const ok = claimAllowed(list, d); return ok.length ? claimText(ok[0]) : ''; }
 const recWatch = { c: null, stretch: 0, review: 0 };
 function recordsDispatchWatch(c) {
   if (!c || !c.cmd || !cmdOn()) return;
@@ -96371,13 +96698,23 @@ function recordsDispatchWatch(c) {
   for (const st of k.stretches) {
     if (st.no <= recWatch.stretch) continue;
     let n = 0;
-    const picks = st.designs.filter(function (r) { return r.ships >= 4 && (r.miscast || r.rating !== 'fair'); }).sort(function (a, b) { return (b.miscast ? 1 : 0) - (a.miscast ? 1 : 0) || Math.abs(b.score - 50) - Math.abs(a.score - 50); });
+    const picks = st.designs.filter(function (r) { return r.ships >= 4 && (r.shipMinutes === undefined || r.shipMinutes >= 5) && (r.miscast || r.rating === 'well' || r.rating === 'badly'); }).sort(function (a, b) { return (b.miscast ? 1 : 0) - (a.miscast ? 1 : 0) || Math.abs(b.score - 50) - Math.abs(a.score - 50); });
     for (const r of picks) {
       if (n++ >= 1) break;   // (v99.6) at most one design report a stretch: the worst or best
-      const role = roleById(r.role) ? roleById(r.role).name : r.role, m = /: (.*?); \d+ of/.exec(r.line);
-      const d = { design: r.name, role: role, roleA: (/^[aeiou]/i.test(role) ? 'an ' : 'a ') + role.toLowerCase(), measure: m ? m[1] : '', score: r.score, lost: r.lost, ships: r.ships, suggested: '' };
-      if (r.miscast) { const sm = /suggest ([^.]+)\./.exec(r.line); d.suggested = sm ? sm[1] : 'another role'; d.suggestedLow = sm ? sm[1].toLowerCase() : 'ship in another role'; dispatchAdd('brief.perf.designMiscast', d, ''); }
-      else dispatchAdd(r.rating === 'well' ? 'brief.perf.designWell' : 'brief.perf.designBadly', d, '');
+      // (v280.0) the figures come straight from the stretch row (older saves: read back from its line, as before)
+      const role = roleById(r.role) ? roleById(r.role).name : r.role, m = /: (.*?); \d+ of/.exec(r.line || '');
+      const an = function (w) { return (/^[aeiou]/i.test(w) ? 'an ' : 'a ') + w; };
+      const d = { design: r.name, role: role, roleA: an(role.toLowerCase()), measure: r.measure || (m ? m[1] : ''), score: r.score, lost: r.lost, ships: r.ships, suggested: '' };
+      const kind = r.miscast ? 'miscast' : (r.rating === 'well' ? 'well' : 'badly');
+      d.lead = brFill(designReportPiece(DESIGN_REPORT_LINES.lead[kind], d), d);
+      d.cost = brFill(designReportPiece(DESIGN_REPORT_LINES.cost[kind === 'well' ? 'well' : 'badly'], d), d);
+      if (r.miscast) {
+        const sm = /suggest ([^.]+)\./.exec(r.line || ''), sg = r.suggested && roleById(r.suggested) ? roleById(r.suggested).name : (sm ? sm[1] : '');
+        d.suggested = sg || 'another role'; d.suggestedA = sg ? an(sg.toLowerCase()) : 'another kind of';
+        d.hint = brFill(designReportPiece(DESIGN_REPORT_LINES.hint, d), d);
+        dispatchAdd('brief.perf.designMiscast', d, '');
+      }
+      else dispatchAdd(kind === 'well' ? 'brief.perf.designWell' : 'brief.perf.designBadly', d, '');
     }
   }
   recWatch.stretch = k.stretchNo;
@@ -104157,6 +104494,8 @@ function brWarSpan(from, to) {
 //   The rules are below, one block per finding. A finding's SCORE is roughly the share of the result it explains (0 to 1): the share of our kills, of our
 //   losses, of our shots ... so the biggest causes come first, whatever the size of the battle. Small numbers never make a finding (each rule has a floor).
 //
+//   (v280.0) THE EVIDENCE RULE (section 0e): each finding's figures (d) also carry what its lines may claim beyond the plain numbers (share, top and
+//   second, hitRate and odds, causeId and causeShare, worstPair, betterElse, held, ships, span), and brLine only uses a line whose tags all hold.
 //   Nothing here changes a battle or uses the battle's dice: line choices use their own fixed hash (brHash).
 // =====================================================================
 const BR_CAUSE_WORDS = {
@@ -104225,39 +104564,47 @@ function brRead(L, ctx) {
 // ---- The rules ----
 function brFindings(R) {
   const F = [], U = R.totals[0], E = R.totals[1];
-  const add = function (kind, score, tone, d) { if (score > 0) F.push({ kind: kind, score: score, tone: tone, d: d || {} }); };
+  const add = function (kind, score, tone, d) { if (score > 0) { d = d || {}; d.span = R.ctx.span || 'battle'; F.push({ kind: kind, score: score, tone: tone, d: d }); } };
   const ships = R.ours.filter(function (r) { return r.sent > 0; });
 
   // outnumbered (or outnumbering): ships sent, two to one or more
-  if (U.sent >= 3 && E.sent >= 2 * U.sent) add('outnumbered', 0.5 + Math.min(0.4, 0.1 * (E.sent / U.sent - 2)), R.ctx.winner === 0 ? 'mixed' : 'down', { n: E.sent, of: U.sent, ratio: brRatio(E.sent / U.sent) });
+  if (U.sent >= 3 && E.sent >= 2 * U.sent) add('outnumbered', 0.5 + Math.min(0.4, 0.1 * (E.sent / U.sent - 2)), R.ctx.winner === 0 ? 'mixed' : 'down', { n: E.sent, of: U.sent, ratio: brRatio(E.sent / U.sent), kills: E.lost, lost: U.lost });
   // a clean fight: none of ours lost, some of theirs
-  if (U.lost === 0 && E.lost >= 3) add('sweep', 1.2, 'up', { kills: E.lost });
+  if (U.lost === 0 && E.lost >= 3) add('sweep', 1.2, 'up', { kills: E.lost, lost: 0 });
 
   // the design that carried the fight (most of the kills for few losses)
   if (U.kills >= 4 && ships.length > 1) {
     const best = ships.slice().sort(function (a, b) { return b.kills - a.kills; })[0];
     const share = best.kills / U.kills;
-    if (share >= 0.35 && best.kills >= 3 && best.kills >= 2 * best.lost) add('star', share, 'up', { design: best.name, kills: best.kills, lost: best.lost, pct: brPct(share) });
-  } else if (ships.length === 1 && U.kills >= 4 && ships[0].kills >= 2 * Math.max(1, ships[0].lost)) add('star', 0.5, 'up', { design: ships[0].name, kills: ships[0].kills, lost: ships[0].lost, pct: '100%' });
+    if (share >= 0.35 && best.kills >= 3 && best.kills >= 2 * best.lost) add('star', share, 'up', { design: best.name, kills: best.kills, lost: best.lost, pct: brPct(share), share: share, ships: best.sent });
+  } else if (ships.length === 1 && U.kills >= 4 && ships[0].kills >= 2 * Math.max(1, ships[0].lost)) add('star', 0.5, 'up', { design: ships[0].name, kills: ships[0].kills, lost: ships[0].lost, pct: '100%', share: 1, ships: ships[0].sent });
 
   // a pairing we lose
+  // (v280.0) worstPair: no other pairing of this design went worse (kills per loss); betterElse: its other pairings together traded better
+  const rate = function (k, l) { return l > 0 ? k / l : Infinity; };
   for (const p of R.pairs) {
     if (p.lost < 2 || p.kills >= p.lost) continue;
-    add('weakTrade', U.lost > 0 ? p.lost / U.lost : 0, 'down', { design: p.ours, enemy: p.theirs, kills: p.kills, lost: p.lost });
+    const others = R.pairs.filter(function (q) { return q !== p && q.ours === p.ours; });
+    const ok = others.reduce(function (a, q) { return a + q.kills; }, 0), ol = others.reduce(function (a, q) { return a + q.lost; }, 0);
+    const own = ships.find(function (r) { return r.name === p.ours; });
+    add('weakTrade', U.lost > 0 ? p.lost / U.lost : 0, 'down', { design: p.ours, enemy: p.theirs, kills: p.kills, lost: p.lost, ships: own ? own.sent : 0,
+      worstPair: others.length > 0 && others.every(function (q) { return q.lost === 0 || rate(q.kills, q.lost) >= rate(p.kills, p.lost); }),
+      betterElse: ok + ol >= 2 && rate(ok, ol) > rate(p.kills, p.lost) });
   }
   // the enemy design that killed most of ours
   if (U.lost >= 3) {
     const by = {};
     for (const p of R.pairs) by[p.theirs] = (by[p.theirs] || 0) + p.lost;
-    const worst = Object.keys(by).sort(function (a, b) { return by[b] - by[a]; })[0];
-    if (worst && by[worst] >= 2 && by[worst] / U.lost >= 0.4) add('hurtMost', 0.8 * by[worst] / U.lost, 'down', { enemy: worst, n: by[worst], of: U.lost });
+    const order = Object.keys(by).sort(function (a, b) { return by[b] - by[a]; }), worst = order[0];
+    if (worst && by[worst] >= 2 && by[worst] / U.lost >= 0.4) add('hurtMost', 0.8 * by[worst] / U.lost, 'down', { enemy: worst, n: by[worst], of: U.lost, top: by[worst], second: order.length > 1 ? by[order[1]] : 0 });
   }
 
   // gunnery: poor, sharp, or below what the odds promised
   for (const r of ships) {
     if (r.shots < 60) continue;
     const share = U.shots > 0 ? r.shots / U.shots : 0;
-    const d = { design: r.name, pct: brPct(r.hit), of: brPct(r.odds), n: r.shots.toLocaleString('en-GB'), cause: BR_CAUSE_WORDS[r.cause] || 'the shots went wide' };
+    const d = { design: r.name, pct: brPct(r.hit), of: brPct(r.odds), n: r.shots.toLocaleString('en-GB'), cause: BR_CAUSE_WORDS[r.cause] || 'the shots went wide',
+                hitRate: r.hit, odds: r.odds, causeId: r.cause || '', causeShare: r.causeShare || 0 };
     if (r.hit < 0.35 && r.misses > 0) add('poorAim', 0.6 * share + 0.2, 'mixed', d);
     else if (r.odds - r.hit >= 0.1) add('belowOdds', 0.5 * share + 0.1, 'mixed', d);
     else if (r.hit >= 0.65 || r.hit - r.odds >= 0.08) add('sharpAim', 0.4 * share + 0.1, 'up', d);
@@ -104266,14 +104613,14 @@ function brFindings(R) {
   for (const r of ships) {
     if (r.msl < 20) continue;
     const fuel = r.mslFuel / r.msl;
-    if (fuel >= 0.15) add('mslFuel', 0.3 + fuel, 'mixed', { design: r.name, n: r.mslFuel, of: r.msl, pct: brPct(fuel) });
+    if (fuel >= 0.15) add('mslFuel', 0.3 + fuel, 'mixed', { design: r.name, n: r.mslFuel, of: r.msl, pct: brPct(fuel), share: fuel });
   }
-  if (U.msl >= 20 && U.mslDown / U.msl >= 0.25) add('mslShotDown', 0.3 + U.mslDown / U.msl, 'down', { n: U.mslDown, of: U.msl, pct: brPct(U.mslDown / U.msl) });
+  if (U.msl >= 20 && U.mslDown / U.msl >= 0.25) add('mslShotDown', 0.3 + U.mslDown / U.msl, 'down', { n: U.mslDown, of: U.msl, pct: brPct(U.mslDown / U.msl), share: U.mslDown / U.msl });
   // their missiles against our point defence
   if (E.msl >= 20) {
     const through = E.mslHit / E.msl, stopped = E.mslDown / E.msl;
-    if (through >= 0.5) add('pdWeak', 0.3 + through * (E.dealt > 0 ? 0.5 : 0.2), 'down', { n: Math.round(through * 10), pct: brPct(through), of: brPct(stopped) });
-    else if (stopped >= 0.5) add('pdStrong', 0.2 + stopped * 0.4, 'up', { n: E.mslDown, of: E.msl, pct: brPct(stopped) });
+    if (through >= 0.5) add('pdWeak', 0.3 + through * (E.dealt > 0 ? 0.5 : 0.2), 'down', { n: Math.round(through * 10), pct: brPct(through), of: brPct(stopped), share: through, lost: U.lost });
+    else if (stopped >= 0.5) add('pdStrong', 0.2 + stopped * 0.4, 'up', { n: E.mslDown, of: E.msl, pct: brPct(stopped), share: stopped });
   }
   // outranged: the enemy fired from much further out than one of our designs could, and that design took a good share of the damage
   if (E.shots >= 60 && E.dist > 0) for (const r of ships) {
@@ -104284,14 +104631,14 @@ function brFindings(R) {
   for (const r of ships) {
     if (r.taken < 0.15 * U.taken || r.taken <= 0) continue;
     const off = r.sideShare + r.rearShare;
-    if (off >= 0.55) add('flank', 0.25 + 0.3 * off * (r.taken / Math.max(1, U.taken)), 'mixed', { design: r.name, pct: brPct(off) });
+    if (off >= 0.55) add('flank', 0.25 + 0.3 * off * (r.taken / Math.max(1, U.taken)), 'mixed', { design: r.name, pct: brPct(off), share: off });
   }
   // lost alone or out in front
-  if (U.lost >= 3 && R.lone >= 2 && R.lone / U.lost >= 0.3) add('caughtAlone', 0.5 * R.lone / U.lost, 'down', { n: R.lone, of: U.lost });
+  if (U.lost >= 3 && R.lone >= 2 && R.lone / U.lost >= 0.3) add('caughtAlone', 0.5 * R.lone / U.lost, 'down', { n: R.lone, of: U.lost, share: R.lone / U.lost });
   // held fire most of the time, or never fought
   for (const r of ships) {
-    if (r.sent >= 3 && r.shots === 0 && r.kills === 0 && r.msl === 0 && r.pdShots === 0) add('neverFought', 0.35, 'down', { design: r.name, n: r.sent });
-    else if (r.heldOdds > 4 * Math.max(1, r.shots) && r.heldOdds >= 200) add('heldFire', 0.25, 'mixed', { design: r.name, n: r.heldOdds.toLocaleString('en-GB'), of: r.shots.toLocaleString('en-GB') });
+    if (r.sent >= 3 && r.shots === 0 && r.kills === 0 && r.msl === 0 && r.pdShots === 0) add('neverFought', 0.35, 'down', { design: r.name, n: r.sent, held: r.heldOdds || 0 });
+    else if (r.heldOdds > 4 * Math.max(1, r.shots) && r.heldOdds >= 200) add('heldFire', 0.25, 'mixed', { design: r.name, n: r.heldOdds.toLocaleString('en-GB'), of: r.shots.toLocaleString('en-GB'), share: r.heldOdds / (r.heldOdds + r.shots) });
   }
   // (a war stretch) the month as a whole
   if (R.ctx.span === 'week' || R.ctx.span === 'month') {
@@ -104319,11 +104666,12 @@ function brFill(text, d) {
   return String(text).replace(/\{(\w+)\}/g, function (m, k) { return d[k] !== undefined && d[k] !== null ? String(d[k]) : '-'; });
 }
 // One line of a finding: part 'card', 'sub' or 'pointer'. The pick is fixed by the finding's figures, so a card reads the same each time it is drawn.
+// (v280.0) Only a line whose claims hold for the finding's figures (section 0e) can be picked.
 function brLine(f, part) {
   const E = typeof BATTLE_READING_LINES !== 'undefined' ? BATTLE_READING_LINES[f.kind] : null;
-  const list = E && Array.isArray(E[part]) ? E[part].filter(function (t) { return t; }) : [];
-  if (!list.length) return '';
-  return brFill(list[brHash(f.kind + part + JSON.stringify(f.d)) % list.length], f.d);
+  const list = E && Array.isArray(E[part]) ? E[part] : [];
+  const t = claimPick(list, f.d, brHash(f.kind + part + JSON.stringify(f.d)));
+  return t ? brFill(t, f.d) : '';
 }
 // The verdict line of a battle: who won and the cost.
 function brVerdict(R) {
@@ -104561,28 +104909,31 @@ function brGazetteVoices(from, to, ctx) {
     let keys = Object.keys(E.q);
     if (f.kind === 'yards') keys = [f.tone === 'down' ? 'kask_behind' : 'kask'];
     else keys = keys.filter(function (k) { return k !== 'kask_behind'; });
-    keys = keys.filter(function (k) { return !usedSpeakers[k === 'kask_behind' ? 'kask' : k]; });
+    const d = Object.assign({ front: ctx.front || 'the front', week: to }, f.d);
+    // (v280.0, section 0e) a speaker counts only with a line whose claims hold for these figures
+    keys = keys.filter(function (k) { return !usedSpeakers[k === 'kask_behind' ? 'kask' : k] && claimAllowed(E.q[k], d).length > 0; });
     if (!keys.length) continue;
     // the speaker: a fixed pick among those free, turning with the war week so the same finding is not always the same voice
     const who = keys[brHash(f.kind + '|' + to) % keys.length];
     const lines = E.q[who] || [];
-    if (!lines.length) continue;
-    const k = brVoicePick(store, f.kind + '|' + who, lines.length, to);
-    const d = Object.assign({ front: ctx.front || 'the front', week: to }, f.d);
+    const allowed = []; for (let q = 0; q < lines.length; q++) if (lines[q] && claimHolds(lines[q], d)) allowed.push(q);
+    const k = brVoicePick(store, f.kind + '|' + who, lines.length, to, allowed);
     const sp = brSpeaker(who === 'kask_behind' ? 'kask' : who, to + out.length);
     if (!sp) continue;
     usedSpeakers[who === 'kask_behind' ? 'kask' : who] = 1;
-    out.push({ text: brFill(lines[k], d), name: sp.name, role: sp.role, kind: f.kind });
+    out.push({ text: brFill(claimText(lines[k]), d), name: sp.name, role: sp.role, kind: f.kind });
   }
   return out;
 }
 // Which line of `n` to print for this finding and speaker: the first not yet printed, in an order shuffled by the war week; all printed: start again.
-function brVoicePick(store, key, n, week) {
+// (v280.0) allowed: the line numbers whose claims hold this time (section 0e); only those can be printed, and "all printed" counts only those.
+function brVoicePick(store, key, n, week, allowed) {
   const used = store && Array.isArray(store.used[key]) ? store.used[key] : [];
-  if (used.length >= n) used.length = 0;
+  const can = Array.isArray(allowed) && allowed.length ? allowed : null;
+  if (can ? can.every(function (c) { return used.indexOf(c) >= 0; }) : used.length >= n) used.length = 0;
   const start = brHash(key + '|' + week) % n;
-  let k = start;
-  for (let q = 0; q < n; q++) { const c = (start + q) % n; if (used.indexOf(c) < 0) { k = c; break; } }
+  let k = can ? can[0] : start;
+  for (let q = 0; q < n; q++) { const c = (start + q) % n; if (used.indexOf(c) < 0 && (!can || can.indexOf(c) >= 0)) { k = c; break; } }
   used.push(k);
   if (store) store.used[key] = used;
   return k;
@@ -110197,6 +110548,9 @@ function b2Build() {
   const root = b2El('bureau2Screen');
   // (v278.3, Alex 18 Nov: "the design bureau tab still has an old filter over it, which is no longer needed") the film grain, scan lines and dark
   // corners (fx-grain) are gone from the Bureau: it is as clean as the other tabs now.
+  // (v279.0, Alex 18 Nov: "lets get that design bureau filter that used to be on back, but only on the actual blueprint area") the same filter
+  // now sits on the blueprint sheet alone (the div b2Sheetw below wears fx-grain): the drawing gets its grain, scan lines and dark corners, while
+  // the side boxes, the parts list and the buttons on top of the sheet (zoom, title block, stamp, notes) stay clean. Both looks (Plain and War room).
   root.innerHTML =
     '<nav class="b2-tabbar" aria-label="Design Bureau">' +
       '<div class="brand"><b>UNSF Design Bureau</b><span>Drawing office</span></div>' +
@@ -110224,7 +110578,7 @@ function b2Build() {
         // (v55) the top bar is small: the tool in use and the overlay in use, each a button that opens its own list, then Undo and Redo. The size class
         // and the frames are not here any more: they are picked once, on the new design screen (b2NewOpen, section 10e-5)
         '<div class="tools" id="b2Tools"><div class="tg pop" id="b2TgTool"></div><div class="tg pop" id="b2TgOv"></div><div class="tg" id="b2TgUndo"></div><div class="tg b2stepw">' + b2StepBar(4, false) + '</div></div>' +   // (v62) the step bar, step 4 (Parts) lit
-        '<div class="sheetw" id="b2Sheetw"><canvas class="sheet" id="b2Canvas" aria-label="Blueprint of the ship"></canvas><div id="b2Banner"></div><span class="stamp amber" id="b2Stamp">Draft</span>' +
+        '<div class="sheetw fx-grain" id="b2Sheetw"><canvas class="sheet" id="b2Canvas" aria-label="Blueprint of the ship"></canvas><div id="b2Banner"></div><span class="stamp amber" id="b2Stamp">Draft</span>' +
           '<div class="tblk" id="b2Tblk"></div><div class="zoom"><button type="button" data-zoom="in" title="Zoom in">+</button><button type="button" data-zoom="out" title="Zoom out">−</button><button type="button" class="wide" data-zoom="fit" title="Fit the ship (F)">Fit</button></div>' +
           '<div class="toast" id="b2Toast" role="status"></div></div>' +
         '<div class="insp" id="b2Insp"></div>' +
@@ -113617,7 +113971,7 @@ function b2RenderScars() {
 // 10e (continued). (v118.1, the Drafting Office) CAPTAINS' NOTES
 //
 //   The battle scars record (section 5vd) is turned into a few remarks in plain words, as if the officers flying the design had pinned them to the
-//   sheet: one for each part that goes first (the top three at a quarter of the ships or more), one on where the killing hits land, and one when
+//   sheet: one for each part lost most often (the top three at a quarter of the ships or more, with at least 4 ships on the record), one on where the killing hits land, and one when
 //   half the ships or more do not come back. Each note is signed by the officer whose Fleet holds the most ships of the design (a campaign), else by
 //   the most experienced Commodore on the roster, else "the drawing office". The notes are drawn as paper slips above and below the hull with a line
 //   to their part when the Battle scars overlay is on, and listed in the Battle scars box. Words only: nothing in the design or the battle changes.
@@ -113644,20 +113998,21 @@ function b2NoteSigner(id) {
 function b2NotePartLine(u, share) {
   const m = u.m || {}, s = u.s || {}, name = (m.name || 'part').toLowerCase();
   const pct = Math.round(share * 100) + '%';
-  if (s.cooling > 0) return 'The ' + name + ' gets shot off first, every time: ' + pct + ' of my ships lost it. Half the cooling and let it live, or put a plate in front of it.';
+  if (s.cooling > 0) return 'The ' + name + ' gets shot off' + (share >= 0.75 ? ', nearly every time' : ' more than anything') + ': ' + pct + ' of my ships lost it. Half the cooling and let it live, or put a plate in front of it.';   // (v280.0) "every time" only when it nearly always is
   if (m.reactor || s.power > 0) return 'When the ' + name + ' goes we go dark and drift. ' + pct + ' of my ships lost it. Bury it deeper or wall it.';
-  if (m.bridge || m.seat) return 'The ' + name + ' takes hits. ' + pct + ' of my ships lost it, and nobody comes home from that. Move it off the outside.';
-  if (s.weapon) return 'The ' + name + ' goes before the hull does: ' + pct + ' of my ships lost it. We end up a target that cannot shoot back.';
+  if (m.bridge || m.seat) return 'The ' + name + ' takes hits. ' + pct + ' of my ships lost it, and a ship without it is in trouble. Move it off the outside.';
+  if (s.weapon) return 'The ' + name + ' gets knocked out: ' + pct + ' of my ships lost it. We end up a target that cannot shoot back.';
   if (s.thrust > 0) return 'Lose the ' + name + ' and we cannot run or turn. ' + pct + ' of my ships lost it. Give it a plate.';
   if (m.role === 'armour') return 'The ' + name + ' there does its job and goes: ' + pct + ' of my ships lost it. Two deep, not one.';
   if (u.s && u.s.volatile > 0) return 'The ' + name + ' goes up when it is hit: ' + pct + ' of my ships lost it. Keep it away from the outside.';
-  return 'The ' + name + ' is the first thing to go: ' + pct + ' of my ships lost it. Cover it or move it.';
+  return 'The ' + name + ' is the part we lose most: ' + pct + ' of my ships lost it. Cover it or move it.';
 }
 // The notes for the record on the sheet: [{ part (index or -1), text, by, cx, cy (part centre in squares) }], at most four.
 function b2ScarsNotes(src) {
   const out = [], sc = src.sc, L = b2.a.layout, by = b2NoteSigner(src.id);
   if (!(sc.ships > 0)) return out;
-  const rows = b2ScarsPartsOut(src).filter(function (r) { return r.share >= .25; }).slice(0, 3);
+  // (v280.0, the evidence rule) part notes need at least 4 ships on the record: one ship losing one part is not "75% of my ships"
+  const rows = sc.ships >= 4 ? b2ScarsPartsOut(src).filter(function (r) { return r.share >= .25; }).slice(0, 3) : [];
   for (let k = 0; k < rows.length; k++) { const u = L.parts[rows[k].i], dm = b2Dims(u.rec); out.push({ part: rows[k].i, text: b2NotePartLine(u, rows[k].share), by: by, cx: u.rec.x + dm[0] / 2, cy: u.rec.y + dm[1] / 2 }); }
   const where = b2ScarsWhereWords(src);
   if (where) out.push({ part: -1, text: where.replace('Killing hits land on', 'They kill us from') + ' Put the armour where they hit, not everywhere.', by: by, cx: -1, cy: -1 });
@@ -116472,7 +116827,7 @@ BUREAU2_SCREEN_API.testRange = { run: testRangeRun, state: testRange, plan: func
 //   adopted habits come along in its copy code and into every new campaign. A doctrine changed in the Bureau after the save updates the plan's copy.
 //   DOCTRINE TEMPLATES (LIBRARY.templates: [{ name, doctrine, savedAt }]) live here too, so they carry over as well. A plan from before v37 has no doctrine: Auto.
 // =====================================================================
-const GAME_VERSION = 'v278.4';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
+const GAME_VERSION = 'v284.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
 const LIBRARY_KEY = 'engineersWar.library';
 const LIBRARY_FORMAT = 1;
 const LIBRARY_CODE_SHIP = 'EW-SHIP-1:', LIBRARY_CODE_LIB = 'EW-LIB-1:';
