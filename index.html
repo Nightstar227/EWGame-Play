@@ -2227,11 +2227,14 @@ hr.rule { border:0; border-top:var(--line-w) solid var(--line); margin:var(--sp-
 .sup-sheet .seg.un { color: var(--ink); border-right: 0; font: 400 13px var(--type); background: repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb, var(--ink) 30%, transparent) 5px 6.5px); }
 .sup-sheet .seg.un.hot { color: var(--st-red); background: repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb, var(--st-red) 55%, transparent) 5px 7px); }
 .sup-sheet .seg.lay { color: var(--st-grey); border-right: 0; font: 400 13px var(--type); background: repeating-linear-gradient(90deg, transparent 0 6px, color-mix(in srgb, var(--st-grey) 30%, transparent) 6px 8px); }
+.sup-sheet .seg.upk { color: var(--ink); font: 400 13px var(--type); background: color-mix(in srgb, var(--st-grey) 35%, transparent); }   /* (v287.0) what ship upkeep took: its own grey stretch, not 'unused' */
 .sup-sheet .sup-verdict { font-size: 13px; margin-top: 4px; }
 .sup-sheet .sup-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font: 500 12px var(--font-data); color: var(--ink-dim); margin-top: 12px; }
 .sup-sheet .sup-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .sup-sheet .sup-legend i { display: inline-block; width: 14px; height: 10px; }
 .sup-sheet .sup-legend i.un { border: 1px solid var(--ink-dim); background: repeating-linear-gradient(135deg, transparent 0 3px, var(--ink-dim) 3px 4.5px); }
+.sup-sheet .sup-legend i.upk { border: 1px solid var(--ink-dim); background: color-mix(in srgb, var(--st-grey) 35%, transparent); }
+.sup-sheet .sup-notbuilt { border-left-color: var(--st-red); }   /* (v287.0) approved designs no yard builds */
 .sup-sheet .sup-ration { margin-top: 18px; overflow-x: auto; }
 .sup-sheet .sup-ration table { color: var(--ink); border-collapse: collapse; width: 100%; min-width: 560px; font: 500 13px var(--font-data); font-variant-numeric: tabular-nums; }
 .sup-sheet .sup-ration th { font: 400 13px var(--type); text-align: left; border-bottom: 1.5px solid var(--ink); padding: 4px 8px; }
@@ -3984,7 +3987,7 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
     <section class="panel hidden" id="mmPanel"><div class="panel-head" id="mmPanelHead"></div><div class="panel-body" id="mmPanelBody"></div></section>
     <input type="file" id="mmFile" accept=".json,application/json,text/plain" class="hidden">
   </div>
-  <div class="mm-version" title="The version of the game you are playing">Version v284.0</div>
+  <div class="mm-version" title="The version of the game you are playing">Version v288.0</div>
 </div>
 
 <!-- (v31 A2, section 7l) the end of the war: the game-over screen (Earth's people are gone) or the victory screen (the aliens' home secured). It lies over
@@ -13703,6 +13706,9 @@ const SETTINGS = {
                               // (both sides), so Gorgers set each other off. 0 = as before v258.5.
   frenzyGland: 1,             // (v258.4, Alex 14 Nov: "a swarm ship that applies frenzy to nearby ships for a time") 1 = THE FRENZY GLAND (section 5vj): the Howler's
                               // gland pulses every 30 s in a fight, and Swarm ships within 1,000 fly and hit 30% harder for 10 s (no stacking). 0 = it does nothing.
+  lsBayRule: 1,               // (v288.0, Alex 20 Nov, player feedback: Bigger hull cards stacked gave ~60 capital ships; a rebuilt station built new ships while the old
+                              // ones still flew) 1 = ONE SHIP FOR EACH BAY in Last Stand (section 8h6): a hangar bay owns its ship for as long as that ship lives, builds a
+                              // new one only when its own is gone, and a squadron never flies more ships than it has bays. 0 = as before v288.0.
   lsFrenzy: 1,                // (v258.3, Alex 14 Nov: "last stand ... waves get harder until the player fails") 1 = LAST STAND FRENZY (section 8h5): from the wave the
                               // Swarm first hits its cap, each wave makes the whole Swarm 5% faster (to +100%) and 5% harder-hitting (no limit). 0 = no frenzy.
   biteModel: 1,               // (v258.2, Alex 14 Nov: "the maw is a melee bite attack ... it should have a very high hit chance") 1 = THE BITE AND THE SURGE (section 5vh):
@@ -14277,6 +14283,8 @@ const SETTINGS = {
   recruitAxisSpread: 0.35,   // (the Officers update, stop 2) a recruit officer's axes (boldness, discipline, rein) are drawn at random within 0.5 +/- this (its own stream, officerRand)
   recruitSkillLow: 0.3,      // a recruit's four skills are drawn between these two numbers
   recruitSkillHigh: 0.5,
+  rosterAxisLow: 0.15,       // (v285.0) a NEW CAMPAIGN gives every built-in officer fresh personality axes (boldness, discipline, rein), drawn between these two numbers
+  rosterAxisHigh: 0.85,      //   from the campaign's officer seed, so no two wars start with the same Admiral (section 2l, rosterForNewCampaign)
   rosterHistoryKeep: 10,     // how many past battles an officer's service record keeps (the oldest are dropped)
   // Careers (the Officers update, stop 3; section 2l and writeBackOfficers in 5l).
   skillPerLevel: 0.03,       // each level an officer gains raises its skills by this in all, split in proportion to where the experience came from (its xpBy record), each capped at 1
@@ -14852,7 +14860,7 @@ const SETTING_MUST_BE_POSITIVE = ['commandThinkRate', 'moonOrbitMinutes', 'moonO
   'serviceLastMax', 'serviceHistoryMax', 'serviceEventsMax', 'recentChangeSeconds', 'dossierLastActions', 'reportOfficerRows', 'dossierChartMinSpan',
   'orbitRateHeadroom', 'orbitMinRate', 'facingLeadFactor', 'interceptMaxLead', 'orbitRangeFraction', 'orbitTurnMargin', 'tightOrbitSizeRatio', 'tightOrbitHulls', 'tightOrbitStraySeconds', 'tightOrbitSpacings', 'tacticMinSeconds', 'chaseGiveUpSeconds', 'noChaseSeconds',
   'shapeEnterFactor', 'shapeExitFactor', 'axisTurnRate'];
-const SETTING_MUST_BE_NON_NEGATIVE = ['dvWingMergeRange', 'dockRepairRefitShare', 'dvWingMergeSeconds', 'rankSwapSeconds', 'noseArcDeg', 'noseNearFactor', 'noseNearMin', 'noseBackSeconds', 'turnRampSeconds', 'quietStepMul', 'quietMinSpeed', 'chainLagSeconds', 'chainSpreadSeconds', 'slowRegrowSeconds', 'slowSporeSteps', 'slowFireMapSteps', 'slowGunRetrySeconds', 'lineRankMinWidth', 'lineRankDepth', 'lineRankRotateAt', 'batteryDepthFactor', 'swarmSpreadWidth', 'swarmSpreadDepth', 'swarmSpreadRejig', 'swarmPressOdds', 'swarmFallBackOdds', 'bombardShieldShare', 'bombardHoldSeconds', 'swarmDockStallCap', 'swarmDockStallQuietShare', 'stationHullMendQuiet', 'alloysNeverIdleNote', 'towJobs', 'towWaitSeconds', 'towFreshSeconds', 'towLookSeconds', 'towFleetSeconds', 'towBoldSwing', 'towDangerRadius', 'towDangerOdds', 'aoMobilizeOdds', 'aoMobilizeBoldSwing', 'aoMobilizeReinSwing', 'aoMobilizeSeconds', 'aoMobilizeLossShare', 'aoMobilizeBeatenShare', 'aoMobilizeOtherShips', 'aoMobilizeEnemySpeed', 'aoMobilizeWaitSeconds', 'aoCharLineSwing', 'aoCharCommandSwing', 'aoCharMovePull', 'aoCharDisciplineSwing', 'aoPostureSeconds', 'aoPostureMinSeconds', 'aoMeetOdds', 'aoOddsOutShare', 'aoFallBackOdds', 'aoBoldLean', 'aoMeetReachSlots', 'aoMeetStandoff', 'aoEngageDist', 'aoGroupDist', 'aoEdgeSlots', 'aoInboundSlots', 'aoRetakeLooseShare', 'aoDangerDist', 'aoRetakeStayShare', 'aoRetakeGatherSeconds', 'aoDefenceSplitShips', 'aoFleetMax', 'aoGarrisonShare', 'aoForwardStationSpeed', 'aoRefitShare', 'divisionOwnerSeconds', 'divisionOwnerFirstSeconds', 'divisionOwnerCountBand', 'divisionOwnerJoinSeconds', 'admiralNeedsLean', 'admiralNeedsReachRatio', 'admiralNeedsDefenceRatio', 'admiralNeedsWorksRatio', 'admiralNeedsPdShare', 'scuttleKillShare', 'scuttleXpCost', 'campaignTidySeconds', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftPressed', 'coreLoopShiftQuiet', 'coreLoopShiftMax', 'coreLoopHiveHoldShare', 'coreLoopAssessSeconds', 'coreLoopAssaultMixShare', 'coreLoopReinSwing', 'coreLoopReserveShare', 'coreLoopStrikeShare', 'coreLoopBoldAbove', 'coreLoopVaSeconds', 'coreLoopVaSlack', 'coreLoopVaWornShare', 'coreLoopDefenceRatio', 'coreLoopFleetHoldSeconds', 'coreLoopDivisionMinShips', 'coreLoopAssaultRatio', 'coreLoopAssaultFloor', 'coreLoopPlaceDefenceWorth', 'placesHomeEdgeBias', 'placesBrokenBonus', 'coreLoopStreamWeeks', 'coreLoopStreamMinShips', 'coreLoopLineKeep', 'coreLoopLineSeconds', 'coreLoopLineLooks', 'coreLoopLineDepth', 'coreLoopLineStep', 'coreLoopLineWindow', 'coreLoopTipRatio', 'coreLoopClearSeconds', 'coreLoopBackSeconds', 'coreLoopHoldSeconds', 'coreLoopBerths', 'divisionMergeSlack', 'swarmNestRetakeKeep', 'swarmGrowWindowWeeks', 'swarmGrowLowLoss', 'swarmGrowHighLoss', 'swarmGrowFromShare', 'swarmGrowStep', 'swarmGrowSmallCut', 'swarmGrowBigGain', 'swarmSpreadWeeks', 'hangarRefillWeeks', 'hangarRestockShare', 'wingMaxTiny', 'wingLaunchRange', 'wingScreenRadius', 'wingStrikeRange', 'wingMaxSmall', 'wingSpread', 'hangarBuildMul', 'swarmMiteRegrowSeconds', 'swarmCraftRegrowSeconds', 'fighterTurnaroundSeconds', 'fighterLaunchSeconds', 'fighterLaunchRange', 'fighterTickSeconds', 'stationFighterGuardRadius', 'droneJamReach', 'droneJamScatterMul', 'droneJamLoseChance', 'dcNoRoomSeconds', 'cmdPaceFormSeconds', 'cmdPaceMinShare', 'cmdPaceLeadSeconds', 'cmdPaceMinMarch', 'divisionSpeedSort', 'divisionSlowBelow', 'divisionFastAbove', 'swarmPaceFormSeconds', 'swarmDrift', 'swarmDivDrift', 'wreckHitShare', 'repairPartsWeeks', 'repairAutoBelow', 'dockQueueWarnSeconds', 'crippledCheckSeconds', 'towSpeedShare', 'towMaxShare', 'towHealthyHull', 'feedHullBelow', 'feedSeconds', 'feedSquadSeconds', 'feedHullShare', 'feedAmmoShare', 'feedGrabRange', 'feedHungryHull', 'feedHungryAmmo', 'feedHatchlingRange', 'swarmInfestTierGain', 'swarmInfestGrowShare', 'swarmInfestStartShare', 'swarmSurfaceInfest', 'swarmBurnPerDps', 'swarmBurnHotMul', 'swarmBurnPerKill', 'swarmRegrowSeconds', 'swarmSporeEvery', 'swarmSporeShotsPer', 'swarmSporeDpsPerInf', 'swarmBileEvery', 'swarmBileFrom', 'swarmBileDpsPerInf', 'swarmConvertCap', 'swarmConvertAimShare', 'swarmConvertFromWeek', 'swarmConvertFullWeek', 'swarmConvertDepthShare', 'swarmConvertWaste', 'facingTwoSidedAngle', 'freshSideHoldSeconds', 'crossTEdge', 'crossTCreepFraction', 'crossTWidth', 'crossTTurnEdge', 'placesPicketSpread', 'placesPicketMove', 'placesPicketMax', 'placesWithdrawGatherSeconds', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerTargetShare', 'ledgerLineMin', 'ledgerLossMargin', 'ledgerSaveFloor', 'ledgerMinLoss', 'ledgerSurplusShare', 'withdrawRatio', 'withdrawHoldWeeks', 'ledgerAssaultWeeks', 'indDevShareSave', 'indDevShareIdle', 'dirPriorityMul', 'resourceHeldShare', 'devGraceWeeks', 'devCapStart', 'devCapAlien', 'devPotShare', 'devIdleWeeks', 'devMaxBuilds', 'bbAcidSeconds', 'bbAcidMaxPatches', 'bbRegrowQuiet', 'bbRegrowHull', 'bbRegrowPlate', 'bbRegrowHeatStop', 'bbBurstTouch', 'bbBurstDeathReach', 'bbBurstSeek', 'bbVolleySpread', 'bbMissileRetries', 'bbPdRoundsPerShot', 'bbPdFlakRounds', 'bbPdReadyRounds', 'bbPdLaserHeat', 'bbRadiatorFoldSeconds', 'bbSideWeight', 'deflectRatio', 'deflectCallSeconds', 'readyRoundsPerGun', 'boostFuEarth', 'boostFuOther', 'boostGrowth', 'alloysEarthStart', 'alloysEarthRampTo', 'alloysEarthRampWeeks', 'alloysGrowth', 'fissilesGrowth', 'alienAlloysStart', 'alienAlloysGrowth', 'alienAlloysPerStep', 'alienBoostPerStep', 'alienNodeLossShare', 'shipUpkeepMaxShare', 'berthIdleWeeks', 'berthBoostWeeks', 'berthMaxGrowth', 'campaignBuildDays', 'campaignLiveEnterShips', 'civilianNoteWeeks', 'leaderNewsCooldown', 'leaderNewsCombatGap', 'stationRebuildYardBonus', 'stationRebuildSecuredBonus', 'stationRebuildNearShare', 'stationRebuildAlloys', 'cmdAttackMaxSeconds', 'cmdPaceGap', 'radioQuietSeconds', 'cmdSummaryMinutes', 'designRemarkSeconds', 'cmdReviewBattles', 'huntMaxShips', 'huntGraceSeconds', 'pursuitFleeingBonus', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'dangerConeSeconds', 'placesAttackStallSeconds', 'campaignAttackStallSeconds', 'campaignStragglerShips', 'campaignStragglerShare', 'campaignStragglerSeconds', 'campaignStandoffSeconds', 'campaignStandoffWeeks', 'campaignRetakeWeeks', 'comebackMassWeeks', 'alienGarrisonCap', 'campaignFallenMax', 'campaignPoolCap', 'campaignGarrisonCap', 'campaignStartOwnShips', 'campaignAlienGarrison', 'campaignAdvanceKeep', 'campaignAdvanceRatio', 'campaignAdvanceTake', 'campaignAdvanceAfterWaves', 'campaignAdvanceHoldWeeks', 'campaignRearKeep', 'campaignFrontMoveMinShips', 'campaignFrontMoveShare', 'executiveMassRatio', 'executiveAssaultRatio', 'executiveAssaultMin', 'campaignPriorityWeight', 'alienShoveWeeks', 'alienGatherRatio', 'alienGatherTarget', 'alienGatherMinShips', 'alienGatherMaxWeeks', 'alienPullBackRatio', 'alienStateHoldWeeks', 'alienFirstPool', 'alienWaveJitter', 'alienWarnWeeks', 'alienWaveBoostWeeks', 'alienTargetWeakest', 'alienTargetMain', 'alienFirstWaveWeek', 'minLaunchShips', 'placesHoldClearOdds', 'campaignYardEvery', 'boostPerMarker', 'campaignRefuelShare', 'capitalBuildShare', 'assaultMaxWaitWeeks', 'repairPerWeek', 'campaignDesignBoostPerMass', 'campaignDesignBuildPerCost', 'campaignDesignAlloysShare', 'campaignDesignWeight', 'placesReachShare', 'placesFailRaise', 'placesContestShare', 'aoSecureShare', 'aoLoseShare', 'siegeBoostTrickle', 'boostFootholdShare', 'siegeGrowthFactor', 'siegeResourceFactor', 'placesReportMinutes', 'placesHysteresis', 'placesMaxOpposite', 'internalChance', 'internalFresh', 'externalCover', 'deepBelowHull', 'dcSeconds', 'blastToHull', 'blastToParts', 'profileNudgeMax', 'profileNudgeTurn', 'profileNudgeFiring', 'reactorWallShare', 'trackSquareCut', 'pressDryValue', 'pressFleetRatio', 'pressOdds', 'pressHealthEdge', 'pressOddsHealthy', 'pressDangerShare', 'pressHitChance', 'pressAfter', 'pressProgress', 'pressHold', 'pressStep', 'pressRingMin', 'lockFormShare', 'looseJitter', 'looseRein', 'lockSettleSeconds', 'lockRein', 'lockBreakHull', 'lockMinShare', 'closeRanksDelay', 'mergeBelow', 'mergeMaxOdds', 'disbandAt', 'stragglerSeconds', 'divisionLeash', 'pursuitBase', 'formBeforeAttack', 'gatherSeconds', 'fallenKeep', 'topUpBelow', 'stagingContactSeconds', 'stagingMaxWait', 'minNewSquadron', 'entryDangerRatio', 'entryCheckFactor', 'entryRetrySeconds', 'rallyInset', 'joinWornBelow', 'survivorEdgeMargin', 'flagKilled', 'flagWounded', 'flagSurviveSwing', 'woundedSkillPenalty', 'woundedBattles', 'replacementDelay', 'handoverSeconds', 'standInSkill', 'pinRenewSeconds', 'divisionTaskMinSeconds', 'rotateWornShare', 'divisionRefuseOdds', 'divisionRallyOdds', 'divisionCounterPressure', 'mainEffortMinOdds', 'mainEffortFreeRein', 'pinRenewFactor', 'supportSeconds', 'supportMaxTravelSeconds', 'divisionTargetBonus', 'localAttackOdds', 'memberCompactShare', 'recruitAxisSpread', 'recruitSkillLow', 'recruitSkillHigh', 'skillPerLevel', 'readinessXpPerRepair', 'medalSkillAdd', 'scarShakenBoldness', 'repertoirePull', 'spawnEdgeMargin', 'doctrinePull', 'matchupPull', 'experimentMinSeconds', 'experimentCooldown', 'tacticLearnStep', 'tacticWeightMax', 'exploreLearnBoost', 'spawnBandWidth', 'spawnVerticalMargin', 'shieldRechargeDelay', 'minArmorPassFraction', 'separationStrength',
+const SETTING_MUST_BE_NON_NEGATIVE = ['dvWingMergeRange', 'dockRepairRefitShare', 'dvWingMergeSeconds', 'rankSwapSeconds', 'noseArcDeg', 'noseNearFactor', 'noseNearMin', 'noseBackSeconds', 'turnRampSeconds', 'quietStepMul', 'quietMinSpeed', 'chainLagSeconds', 'chainSpreadSeconds', 'slowRegrowSeconds', 'slowSporeSteps', 'slowFireMapSteps', 'slowGunRetrySeconds', 'lineRankMinWidth', 'lineRankDepth', 'lineRankRotateAt', 'batteryDepthFactor', 'swarmSpreadWidth', 'swarmSpreadDepth', 'swarmSpreadRejig', 'swarmPressOdds', 'swarmFallBackOdds', 'bombardShieldShare', 'bombardHoldSeconds', 'swarmDockStallCap', 'swarmDockStallQuietShare', 'stationHullMendQuiet', 'alloysNeverIdleNote', 'towJobs', 'towWaitSeconds', 'towFreshSeconds', 'towLookSeconds', 'towFleetSeconds', 'towBoldSwing', 'towDangerRadius', 'towDangerOdds', 'aoMobilizeOdds', 'aoMobilizeBoldSwing', 'aoMobilizeReinSwing', 'aoMobilizeSeconds', 'aoMobilizeLossShare', 'aoMobilizeBeatenShare', 'aoMobilizeOtherShips', 'aoMobilizeEnemySpeed', 'aoMobilizeWaitSeconds', 'aoCharLineSwing', 'aoCharCommandSwing', 'aoCharMovePull', 'aoCharDisciplineSwing', 'aoPostureSeconds', 'aoPostureMinSeconds', 'aoMeetOdds', 'aoOddsOutShare', 'aoFallBackOdds', 'aoBoldLean', 'aoMeetReachSlots', 'aoMeetStandoff', 'aoEngageDist', 'aoGroupDist', 'aoEdgeSlots', 'aoInboundSlots', 'aoRetakeLooseShare', 'aoDangerDist', 'aoRetakeStayShare', 'aoRetakeGatherSeconds', 'aoDefenceSplitShips', 'aoFleetMax', 'aoGarrisonShare', 'aoForwardStationSpeed', 'aoRefitShare', 'divisionOwnerSeconds', 'divisionOwnerFirstSeconds', 'divisionOwnerCountBand', 'divisionOwnerJoinSeconds', 'admiralNeedsLean', 'admiralNeedsReachRatio', 'admiralNeedsDefenceRatio', 'admiralNeedsWorksRatio', 'admiralNeedsPdShare', 'scuttleKillShare', 'scuttleXpCost', 'campaignTidySeconds', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftPressed', 'coreLoopShiftQuiet', 'coreLoopShiftMax', 'coreLoopHiveHoldShare', 'coreLoopAssessSeconds', 'coreLoopAssaultMixShare', 'coreLoopReinSwing', 'coreLoopReserveShare', 'coreLoopStrikeShare', 'coreLoopBoldAbove', 'coreLoopVaSeconds', 'coreLoopVaSlack', 'coreLoopVaWornShare', 'coreLoopDefenceRatio', 'coreLoopFleetHoldSeconds', 'coreLoopDivisionMinShips', 'coreLoopAssaultRatio', 'coreLoopAssaultFloor', 'coreLoopPlaceDefenceWorth', 'placesHomeEdgeBias', 'placesBrokenBonus', 'coreLoopStreamWeeks', 'coreLoopStreamMinShips', 'coreLoopLineKeep', 'coreLoopLineSeconds', 'coreLoopLineLooks', 'coreLoopLineDepth', 'coreLoopLineStep', 'coreLoopLineWindow', 'coreLoopTipRatio', 'coreLoopClearSeconds', 'coreLoopBackSeconds', 'coreLoopHoldSeconds', 'coreLoopBerths', 'divisionMergeSlack', 'swarmNestRetakeKeep', 'swarmGrowWindowWeeks', 'swarmGrowLowLoss', 'swarmGrowHighLoss', 'swarmGrowFromShare', 'swarmGrowStep', 'swarmGrowSmallCut', 'swarmGrowBigGain', 'swarmSpreadWeeks', 'hangarRefillWeeks', 'hangarRestockShare', 'wingMaxTiny', 'wingLaunchRange', 'wingScreenRadius', 'wingStrikeRange', 'wingMaxSmall', 'wingSpread', 'hangarBuildMul', 'swarmMiteRegrowSeconds', 'swarmCraftRegrowSeconds', 'fighterTurnaroundSeconds', 'fighterLaunchSeconds', 'fighterLaunchRange', 'fighterTickSeconds', 'stationFighterGuardRadius', 'droneJamReach', 'droneJamScatterMul', 'droneJamLoseChance', 'dcNoRoomSeconds', 'cmdPaceFormSeconds', 'cmdPaceMinShare', 'cmdPaceLeadSeconds', 'cmdPaceMinMarch', 'divisionSpeedSort', 'divisionSlowBelow', 'divisionFastAbove', 'swarmPaceFormSeconds', 'swarmDrift', 'swarmDivDrift', 'wreckHitShare', 'repairPartsWeeks', 'repairAutoBelow', 'dockQueueWarnSeconds', 'crippledCheckSeconds', 'towSpeedShare', 'towMaxShare', 'towHealthyHull', 'feedHullBelow', 'feedSeconds', 'feedSquadSeconds', 'feedHullShare', 'feedAmmoShare', 'feedGrabRange', 'feedHungryHull', 'feedHungryAmmo', 'feedHatchlingRange', 'swarmInfestTierGain', 'swarmInfestGrowShare', 'swarmInfestStartShare', 'swarmSurfaceInfest', 'swarmBurnPerDps', 'swarmBurnHotMul', 'swarmBurnPerKill', 'swarmRegrowSeconds', 'swarmSporeEvery', 'swarmSporeShotsPer', 'swarmSporeDpsPerInf', 'swarmBileEvery', 'swarmBileFrom', 'swarmBileDpsPerInf', 'swarmConvertCap', 'swarmConvertAimShare', 'swarmConvertFromWeek', 'swarmConvertFullWeek', 'swarmConvertDepthShare', 'swarmConvertWaste', 'facingTwoSidedAngle', 'freshSideHoldSeconds', 'crossTEdge', 'crossTCreepFraction', 'crossTWidth', 'crossTTurnEdge', 'placesPicketSpread', 'placesPicketMove', 'placesPicketMax', 'placesWithdrawGatherSeconds', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerTargetShare', 'ledgerLineMin', 'ledgerLossMargin', 'ledgerSaveFloor', 'ledgerMinLoss', 'ledgerSurplusShare', 'withdrawRatio', 'withdrawHoldWeeks', 'ledgerAssaultWeeks', 'indDevShareSave', 'indDevShareIdle', 'dirPriorityMul', 'resourceHeldShare', 'devGraceWeeks', 'devCapStart', 'devCapAlien', 'devPotShare', 'devIdleWeeks', 'devMaxBuilds', 'bbAcidSeconds', 'bbAcidMaxPatches', 'bbRegrowQuiet', 'bbRegrowHull', 'bbRegrowPlate', 'bbRegrowHeatStop', 'bbBurstTouch', 'bbBurstDeathReach', 'bbBurstSeek', 'bbVolleySpread', 'bbMissileRetries', 'bbPdRoundsPerShot', 'bbPdFlakRounds', 'bbPdReadyRounds', 'bbPdLaserHeat', 'bbRadiatorFoldSeconds', 'bbSideWeight', 'deflectRatio', 'deflectCallSeconds', 'readyRoundsPerGun', 'boostFuEarth', 'boostFuOther', 'boostGrowth', 'alloysEarthStart', 'alloysEarthRampTo', 'alloysEarthRampWeeks', 'alloysGrowth', 'fissilesGrowth', 'alienAlloysStart', 'alienAlloysGrowth', 'alienAlloysPerStep', 'alienBoostPerStep', 'alienNodeLossShare', 'shipUpkeepMaxShare', 'berthIdleWeeks', 'berthBoostWeeks', 'berthMaxGrowth', 'campaignBuildDays', 'campaignLiveEnterShips', 'civilianNoteWeeks', 'leaderNewsCooldown', 'leaderNewsCombatGap', 'stationRebuildYardBonus', 'stationRebuildSecuredBonus', 'stationRebuildNearShare', 'stationRebuildAlloys', 'cmdAttackMaxSeconds', 'cmdPaceGap', 'radioQuietSeconds', 'cmdSummaryMinutes', 'designRemarkSeconds', 'cmdReviewBattles', 'huntMaxShips', 'huntGraceSeconds', 'pursuitFleeingBonus', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'dangerConeSeconds', 'placesAttackStallSeconds', 'campaignAttackStallSeconds', 'campaignStragglerShips', 'campaignStragglerShare', 'campaignStragglerSeconds', 'campaignStandoffSeconds', 'campaignStandoffWeeks', 'campaignRetakeWeeks', 'comebackMassWeeks', 'alienGarrisonCap', 'campaignFallenMax', 'campaignPoolCap', 'campaignGarrisonCap', 'campaignStartOwnShips', 'campaignAlienGarrison', 'campaignAdvanceKeep', 'campaignAdvanceRatio', 'campaignAdvanceTake', 'campaignAdvanceAfterWaves', 'campaignAdvanceHoldWeeks', 'campaignRearKeep', 'campaignFrontMoveMinShips', 'campaignFrontMoveShare', 'executiveMassRatio', 'executiveAssaultRatio', 'executiveAssaultMin', 'campaignPriorityWeight', 'alienShoveWeeks', 'alienGatherRatio', 'alienGatherTarget', 'alienGatherMinShips', 'alienGatherMaxWeeks', 'alienPullBackRatio', 'alienStateHoldWeeks', 'alienFirstPool', 'alienWaveJitter', 'alienWarnWeeks', 'alienWaveBoostWeeks', 'alienTargetWeakest', 'alienTargetMain', 'alienFirstWaveWeek', 'minLaunchShips', 'placesHoldClearOdds', 'campaignYardEvery', 'boostPerMarker', 'campaignRefuelShare', 'capitalBuildShare', 'assaultMaxWaitWeeks', 'repairPerWeek', 'campaignDesignBoostPerMass', 'campaignDesignBuildPerCost', 'campaignDesignAlloysShare', 'campaignDesignWeight', 'placesReachShare', 'placesFailRaise', 'placesContestShare', 'aoSecureShare', 'aoLoseShare', 'siegeBoostTrickle', 'boostFootholdShare', 'siegeGrowthFactor', 'siegeResourceFactor', 'placesReportMinutes', 'placesHysteresis', 'placesMaxOpposite', 'internalChance', 'internalFresh', 'externalCover', 'deepBelowHull', 'dcSeconds', 'blastToHull', 'blastToParts', 'profileNudgeMax', 'profileNudgeTurn', 'profileNudgeFiring', 'reactorWallShare', 'trackSquareCut', 'pressDryValue', 'pressFleetRatio', 'pressOdds', 'pressHealthEdge', 'pressOddsHealthy', 'pressDangerShare', 'pressHitChance', 'pressAfter', 'pressProgress', 'pressHold', 'pressStep', 'pressRingMin', 'lockFormShare', 'looseJitter', 'looseRein', 'lockSettleSeconds', 'lockRein', 'lockBreakHull', 'lockMinShare', 'closeRanksDelay', 'mergeBelow', 'mergeMaxOdds', 'disbandAt', 'stragglerSeconds', 'divisionLeash', 'pursuitBase', 'formBeforeAttack', 'gatherSeconds', 'fallenKeep', 'topUpBelow', 'stagingContactSeconds', 'stagingMaxWait', 'minNewSquadron', 'entryDangerRatio', 'entryCheckFactor', 'entryRetrySeconds', 'rallyInset', 'joinWornBelow', 'survivorEdgeMargin', 'flagKilled', 'flagWounded', 'flagSurviveSwing', 'woundedSkillPenalty', 'woundedBattles', 'replacementDelay', 'handoverSeconds', 'standInSkill', 'pinRenewSeconds', 'divisionTaskMinSeconds', 'rotateWornShare', 'divisionRefuseOdds', 'divisionRallyOdds', 'divisionCounterPressure', 'mainEffortMinOdds', 'mainEffortFreeRein', 'pinRenewFactor', 'supportSeconds', 'supportMaxTravelSeconds', 'divisionTargetBonus', 'localAttackOdds', 'memberCompactShare', 'recruitAxisSpread', 'recruitSkillLow', 'recruitSkillHigh', 'rosterAxisLow', 'rosterAxisHigh', 'skillPerLevel', 'readinessXpPerRepair', 'medalSkillAdd', 'scarShakenBoldness', 'repertoirePull', 'spawnEdgeMargin', 'doctrinePull', 'matchupPull', 'experimentMinSeconds', 'experimentCooldown', 'tacticLearnStep', 'tacticWeightMax', 'exploreLearnBoost', 'spawnBandWidth', 'spawnVerticalMargin', 'shieldRechargeDelay', 'minArmorPassFraction', 'separationStrength',
   'separationMaxStepFraction', 'reengageMinGap', 'kiteEnterFactor', 'kiteExitFactor', 'kiteBackSpeed', 'debugMaxLines', 'formationHoldFraction', 'formationPaceMin',
   'formationBreakAngle', 'formationBreakSeconds', 'formationPassBend', 'leaderCloserMin', 'escortHoldFraction', 'escortStandOff', 'flankMarginFactor', 'flankAlong', 'flankContactFactor', 'flankArriveFactor', 'flankMapMarginFactor',
   'shotLengthSizes', 'minShipScreenPixels', 'maxTriangleShips', 'defaultReengage', 'defaultSeed',
@@ -14874,7 +14882,7 @@ const SETTING_WHOLE_NUMBERS = ['slowSporeSteps', 'slowFireMapSteps', 'lineRanks'
   'reportSquadronRows', 'reportPacketRows', 'reinforceMaxSquadrons', 'flankMaxSquadrons', 'counterMaxSquadrons', 'withdrawSamples', 'versionLogMax', 'serviceLastMax', 'serviceHistoryMax', 'serviceEventsMax', 'dossierLastActions', 'reportOfficerRows',
   'movementModel', 'hitModel', 'tacticsModel', 'flightAssist', 'retreatFiring', 'simultaneousFire', 'officerModel', 'strengthMapSteps', 'oddsCellsPerRadius', 'oddsMaxCells', 'maxRouts', 'maxBreakOffs', 'overheatFallback', 'smartTargetCandidates'];
 // The switches (section 1b, "The rules in force"): the values each may have, and the names the code uses for them.
-const SETTING_CHOICES = { dvWingModel: [0, 1], noseModel: [0, 1], rankSwap: [0, 1], devourerGrab: [0, 1], killRecordModel: [0, 1], priorityTargetModel: [0, 1], badMatchModel: [0, 1], acidMortar: [0, 1], frenzyGland: [0, 1], lsFrenzy: [0, 1], biteModel: [0, 1], lsMixModel: [0, 1], sizeHitModel: [0, 1], calmLookSkipAsleep: [0, 1], gunPace: [0, 1], alienLoopsByArrival: [0, 1], quietSteps: [0, 1], sleepLockedSquads: [0, 1], commandPace: [0, 1], placesByX: [0, 1], slowClock: [0, 1], lineRanks: [0, 1], swarmSpread: [0, 1], longSolarReach: [0, 1], longDockModel: [0, 1], swarmLine: [0, 1], warValves: [0, 1], bombardShield: [0, 1, 2], stationCrewWithStation: [0, 1], placeHoldFollow: [0, 1], aoMobilize: [0, 1], aoCharacter: [0, 1], aoAdmiral: [0, 1], cmdFormMoves: [0, 1], orderMovesObeyed: [0, 1], huntDetach: [0, 1], cmdStatLeans: [0, 1], huntDetachWhole: [0, 1], aoPostures: [0, 1], divisionOwner: [0, 1], admiralNeedsModel: [0, 1], longMapLine: [0, 1], cmdFormRealSize: [0, 1], cmdCapShare: [0, 1], cmdCapLongGuns: [0, 1], moonOrbits: [0, 1], dockModel: [0, 1], dockHoldModel: [0, 1], dockRepairRefit: [0, 1], dockSpareModel: [0, 1], dockSpareSwarm: [0, 1], scuttleOnLedger: [0, 1], swarmDockModel: [0, 1], dockEvoModel: [0, 1], dockEvoSwarmSplit: [0, 1], matchupsInPlay: [0, 1], calmShips: [0, 1], cmRenderParts: [0, 1], simBudgetModel: [0, 1], simKeepPace: [0, 1], closeWarmAll: [0, 1], closeKeepPictures: [0, 1], allyShoveOff: [0, 1], allyNudge: [0, 1], divisionSpots: [0, 1], divisionSpotsInFight: [0, 1], campaignSensors: [0, 1], showBoost: [0, 1], coreLoop: [0, 1], coreLoopLine: [0, 1], coreLoopFleetCommand: [0, 1], coreLoopFleetDivisions: [0, 1], coreLoopRecompose: [0, 1], coreLoopAlienCommand: [0, 1], divisionMergeSmall: [0, 1], mergeFarOutOfContact: [0, 1], berthPairingModel: [0, 1], swarmNestModel: [0, 1], swarmGrowUpModel: [0, 1], swarmOpeningSpread: [0, 1], swarmLifeModel: [0, 1], swarmSurfaceModel: [0, 1], swarmEatsEnemies: [0, 1], swarmEatsHatchlings: [0, 1], fighterHangarModel: [0, 1], fighterLaunchModel: [0, 1], hangarRefillFromFleet: [0, 1], hangarRestock: [0, 1], wingModel: [0, 1], wingAirGroups: [0, 1], hangarRefillFree: [0, 1], swarmCarrierRegrow: [0, 1], hangarOrphansStay: [0, 1], tenderDocking: [0, 1], supplyRuns: [0, 1], cargoKept: [0, 1], ferryRuns: [0, 1], stationFighterGuard: [0, 1], stationNoSquadron: [0, 1], stationCrewSquad: [0, 1], stationPass: [0, 1], droneJamModel: [0, 1], divisionPaceModel: [0, 1], swarmFormations: [0, 1], facingVsTarget: [0, 1], facingTwoSided: [0, 1], freshSide: [0, 1], crossT: [0, 1], facingDodge: [0, 1], placesPicket: [0, 1], placesPicketSwarm: [0, 1], campaignStandoffPark: [0, 1], placesWithdrawOrder: [0, 1], placesWithdrawGuardDry: [0, 1], campaignLiveYardDawn: [0, 1], longMapReach: [0, 1], longMapLeash: [0, 1], longMapFog: [0, 1], sleepShips: [0, 1, 2], campaignResourceGate: [0, 1], bbAcid: [0, 1], bbRegrow: [0, 1], bbBurst: [0, 1], bbMissileStoreBySize: [0, 1], bbBeams: [0, 1], bbHeatModel: [0, 1], bbMissiles: [0, 1], bbPointDefence: [0, 1], bbLineOfFire: [0, 1], tightOrbit: [0, 1], campaignStartAtEarth: [0, 1], placesCrush: [0, 1], placesMassAttack: [0, 1], assaultSendAll: [0, 1], assaultReachOnly: [0, 1], frontReachOnly: [0, 1], placesNoLeapfrog: [0, 1], placesClaimKeeps: [0, 1], enemyWaitTurnBack: [0, 1], placesClaimFirm: [0, 1], placesSwarmPress: [0, 1], campaignSupplyLine: [0, 1], commandModel: [0, 1], stationRebuild: [0, 1], stationHullMend: [0, 1], cmdHelpMarches: [0, 1], cmdOpCommit: [0, 1, 2], cmdPassThrough: [0, 1, 2], orgScale: [0, 1], campaignLateAdmiral: [0, 1], campaignStartKit: [0, 1], placesFacilityApart: [0, 1], campaignFacilityApart: [0, 1], placesHoldClear: [0, 1], campaignHoldClear: [0, 1], campaignModel: [0, 1], officerCarryOver: [0, 1], campaignAutosave: [0, 1], placesRetry: [0, 1], placesSweep: [0, 1], placesDecisive: [0, 1], siegeYardSlowdown: [0, 1], placesModel: [0, 1], placesAllowAbandon: [0, 1], placesTheatre: [0, 1], designModel: [0, 1, 2], bureauBattle: [0, 1], moduleDamage: [0, 1], pressModel: [0, 1], partLossCall: [0, 1], survivalModel: [0, 1], allowAbandon: [0, 1], weaponModel: [0, 1], formationModel: [0, 1], lockStep: [0, 1], reorgModel: [0, 1], movementModel: [0, 1], hitModel: [0, 1, 2], tacticsModel: [0, 1], flightAssist: [0, 1], retreatFiring: [0, 1], overheatFallback: [0, 1], newSetupDefaults: [0, 1], unmannedRearGuard: [0, 1], simultaneousFire: [0, 1], officerModel: [0, 1], promoteNeedsVacancy: [0, 1], divisionTier: [0, 1], successionMode: [0, 1, 2], stagingModel: [0, 1] };
+const SETTING_CHOICES = { dvWingModel: [0, 1], noseModel: [0, 1], rankSwap: [0, 1], devourerGrab: [0, 1], killRecordModel: [0, 1], priorityTargetModel: [0, 1], badMatchModel: [0, 1], acidMortar: [0, 1], frenzyGland: [0, 1], lsBayRule: [0, 1], lsFrenzy: [0, 1], biteModel: [0, 1], lsMixModel: [0, 1], sizeHitModel: [0, 1], calmLookSkipAsleep: [0, 1], gunPace: [0, 1], alienLoopsByArrival: [0, 1], quietSteps: [0, 1], sleepLockedSquads: [0, 1], commandPace: [0, 1], placesByX: [0, 1], slowClock: [0, 1], lineRanks: [0, 1], swarmSpread: [0, 1], longSolarReach: [0, 1], longDockModel: [0, 1], swarmLine: [0, 1], warValves: [0, 1], bombardShield: [0, 1, 2], stationCrewWithStation: [0, 1], placeHoldFollow: [0, 1], aoMobilize: [0, 1], aoCharacter: [0, 1], aoAdmiral: [0, 1], cmdFormMoves: [0, 1], orderMovesObeyed: [0, 1], huntDetach: [0, 1], cmdStatLeans: [0, 1], huntDetachWhole: [0, 1], aoPostures: [0, 1], divisionOwner: [0, 1], admiralNeedsModel: [0, 1], longMapLine: [0, 1], cmdFormRealSize: [0, 1], cmdCapShare: [0, 1], cmdCapLongGuns: [0, 1], moonOrbits: [0, 1], dockModel: [0, 1], dockHoldModel: [0, 1], dockRepairRefit: [0, 1], dockSpareModel: [0, 1], dockSpareSwarm: [0, 1], scuttleOnLedger: [0, 1], swarmDockModel: [0, 1], dockEvoModel: [0, 1], dockEvoSwarmSplit: [0, 1], matchupsInPlay: [0, 1], calmShips: [0, 1], cmRenderParts: [0, 1], simBudgetModel: [0, 1], simKeepPace: [0, 1], closeWarmAll: [0, 1], closeKeepPictures: [0, 1], allyShoveOff: [0, 1], allyNudge: [0, 1], divisionSpots: [0, 1], divisionSpotsInFight: [0, 1], campaignSensors: [0, 1], showBoost: [0, 1], coreLoop: [0, 1], coreLoopLine: [0, 1], coreLoopFleetCommand: [0, 1], coreLoopFleetDivisions: [0, 1], coreLoopRecompose: [0, 1], coreLoopAlienCommand: [0, 1], divisionMergeSmall: [0, 1], mergeFarOutOfContact: [0, 1], berthPairingModel: [0, 1], swarmNestModel: [0, 1], swarmGrowUpModel: [0, 1], swarmOpeningSpread: [0, 1], swarmLifeModel: [0, 1], swarmSurfaceModel: [0, 1], swarmEatsEnemies: [0, 1], swarmEatsHatchlings: [0, 1], fighterHangarModel: [0, 1], fighterLaunchModel: [0, 1], hangarRefillFromFleet: [0, 1], hangarRestock: [0, 1], wingModel: [0, 1], wingAirGroups: [0, 1], hangarRefillFree: [0, 1], swarmCarrierRegrow: [0, 1], hangarOrphansStay: [0, 1], tenderDocking: [0, 1], supplyRuns: [0, 1], cargoKept: [0, 1], ferryRuns: [0, 1], stationFighterGuard: [0, 1], stationNoSquadron: [0, 1], stationCrewSquad: [0, 1], stationPass: [0, 1], droneJamModel: [0, 1], divisionPaceModel: [0, 1], swarmFormations: [0, 1], facingVsTarget: [0, 1], facingTwoSided: [0, 1], freshSide: [0, 1], crossT: [0, 1], facingDodge: [0, 1], placesPicket: [0, 1], placesPicketSwarm: [0, 1], campaignStandoffPark: [0, 1], placesWithdrawOrder: [0, 1], placesWithdrawGuardDry: [0, 1], campaignLiveYardDawn: [0, 1], longMapReach: [0, 1], longMapLeash: [0, 1], longMapFog: [0, 1], sleepShips: [0, 1, 2], campaignResourceGate: [0, 1], bbAcid: [0, 1], bbRegrow: [0, 1], bbBurst: [0, 1], bbMissileStoreBySize: [0, 1], bbBeams: [0, 1], bbHeatModel: [0, 1], bbMissiles: [0, 1], bbPointDefence: [0, 1], bbLineOfFire: [0, 1], tightOrbit: [0, 1], campaignStartAtEarth: [0, 1], placesCrush: [0, 1], placesMassAttack: [0, 1], assaultSendAll: [0, 1], assaultReachOnly: [0, 1], frontReachOnly: [0, 1], placesNoLeapfrog: [0, 1], placesClaimKeeps: [0, 1], enemyWaitTurnBack: [0, 1], placesClaimFirm: [0, 1], placesSwarmPress: [0, 1], campaignSupplyLine: [0, 1], commandModel: [0, 1], stationRebuild: [0, 1], stationHullMend: [0, 1], cmdHelpMarches: [0, 1], cmdOpCommit: [0, 1, 2], cmdPassThrough: [0, 1, 2], orgScale: [0, 1], campaignLateAdmiral: [0, 1], campaignStartKit: [0, 1], placesFacilityApart: [0, 1], campaignFacilityApart: [0, 1], placesHoldClear: [0, 1], campaignHoldClear: [0, 1], campaignModel: [0, 1], officerCarryOver: [0, 1], campaignAutosave: [0, 1], placesRetry: [0, 1], placesSweep: [0, 1], placesDecisive: [0, 1], siegeYardSlowdown: [0, 1], placesModel: [0, 1], placesAllowAbandon: [0, 1], placesTheatre: [0, 1], designModel: [0, 1, 2], bureauBattle: [0, 1], moduleDamage: [0, 1], pressModel: [0, 1], partLossCall: [0, 1], survivalModel: [0, 1], allowAbandon: [0, 1], weaponModel: [0, 1], formationModel: [0, 1], lockStep: [0, 1], reorgModel: [0, 1], movementModel: [0, 1], hitModel: [0, 1, 2], tacticsModel: [0, 1], flightAssist: [0, 1], retreatFiring: [0, 1], overheatFallback: [0, 1], newSetupDefaults: [0, 1], unmannedRearGuard: [0, 1], simultaneousFire: [0, 1], officerModel: [0, 1], promoteNeedsVacancy: [0, 1], divisionTier: [0, 1], successionMode: [0, 1, 2], stagingModel: [0, 1] };
 // Rule switches that an imported file may lack: a missing one is read as 0 (the file was made before the rule existed), not as this version's default (stage 12).
 const SETTING_SWITCHES_OLD_FILES = ['commandModel', 'orgScale', 'movementModel', 'hitModel', 'tacticsModel', 'newSetupDefaults', 'simultaneousFire', 'officerModel', 'divisionTier', 'stagingModel', 'reorgModel', 'formationModel', 'lockStep', 'weaponModel', 'survivalModel', 'designModel', 'moduleDamage', 'pressModel', 'placesModel'];
 const MOVE_CLASSIC = 0, MOVE_THRUST = 1;
@@ -16586,7 +16594,23 @@ function rosterRecord(fields) {
   }
   return r;
 }
-function rosterIdFor(side, number) { return ROSTER_ID_PREFIX[side] + ('0000' + number).slice(-4); }
+// (v287.0) at least four digits, never cut to four: from the 10,000th officer of a side (a long Swarm war reaches it near week 200) the old rule wrote
+// "KX-0000" for every new recruit, and a save with the same id twice would not load
+function rosterIdFor(side, number) { return ROSTER_ID_PREFIX[side] + String(number).padStart(4, '0'); }
+// (v287.0) A save written before that fix may hold the same officer id many times: every copy after the first gets a fresh number of its side (the
+// first keeps the id, so whatever points at it still does). Returns how many were renumbered.
+function rosterRepairIds(list) {
+  if (!Array.isArray(list)) return 0;
+  const seen = {}, top = [0, 0];
+  for (const r of list) { if (!r || typeof r.id !== 'string') continue; const m = /(\d+)$/.exec(r.id), sd = r.side === 1 ? 1 : 0; if (m && Number(m[1]) > top[sd]) top[sd] = Number(m[1]); }
+  let n = 0;
+  for (const r of list) {
+    if (!r || typeof r.id !== 'string') continue;
+    if (seen[r.id]) { const sd = r.side === 1 ? 1 : 0; r.id = rosterIdFor(sd, ++top[sd]); n++; }
+    seen[r.id] = true;
+  }
+  return n;
+}
 function buildDefaultRoster() {
   const list = [];
   for (let side = 0; side < 2; side++) {
@@ -16644,7 +16668,7 @@ function makeRecruitRecord(side, rank) {
 // (v41) RANDOM NAMES FOR EACH NEW CAMPAIGN. The built-in roster above always has the same names (Helena Okafor, Ines Vale...), and recruits took the
 // names of OFFICER_NAMES in order, so every war had the same officers. A new campaign from the Menu now renames the built-in officers and names its
 // recruits from the pools below: a human officer is a first name and a surname, an alien one a designation (letter, digit, word; Overseer for an
-// admiral, Warden for a commodore). Only the names change: ranks, personalities and skills are the built-in ones, so the war plays the same.
+// admiral, Warden for a commodore). Ranks are the built-in ones; (v285.0) personalities and skill spreads are new too (rosterForNewCampaign).
 // The names come from campaign.nameSeed, a number picked at random when the campaign starts and kept in the save, so a loaded war keeps its names
 // and its next recruits get the same names they would have had. No other random stream is touched. A campaign without a nameSeed (an old save, the
 // tests' campaigns, the setup screen's battles) keeps the old names.
@@ -16692,7 +16716,16 @@ function recruitName(side, rank) {
   for (let k = 0; k < OFFICER_ROSTER.length; k++) used[OFFICER_ROSTER[k].name] = true;
   return randomOfficerName(side, rank, seed, OFFICER_ROSTER.length, used);
 }
-// A fresh roster for a new campaign: the built-in officers (their ranks and personalities), every one with a random name from the seed.
+// A fresh roster for a new campaign: the built-in officers (their ranks), every one with a random name AND a fresh character from the seed.
+// (v285.0, Alex 20 Nov: "every campaign has begun with an admiral with disciplined and tight rein on Earth") Before, only the names changed, so Earth's
+// Admiral was always the first built-in Admiral (discipline 0.75, rein 0.3: "Disciplined, Tight rein"), and every Commodore and squadron officer had the
+// same character in every war too. Now each built-in officer, on both sides, gets:
+//   * new personality axes: boldness, discipline and rein each drawn between rosterAxisLow and rosterAxisHigh (section 1);
+//   * the same four skill numbers as before, dealt out to its four skills in a new order (so no officer is stronger or weaker overall than the
+//     built-in one, only good at different things).
+// The numbers come from the campaign's officer seed (campaign.nameSeed) through officerTraitRand, a hash: no random stream of the game moves, the
+// names stay exactly what they were for that seed, and the same seed always gives the same officers. A loaded save keeps its roster as saved.
+// Officers from the player's officer library (section 10j) are put in afterwards and keep their own characters.
 function rosterForNewCampaign(seed) {
   resetRoster();
   const used = {};
@@ -16700,7 +16733,20 @@ function rosterForNewCampaign(seed) {
     const r = OFFICER_ROSTER[k];
     r.name = randomOfficerName(r.side, r.rank, seed, k, used);
     used[r.name] = true;
+    rosterFreshCharacter(r, seed, k);
   }
+}
+// A number from 0 to 1 for officer k's j-th character draw: depends only on the seed (a different mix from the names', so the names do not change).
+function officerTraitRand(seed, k, j) { return hash32(((seed >>> 0) ^ 0x51ed27a3) ^ Math.imul(k * 16 + j + 1, 0x85EBCA6B)) / 4294967296; }
+// Gives roster record r (number k of the roster) a fresh character from the seed: new axes, and its own skill numbers in a new order.
+function rosterFreshCharacter(r, seed, k) {
+  const lo = SETTINGS.rosterAxisLow, hi = SETTINGS.rosterAxisHigh;
+  r.axes.boldness = Math.round((lo + officerTraitRand(seed, k, 0) * (hi - lo)) * 100) / 100;
+  r.axes.discipline = Math.round((lo + officerTraitRand(seed, k, 1) * (hi - lo)) * 100) / 100;
+  r.axes.rein = Math.round((lo + officerTraitRand(seed, k, 2) * (hi - lo)) * 100) / 100;
+  const keys = ['strike', 'maneuver', 'command', 'readiness'], vals = keys.map(function (id) { return r.skills[id]; });
+  for (let i = vals.length - 1; i > 0; i--) { const j = Math.floor(officerTraitRand(seed, k, 3 + i) * (i + 1)) % (i + 1); const t = vals[i]; vals[i] = vals[j]; vals[j] = t; }
+  keys.forEach(function (id, i) { r.skills[id] = vals[i]; });
 }
 // A new name seed, different every time (not from any of the game's random streams, so it changes nothing else).
 function newOfficerNameSeed() {
@@ -40999,7 +41045,9 @@ function campaignCheckObject(data) {
 }
 // Makes a checked save the running campaign (and its roster the roster). Returns { ok, messages } like the setup screen's import.
 function campaignImportObject(data) {
+  const fixedIds = data && typeof data === 'object' && typeof rosterRepairIds === 'function' ? rosterRepairIds(data.roster) : 0;   // (v287.0) repeated officer ids from the old id rule (section 2-4)
   const messages = campaignCheckObject(data);
+  if (fixedIds > 0) messages.unshift({ level: 'warn', text: fixedIds + ' officer records shared one id (an old numbering fault); they have been given new ids.' });
   if (messages.some(function (m) { return m.level === 'error'; })) return { ok: false, messages: messages };
   campaignPeekEnd();                                           // (v27.1) a look at a quiet AO ends first
   campaignDropBattle();                                        // (stop 2) a live battle is dropped: the save has its own snapshot
@@ -46789,12 +46837,44 @@ function longLocalPlan(id) {
     for (const f of longLocalFobs()) if (f.have < f.cap && rank <= f.rank) { plan = { at: 'fob', place: f.id }; break; }
     if (plan.at === 'none') {
       // nothing else on the yards that could take the Alloys: Earth builds it (no Alloys unused, v205.0)
-      const other = campaignV3ActiveRecs().some(function (t) { const v = campaignShipInfo(t.id); return v && !v.local; });
-      if (!other) plan = { at: 'earth' };
+      // (v287.0) "nothing else" means no other design that can really take them today: one approved but benched, waiting on a resource or with no
+      // yard allowed to build it takes no Alloys, and before, the Local designs then waited too while the Alloys went unused
+      // (v287.0, playtester: "why does it want to build them at Earth when Mars is the front and needs those local ships more?") ... and its Local
+      // ships go to our stations in the region just behind the front (the most forward one we hold), not to Earth, where they never meet the enemy
+      if (!longLocalOtherBuilds()) { const near = longLocalNearFront(); plan = near ? { at: 'near', place: near } : { at: 'earth' }; }
     }
   }
   longLocalCache.per[id] = plan;
   return plan;
+}
+// (v287.0) When Earth builds Local ships because nothing else can take the Alloys: the station of ours where the next one goes, in the most forward
+// region we hold behind the front ('' when that region is Earth's own). Spread over that region's standing stations by how developed they are.
+function longLocalNearFront() {
+  const fc = longFrontCol(), home = campaignHomeYard(0), homeCol = longPlaceCol(home), st = campaign.ao[campaignAos()[0].id];
+  if (fc < 0 || !st || !st.places) return '';
+  let col = -1;
+  for (const p of st.places) if (p.owner === 0 && p.facility === 'standing') { const c = longPlaceCol(p.id); if (c < fc && c > col) col = c; }
+  if (col < 0 || col <= homeCol) return '';
+  const have = {};
+  for (const r of campaign.docks.list) { if (r.side !== 0) continue; const info = campaignShipInfo(r.design); if (info && info.local) have[r.place] = (have[r.place] || 0) + 1; }
+  let best = '', bestKey = Infinity;
+  for (const p of st.places) {
+    if (p.owner !== 0 || p.facility !== 'standing' || longPlaceCol(p.id) !== col) continue;
+    const key = (have[p.id] || 0) / (campaignDevTier(p.id) + 1);
+    if (key < bestKey - 1e-9) { bestKey = key; best = p.id; }
+  }
+  return best;
+}
+// (v287.0) Is any approved design that is not Local being built today: on some yard's build list and not waiting on a resource (06r)?
+function longLocalOtherBuilds() {
+  const held = typeof campaignSupplyHeld === 'function' ? campaignSupplyHeld() : {}, yards = campaignYardsOf(0).slice(), home = campaignHomeYard(0);
+  if (home && yards.indexOf(home) < 0) yards.push(home);
+  for (const t of campaignV3ActiveRecs()) {
+    const v = campaignShipInfo(t.id);
+    if (!v || v.local || held[t.id] || t.fighter || (HULL_BY_ID[v.sizeClass] && HULL_BY_ID[v.sizeClass].fighter)) continue;
+    if (yards.some(function (y) { return campaignDockBuildsAt(y, t.id); })) return true;   // (asked directly, not through the build list, which asks longLocalPlan again)
+  }
+  return false;
 }
 // (06f campaignYardsDay) The Local ships a yard finished today that belong at a forward station: taken out of `built` and returned as
 // { placeId: { designId: n } }, one ship at a time so no station goes over its room.
@@ -46810,7 +46890,14 @@ function longLocalSplit(yardId, side, built) {
     while (n > 0) {
       fobs.sort(function (a, b) { return (b.cap - b.have) - (a.cap - a.have); });
       const f = fobs.find(function (q) { return q.have < q.cap && rank <= q.rank; });
-      if (!f || f.id === yardId) break;
+      if (!f) {                                                   // (v287.0) no room at the front: the stations just behind it, when that is the plan
+        const plan = longLocalPlan(id), at = plan.at === 'near' ? longLocalNearFront() : '';
+        if (!at || at === yardId) break;
+        (out[at] || (out[at] = {}))[id] = ((out[at] || {})[id] || 0) + 1;
+        n--; built[id]--; longLocalCache.key = '';
+        continue;
+      }
+      if (f.id === yardId) break;
       (out[f.id] || (out[f.id] = {}))[id] = ((out[f.id] || {})[id] || 0) + 1;
       f.have++; n--; built[id]--;
     }
@@ -53526,6 +53613,7 @@ function campaignSupplyWeekEnd() {
     if (un && S.unused[r] >= weeks && !S.saidUnused[r]) { S.saidUnused[r] = true; campaignSupplyLog('unused', v, r); }
     else if (!un && S.saidUnused[r]) { S.saidUnused[r] = false; campaignSupplyLog('used', v, r); }
   }
+  if (typeof campaignDesignIdleWeek === 'function') campaignDesignIdleWeek(S);   // (v287.0) an approved design no yard builds: one Dispatch, and one when it is built again (06r2)
 }
 function campaignSupplyLog(ev, v, r) {
   const last = campaign.econ.supply.last, nm = r ? campaignResourceName(r) : '';
@@ -53616,6 +53704,17 @@ function campaignSupplyPartsWords(r) {
 }
 // The Industrialist's one line of advice on a return (Dorian Kask: Alex's council member for the yards).
 function campaignSupplyAdvice(last, v) {
+  const not = typeof campaignDesignsNotBuilt === 'function' ? campaignDesignsNotBuilt() : [];   // (v287.0) approved designs no yard builds (06r2) come first: the player asked for them
+  const base = campaignSupplyAdviceBase(last, v);
+  if (!not.length) return base;
+  const by = {}, order = [], tails = [];
+  for (const q of not) { if (!by[q.state.why]) { by[q.state.why] = []; order.push(q.state.why); } by[q.state.why].push(campaignSupplyName(q.id)); }
+  const said = order.map(function (why) { const n = by[why]; return campaignSupplyAnd(n) + (n.length === 1 ? ' is' : ' are') + ' not being built. ' + why; }).join(' ');
+  const to = campaignDesignOthersBuilding('');
+  if (to.length) tails.push((not.length === 1 ? 'Its' : 'Their') + ' share of the Alloys goes to ' + campaignSupplyAnd(to.slice(0, 3).map(campaignSupplyName)) + (to.length > 3 ? ' and our other designs' : '') + '.');
+  return said + (tails.length ? ' ' + tails.join(' ') : '') + (v.key === 'full' || v.key === 'alloysFull' ? ' No Alloys are lost: the yards put them into the designs they can build.' : ' ' + base);
+}
+function campaignSupplyAdviceBase(last, v) {
   const unusedA = fmtWhole(Math.round(last.income - last.spent)), parts = [];
   const spareRes = Object.keys(v.res).filter(function (r) { return v.res[r].word === 'spare' || v.res[r].word === 'unused'; });
   if (v.key === 'full') return 'Every Alloy went into ships this week, and the other resources with them. Nothing to change.';
@@ -53659,7 +53758,8 @@ function campaignSupplyFill(total, demand, weight) {
   }
   return out;
 }
-// One week of our yards with a list of designs [{ id, weight }], from today's berths, Alloys and resource rates: { alloys: { used, pot }, res: { r: { used,
+// One week of our yards with a list of designs [{ id, weight }], from today's berths, the yards' own Alloys (v287.0: the week's pot after upkeep, as the
+// return measures them; it read the gross before, so a design looked held by a resource it had to spare) and resource rates: { alloys: { used, pot }, res: { r: { used,
 // rate } }, d: { id: { alloys, ships, limit ('Alloys' | 'berths' | resource id) } } }. Nothing is built; it is a sum, not the yards' day by day.
 function campaignSupplyModel(list) {
   const per = SETTINGS.berthAlloysPerWeek || {}, berths = {};
@@ -53667,7 +53767,7 @@ function campaignSupplyModel(list) {
   const pr = campaignPairBerths(berths, {}, list, null), berthCap = {}, weight = {}, cost = {}, needs = {};
   for (const e of list) { weight[e.id] = e.weight; berthCap[e.id] = 0; cost[e.id] = Math.max(1, campaignShipInfo(e.id).alloys); needs[e.id] = campaignDesignNeeds(e.id); }
   for (const cls in pr.pair) for (const id in pr.pair[cls]) if (id in berthCap) berthCap[id] += pr.pair[cls][id] * (per[cls] || 0);
-  const pot = Math.max(0, campaign.econ.alloys[0]), rates = campaignResourceGateOn(0) ? campaignResourceRates(0) : {};
+  const e0 = campaign.econ, pot = Math.max(0, Array.isArray(e0.yardPot) && e0.yardPot[0] > 0 ? e0.yardPot[0] : e0.alloys[0]), rates = campaignResourceGateOn(0) ? campaignResourceRates(0) : {};
   let cap = Object.assign({}, berthCap), x = {}, resCap = {}, resBy = {}, alloc = {};
   for (let it = 0; it < 4; it++) {
     const want = campaignSupplyFill(pot, cap, weight);
@@ -53678,7 +53778,7 @@ function campaignSupplyModel(list) {
       for (const id in weight) { const n = needs[id][r] || 0; if (n > 0) { dem[id] = n * want[id] / cost[id]; wt[id] = weight[id] * n; } }
       if (!Object.keys(dem).length) continue;
       alloc[r] = campaignSupplyFill(rates[r], dem, wt);
-      for (const id in dem) { const c = alloc[r][id] * cost[id] / needs[id][r]; if (c < resCap[id] - 1e-9) { resCap[id] = c; resBy[id] = r; } }
+      for (const id in dem) { if (!(alloc[r][id] < dem[id] - 1e-6)) continue; const c = alloc[r][id] * cost[id] / needs[id][r]; if (c < resCap[id] - 1e-9) { resCap[id] = c; resBy[id] = r; } }   // (v287.0) only a resource that runs short binds: one with enough to spare named a design "held back by" it
     }
     // a design bound by a resource can use no more than it allows; the others are offered their berths again next round
     for (const id in weight) cap[id] = Math.min(berthCap[id], resCap[id] < want[id] - 1e-6 ? resCap[id] : berthCap[id]);
@@ -53794,6 +53894,126 @@ Object.assign(CAMPAIGN_API, {
   supply: function () { const S = campaign && campaign.econ ? campaign.econ.supply : null; if (!S || !S.last) return null; const v = campaignSupplyVerdict(S.last); return { last: copyJson(S.last), verdict: v, advice: campaignSupplyAdvice(S.last, v) }; },   // (v67) the last week's supply return
   supplyPreview: function (id) { const p = campaignSupplyPreview(id); return p ? { lines: p.lines.slice(), up: p.up, before: copyJson(p.before), after: copyJson(p.after) } : null; },   // (v67) the Activate preview for a design
   slips: function (yardId) { return campaignSupplySlips(yardId || ''); }                                   // (v67) the slipway board's lines
+});
+// =====================================================================
+// 5z (continued). (v287.0, playtester feedback forwarded by Alex 20 Nov: "I'm wasting alloys each week despite having blueprints active and berths
+// available, it seems like the shipyards only build the 2 largest designs. If that's not the case, it's not really clear why.")
+// IS THIS DESIGN BEING BUILT, AND IF NOT, WHY: one answer for every screen.
+//   What was found: a design approved for the yards can be left off every yard's build list without a word. On the long map with docks on, a Local
+//   design is only built for our standing stations in the front region (06f5, Alex 12 Nov: "conservative"), so once the front leaves Earth's region and
+//   we hold no station there, the player's Local designs (usually the small, cheap ones) are never built: only the bigger designs are. The supply return
+//   then said "Local: built at Earth" and 0 ships a week, which was not true. A design benched by the yards' own fighting record (06f3), or one no yard
+//   may build (solar panels that do not reach, no station tier with a slot for its size), was dropped just as quietly.
+//   The Alloys were not lost (the other designs got them), but the player could not see why their designs were not coming out.
+//   Now campaignDesignYardState(id) answers it, and the supply return's table and its own line, the Design Bureau's stamp and one Dispatch all read it.
+//   (One real leak is closed in 06f5 too: the rule "Earth builds Local ships when nothing else can take the Alloys" now asks whether another design
+//   can really take them today, not only whether one is approved.)
+// =====================================================================
+
+// What our yards do with an approved design today: { on (some yard builds it, or will once a berth opens), key, short (a few words for a table),
+// why (plain sentences), tail (where its share of the Alloys goes instead, or '') }. Keys: 'building', 'local' (a Local design, built at one yard), 'nofit' (no berth fits yet), 'held' (waits on a resource),
+// 'localRoom' (a Local design with no room at a station in the front region), 'benched', 'noyard', 'hangar', 'off'.
+function campaignDesignYardState(id) {
+  const t = typeIndexById(id), rec = t >= 0 ? SHIP_TYPES[t] : null, info = rec ? campaignShipInfo(id) : null;
+  if (!rec || !info || !campaign || !campaignV3()) return { on: false, key: 'off', short: '', why: '' };
+  if (rec.yardsReady !== true) return { on: false, key: 'off', short: 'no longer active', why: 'It is not approved for the yards.' };
+  if (rec.fighter || (HULL_BY_ID[info.sizeClass] && HULL_BY_ID[info.sizeClass].fighter)) return { on: true, key: 'hangar', short: 'carried in hangars', why: 'It is carried in the hangars of bigger ships and stations, not built in a berth.' };
+  const held = campaignSupplyHeld()[id];
+  if (held) { const res = campaignSupplyAnd(held.map(campaignResourceName)); return { on: false, key: 'held', short: res, why: 'It waits on ' + res + ': we do not make enough for its parts.' }; }
+  const yards = campaignYardsOf(0).slice(), home = campaignHomeYard(0);
+  if (home && yards.indexOf(home) < 0 && campaignV3YardSide(home) === 0) yards.push(home);
+  let fitAt = '', wantAt = '';
+  for (const y of yards) {
+    if (!fitAt && campaignV3BuildList(y, true, 0).some(function (e) { return e.id === id; })) fitAt = y;
+    if (!wantAt && campaignV3BuildList(y, false, 0).some(function (e) { return e.id === id; })) wantAt = y;
+  }
+  if (fitAt) {
+    if (info.local && typeof longDockOn === 'function' && longDockOn()) {   // (v287.0) where its ships go, so a Local design never seems to be built for nothing
+      const plan = longLocalPlan(id), at = plan.place ? campaignLocName(plan.place) : '';
+      if (plan.at === 'fob') return { on: true, key: 'local', short: 'Local: for ' + at + ', at the front', why: 'Its ships go to ' + at + ', our station at the front.' };
+      if (plan.at === 'near') return { on: true, key: 'local', short: 'Local: for ' + at + ', behind the front', why: 'Our stations at the front have no room for Local ships (or we hold none there), and no other design of ours can take the Alloys just now, so its ships go to ' + at + ', in the region just behind the front.' };
+      return { on: true, key: 'local', short: 'Local: guards Earth', why: 'Its ships stay at Earth: ' + (longFrontCol() <= longPlaceCol(campaignHomeYard(0)) ? 'the front is Earth\'s own region.' : 'we hold no station nearer the front.') };
+    }
+    if (info.local && !(typeof dockModelOn === 'function' && dockModelOn())) return { on: true, key: 'local', short: 'Local: built at ' + campaignYardName(fitAt), why: 'Local ships never leave their region, so it is built at ' + campaignYardName(fitAt) + ', the yard of ours nearest the front.' };
+    return { on: true, key: 'building', short: '', why: '' };
+  }
+  if (wantAt) return { on: true, key: 'nofit', short: 'no berth fits yet', why: 'No berth fits it yet: logistics lays one.' };
+  const others = campaignDesignOthersBuilding(id);
+  const tail = others.length ? 'Its share of the Alloys goes to ' + campaignSupplyAnd(others.slice(0, 3).map(campaignSupplyName)) + (others.length > 3 ? ' and our other designs' : '') + '.' : '';
+  if (typeof campaignEvoBenched === 'function' && campaignEvoBenched(id)) return { on: false, key: 'benched', short: 'benched: loses too many', why: 'The yards have benched it: lately it loses too many ships for what it kills, against the best design of its size. It comes back when it does better.', tail: tail };
+  if (info.local) return campaignDesignLocalState(id, info, tail);
+  if (typeof dockModelOn === 'function' && dockModelOn()) {
+    if (typeof longSolarOn === 'function' && longSolarOn() && !yards.some(function (y) { return longSolarPlaceOk(id, y); })) return { on: false, key: 'noyard', short: 'solar panels too weak', why: 'Its solar panels do not reach any yard of ours that may build it.', tail: tail };
+    return { on: false, key: 'noyard', short: 'no yard may build it', why: 'No yard of ours may build a ' + berthClassName(info.sizeClass).toLowerCase() + ' now: none has the station tier for it, or all are too near the fighting.', tail: tail };
+  }
+  return { on: false, key: 'noyard', short: 'no berth fits', why: 'No yard of ours has a berth that fits it.', tail: tail };
+}
+// Our other approved designs that some yard builds today (ids).
+function campaignDesignOthersBuilding(id) {
+  const out = {}, yards = campaignYardsOf(0).slice(), home = campaignHomeYard(0);
+  if (home && yards.indexOf(home) < 0) yards.push(home);
+  for (const y of yards) for (const e of campaignV3BuildList(y, false, 0)) if (e.id !== id) out[e.id] = true;
+  return Object.keys(out);
+}
+// A Local design no yard builds: why, in the player's words. (Long map with docks: built only for our standing stations in the front region, 06f5.)
+function campaignDesignLocalState(id, info, tail) {
+  const lead = 'Local ships never leave the region they are built in, so once the front has left Earth\'s region they are built only for our stations at the front';
+  if (typeof longDockOn === 'function' && longDockOn()) {
+    const fr = typeof longFrontRegion === 'function' ? longFrontRegion() : null, where = fr && fr.name ? ' (' + fr.name + ')' : '';
+    const fobs = longLocalFobs(), cls = info.berth || info.sizeClass || 'small', rank = berthRank(cls);
+    if (!fobs.length) return { on: false, key: 'localRoom', short: 'Local: no station of ours at the front', why: lead + where + ', and we have no standing station there.', tail: tail };
+    const fits = fobs.filter(function (f) { return rank <= f.rank; });
+    if (!fits.length) {
+      const big = fobs.reduce(function (m, f) { return Math.max(m, f.rank); }, 0), bigCls = berthClassIds().filter(function (c) { return berthRank(c) === big; })[0] || 'small';
+      return { on: false, key: 'localRoom', short: 'Local: too big for the front stations', why: lead + where + '. Our stations there take Local ships up to ' + berthClassName(bigCls).toLowerCase() + ' size (one size more for each tier the station grows); this is a ' + berthClassName(info.sizeClass).toLowerCase() + '.', tail: tail };
+    }
+    let have = 0, cap = 0;
+    for (const f of fits) { have += f.have; cap += f.cap; }
+    return { on: false, key: 'localRoom', short: 'Local: front stations full', why: lead + where + ', and they are full (' + have + ' of ' + cap + ' Local ships). Each station takes one more every ' + plural(Math.max(1, SETTINGS.longLocalDockWeeks || 1), 'week') + ' we hold it, and more as it grows a tier.', tail: tail };
+  }
+  return { on: false, key: 'localRoom', short: 'Local: no yard of ours at or behind the front', why: 'Local ships are built at a yard of ours at the front or just behind it, and we have none.', tail: tail };
+}
+// The approved berth designs that no yard builds today: [{ id, state }].
+function campaignDesignsNotBuilt() {
+  const out = [];
+  if (!campaign || !campaignV3()) return out;
+  for (const rec of campaignSupplyBerthDesigns()) { const s = campaignDesignYardState(rec.id); if (!s.on && s.key !== 'held') out.push({ id: rec.id, state: s }); }   // (a held design has its own words on the return already)
+  return out;
+}
+// The supply return's line for them ('' when every approved design is being built).
+function campaignDesignsNotBuiltLine() {
+  const list = campaignDesignsNotBuilt();
+  if (!list.length) return '';
+  return 'Not being built: ' + list.map(function (q) { return campaignSupplyName(q.id) + ' (' + q.state.short + ')'; }).join(', ') + '. The table below says why.';
+}
+// (06r campaignSupplyWeekEnd) One Dispatch when an approved design has gone supplyNoteWeeks weeks without any yard building it, and one when it is built
+// again. Never weekly. S = campaign.econ.supply.
+function campaignDesignIdleWeek(S) {
+  if (!S.idleDesign || typeof S.idleDesign !== 'object') S.idleDesign = {};
+  if (!S.saidIdleDesign || typeof S.saidIdleDesign !== 'object') S.saidIdleDesign = {};
+  const weeks = Math.max(1, Math.floor(SETTINGS.supplyNoteWeeks || 2)), now = {};
+  for (const q of campaignDesignsNotBuilt()) now[q.id] = q.state;
+  for (const id in now) {
+    S.idleDesign[id] = (S.idleDesign[id] || 0) + 1;
+    if (S.idleDesign[id] >= weeks && !S.saidIdleDesign[id]) { S.saidIdleDesign[id] = true; campaignDesignIdleLog('idle', id, now[id]); }
+  }
+  for (const id in S.idleDesign) if (!now[id]) {
+    delete S.idleDesign[id];
+    if (S.saidIdleDesign[id]) { delete S.saidIdleDesign[id]; const t = typeIndexById(id); if (t >= 0 && SHIP_TYPES[t].yardsReady === true) campaignDesignIdleLog('built', id, null); }
+  }
+  for (const id in S.saidIdleDesign) if (!now[id] && !(id in S.idleDesign)) delete S.saidIdleDesign[id];
+}
+function campaignDesignIdleLog(ev, id, state) {
+  const nm = campaignSupplyName(id);
+  const why = state ? (state.why + (state.tail ? ' ' + state.tail : '')) : '';
+  campaignLog('supply', ev === 'idle' ? nm + ' is approved for the yards but no yard builds it. ' + why : nm + ' is being built again.');
+  const line = campaign.log[campaign.log.length - 1];
+  if (line) line.supply = { ev: ev === 'idle' ? 'designIdle' : 'designBuilt', design: nm, why: why };
+}
+
+Object.assign(CAMPAIGN_API, {
+  designYardState: function (id) { return campaignDesignYardState(id); },                        // (v287.0) is an approved design being built, and if not, why
+  designsNotBuilt: function () { return campaignDesignsNotBuilt().map(function (q) { return { id: q.id, key: q.state.key, short: q.state.short, why: q.state.why }; }); }
 });
 // =====================================================================
 // 5z (continued). THE SYLPH WAR  (v78, build E of notes/plans/aliens/delver-sylph-tier01.md, section 3.3; all numbers are first placeholders)
@@ -68777,6 +68997,7 @@ function fgSendHome(i, c) {
 // (17 sendShipAway, through the queue of the carrier's point) A fighter has docked: it is rearmed for fighterTurnaroundSeconds.
 function fgTakeIn(rec) {
   const b = fgBays[rec.bay];
+  if (typeof lsClosedBayTakeIn === 'function' && lsClosedBayTakeIn(rec)) return;   // (v288.0, 8h6) a Last Stand ship standing down: it leaves here
   if (!b || b.state !== BAY_OUT) { fgDropAwayRec(rec); return; }
   if (b.wing) wingTakeIn(rec.bay, rec);                          // (v248.0, 17b2) a wing docks as one: every bay of it goes in
   else { b.state = BAY_TURN; b.fighter = -1; b.rec = rec; b.readyAt = simTime + SETTINGS.fighterTurnaroundSeconds; }
@@ -68793,6 +69014,7 @@ function fgDropAwayRec(rec) {
 }
 // (17 keepRepairPoint) A fighter flying home whose carrier is gone: back to the fight (it fights until the battle ends).
 function fgHomeGone(i) {
+  if (typeof lsClosedBayHomeGone === 'function' && lsClosedBayHomeGone(i)) return;   // (v288.0, 8h6) a Last Stand ship standing down: it leaves the battle instead
   shipRepairPoint[i] = -1;
   setShipState(i, STATE_APPROACH);
 }
@@ -68887,7 +69109,7 @@ function fgCarrierGone(c, how) {
     const b = fgBays[c.bays[k]];
     if (b.state === BAY_TURN && b.rec) fgDropAwayRec(b.rec);   // (a fighter inside dies with the carrier)
     if (b.state !== BAY_OUT) b.state = BAY_LOST;               // (one out fights on: its bay stays "out" so a kill after this still counts once)
-    else if (SETTINGS.hangarOrphansStay === 1 && fgTypeYardBuilt(b.type) && b.fighter >= 0 && shipBay[b.fighter] === c.bays[k]) {   // (v94.6) a launched Picket is an ordinary ship now
+    else if (SETTINGS.hangarOrphansStay === 1 && !(typeof lsBayKeepsShip === 'function' && lsBayKeepsShip(b)) && fgTypeYardBuilt(b.type) && b.fighter >= 0 && shipBay[b.fighter] === c.bays[k]) {   // (v94.6) a launched Picket is an ordinary ship now
       if (wingN[b.fighter] > 0) wingSplit(b.fighter);             // (v248.0, 17b2) a small craft wing: its craft become single ships again
       shipBay[b.fighter] = -1; b.fighter = -1; b.state = BAY_LOST; fgStats.orphaned++;
     }
@@ -81581,7 +81803,7 @@ function closeKeepCanvas(canvas, key, meta) {
 // (CLOSE_LOOK.keepDrawn). what: everything the picture is drawn from, as text (the art, the design, the size, the livery). It is filed under that and
 // the build's fingerprint (CLOSE_BUILD_PRINT, made by tools/build.js from every source file), so a picture drawn by older art is never read back.
 // cb(pic): the same { canvas, ... } as make() gives (read back: a fresh canvas with the kept measurements), or null when it could not be drawn.
-const CLOSE_BUILD_PRINT = 'bf856d2343ee';
+const CLOSE_BUILD_PRINT = '06d0c5bcf341';
 function closeKeptPicture(what, make, cb) {
   const fresh = function (key) {
     let pic = null;
@@ -87810,7 +88032,7 @@ function feedbackScreenWords() {
 // Everything the game adds to a note by itself. Each line is a short label and a value.
 function feedbackContext() {
   const c = {};
-  c.build = typeof GAME_VERSION !== 'undefined' ? GAME_VERSION : 'v284.0';
+  c.build = typeof GAME_VERSION !== 'undefined' ? GAME_VERSION : 'v288.0';
   c.where = feedbackScreenWords();
   if (typeof campaign !== 'undefined' && campaign && typeof gameModeNow === 'function' && gameModeNow() === 'campaign') {
     c.warWeek = Math.floor(campaign.week || 0);
@@ -91501,6 +91723,9 @@ const DISPATCH_LINES = {
   'brief.res.supplyClear':     { kind: 'res',   crit: false, quiet: true, from: 'Kask Orbital Works', title: 'Yards busy again', text: 'Every Alloy is going into ships again.' },
   'brief.res.supplyUnused':    { kind: 'res',   crit: false, from: 'Kask Orbital Works',  title: '{res} unused',            text: '{rate} {res} a week is sitting in the depots. No design of ours uses it.' },
   'brief.res.supplyUsed':      { kind: 'res',   crit: false, quiet: true, from: 'Kask Orbital Works', title: '{res} in use',  text: '{res} is going into ships again.' },
+  // (v287.0, 06r2) ONE Dispatch when a design approved for the yards has gone two weeks with no yard building it, and a quiet one when it is built again
+  'brief.res.designIdle':      { kind: 'res',   crit: false, from: 'Kask Orbital Works',  title: '{design} not being built', text: '{design} is approved for the yards, but no yard builds it. {why} The supply return has the details.' },
+  'brief.res.designBuilt':     { kind: 'res',   crit: false, quiet: true, from: 'Kask Orbital Works', title: '{design} in the yards', text: '{design} is being built again.' },
   'brief.res.noJump':          { kind: 'res',   crit: false, quiet: true, from: 'Logistics Directorate', title: 'No fuel to leave', text: 'Some of our ships at {ao} have no fuel to leave.' },
   'brief.res.dockQueue':       { kind: 'res',   crit: false, quiet: true, from: 'Logistics Directorate', title: 'Repair docks full', text: 'The repair docks at {ao} have a queue.' },
   'brief.res.scuttled':        { kind: 'res',   crit: false, quiet: true, from: 'Logistics Directorate', title: 'Ship scuttled', text: 'A crippled ship of ours was scuttled at {ao}.' },
@@ -92014,7 +92239,8 @@ function dispatchWatch() {
     else if (line.kind === 'research' && /opens its books/.test(line.text)) { const m = line.text.match(/(\d+(?:\.\d+)?) research points/); dispatchAdd('brief.research.begin', { rp: m ? m[1] : 'a few' }, 'research'); }
     else if (line.kind === 'supply' && line.supply) {                  // (v67, 06r) the supply return's notes, from the facts on the line
       const S = line.supply;
-      if (S.ev === 'unused' && !(Math.round(+S.rate || 0) > 0)) { /* (v105.3, UI review) "0 Helium-3 a week is sitting in the depots": nothing to say */ }
+      if (S.ev === 'designIdle' || S.ev === 'designBuilt') dispatchAdd(S.ev === 'designIdle' ? 'brief.res.designIdle' : 'brief.res.designBuilt', { design: S.design, why: S.why || '' }, 'supply');   // (v287.0, 06r2)
+      else if (S.ev === 'unused' && !(Math.round(+S.rate || 0) > 0)) { /* (v105.3, UI review) "0 Helium-3 a week is sitting in the depots": nothing to say */ }
       else if (S.ev === 'unused' && dispatchMergeUnused(S)) { /* (v105.5) joined to this week's unused note */ }
       else dispatchAdd({ short: 'brief.res.supplyShort', clear: 'brief.res.supplyClear', unused: 'brief.res.supplyUnused', used: 'brief.res.supplyUsed' }[S.ev],
         { res: S.resName, unused: S.unused, income: S.income, why: S.why || '', rate: S.rate, parts: S.res && typeof campaignSupplyPartsWords === 'function' ? campaignSupplyPartsWords(S.res) : '' }, 'supply');
@@ -94636,13 +94862,17 @@ function supSheetHtml() {
     '<div class="sup-head"><div><span class="t">SUPPLY RETURN · ' + (last.yards > 1 ? 'OUR YARDS' : 'EARTH YARDS') + '</span><span class="m">War week ' + last.week + ' · copy for the Design Bureau</span></div>' +
     '<div class="sup-stamp ' + v.colour + '">' + esc(v.stamp) + (v.sub ? '<small>' + esc(v.sub) + '</small>' : '') + '</div></div>' +
     (campaignNeedsLine() ? '<div class="sup-needs">' + esc(campaignNeedsLine()) + '</div>' : '') +   // (v209.0) what the Admiral asks the yards for now (06f4)
+    (typeof campaignDesignsNotBuiltLine === 'function' && campaignDesignsNotBuiltLine() ? '<div class="sup-needs sup-notbuilt">' + esc(campaignDesignsNotBuiltLine()) + '</div>' : '') +   // (v287.0) approved designs no yard builds (06r2)
     '<div class="sup-rows">';
   // one tape per resource: Alloys first, then the others the war has
-  const rows = [{ id: 'alloys', name: 'Alloys', rate: last.income, used: last.spent, by: last.alloys }];
+  // (v287.0) the Alloys tape is the whole week's Alloys: what went into ships, what upkeep took (its own grey stretch, so it no longer reads as Alloys
+  // gone missing), and what went unused
+  const upk = Math.max(0, last.upkeep || 0), rows = [{ id: 'alloys', name: 'Alloys', rate: last.income + upk, used: last.spent, by: last.alloys, upkeep: upk, pot: last.income }];
   for (const r of CM_RESOURCES) if (r.id !== 'alloys' && v.res[r.id]) rows.push({ id: r.id, name: r.name, rate: v.res[r.id].rate, used: v.res[r.id].used, by: last.byRes[r.id] || {} });
   for (const row of rows) {
     const rate = Math.max(1e-9, row.rate), main = row.id === 'alloys';
-    h += '<div class="sup-row' + (main ? ' main' : '') + '"><h3>' + esc(row.name) + ' <span class="fig">' + supFmt(row.used) + ' of ' + supFmt(row.rate) + ' a week into ships' + (main && last.gross > row.rate + 0.5 ? ' (of ' + supFmt(last.gross) + ' in' + (last.upkeep > 0.5 ? ', ' + supFmt(last.upkeep) + ' upkeep' : '') + ')' : '') + '</span></h3><div class="sup-tape" role="img" aria-label="' + esc(row.name + ': ' + Math.round(100 * row.used / rate) + '% into ships') + '">';
+    const fig = main ? supFmt(row.used) + ' of ' + supFmt(row.rate) + ' a week into ships' + (row.upkeep > 0.5 ? ', ' + supFmt(row.upkeep) + ' to upkeep' : '') : supFmt(row.used) + ' of ' + supFmt(row.rate) + ' a week into ships';
+    h += '<div class="sup-row' + (main ? ' main' : '') + '"><h3>' + esc(row.name) + ' <span class="fig">' + fig + '</span></h3><div class="sup-tape" role="img" aria-label="' + esc(row.name + ': ' + Math.round(100 * row.used / rate) + '% into ships') + '">';
     let shown = 0;
     const ids = Object.keys(row.by).filter(function (id) { return row.by[id] > 0; }).sort(function (a, b) { return row.by[b] - row.by[a]; });
     for (const id of ids) {
@@ -94650,6 +94880,10 @@ function supSheetHtml() {
       if (!(n > 0)) continue;
       shown += n;
       h += '<span class="seg" style="flex:0 0 ' + (100 * n / rate).toFixed(2) + '%;background:' + (col[id] || SUP_COLOURS[0]) + '" title="' + esc((names[id] || campaignSupplyName(id)) + ': ' + Math.round(n * 10) / 10) + '">' + (n / rate > 0.12 ? esc(names[id] || campaignSupplyName(id)) + ' ' + supFmt(n) : '') + '</span>';
+    }
+    if (main && row.upkeep > 0.01) {
+      shown += row.upkeep;
+      h += '<span class="seg upk" style="flex:0 0 ' + (100 * row.upkeep / rate).toFixed(2) + '%" title="' + esc(supUpkeepWords(row.upkeep)) + '">' + (row.upkeep / rate > 0.12 ? 'upkeep ' + supFmt(row.upkeep) : '') + '</span>';
     }
     const left = row.rate - shown;
     if (left > 0.01) {
@@ -94659,22 +94893,36 @@ function supSheetHtml() {
     h += '</div><div class="sup-verdict">' + esc(supRowVerdict(row, v, last)) + '</div></div>';
   }
   h += '</div><div class="sup-legend">' + Object.keys(col).filter(function (id) { return (last.alloys[id] || 0) > 0 || last.designs.indexOf(id) >= 0; }).map(function (id) { return '<span><i style="background:' + col[id] + '"></i>' + esc(names[id] || id) + '</span>'; }).join('') +
-       '<span><i class="un"></i>unused</span></div>';
+       ((last.upkeep || 0) > 0.01 ? '<span><i class="upk"></i>upkeep</span>' : '') + '<span><i class="un"></i>unused</span></div>';
   h += supTableHtml(last, v, col, names);
   h += '<div class="sup-advice">' + esc(campaignSupplyAdvice(last, v)) + '<div class="who">— ' + esc(COUNCIL_MEMBERS.ind.name) + ', the Industrialist</div></div></div>';
   return h;
 }
+// (v287.0) What upkeep is, for its stretch of the tape: the Alloys it took and the ships (or docks) it keeps.
+function supUpkeepWords(n) {
+  const e = campaign && campaign.econ, ships = e && Array.isArray(e.upkeepShips) ? e.upkeepShips[0] || 0 : 0, docks = typeof dockModelOn === 'function' && dockModelOn();
+  return 'Upkeep: ' + Math.round(n) + ' Alloys a week keep our ' + (ships > 0 ? fmtWhole(ships) + ' ' : '') + (docks ? 'docks (one ship each)' : 'ships') + ' in service. The more ships we have, the more it takes; the rest goes to the yards.';
+}
 // The words under a tape.
 function supRowVerdict(row, v, last) {
-  const left = Math.max(0, row.rate - row.used);
+  const left = Math.max(0, (row.pot !== undefined ? row.pot : row.rate) - row.used);
   if (row.id === 'alloys') {
+    const upw = row.upkeep > 0.5 ? ' Upkeep took ' + supFmt(row.upkeep) + ' (' + Math.round(100 * row.upkeep / Math.max(1e-9, row.rate)) + '%) to keep our ships in service.' : '';
+    return supRowVerdictAlloys(left, v, last) + upw;
+  }
+  return supRowVerdictRes(row, v, last, left);
+}
+function supRowVerdictAlloys(left, v, last) {
+  {
     const idle = campaignNeedsIdleWords(last);                         // (v209.0) the real reason any Alloys went unused (06f4)
     if (idle && left > 0.5) return (v.pct >= 0.95 ? 'Nearly full: ' : 'Short: ') + idle;
-    if (v.pct >= 0.95) return 'Full: every Alloy went into ships.';
+    if (v.pct >= 0.95) return 'Full: every Alloy the yards had went into ships.';
     if (v.key === 'growing' || v.key === 'berths') return 'Berths full. ' + supFmt(left) + ' a week unused' + (v.key === 'growing' ? ' until the new berths open.' : '.');
     if (v.key === 'cap') return 'The fleet is at its cap. ' + supFmt(left) + ' a week unused.';
     return 'Short: ' + supFmt(left) + ' a week unused.';
   }
+}
+function supRowVerdictRes(row, v, last, left) {
   const r = v.res[row.id];
   if (r.word === 'unused') return 'Unused: no active design carries parts that need it.';
   const holds = last.held.filter(function (h) { return h.res === row.id; }).map(function (h) { return campaignSupplyName(h.design); });
@@ -94693,15 +94941,17 @@ function supTableHtml(last, v, col, names) {
     const info = campaignShipInfo(id), needs = campaignDesignNeeds(id), t = SHIP_TYPES[typeIndexById(id)];
     const takes = Object.keys(needs).length ? fmtWhole(info.alloys) + ' Alloys, ' + Object.keys(needs).map(function (r) { return needs[r] + ' ' + campaignResourceName(r); }).join(', ') : fmtWhole(info.alloys) + ' Alloys only';
     const wk = (last.alloys[id] || 0) / Math.max(1, info.alloys);
-    let lim = '', red = false;
-    if (heldBy[id]) { lim = campaignSupplyAnd(heldBy[id]); red = true; }
+    let lim = '', red = false, tip = '';
+    const st = typeof campaignDesignYardState === 'function' ? campaignDesignYardState(id) : null;   // (v287.0) is it being built at all, and if not why (06r2)
+    if (st && !st.on && st.key !== 'held' && st.key !== 'off') { lim = 'not built: ' + st.short; red = true; tip = st.why; }
+    else if (heldBy[id]) { lim = campaignSupplyAnd(heldBy[id]); red = true; }
     else if (t && t.fighter || (HULL_BY_ID[info.sizeClass] && HULL_BY_ID[info.sizeClass].fighter)) lim = 'carried in hangars';
     else if (!(t && t.yardsReady)) lim = 'no longer active';
     else if (model && model.d[id]) lim = model.d[id].limit === 'berths' ? 'its berths' : (model.d[id].limit === 'Alloys' ? 'nothing (its Alloys share)' : campaignResourceName(model.d[id].limit));
-    else if (info.local) { const ly = typeof campaignLocalYardFor === 'function' ? campaignLocalYardFor(0, id) : ''; lim = ly ? 'Local: built at ' + campaignYardName(ly) : 'Local: no yard of ours at or behind the front'; }   // (v168.0) Local designs are built at one yard only (06k)
+    else if (st && st.key === 'local') { lim = st.short; tip = st.why; }   // (v168.0) Local designs are built at one yard only (06k); (v287.0) its words from 06r2, so it never says a yard builds what none does
     else lim = 'no berth fits';
     h += '<tr><td><span class="sw" style="background:' + (col[id] || SUP_COLOURS[0]) + '"></span>' + esc(names[id] || campaignSupplyName(id)) + ' <span class="cls">(' + esc(berthClassName(info.sizeClass || '')) + ')</span></td><td>' + esc(takes) + '</td><td>' +
-      (wk >= 10 ? Math.round(wk) : Math.round(wk * 10) / 10) + '</td><td class="' + (red ? 'lim' : '') + '">' + esc(lim) + '</td></tr>';
+      (wk >= 10 ? Math.round(wk) : Math.round(wk * 10) / 10) + '</td><td class="' + (red ? 'lim' : '') + '"' + (tip ? ' title="' + esc(tip) + '"' : '') + '>' + esc(lim) + '</td></tr>';
   }
   return h + '</tbody></table></div>';
 }
@@ -99050,6 +99300,7 @@ function lastStandStep() {
   if (!lsOn() || !battleRunning) return;
   if (simTime >= lastStand.nextWaveAt) lsSendWave();
   lsVisitorStep();
+  lsStandDownStep();                                      // (v288.0, section 8h6) ships standing down whose station fell on their way home
   lsXpStep();
   if (lastStand.v2) ls2Sync();
   if (lastStand.wfAt === undefined || simTime >= lastStand.wfAt) { const dt = lastStand.wfAt === undefined ? 0.5 : simTime - lastStand.wfAt + 0.5; lastStand.wfAt = simTime + 0.5; lsWFStep(dt); }   // (v135.0, section 8h3) the wave Fleets march
@@ -99533,7 +99784,7 @@ function lsCardText(c) {
     out.label = 'Bigger hull' + (lsIsMine(c.type) ? ' · your design' : ''); out.title = typeName[h.type] + ' to ' + typeName[c.type];
     const up = !lsRankAllows(h.rank, c.type) && rankById(lsRankFor(c.type));
     out.text = (rankById(h.rank) ? rankById(h.rank).name + ' ' : '') + h.officer + '\'s squadron of ' + plural(h.size, typeName[h.type]) + ' becomes ' + plural(size, typeName[c.type]) +
-               ' (' + lsHullOf(c.type) + '). Ships in flight are refitted on the spot.' + (up ? ' ' + h.officer + ' is promoted to ' + up.name + ' to lead them.' : '');
+               ' (' + lsHullOf(c.type) + '). Ships in flight are refitted on the spot' + (SETTINGS.lsBayRule === 1 ? ', as many as the new squadron holds; the others fly home and stand down.' : '.') + (up ? ' ' + h.officer + ' is promoted to ' + up.name + ' to lead them.' : '');
     out.facts = lsShipFacts(c.type);   // (v134.0)
   } else if (c.kind === 'commodore') {
     out.officer = lsOfficerName('commodore');
@@ -100095,9 +100346,10 @@ function lsBiggerHulls(h) {
 }
 // The squadron's size after the swap: (v264.2) it keeps its stars and takes the new hull's size for them (section "SQUADRON SIZE: THE ONE RULE").
 function lsHullSwapSize(h, t) { return lsCapOf({ type: t, bigger: h.bigger }); }
-// The swap: every bay of the hangar now holds the new design, and the squadron's ships in flight are refitted to it on the spot (as a research
-// refit is: their damage kept as a share of the hull). Bays beyond the new size are closed (a ship of a closed bay flies on but is not rebuilt).
-function lsSwapHull(hi, t) {
+// The swap as it was before v288.0 (SETTINGS.lsBayRule 0): every bay of the hangar now holds the new design, and EVERY ship of the squadron in flight
+// is refitted to it on the spot. Bays beyond the new size are closed, but their ships fly on, refitted too: that is how one squadron could become 18
+// titans. With lsBayRule 1 the swap is lsSwapHull in section 8h6 (one ship for each bay).
+function lsSwapHullV1(hi, t) {
   const L = lastStand, h = L.hangars[hi], c = lsStationCarrier(), size = lsHullSwapSize(h, t), from = h.type;
   const mine = new Set(h.bays);
   // the squadrons made only of this hangar's ships
@@ -101303,6 +101555,151 @@ function lsFrenzyAfterWave(n, room) {
   boostSetSide(RED, 1 + Math.min(LS_FRENZY.speedMax, LS_FRENZY.speedStep * L.frenzy), 1 + LS_FRENZY.damageStep * L.frenzy);
 }
 // =====================================================================
+// 8h6. (v288.0) LAST STAND: ONE SHIP FOR EACH BAY
+//   Alex, 20 Nov, from player feedback: "holding Bigger hull upgrades and applying them all at once, I ended up with like 60 capital ships", and
+//   "if you take the rebuild station perk, you keep the old ships that were attached to the dead station, but you also build new ones".
+//   Both had one cause: a ship could stop belonging to its hangar bay while it still flew, and the bay then counted as empty and was filled again.
+//     - Bigger hull: the bays beyond the new, smaller size were closed, but EVERY ship of the squadron was refitted and flew on. Played again and
+//       again, a squadron of 18 small craft became 18 titans for one bay.
+//     - A station that fell: its launched ships were cut loose (17b fgCarrierGone, hangarOrphansStay, a campaign rule) and their bays marked lost.
+//       The Emergency station rebuild card then rebuilt every one of those bays while the cut-loose ships fought on.
+//   THE ONE RULE (SETTINGS.lsBayRule 1), the same idea as the campaign's docks since v277.0 (06f2b: a dock keeps its ship until that ship is lost):
+//     1. A bay owns its ship for as long as that ship lives, wherever it is, even when its station has fallen (lsBayKeepsShip).
+//     2. A bay builds a new ship only when its own ship is gone, after the hull size's rebuild time (lsRebuildBays, unchanged). No card refills a
+//        lost bay at once any more (the Bigger hull swap used to).
+//     3. A squadron never flies more ships than it has bays. When a card leaves it fewer bays (Bigger hull), the ships of the closed bays STAND DOWN:
+//        they fly home to their station and leave the battle there (not counted as lost), or leave at once when there is no station to go to.
+//   Nothing here runs outside Last Stand.
+// =====================================================================
+
+// Does bay b keep its ship whatever happens to the station? (Rule 1: every bay of a Last Stand hangar.)
+function lsBayKeepsShip(b) { return SETTINGS.lsBayRule === 1 && lsActive() && !!b && b.lsHangar !== undefined; }
+
+// Ships told to leave from inside the ship think (17b fgHomeGone): they leave at the next Last Stand step, outside the think loop.
+const lsStandDownLater = [];
+function lsStandDownStep() {
+  while (lsStandDownLater.length > 0) { const i = lsStandDownLater.pop(); if (shipAlive[i] === 1) lsStandDownNow(i); }
+}
+// Ship i stands down: home to the station of its bay, or out of the battle at once when that station is gone.
+function lsStandDown(i) {
+  if (shipAlive[i] !== 1) return;
+  const bi = shipBay[i], b = bi >= 0 ? fgBays[bi] : null, c = b ? fgCarriers[b.carrier] : null;
+  if (c && c.state === 'live' && shipAlive[c.slot] === 1) { fgSendHome(i, c); return; }   // (it docks there: fgTakeIn calls lsStruckOff)
+  lsStandDownNow(i);
+}
+// Ship i leaves the battle now (taken off the field as a ship going in for repairs is, then struck off).
+function lsStandDownNow(i) { if (shipAlive[i] === 1) lsStruckOff(sendShipAway(i)); }
+// A ship that stood down is struck off: its squadron stops keeping its place, its closed bays stay empty, and it is not counted as a loss.
+function lsStruckOff(rec) {
+  const sq = rec.sq;
+  if (sq > 0 && rec.place >= 0 && sqAway[sq] > 0) { sqMemberAway[sqStart[sq] + rec.place] = 0; sqAway[sq]--; sqDirty[sq] = 1; }
+  awayCount[rec.side]--;
+  if (typeof campaignAwayOffRecord === 'function') campaignAwayOffRecord(rec);
+  if (rec.bay >= 0) for (const bi of wingBaysOf(rec.bay)) { const b = fgBays[bi]; if (!b) continue; b.state = BAY_LOST; b.fighter = -1; b.rec = null; b.lead = -1; b.wing = null; }
+  if (lastStand) lastStand.stoodDown = (lastStand.stoodDown | 0) + 1;
+}
+
+// (17b fgTakeIn) A ship docking in a bay that was closed while it was out: it stood down, so it is struck off. True when that happened.
+function lsClosedBayTakeIn(rec) {
+  const b = rec.bay >= 0 ? fgBays[rec.bay] : null;
+  if (!b || !b.lsClosed) return false;
+  lsStruckOff(rec);
+  return true;
+}
+// (17b fgHomeGone) A ship standing down whose station fell on its way home: it leaves the battle (at the next step). True when that happened.
+function lsClosedBayHomeGone(i) {
+  const b = shipBay[i] >= 0 ? fgBays[shipBay[i]] : null;
+  if (!b || !b.lsClosed) return false;
+  lsStandDownLater.push(i);
+  return true;
+}
+
+// ---- THE BIGGER HULL SWAP (rule 3) ----
+// Every bay of hangar hi is for design t from now on, and the hangar has lsHullSwapSize bays (fewer for a bigger hull). The ships in flight are
+// refitted on the spot (their damage kept as a share of the hull), as many as there are bays; the rest stand down. Bays are given out in this order:
+// ships in flight (in the order of the hangar's bays), then ships inside being rearmed, then built ships waiting inside, then lost ones (still being
+// rebuilt). A wing of small craft refitted to a design that does not fly in wings becomes ONE ship (its other bays are empty, rebuilt as usual).
+function lsSwapHull(hi, t) {
+  if (SETTINGS.lsBayRule !== 1) { lsSwapHullV1(hi, t); return; }
+  const L = lastStand, h = L.hangars[hi], size = lsHullSwapSize(h, t), from = h.type;
+  const wingTo = typeof wingMaxOf === 'function' && wingMaxOf(t) > 0;
+  // the hangar's ships in flight, each with the bays it holds (a wing holds one bay a craft)
+  const units = [], inUnit = new Set();
+  for (const bi of h.bays) {
+    const b = fgBays[bi];
+    if (!b || b.state !== BAY_OUT || b.lead >= 0) continue;
+    const f = b.fighter;
+    if (f < 0 || shipAlive[f] !== 1 || shipBay[f] !== bi) continue;
+    const bays = wingBaysOf(bi).filter(function (x) { const q = fgBays[x]; return q && q.state === BAY_OUT && q.fighter === f; });
+    for (const x of bays) inUnit.add(x);
+    units.push({ ship: f, bays: bays, keep: false });
+  }
+  const keep = [], freed = [];
+  for (const u of units) {
+    const need = wingTo ? u.bays.length : 1;
+    if (keep.length + need > size) continue;
+    u.keep = true;
+    if (wingTo) { for (const x of u.bays) keep.push(x); continue; }
+    keep.push(u.bays[0]);
+    for (let k = 1; k < u.bays.length; k++) freed.push(u.bays[k]);     // (the wing's other craft: their bays are empty from now on)
+  }
+  // the bays with no ship in flight: rearming, waiting, then lost
+  const order = function (bi) { const st = fgBays[bi].state; return st === BAY_TURN ? 0 : (st === BAY_READY ? 1 : 2); };
+  const rest = h.bays.filter(function (bi) { return fgBays[bi] && !inUnit.has(bi); }).sort(function (p, q) { return order(p) - order(q); });
+  const closed = [];
+  for (const bi of rest.concat(freed)) {
+    if (keep.indexOf(bi) >= 0) continue;
+    if (keep.length < size) keep.push(bi); else closed.push(bi);
+  }
+  // the ships that keep a bay are refitted; the others stand down
+  for (const u of units) if (u.keep) lsRefitUnit(u.ship, t, wingTo, u.bays.length);
+  for (const bi of freed) { const b = fgBays[bi]; b.state = BAY_LOST; b.fighter = -1; b.rec = null; b.lead = -1; b.wing = null; b.lsAt = 0; }
+  if (!wingTo) for (const u of units) if (u.keep) { const L0 = fgBays[u.bays[0]]; L0.wing = null; L0.lead = -1; }
+  const leaving = [];
+  for (const u of units) if (!u.keep) { for (const x of u.bays) closed.push(x); leaving.push(u.ship); }
+  for (const bi of closed) {
+    const b = fgBays[bi];
+    b.lsClosed = true;
+    const cb = fgCarriers[b.carrier];
+    if (cb) { const k = cb.bays.indexOf(bi); if (k >= 0) cb.bays.splice(k, 1); }
+    if (b.state === BAY_TURN && b.rec) { const rec = b.rec; b.rec = null; lsStruckOff(rec); }   // (a ship inside being rearmed simply stays home)
+    else if (b.state !== BAY_OUT) { b.state = BAY_LOST; b.fighter = -1; b.rec = null; }
+  }
+  // the squadrons made of this hangar's ships take the new design; a ship in them with no bay at all (none should be left) stands down too
+  const mine = new Set(keep);
+  for (const sq of fleets[BLUE].squads) {
+    if (sqType[sq] !== from && !(L.v2 && sq === ls2SquadOf(hi))) continue;
+    let ours = false;
+    for (let j = 0; j < sqSize[sq]; j++) { const m = sqMembers[sqStart[sq] + j]; if (m >= 0 && shipAlive[m] === 1 && shipSquad[m] === sq && mine.has(shipBay[m])) { ours = true; break; } }
+    if (!ours && !(L.v2 && sq === ls2SquadOf(hi))) continue;
+    for (let j = 0; j < sqSize[sq]; j++) { const m = sqMembers[sqStart[sq] + j]; if (m >= 0 && shipAlive[m] === 1 && shipSquad[m] === sq && shipBay[m] < 0 && !isStationSquad(sq)) leaving.push(m); }
+    sqType[sq] = t; sqDirty[sq] = 1; refreshSquadronCache(sq);
+  }
+  h.type = t;
+  for (const bi of keep) { const b = fgBays[bi]; b.type = t; if (b.rec) b.rec.type = t; }   // (a ship rearming inside comes out as the new design; a lost one is rebuilt as it)
+  h.bays = keep;
+  h.size = size;
+  if (keep.length < size) lsAddBays(hi, size - keep.length);
+  for (const i of leaving) lsStandDown(i);
+  if (leaving.length > 0) logEvent(BLUE, plural(leaving.length, 'ship') + ' of ' + h.officer + '\'s squadron stand down: the bigger hulls need the room.');
+}
+// One ship in flight becomes design t, its damage kept as a share of its hull. A wing (wingN craft) stays a wing of the same craft when t flies in
+// wings, else it becomes one ship.
+function lsRefitUnit(f, t, wingTo, craft) {
+  const from = shipType[f], n = wingN[f] > 0 ? wingN[f] : 0;
+  if (n > 0) {
+    const share = Math.max(0, Math.min(1, shipHp[f] / Math.max(1, n * wingCraftHp[f])));
+    shipHp[f] = share * stHull[BLUE * TYPE_COUNT + from];               // (as one craft, so lsRefitShip keeps the share)
+    wingN[f] = 0;
+  }
+  if (from !== t) lsRefitShip(f, from, t);
+  if (n > 0 && wingTo) {
+    const st = BLUE * TYPE_COUNT + t, k = Math.max(1, craft | 0);
+    wingN[f] = k; wingCraftHp[f] = stHull[st]; shipHp[f] *= k;
+    wingFullStores(f, k);
+  }
+}
+// =====================================================================
 // 8i. (v102.0) LAST STAND VERSION 2: THE CARD TREE (stage 1 of 6)
 //   Alex, 5 Nov: "the chain of command now has a clickable visual representation off the left side of the battle map. these are solitaire
 //   style card slots ... 1 for AO admiral, 3 fleets, 3 divisions each, and 3 squadrons in each division."
@@ -101693,7 +102090,7 @@ function ls2UpgradeCandidates(out) {
 // (lsCardText) what a general upgrade card says.
 function ls2UpgradeText(c, out) {
   if (c.kind === 'bigger') { out.label = 'Bigger squadron'; out.title = 'Bigger squadron'; out.text = 'A squadron of your choice goes up one star, to full strength at once: as many ships again as it started with (a 24-Dart squadron becomes 48, then 72). Two cards at most a squadron (3 stars). Titans always fly alone.' + (lsCardsBound() ? ' It can go on a squadron while your fleet at full strength stays within ' + fmtWhole(LAST_STAND.governor.blueCap) + ' ships.' : ''); }
-  else if (c.kind === 'hull') { out.label = 'Bigger hull'; out.title = 'Bigger hull'; out.text = 'A squadron of your choice moves up to the next open hull size: one of your own designs of the same job where there is one, else a stock one. Its officer is promoted if the bigger hull needs it, and its ships are refitted on the spot.'; }
+  else if (c.kind === 'hull') { out.label = 'Bigger hull'; out.title = 'Bigger hull'; out.text = 'A squadron of your choice moves up to the next open hull size: one of your own designs of the same job where there is one, else a stock one. Its officer is promoted if the bigger hull needs it, and its ships are refitted on the spot' + (SETTINGS.lsBayRule === 1 ? ': as many as the bigger hulls fill (fewer ships), the others fly home and stand down.' : '.'); }
 }
 // Plays an upgrade card on hangar hi.
 function ls2Upgrade(kind, hi) {
@@ -111233,15 +111630,18 @@ function b2DesignRowHtml(rec) {
   // (v168.0, Alex 9 Nov) the row is the newest version, but the version on the yards may be an older one (an old save): the stamp says which ("v1 Active")
   const onNow = designFamilyActive(fam), onOld = !!onNow && onNow !== rec;
   const actStamp = onNow ? '<span class="stamp green"' + (onOld ? ' title="The yards build ' + esc(onNow.name) + ', an older version, not the newest. Ready for the yards takes it off; one more press puts the newest version on."' : '') + '>' + (onOld ? 'v' + designVersion(onNow) + ' Active' : 'Active') + '</span>' : '';
+  // (v287.0) an approved design no yard builds (or one waiting on a resource) says so beside its Active stamp, with the reason in its tooltip (06r2)
+  const yst = onNow && !b2InLibrary() && typeof campaignDesignYardState === 'function' && campaign && !campaign.over ? campaignDesignYardState(onNow.id) : null;
+  const notBuiltStamp = yst && !yst.on && yst.key !== 'off' ? '<span class="stamp amber" title="' + esc(yst.why) + '">' + (yst.key === 'held' ? 'Waits: ' + esc(yst.short) : 'Not built') + '</span>' : '';
   // (v105.5, UI review) one line per design: its name, size and stamps. The numbers, the versions and the buttons show only on the design open on the
   // sheet, so the list shows many designs at once instead of two.
   const open = !!b2.serviceId && versions.some(function (v) { return v.id === b2.serviceId; });
   if (!open) return '<div class="dl dl-1" data-design="' + esc(rec.id) + '" title="' + esc(rec.name + ': speed ' + rec.speed + ', hull ' + Math.round(rec.hull) + (versions.length > 1 ? ', ' + versions.length + ' versions' : '') + '. Click to open it.') + '"><div class="dn"><b>' + esc(rec.name) + '</b><small>' + esc(cls ? cls.name : '') + (sm.tonnage ? ' · ' + sm.tonnage.toLocaleString('en-GB') + ' t' : '') + dlFolderTag(fam) + '</small></div>' +
-    actStamp +   // (no Stock stamp on the one-line row: Show: Stock picks them out)
+    actStamp + notBuiltStamp +   // (no Stock stamp on the one-line row: Show: Stock picks them out)
     (rec.outdated ? '<span class="stamp red">Outdated</span>' : '') + (rec.local ? '<span class="stamp local">Local</span>' : '') + '</div>';
   let h = '<div class="dl on" data-design="' + esc(rec.id) + '"><div class="dn"><b>' + esc(rec.name) + '</b><small>' + esc(cls ? cls.name : '') + (sm.tonnage ? ' · ' + sm.tonnage.toLocaleString('en-GB') + ' t' : '') + ' · speed ' + rec.speed + ' · hull ' + Math.round(rec.hull) + dlFolderTag(fam) + '</small></div>' +
     (rec.stockV3 ? '<span class="stamp grey">Stock</span>' : '') +
-    (onNow ? actStamp : (b2InLibrary() ? '' : '<span class="stamp amber">Draft</span>')) +
+    (onNow ? actStamp + notBuiltStamp : (b2InLibrary() ? '' : '<span class="stamp amber">Draft</span>')) +
     (rec.outdated ? '<span class="stamp red" title="The Bureau\'s rules changed since this design was made. Its ships are kept; open it, fix what the checks list and save a new version.">Outdated</span>' : '') + (rec.local ? '<span class="stamp local">Local</span>' : '');
   if (versions.length > 1) h += '<div class="vers">' + versions.map(function (v) { return '<button type="button" data-design="' + esc(v.id) + '" title="Open ' + esc(v.name) + '">v' + designVersion(v) + (v.yardsReady ? ' ✓' : '') + '</button>'; }).join('') + '</div>';
   h += '<div class="acts"><button class="btn" type="button" data-refit="' + esc(rec.id) + '" title="A new version with the same layout to fill in">Refit</button>' +
@@ -116827,7 +117227,7 @@ BUREAU2_SCREEN_API.testRange = { run: testRangeRun, state: testRange, plan: func
 //   adopted habits come along in its copy code and into every new campaign. A doctrine changed in the Bureau after the save updates the plan's copy.
 //   DOCTRINE TEMPLATES (LIBRARY.templates: [{ name, doctrine, savedAt }]) live here too, so they carry over as well. A plan from before v37 has no doctrine: Auto.
 // =====================================================================
-const GAME_VERSION = 'v284.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
+const GAME_VERSION = 'v288.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
 const LIBRARY_KEY = 'engineersWar.library';
 const LIBRARY_FORMAT = 1;
 const LIBRARY_CODE_SHIP = 'EW-SHIP-1:', LIBRARY_CODE_LIB = 'EW-LIB-1:';
