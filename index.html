@@ -3987,7 +3987,7 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
     <section class="panel hidden" id="mmPanel"><div class="panel-head" id="mmPanelHead"></div><div class="panel-body" id="mmPanelBody"></div></section>
     <input type="file" id="mmFile" accept=".json,application/json,text/plain" class="hidden">
   </div>
-  <div class="mm-version" title="The version of the game you are playing">Version v288.0</div>
+  <div class="mm-version" title="The version of the game you are playing">Version v291.0</div>
 </div>
 
 <!-- (v31 A2, section 7l) the end of the war: the game-over screen (Earth's people are gone) or the victory screen (the aliens' home secured). It lies over
@@ -11356,6 +11356,10 @@ const COUNCIL_LINES = [
   { id: 'c.sec.vadm.praised', key: 'council.min.vadm.praised', who: 'sec', text: "{va}, {fleet}: COMMENDED by the Chief of Staff ({why}).", tags: {}, weight: 1 },
   { id: 'c.sec.vadm.reprimanded', key: 'council.min.vadm.reprimanded', who: 'sec', text: "{va}, {fleet}: REPRIMANDED ({why}).", tags: {}, weight: 1 },
   { id: 'c.sec.vadm.replaced', key: 'council.min.vadm.replaced', who: 'sec', text: "{va} RELIEVED of the {fleet} ({why}) and returned to the rank of Commodore. {successor}{promoted} takes command.", tags: {}, weight: 1 },
+  { id: 'c.sec.admiralty.praised', key: 'council.min.admiralty.praised', who: 'sec', text: "{admiral}: COMMENDED by the Council, {tally} ({why}).", tags: {}, weight: 1 },
+  { id: 'c.sec.admiralty.noted', key: 'council.min.admiralty.noted', who: 'sec', text: "{admiral}: reviewed and BACKED, {tally} ({why}).", tags: {}, weight: 1 },
+  { id: 'c.sec.admiralty.reprimanded', key: 'council.min.admiralty.reprimanded', who: 'sec', text: "{admiral}: REPRIMANDED, {tally} ({why}).{cause} A second bad review means relief.", tags: {}, weight: 1 },
+  { id: 'c.sec.admiralty.replaced', key: 'council.min.admiralty.replaced', who: 'sec', text: "{admiral} RELIEVED of command of the fleet, {tally} ({why}).{cause} {next}", tags: {}, weight: 1 },
   { id: 'c.sec.vadm.noted', key: 'council.min.vadm.noted', who: 'sec', text: "{va}, {fleet}: reviewed, nothing to note ({why}).", tags: {}, weight: 1 },
   { id: 'c.sec.designs', key: 'council.min.designs', who: 'sec', text: "The Chief of Staff names the {designBest} our best design at its work ({designBestRole}); the Industrialist calls the {designWorst} costly for what it does ({designWorstRole}).", tags: {}, weight: 1 },
   { id: 'c.sec.designs.miscast', key: 'council.min.designs.miscast', who: 'sec', text: "The {designMiscast} is noted as used as {designMiscastRole} against its numbers: the Bureau may want to look at how it is used.", tags: {}, weight: 1 }
@@ -13377,6 +13381,9 @@ const SETTINGS = {
                              //   live, the battle step drives the war clock with warHoursPerBattleSecond instead.) No code may assume either ratio.
   campaignLogMax: 2000,      // the campaign's log keeps at most this many lines (the oldest are dropped), so a long campaign stays a bounded size
   officerCarryOver: 1,       // (v167.0, section 10j) 1 = officers in the officer library carry what they earn in a war back into the library by themselves (week ends, battle ends, saves, war's end); 0 = only the star in the Officers screen saves them
+  officerReleaseWeekly: 1,   // (v291.0, section 5l) 1 = once a war week the officers of Divisions and squadrons broken up in the live battle are free for a new command (0 = only when the battle ends, the old way: a long-map battle drafted a new officer for every new command)
+  fleetOfficerSpare: 8,      // (v291.0, 06e) a campaign fleet carries at most one officer per ship plus this many; the rest wait in the home pool (a week-231 save had 8,927 officers riding with 111 ships)
+  rosterSpareKeep: 60,       // (v291.0, 2-5) on loading a war, officers who never fought and sit nowhere are kept up to this many per side and rank; the rest are let go
   campaignAutosave: 1,       // 1 = the campaign is saved to the browser's storage at the end of every war week (and picked up by EW.campaign.restoreAutosave); 0 = never
   // (stop 2: the link between the campaign and the one Mars battle)
   parkLookaheadWeeks: 0.5,    // the Mars battle is parked only when no enemy is in the AO and none is due to reach the Mars edge within this many war weeks
@@ -13439,6 +13446,8 @@ const SETTINGS = {
   aoGarrisonShare: 0.3,      // (v210.0) ... the hand over: an AO we took keeps at least this share of our crossing ships' strength in its Defence Fleet (or coreLoopDefenceRatio times the enemy in and heading for it, if that is more)
   aoForwardStationSpeed: 1.5,   // (v210.0) ... the Advance's forward station (a place it took whose station does not stand yet) is built this many times faster: it comes first
   aoRefitShare: 0.5,         // (v210.0) ... a Defence Fleet under this share of its full strength, in a quiet AO with a standing station, is ordered to Refit
+  aoFrontReserve: 1,         // (v286.0, 06c9) THE ASSAULT FLEET WAITS AT THE FRONT on the long map: while it has no target of its own it moves up to the AO of ours nearest the enemy, or to an AO of ours that is pressed and short of ships (home too), instead of waiting where it was built (0 = the game as v285.0)
+  aoFrontHoldSeconds: 600,   // (v286.0) ... it keeps the AO it waits in at least this long (battle seconds), unless an AO that needs help turns up while that one does not
   placeHoldFollow: 0,        // (v211.0, 15-5m placeHoldFollow) a squadron holding its place in the row at a place that moves (Luna, the moons of Mars) follows it with the order it has; 0 = a new order each time the place has moved half its radius (v209.0)
   aoMobilize: 1,             // (v211.0, 06c8, notes/v211.0/summary.md) MASS MOBILIZATION on the long map: the Admiral may call every Fleet in an AO together for one push at an enemy force no Fleet can meet alone (rare: one at a time, a long wait after). 0 = v210.0
   aoMobilizeOdds: 1.3,       // (v211.0) ... all the AO's Fleets together must be this many times the enemy in and next to the AO (leaned by the Admiral's character, never under 1)
@@ -13629,6 +13638,14 @@ const SETTINGS = {
   longLocalDockWeeks: 5,      //   ... one more for each this many weeks we have held it ...
   longLocalDockPerTier: 3,    //   ... this many more for each development tier above 1 ...
   longLocalDockMax: 16,       //   ... and never more than this at one station
+  longLocalRear: 1,           // (v287.2, Alex 20 Nov: "allow local ships to be built in the rear, but also allow local ships in secured systems to re dock ... and
+                              //   move forward when it makes sense") 1 = a Local design is always built: at our stations in the front region while they have room,
+                              //   else at our stations just behind the front, else at Earth; and each week some Local ships in quiet regions we hold go back into
+                              //   dock there and their docks move up nearer the front (no Alloys either way: the dock's next ship comes out at the new place).
+                              //   0 = as v287.1 (no room at the front: built only when nothing else can take the Alloys; Local docks never move up)
+  longLocalAdvanceShare: 0.1, // ... each week at most this share of the Local docks that could move up do so (the farthest back first) ...
+  longLocalAdvanceMax: 20,    // ... and never more than this many a week
+  longLocalAdvanceWeeks: 1,   // ... a moved dock's ship comes out at its new place after this many weeks (the trip forward)
   // (v277.0, Alex 18 Nov) A DOCK KEEPS ITS OLD SHIP (06f2b). dockHoldModel 1: when a dock changes its design (a new version, a benched or outdated design,
   // a Swarm hatchery combined or split) the ship it has in service stays its ship until lost; only then does the new design come out. 0 = as v276
   // (the dock sent out a new ship at once and the old one fought on for free).
@@ -14161,6 +14178,17 @@ const SETTINGS = {
   // (stop 8: the small War Council, section 5z's council part. It replaces only the executive's weekly priority.)
   campaignCouncil: 1,        // 1 = a new campaign (startFull or startMars, the Menu's New) has the War Council setting the priority; 0 = stop 4's stand-in executive does
   councilSessionWeeks: 4,     // the council sits every this many war weeks (from the first week), and its main effort becomes the executive's priority
+  // (v289.0, Alex 20 Nov, 06h2) THE ADMIRALTY REVIEWS OUR ADMIRAL at every council session, on results (the trade, the ground, an edge not used), and may relieve them.
+  admiraltyReview: 1,        // 1 = on; 0 = the Admiral is never judged on results (the game as v285.0)
+  admiraltyProbationWeeks: 4, // a new Admiral is not reviewed for this many war weeks after taking command
+  admiraltyWindowWeeks: 4,   // a review needs at least this many war weeks since the last one (the council sits every councilSessionWeeks)
+  admiraltySecondStrike: 0.25, // added to the severity when the last review was a reprimand (two bad stretches in a row usually mean relieved)
+  admiraltyEdgeRatio: 1.5,   // "an edge not used": a week with an assault ready and our line at the front at least this many times the enemy's there ...
+  admiraltyEdgeMinShips: 10, //   ... and at least this many ships in our line
+  admiraltyMotionWeight: 0.2, // (v289.1) your motion in the Council Room: a vote of no confidence raises the severity by this much (and the aide votes REPLACE);
+                             //   standing by the Admiral lowers it at the next review (and the aide votes BACK)
+  admiraltyMotionWeeks: 8,   // (v289.1) after a motion, the Council hears no other from the Bureau for this many war weeks
+  admiraltyMotionMinWeeks: 2, // (v289.1) a vote of no confidence needs the Admiral to have commanded at least this many war weeks
   councilEmergency: 1,       // 1 = an emergency session sits at the start of the next week when a place we held is lost, or the sighted threat passes executiveMassRatio x our strength
   // (v31 A1: stations, colonies and population as one model, section 5z's development part, 06n. The tier table, the population rules and the bombardment
   //  numbers are data there (DEV_TIERS, DEV_RULES) and in the hull classes (02c HULL_BOMBARD); these are the few knobs the war's pace reads.)
@@ -14614,6 +14642,18 @@ const SETTINGS = {
   towBoldSwing: 0.4,            // how much boldness stretches (bold) or shortens (careful) those gaps: up to this share either way
   towDangerRadius: 3000,        // no tug is sent to a wreck where the enemy within this distance ...
   towDangerOdds: 1.5,           // ... is stronger than this many times our ships there
+  // (v290.0, section 5jr) REFIT TRIPS: our Vice Admirals send old-version ships with a refit waiting off the line to a repair dock to be rebuilt (0 = v289)
+  refitTrips: 1,
+  refitLookSeconds: 5,          // how often the Vice Admirals look for old-version ships to send
+  refitFleetSeconds: 30,        // a Fleet sends at most one batch this often (bold: sooner; cautious: later; a good Command stat sooner)
+  refitPerLook: 2,              // at most this many ships sent by one Fleet in one look
+  refitMaxShare: 0.1,           // a Fleet keeps its ships away on refit trips under this share of its ships (always at least one; bold more, cautious fewer)
+  refitPressureRadius: 10000,   // the front near the Division: no ship goes while the enemy within this distance of its Division ...
+  refitPressureOdds: 0.8,       // ... is more than this share of our strength there
+  refitDangerRadius: 3000,      // the ship itself: no ship goes while the enemy within this distance of it (or of its station) ...
+  refitDangerOdds: 0.5,         // ... is more than this share of our strength there
+  refitMaxTrip: 81000,          // no ship goes to a station farther than this (one long-map region's width; 0 = any distance)
+  refitBoldSwing: 0.4,          // how much a bold Vice Admiral raises (a cautious one lowers) those odds, the share away and the pace: up to this share either way
   swarmFeeding: 1,              // 1 = a Swarm squadron eats its crippled or badly hurt members (0 = off)
   feedHullBelow: 0.25,          // a Swarm ship below this share of its hull may be eaten (crippled ones always may)
   feedSeconds: 5,               // the eater stops beside its meal this long
@@ -14860,7 +14900,7 @@ const SETTING_MUST_BE_POSITIVE = ['commandThinkRate', 'moonOrbitMinutes', 'moonO
   'serviceLastMax', 'serviceHistoryMax', 'serviceEventsMax', 'recentChangeSeconds', 'dossierLastActions', 'reportOfficerRows', 'dossierChartMinSpan',
   'orbitRateHeadroom', 'orbitMinRate', 'facingLeadFactor', 'interceptMaxLead', 'orbitRangeFraction', 'orbitTurnMargin', 'tightOrbitSizeRatio', 'tightOrbitHulls', 'tightOrbitStraySeconds', 'tightOrbitSpacings', 'tacticMinSeconds', 'chaseGiveUpSeconds', 'noChaseSeconds',
   'shapeEnterFactor', 'shapeExitFactor', 'axisTurnRate'];
-const SETTING_MUST_BE_NON_NEGATIVE = ['dvWingMergeRange', 'dockRepairRefitShare', 'dvWingMergeSeconds', 'rankSwapSeconds', 'noseArcDeg', 'noseNearFactor', 'noseNearMin', 'noseBackSeconds', 'turnRampSeconds', 'quietStepMul', 'quietMinSpeed', 'chainLagSeconds', 'chainSpreadSeconds', 'slowRegrowSeconds', 'slowSporeSteps', 'slowFireMapSteps', 'slowGunRetrySeconds', 'lineRankMinWidth', 'lineRankDepth', 'lineRankRotateAt', 'batteryDepthFactor', 'swarmSpreadWidth', 'swarmSpreadDepth', 'swarmSpreadRejig', 'swarmPressOdds', 'swarmFallBackOdds', 'bombardShieldShare', 'bombardHoldSeconds', 'swarmDockStallCap', 'swarmDockStallQuietShare', 'stationHullMendQuiet', 'alloysNeverIdleNote', 'towJobs', 'towWaitSeconds', 'towFreshSeconds', 'towLookSeconds', 'towFleetSeconds', 'towBoldSwing', 'towDangerRadius', 'towDangerOdds', 'aoMobilizeOdds', 'aoMobilizeBoldSwing', 'aoMobilizeReinSwing', 'aoMobilizeSeconds', 'aoMobilizeLossShare', 'aoMobilizeBeatenShare', 'aoMobilizeOtherShips', 'aoMobilizeEnemySpeed', 'aoMobilizeWaitSeconds', 'aoCharLineSwing', 'aoCharCommandSwing', 'aoCharMovePull', 'aoCharDisciplineSwing', 'aoPostureSeconds', 'aoPostureMinSeconds', 'aoMeetOdds', 'aoOddsOutShare', 'aoFallBackOdds', 'aoBoldLean', 'aoMeetReachSlots', 'aoMeetStandoff', 'aoEngageDist', 'aoGroupDist', 'aoEdgeSlots', 'aoInboundSlots', 'aoRetakeLooseShare', 'aoDangerDist', 'aoRetakeStayShare', 'aoRetakeGatherSeconds', 'aoDefenceSplitShips', 'aoFleetMax', 'aoGarrisonShare', 'aoForwardStationSpeed', 'aoRefitShare', 'divisionOwnerSeconds', 'divisionOwnerFirstSeconds', 'divisionOwnerCountBand', 'divisionOwnerJoinSeconds', 'admiralNeedsLean', 'admiralNeedsReachRatio', 'admiralNeedsDefenceRatio', 'admiralNeedsWorksRatio', 'admiralNeedsPdShare', 'scuttleKillShare', 'scuttleXpCost', 'campaignTidySeconds', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftPressed', 'coreLoopShiftQuiet', 'coreLoopShiftMax', 'coreLoopHiveHoldShare', 'coreLoopAssessSeconds', 'coreLoopAssaultMixShare', 'coreLoopReinSwing', 'coreLoopReserveShare', 'coreLoopStrikeShare', 'coreLoopBoldAbove', 'coreLoopVaSeconds', 'coreLoopVaSlack', 'coreLoopVaWornShare', 'coreLoopDefenceRatio', 'coreLoopFleetHoldSeconds', 'coreLoopDivisionMinShips', 'coreLoopAssaultRatio', 'coreLoopAssaultFloor', 'coreLoopPlaceDefenceWorth', 'placesHomeEdgeBias', 'placesBrokenBonus', 'coreLoopStreamWeeks', 'coreLoopStreamMinShips', 'coreLoopLineKeep', 'coreLoopLineSeconds', 'coreLoopLineLooks', 'coreLoopLineDepth', 'coreLoopLineStep', 'coreLoopLineWindow', 'coreLoopTipRatio', 'coreLoopClearSeconds', 'coreLoopBackSeconds', 'coreLoopHoldSeconds', 'coreLoopBerths', 'divisionMergeSlack', 'swarmNestRetakeKeep', 'swarmGrowWindowWeeks', 'swarmGrowLowLoss', 'swarmGrowHighLoss', 'swarmGrowFromShare', 'swarmGrowStep', 'swarmGrowSmallCut', 'swarmGrowBigGain', 'swarmSpreadWeeks', 'hangarRefillWeeks', 'hangarRestockShare', 'wingMaxTiny', 'wingLaunchRange', 'wingScreenRadius', 'wingStrikeRange', 'wingMaxSmall', 'wingSpread', 'hangarBuildMul', 'swarmMiteRegrowSeconds', 'swarmCraftRegrowSeconds', 'fighterTurnaroundSeconds', 'fighterLaunchSeconds', 'fighterLaunchRange', 'fighterTickSeconds', 'stationFighterGuardRadius', 'droneJamReach', 'droneJamScatterMul', 'droneJamLoseChance', 'dcNoRoomSeconds', 'cmdPaceFormSeconds', 'cmdPaceMinShare', 'cmdPaceLeadSeconds', 'cmdPaceMinMarch', 'divisionSpeedSort', 'divisionSlowBelow', 'divisionFastAbove', 'swarmPaceFormSeconds', 'swarmDrift', 'swarmDivDrift', 'wreckHitShare', 'repairPartsWeeks', 'repairAutoBelow', 'dockQueueWarnSeconds', 'crippledCheckSeconds', 'towSpeedShare', 'towMaxShare', 'towHealthyHull', 'feedHullBelow', 'feedSeconds', 'feedSquadSeconds', 'feedHullShare', 'feedAmmoShare', 'feedGrabRange', 'feedHungryHull', 'feedHungryAmmo', 'feedHatchlingRange', 'swarmInfestTierGain', 'swarmInfestGrowShare', 'swarmInfestStartShare', 'swarmSurfaceInfest', 'swarmBurnPerDps', 'swarmBurnHotMul', 'swarmBurnPerKill', 'swarmRegrowSeconds', 'swarmSporeEvery', 'swarmSporeShotsPer', 'swarmSporeDpsPerInf', 'swarmBileEvery', 'swarmBileFrom', 'swarmBileDpsPerInf', 'swarmConvertCap', 'swarmConvertAimShare', 'swarmConvertFromWeek', 'swarmConvertFullWeek', 'swarmConvertDepthShare', 'swarmConvertWaste', 'facingTwoSidedAngle', 'freshSideHoldSeconds', 'crossTEdge', 'crossTCreepFraction', 'crossTWidth', 'crossTTurnEdge', 'placesPicketSpread', 'placesPicketMove', 'placesPicketMax', 'placesWithdrawGatherSeconds', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerTargetShare', 'ledgerLineMin', 'ledgerLossMargin', 'ledgerSaveFloor', 'ledgerMinLoss', 'ledgerSurplusShare', 'withdrawRatio', 'withdrawHoldWeeks', 'ledgerAssaultWeeks', 'indDevShareSave', 'indDevShareIdle', 'dirPriorityMul', 'resourceHeldShare', 'devGraceWeeks', 'devCapStart', 'devCapAlien', 'devPotShare', 'devIdleWeeks', 'devMaxBuilds', 'bbAcidSeconds', 'bbAcidMaxPatches', 'bbRegrowQuiet', 'bbRegrowHull', 'bbRegrowPlate', 'bbRegrowHeatStop', 'bbBurstTouch', 'bbBurstDeathReach', 'bbBurstSeek', 'bbVolleySpread', 'bbMissileRetries', 'bbPdRoundsPerShot', 'bbPdFlakRounds', 'bbPdReadyRounds', 'bbPdLaserHeat', 'bbRadiatorFoldSeconds', 'bbSideWeight', 'deflectRatio', 'deflectCallSeconds', 'readyRoundsPerGun', 'boostFuEarth', 'boostFuOther', 'boostGrowth', 'alloysEarthStart', 'alloysEarthRampTo', 'alloysEarthRampWeeks', 'alloysGrowth', 'fissilesGrowth', 'alienAlloysStart', 'alienAlloysGrowth', 'alienAlloysPerStep', 'alienBoostPerStep', 'alienNodeLossShare', 'shipUpkeepMaxShare', 'berthIdleWeeks', 'berthBoostWeeks', 'berthMaxGrowth', 'campaignBuildDays', 'campaignLiveEnterShips', 'civilianNoteWeeks', 'leaderNewsCooldown', 'leaderNewsCombatGap', 'stationRebuildYardBonus', 'stationRebuildSecuredBonus', 'stationRebuildNearShare', 'stationRebuildAlloys', 'cmdAttackMaxSeconds', 'cmdPaceGap', 'radioQuietSeconds', 'cmdSummaryMinutes', 'designRemarkSeconds', 'cmdReviewBattles', 'huntMaxShips', 'huntGraceSeconds', 'pursuitFleeingBonus', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'dangerConeSeconds', 'placesAttackStallSeconds', 'campaignAttackStallSeconds', 'campaignStragglerShips', 'campaignStragglerShare', 'campaignStragglerSeconds', 'campaignStandoffSeconds', 'campaignStandoffWeeks', 'campaignRetakeWeeks', 'comebackMassWeeks', 'alienGarrisonCap', 'campaignFallenMax', 'campaignPoolCap', 'campaignGarrisonCap', 'campaignStartOwnShips', 'campaignAlienGarrison', 'campaignAdvanceKeep', 'campaignAdvanceRatio', 'campaignAdvanceTake', 'campaignAdvanceAfterWaves', 'campaignAdvanceHoldWeeks', 'campaignRearKeep', 'campaignFrontMoveMinShips', 'campaignFrontMoveShare', 'executiveMassRatio', 'executiveAssaultRatio', 'executiveAssaultMin', 'campaignPriorityWeight', 'alienShoveWeeks', 'alienGatherRatio', 'alienGatherTarget', 'alienGatherMinShips', 'alienGatherMaxWeeks', 'alienPullBackRatio', 'alienStateHoldWeeks', 'alienFirstPool', 'alienWaveJitter', 'alienWarnWeeks', 'alienWaveBoostWeeks', 'alienTargetWeakest', 'alienTargetMain', 'alienFirstWaveWeek', 'minLaunchShips', 'placesHoldClearOdds', 'campaignYardEvery', 'boostPerMarker', 'campaignRefuelShare', 'capitalBuildShare', 'assaultMaxWaitWeeks', 'repairPerWeek', 'campaignDesignBoostPerMass', 'campaignDesignBuildPerCost', 'campaignDesignAlloysShare', 'campaignDesignWeight', 'placesReachShare', 'placesFailRaise', 'placesContestShare', 'aoSecureShare', 'aoLoseShare', 'siegeBoostTrickle', 'boostFootholdShare', 'siegeGrowthFactor', 'siegeResourceFactor', 'placesReportMinutes', 'placesHysteresis', 'placesMaxOpposite', 'internalChance', 'internalFresh', 'externalCover', 'deepBelowHull', 'dcSeconds', 'blastToHull', 'blastToParts', 'profileNudgeMax', 'profileNudgeTurn', 'profileNudgeFiring', 'reactorWallShare', 'trackSquareCut', 'pressDryValue', 'pressFleetRatio', 'pressOdds', 'pressHealthEdge', 'pressOddsHealthy', 'pressDangerShare', 'pressHitChance', 'pressAfter', 'pressProgress', 'pressHold', 'pressStep', 'pressRingMin', 'lockFormShare', 'looseJitter', 'looseRein', 'lockSettleSeconds', 'lockRein', 'lockBreakHull', 'lockMinShare', 'closeRanksDelay', 'mergeBelow', 'mergeMaxOdds', 'disbandAt', 'stragglerSeconds', 'divisionLeash', 'pursuitBase', 'formBeforeAttack', 'gatherSeconds', 'fallenKeep', 'topUpBelow', 'stagingContactSeconds', 'stagingMaxWait', 'minNewSquadron', 'entryDangerRatio', 'entryCheckFactor', 'entryRetrySeconds', 'rallyInset', 'joinWornBelow', 'survivorEdgeMargin', 'flagKilled', 'flagWounded', 'flagSurviveSwing', 'woundedSkillPenalty', 'woundedBattles', 'replacementDelay', 'handoverSeconds', 'standInSkill', 'pinRenewSeconds', 'divisionTaskMinSeconds', 'rotateWornShare', 'divisionRefuseOdds', 'divisionRallyOdds', 'divisionCounterPressure', 'mainEffortMinOdds', 'mainEffortFreeRein', 'pinRenewFactor', 'supportSeconds', 'supportMaxTravelSeconds', 'divisionTargetBonus', 'localAttackOdds', 'memberCompactShare', 'recruitAxisSpread', 'recruitSkillLow', 'recruitSkillHigh', 'rosterAxisLow', 'rosterAxisHigh', 'skillPerLevel', 'readinessXpPerRepair', 'medalSkillAdd', 'scarShakenBoldness', 'repertoirePull', 'spawnEdgeMargin', 'doctrinePull', 'matchupPull', 'experimentMinSeconds', 'experimentCooldown', 'tacticLearnStep', 'tacticWeightMax', 'exploreLearnBoost', 'spawnBandWidth', 'spawnVerticalMargin', 'shieldRechargeDelay', 'minArmorPassFraction', 'separationStrength',
+const SETTING_MUST_BE_NON_NEGATIVE = ['longLocalAdvanceMax', 'longLocalAdvanceWeeks', 'dvWingMergeRange', 'dockRepairRefitShare', 'dvWingMergeSeconds', 'rankSwapSeconds', 'noseArcDeg', 'noseNearFactor', 'noseNearMin', 'noseBackSeconds', 'turnRampSeconds', 'quietStepMul', 'quietMinSpeed', 'chainLagSeconds', 'chainSpreadSeconds', 'slowRegrowSeconds', 'slowSporeSteps', 'slowFireMapSteps', 'slowGunRetrySeconds', 'lineRankMinWidth', 'lineRankDepth', 'lineRankRotateAt', 'batteryDepthFactor', 'swarmSpreadWidth', 'swarmSpreadDepth', 'swarmSpreadRejig', 'swarmPressOdds', 'swarmFallBackOdds', 'bombardShieldShare', 'bombardHoldSeconds', 'swarmDockStallCap', 'swarmDockStallQuietShare', 'stationHullMendQuiet', 'alloysNeverIdleNote', 'refitTrips', 'refitLookSeconds', 'refitFleetSeconds', 'refitPerLook', 'refitMaxShare', 'refitPressureRadius', 'refitPressureOdds', 'refitDangerRadius', 'refitDangerOdds', 'refitMaxTrip', 'refitBoldSwing', 'towJobs', 'towWaitSeconds', 'towFreshSeconds', 'towLookSeconds', 'towFleetSeconds', 'towBoldSwing', 'towDangerRadius', 'towDangerOdds', 'aoMobilizeOdds', 'aoMobilizeBoldSwing', 'aoMobilizeReinSwing', 'aoMobilizeSeconds', 'aoMobilizeLossShare', 'aoMobilizeBeatenShare', 'aoMobilizeOtherShips', 'aoMobilizeEnemySpeed', 'aoMobilizeWaitSeconds', 'aoCharLineSwing', 'aoCharCommandSwing', 'aoCharMovePull', 'aoCharDisciplineSwing', 'aoPostureSeconds', 'aoPostureMinSeconds', 'aoMeetOdds', 'aoOddsOutShare', 'aoFallBackOdds', 'aoBoldLean', 'aoMeetReachSlots', 'aoMeetStandoff', 'aoEngageDist', 'aoGroupDist', 'aoEdgeSlots', 'aoInboundSlots', 'aoRetakeLooseShare', 'aoDangerDist', 'aoRetakeStayShare', 'aoRetakeGatherSeconds', 'aoDefenceSplitShips', 'aoFleetMax', 'aoGarrisonShare', 'aoForwardStationSpeed', 'aoRefitShare', 'divisionOwnerSeconds', 'divisionOwnerFirstSeconds', 'divisionOwnerCountBand', 'divisionOwnerJoinSeconds', 'admiralNeedsLean', 'admiralNeedsReachRatio', 'admiralNeedsDefenceRatio', 'admiralNeedsWorksRatio', 'admiralNeedsPdShare', 'scuttleKillShare', 'scuttleXpCost', 'campaignTidySeconds', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftPressed', 'coreLoopShiftQuiet', 'coreLoopShiftMax', 'coreLoopHiveHoldShare', 'coreLoopAssessSeconds', 'coreLoopAssaultMixShare', 'coreLoopReinSwing', 'coreLoopReserveShare', 'coreLoopStrikeShare', 'coreLoopBoldAbove', 'coreLoopVaSeconds', 'coreLoopVaSlack', 'coreLoopVaWornShare', 'coreLoopDefenceRatio', 'coreLoopFleetHoldSeconds', 'coreLoopDivisionMinShips', 'coreLoopAssaultRatio', 'coreLoopAssaultFloor', 'coreLoopPlaceDefenceWorth', 'placesHomeEdgeBias', 'placesBrokenBonus', 'coreLoopStreamWeeks', 'coreLoopStreamMinShips', 'coreLoopLineKeep', 'coreLoopLineSeconds', 'coreLoopLineLooks', 'coreLoopLineDepth', 'coreLoopLineStep', 'coreLoopLineWindow', 'coreLoopTipRatio', 'coreLoopClearSeconds', 'coreLoopBackSeconds', 'coreLoopHoldSeconds', 'coreLoopBerths', 'divisionMergeSlack', 'swarmNestRetakeKeep', 'swarmGrowWindowWeeks', 'swarmGrowLowLoss', 'swarmGrowHighLoss', 'swarmGrowFromShare', 'swarmGrowStep', 'swarmGrowSmallCut', 'swarmGrowBigGain', 'swarmSpreadWeeks', 'hangarRefillWeeks', 'hangarRestockShare', 'wingMaxTiny', 'wingLaunchRange', 'wingScreenRadius', 'wingStrikeRange', 'wingMaxSmall', 'wingSpread', 'hangarBuildMul', 'swarmMiteRegrowSeconds', 'swarmCraftRegrowSeconds', 'fighterTurnaroundSeconds', 'fighterLaunchSeconds', 'fighterLaunchRange', 'fighterTickSeconds', 'stationFighterGuardRadius', 'droneJamReach', 'droneJamScatterMul', 'droneJamLoseChance', 'dcNoRoomSeconds', 'cmdPaceFormSeconds', 'cmdPaceMinShare', 'cmdPaceLeadSeconds', 'cmdPaceMinMarch', 'divisionSpeedSort', 'divisionSlowBelow', 'divisionFastAbove', 'swarmPaceFormSeconds', 'swarmDrift', 'swarmDivDrift', 'wreckHitShare', 'repairPartsWeeks', 'repairAutoBelow', 'dockQueueWarnSeconds', 'crippledCheckSeconds', 'towSpeedShare', 'towMaxShare', 'towHealthyHull', 'feedHullBelow', 'feedSeconds', 'feedSquadSeconds', 'feedHullShare', 'feedAmmoShare', 'feedGrabRange', 'feedHungryHull', 'feedHungryAmmo', 'feedHatchlingRange', 'swarmInfestTierGain', 'swarmInfestGrowShare', 'swarmInfestStartShare', 'swarmSurfaceInfest', 'swarmBurnPerDps', 'swarmBurnHotMul', 'swarmBurnPerKill', 'swarmRegrowSeconds', 'swarmSporeEvery', 'swarmSporeShotsPer', 'swarmSporeDpsPerInf', 'swarmBileEvery', 'swarmBileFrom', 'swarmBileDpsPerInf', 'swarmConvertCap', 'swarmConvertAimShare', 'swarmConvertFromWeek', 'swarmConvertFullWeek', 'swarmConvertDepthShare', 'swarmConvertWaste', 'facingTwoSidedAngle', 'freshSideHoldSeconds', 'crossTEdge', 'crossTCreepFraction', 'crossTWidth', 'crossTTurnEdge', 'placesPicketSpread', 'placesPicketMove', 'placesPicketMax', 'placesWithdrawGatherSeconds', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerTargetShare', 'ledgerLineMin', 'ledgerLossMargin', 'ledgerSaveFloor', 'ledgerMinLoss', 'ledgerSurplusShare', 'withdrawRatio', 'withdrawHoldWeeks', 'ledgerAssaultWeeks', 'indDevShareSave', 'indDevShareIdle', 'dirPriorityMul', 'resourceHeldShare', 'devGraceWeeks', 'devCapStart', 'devCapAlien', 'devPotShare', 'devIdleWeeks', 'devMaxBuilds', 'bbAcidSeconds', 'bbAcidMaxPatches', 'bbRegrowQuiet', 'bbRegrowHull', 'bbRegrowPlate', 'bbRegrowHeatStop', 'bbBurstTouch', 'bbBurstDeathReach', 'bbBurstSeek', 'bbVolleySpread', 'bbMissileRetries', 'bbPdRoundsPerShot', 'bbPdFlakRounds', 'bbPdReadyRounds', 'bbPdLaserHeat', 'bbRadiatorFoldSeconds', 'bbSideWeight', 'deflectRatio', 'deflectCallSeconds', 'readyRoundsPerGun', 'boostFuEarth', 'boostFuOther', 'boostGrowth', 'alloysEarthStart', 'alloysEarthRampTo', 'alloysEarthRampWeeks', 'alloysGrowth', 'fissilesGrowth', 'alienAlloysStart', 'alienAlloysGrowth', 'alienAlloysPerStep', 'alienBoostPerStep', 'alienNodeLossShare', 'shipUpkeepMaxShare', 'berthIdleWeeks', 'berthBoostWeeks', 'berthMaxGrowth', 'campaignBuildDays', 'campaignLiveEnterShips', 'civilianNoteWeeks', 'leaderNewsCooldown', 'leaderNewsCombatGap', 'stationRebuildYardBonus', 'stationRebuildSecuredBonus', 'stationRebuildNearShare', 'stationRebuildAlloys', 'cmdAttackMaxSeconds', 'cmdPaceGap', 'radioQuietSeconds', 'cmdSummaryMinutes', 'designRemarkSeconds', 'cmdReviewBattles', 'huntMaxShips', 'huntGraceSeconds', 'pursuitFleeingBonus', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'dangerConeSeconds', 'placesAttackStallSeconds', 'campaignAttackStallSeconds', 'campaignStragglerShips', 'campaignStragglerShare', 'campaignStragglerSeconds', 'campaignStandoffSeconds', 'campaignStandoffWeeks', 'campaignRetakeWeeks', 'comebackMassWeeks', 'alienGarrisonCap', 'campaignFallenMax', 'campaignPoolCap', 'campaignGarrisonCap', 'campaignStartOwnShips', 'campaignAlienGarrison', 'campaignAdvanceKeep', 'campaignAdvanceRatio', 'campaignAdvanceTake', 'campaignAdvanceAfterWaves', 'campaignAdvanceHoldWeeks', 'campaignRearKeep', 'campaignFrontMoveMinShips', 'campaignFrontMoveShare', 'executiveMassRatio', 'executiveAssaultRatio', 'executiveAssaultMin', 'campaignPriorityWeight', 'alienShoveWeeks', 'alienGatherRatio', 'alienGatherTarget', 'alienGatherMinShips', 'alienGatherMaxWeeks', 'alienPullBackRatio', 'alienStateHoldWeeks', 'alienFirstPool', 'alienWaveJitter', 'alienWarnWeeks', 'alienWaveBoostWeeks', 'alienTargetWeakest', 'alienTargetMain', 'alienFirstWaveWeek', 'minLaunchShips', 'placesHoldClearOdds', 'campaignYardEvery', 'boostPerMarker', 'campaignRefuelShare', 'capitalBuildShare', 'assaultMaxWaitWeeks', 'repairPerWeek', 'campaignDesignBoostPerMass', 'campaignDesignBuildPerCost', 'campaignDesignAlloysShare', 'campaignDesignWeight', 'placesReachShare', 'placesFailRaise', 'placesContestShare', 'aoSecureShare', 'aoLoseShare', 'siegeBoostTrickle', 'boostFootholdShare', 'siegeGrowthFactor', 'siegeResourceFactor', 'placesReportMinutes', 'placesHysteresis', 'placesMaxOpposite', 'internalChance', 'internalFresh', 'externalCover', 'deepBelowHull', 'dcSeconds', 'blastToHull', 'blastToParts', 'profileNudgeMax', 'profileNudgeTurn', 'profileNudgeFiring', 'reactorWallShare', 'trackSquareCut', 'pressDryValue', 'pressFleetRatio', 'pressOdds', 'pressHealthEdge', 'pressOddsHealthy', 'pressDangerShare', 'pressHitChance', 'pressAfter', 'pressProgress', 'pressHold', 'pressStep', 'pressRingMin', 'lockFormShare', 'looseJitter', 'looseRein', 'lockSettleSeconds', 'lockRein', 'lockBreakHull', 'lockMinShare', 'closeRanksDelay', 'mergeBelow', 'mergeMaxOdds', 'disbandAt', 'stragglerSeconds', 'divisionLeash', 'pursuitBase', 'formBeforeAttack', 'gatherSeconds', 'fallenKeep', 'topUpBelow', 'stagingContactSeconds', 'stagingMaxWait', 'minNewSquadron', 'entryDangerRatio', 'entryCheckFactor', 'entryRetrySeconds', 'rallyInset', 'joinWornBelow', 'survivorEdgeMargin', 'flagKilled', 'flagWounded', 'flagSurviveSwing', 'woundedSkillPenalty', 'woundedBattles', 'replacementDelay', 'handoverSeconds', 'standInSkill', 'pinRenewSeconds', 'divisionTaskMinSeconds', 'rotateWornShare', 'divisionRefuseOdds', 'divisionRallyOdds', 'divisionCounterPressure', 'mainEffortMinOdds', 'mainEffortFreeRein', 'pinRenewFactor', 'supportSeconds', 'supportMaxTravelSeconds', 'divisionTargetBonus', 'localAttackOdds', 'memberCompactShare', 'recruitAxisSpread', 'recruitSkillLow', 'recruitSkillHigh', 'rosterAxisLow', 'rosterAxisHigh', 'skillPerLevel', 'readinessXpPerRepair', 'medalSkillAdd', 'scarShakenBoldness', 'repertoirePull', 'spawnEdgeMargin', 'doctrinePull', 'matchupPull', 'experimentMinSeconds', 'experimentCooldown', 'tacticLearnStep', 'tacticWeightMax', 'exploreLearnBoost', 'spawnBandWidth', 'spawnVerticalMargin', 'shieldRechargeDelay', 'minArmorPassFraction', 'separationStrength',
   'separationMaxStepFraction', 'reengageMinGap', 'kiteEnterFactor', 'kiteExitFactor', 'kiteBackSpeed', 'debugMaxLines', 'formationHoldFraction', 'formationPaceMin',
   'formationBreakAngle', 'formationBreakSeconds', 'formationPassBend', 'leaderCloserMin', 'escortHoldFraction', 'escortStandOff', 'flankMarginFactor', 'flankAlong', 'flankContactFactor', 'flankArriveFactor', 'flankMapMarginFactor',
   'shotLengthSizes', 'minShipScreenPixels', 'maxTriangleShips', 'defaultReengage', 'defaultSeed',
@@ -14882,7 +14922,7 @@ const SETTING_WHOLE_NUMBERS = ['slowSporeSteps', 'slowFireMapSteps', 'lineRanks'
   'reportSquadronRows', 'reportPacketRows', 'reinforceMaxSquadrons', 'flankMaxSquadrons', 'counterMaxSquadrons', 'withdrawSamples', 'versionLogMax', 'serviceLastMax', 'serviceHistoryMax', 'serviceEventsMax', 'dossierLastActions', 'reportOfficerRows',
   'movementModel', 'hitModel', 'tacticsModel', 'flightAssist', 'retreatFiring', 'simultaneousFire', 'officerModel', 'strengthMapSteps', 'oddsCellsPerRadius', 'oddsMaxCells', 'maxRouts', 'maxBreakOffs', 'overheatFallback', 'smartTargetCandidates'];
 // The switches (section 1b, "The rules in force"): the values each may have, and the names the code uses for them.
-const SETTING_CHOICES = { dvWingModel: [0, 1], noseModel: [0, 1], rankSwap: [0, 1], devourerGrab: [0, 1], killRecordModel: [0, 1], priorityTargetModel: [0, 1], badMatchModel: [0, 1], acidMortar: [0, 1], frenzyGland: [0, 1], lsBayRule: [0, 1], lsFrenzy: [0, 1], biteModel: [0, 1], lsMixModel: [0, 1], sizeHitModel: [0, 1], calmLookSkipAsleep: [0, 1], gunPace: [0, 1], alienLoopsByArrival: [0, 1], quietSteps: [0, 1], sleepLockedSquads: [0, 1], commandPace: [0, 1], placesByX: [0, 1], slowClock: [0, 1], lineRanks: [0, 1], swarmSpread: [0, 1], longSolarReach: [0, 1], longDockModel: [0, 1], swarmLine: [0, 1], warValves: [0, 1], bombardShield: [0, 1, 2], stationCrewWithStation: [0, 1], placeHoldFollow: [0, 1], aoMobilize: [0, 1], aoCharacter: [0, 1], aoAdmiral: [0, 1], cmdFormMoves: [0, 1], orderMovesObeyed: [0, 1], huntDetach: [0, 1], cmdStatLeans: [0, 1], huntDetachWhole: [0, 1], aoPostures: [0, 1], divisionOwner: [0, 1], admiralNeedsModel: [0, 1], longMapLine: [0, 1], cmdFormRealSize: [0, 1], cmdCapShare: [0, 1], cmdCapLongGuns: [0, 1], moonOrbits: [0, 1], dockModel: [0, 1], dockHoldModel: [0, 1], dockRepairRefit: [0, 1], dockSpareModel: [0, 1], dockSpareSwarm: [0, 1], scuttleOnLedger: [0, 1], swarmDockModel: [0, 1], dockEvoModel: [0, 1], dockEvoSwarmSplit: [0, 1], matchupsInPlay: [0, 1], calmShips: [0, 1], cmRenderParts: [0, 1], simBudgetModel: [0, 1], simKeepPace: [0, 1], closeWarmAll: [0, 1], closeKeepPictures: [0, 1], allyShoveOff: [0, 1], allyNudge: [0, 1], divisionSpots: [0, 1], divisionSpotsInFight: [0, 1], campaignSensors: [0, 1], showBoost: [0, 1], coreLoop: [0, 1], coreLoopLine: [0, 1], coreLoopFleetCommand: [0, 1], coreLoopFleetDivisions: [0, 1], coreLoopRecompose: [0, 1], coreLoopAlienCommand: [0, 1], divisionMergeSmall: [0, 1], mergeFarOutOfContact: [0, 1], berthPairingModel: [0, 1], swarmNestModel: [0, 1], swarmGrowUpModel: [0, 1], swarmOpeningSpread: [0, 1], swarmLifeModel: [0, 1], swarmSurfaceModel: [0, 1], swarmEatsEnemies: [0, 1], swarmEatsHatchlings: [0, 1], fighterHangarModel: [0, 1], fighterLaunchModel: [0, 1], hangarRefillFromFleet: [0, 1], hangarRestock: [0, 1], wingModel: [0, 1], wingAirGroups: [0, 1], hangarRefillFree: [0, 1], swarmCarrierRegrow: [0, 1], hangarOrphansStay: [0, 1], tenderDocking: [0, 1], supplyRuns: [0, 1], cargoKept: [0, 1], ferryRuns: [0, 1], stationFighterGuard: [0, 1], stationNoSquadron: [0, 1], stationCrewSquad: [0, 1], stationPass: [0, 1], droneJamModel: [0, 1], divisionPaceModel: [0, 1], swarmFormations: [0, 1], facingVsTarget: [0, 1], facingTwoSided: [0, 1], freshSide: [0, 1], crossT: [0, 1], facingDodge: [0, 1], placesPicket: [0, 1], placesPicketSwarm: [0, 1], campaignStandoffPark: [0, 1], placesWithdrawOrder: [0, 1], placesWithdrawGuardDry: [0, 1], campaignLiveYardDawn: [0, 1], longMapReach: [0, 1], longMapLeash: [0, 1], longMapFog: [0, 1], sleepShips: [0, 1, 2], campaignResourceGate: [0, 1], bbAcid: [0, 1], bbRegrow: [0, 1], bbBurst: [0, 1], bbMissileStoreBySize: [0, 1], bbBeams: [0, 1], bbHeatModel: [0, 1], bbMissiles: [0, 1], bbPointDefence: [0, 1], bbLineOfFire: [0, 1], tightOrbit: [0, 1], campaignStartAtEarth: [0, 1], placesCrush: [0, 1], placesMassAttack: [0, 1], assaultSendAll: [0, 1], assaultReachOnly: [0, 1], frontReachOnly: [0, 1], placesNoLeapfrog: [0, 1], placesClaimKeeps: [0, 1], enemyWaitTurnBack: [0, 1], placesClaimFirm: [0, 1], placesSwarmPress: [0, 1], campaignSupplyLine: [0, 1], commandModel: [0, 1], stationRebuild: [0, 1], stationHullMend: [0, 1], cmdHelpMarches: [0, 1], cmdOpCommit: [0, 1, 2], cmdPassThrough: [0, 1, 2], orgScale: [0, 1], campaignLateAdmiral: [0, 1], campaignStartKit: [0, 1], placesFacilityApart: [0, 1], campaignFacilityApart: [0, 1], placesHoldClear: [0, 1], campaignHoldClear: [0, 1], campaignModel: [0, 1], officerCarryOver: [0, 1], campaignAutosave: [0, 1], placesRetry: [0, 1], placesSweep: [0, 1], placesDecisive: [0, 1], siegeYardSlowdown: [0, 1], placesModel: [0, 1], placesAllowAbandon: [0, 1], placesTheatre: [0, 1], designModel: [0, 1, 2], bureauBattle: [0, 1], moduleDamage: [0, 1], pressModel: [0, 1], partLossCall: [0, 1], survivalModel: [0, 1], allowAbandon: [0, 1], weaponModel: [0, 1], formationModel: [0, 1], lockStep: [0, 1], reorgModel: [0, 1], movementModel: [0, 1], hitModel: [0, 1, 2], tacticsModel: [0, 1], flightAssist: [0, 1], retreatFiring: [0, 1], overheatFallback: [0, 1], newSetupDefaults: [0, 1], unmannedRearGuard: [0, 1], simultaneousFire: [0, 1], officerModel: [0, 1], promoteNeedsVacancy: [0, 1], divisionTier: [0, 1], successionMode: [0, 1, 2], stagingModel: [0, 1] };
+const SETTING_CHOICES = { longLocalRear: [0, 1], dvWingModel: [0, 1], noseModel: [0, 1], rankSwap: [0, 1], devourerGrab: [0, 1], killRecordModel: [0, 1], priorityTargetModel: [0, 1], badMatchModel: [0, 1], acidMortar: [0, 1], frenzyGland: [0, 1], lsBayRule: [0, 1], lsFrenzy: [0, 1], biteModel: [0, 1], lsMixModel: [0, 1], sizeHitModel: [0, 1], calmLookSkipAsleep: [0, 1], gunPace: [0, 1], alienLoopsByArrival: [0, 1], quietSteps: [0, 1], sleepLockedSquads: [0, 1], commandPace: [0, 1], placesByX: [0, 1], slowClock: [0, 1], lineRanks: [0, 1], swarmSpread: [0, 1], longSolarReach: [0, 1], longDockModel: [0, 1], swarmLine: [0, 1], warValves: [0, 1], bombardShield: [0, 1, 2], stationCrewWithStation: [0, 1], placeHoldFollow: [0, 1], aoMobilize: [0, 1], aoCharacter: [0, 1], aoAdmiral: [0, 1], cmdFormMoves: [0, 1], orderMovesObeyed: [0, 1], huntDetach: [0, 1], cmdStatLeans: [0, 1], huntDetachWhole: [0, 1], aoPostures: [0, 1], divisionOwner: [0, 1], admiralNeedsModel: [0, 1], longMapLine: [0, 1], cmdFormRealSize: [0, 1], cmdCapShare: [0, 1], cmdCapLongGuns: [0, 1], moonOrbits: [0, 1], dockModel: [0, 1], dockHoldModel: [0, 1], dockRepairRefit: [0, 1], refitTrips: [0, 1], dockSpareModel: [0, 1], dockSpareSwarm: [0, 1], scuttleOnLedger: [0, 1], swarmDockModel: [0, 1], dockEvoModel: [0, 1], dockEvoSwarmSplit: [0, 1], matchupsInPlay: [0, 1], calmShips: [0, 1], cmRenderParts: [0, 1], simBudgetModel: [0, 1], simKeepPace: [0, 1], closeWarmAll: [0, 1], closeKeepPictures: [0, 1], allyShoveOff: [0, 1], allyNudge: [0, 1], divisionSpots: [0, 1], divisionSpotsInFight: [0, 1], campaignSensors: [0, 1], showBoost: [0, 1], coreLoop: [0, 1], coreLoopLine: [0, 1], coreLoopFleetCommand: [0, 1], coreLoopFleetDivisions: [0, 1], coreLoopRecompose: [0, 1], coreLoopAlienCommand: [0, 1], divisionMergeSmall: [0, 1], mergeFarOutOfContact: [0, 1], berthPairingModel: [0, 1], swarmNestModel: [0, 1], swarmGrowUpModel: [0, 1], swarmOpeningSpread: [0, 1], swarmLifeModel: [0, 1], swarmSurfaceModel: [0, 1], swarmEatsEnemies: [0, 1], swarmEatsHatchlings: [0, 1], fighterHangarModel: [0, 1], fighterLaunchModel: [0, 1], hangarRefillFromFleet: [0, 1], hangarRestock: [0, 1], wingModel: [0, 1], wingAirGroups: [0, 1], hangarRefillFree: [0, 1], swarmCarrierRegrow: [0, 1], hangarOrphansStay: [0, 1], tenderDocking: [0, 1], supplyRuns: [0, 1], cargoKept: [0, 1], ferryRuns: [0, 1], stationFighterGuard: [0, 1], stationNoSquadron: [0, 1], stationCrewSquad: [0, 1], stationPass: [0, 1], droneJamModel: [0, 1], divisionPaceModel: [0, 1], swarmFormations: [0, 1], facingVsTarget: [0, 1], facingTwoSided: [0, 1], freshSide: [0, 1], crossT: [0, 1], facingDodge: [0, 1], placesPicket: [0, 1], placesPicketSwarm: [0, 1], campaignStandoffPark: [0, 1], placesWithdrawOrder: [0, 1], placesWithdrawGuardDry: [0, 1], campaignLiveYardDawn: [0, 1], longMapReach: [0, 1], longMapLeash: [0, 1], longMapFog: [0, 1], sleepShips: [0, 1, 2], campaignResourceGate: [0, 1], bbAcid: [0, 1], bbRegrow: [0, 1], bbBurst: [0, 1], bbMissileStoreBySize: [0, 1], bbBeams: [0, 1], bbHeatModel: [0, 1], bbMissiles: [0, 1], bbPointDefence: [0, 1], bbLineOfFire: [0, 1], tightOrbit: [0, 1], campaignStartAtEarth: [0, 1], placesCrush: [0, 1], placesMassAttack: [0, 1], assaultSendAll: [0, 1], assaultReachOnly: [0, 1], frontReachOnly: [0, 1], placesNoLeapfrog: [0, 1], placesClaimKeeps: [0, 1], enemyWaitTurnBack: [0, 1], placesClaimFirm: [0, 1], placesSwarmPress: [0, 1], campaignSupplyLine: [0, 1], commandModel: [0, 1], stationRebuild: [0, 1], stationHullMend: [0, 1], cmdHelpMarches: [0, 1], cmdOpCommit: [0, 1, 2], cmdPassThrough: [0, 1, 2], orgScale: [0, 1], campaignLateAdmiral: [0, 1], campaignStartKit: [0, 1], placesFacilityApart: [0, 1], campaignFacilityApart: [0, 1], placesHoldClear: [0, 1], campaignHoldClear: [0, 1], campaignModel: [0, 1], officerCarryOver: [0, 1], campaignAutosave: [0, 1], placesRetry: [0, 1], placesSweep: [0, 1], placesDecisive: [0, 1], siegeYardSlowdown: [0, 1], placesModel: [0, 1], placesAllowAbandon: [0, 1], placesTheatre: [0, 1], designModel: [0, 1, 2], bureauBattle: [0, 1], moduleDamage: [0, 1], pressModel: [0, 1], partLossCall: [0, 1], survivalModel: [0, 1], allowAbandon: [0, 1], weaponModel: [0, 1], formationModel: [0, 1], lockStep: [0, 1], reorgModel: [0, 1], movementModel: [0, 1], hitModel: [0, 1, 2], tacticsModel: [0, 1], flightAssist: [0, 1], retreatFiring: [0, 1], overheatFallback: [0, 1], newSetupDefaults: [0, 1], unmannedRearGuard: [0, 1], simultaneousFire: [0, 1], officerModel: [0, 1], promoteNeedsVacancy: [0, 1], divisionTier: [0, 1], successionMode: [0, 1, 2], stagingModel: [0, 1] };
 // Rule switches that an imported file may lack: a missing one is read as 0 (the file was made before the rule existed), not as this version's default (stage 12).
 const SETTING_SWITCHES_OLD_FILES = ['commandModel', 'orgScale', 'movementModel', 'hitModel', 'tacticsModel', 'newSetupDefaults', 'simultaneousFire', 'officerModel', 'divisionTier', 'stagingModel', 'reorgModel', 'formationModel', 'lockStep', 'weaponModel', 'survivalModel', 'designModel', 'moduleDamage', 'pressModel', 'placesModel'];
 const MOVE_CLASSIC = 0, MOVE_THRUST = 1;
@@ -14890,7 +14930,7 @@ const HIT_ALWAYS = 0, HIT_ROLL = 1, HIT_EXPECTED = 2;
 const TACTICS_CLASSIC = 0, TACTICS_SMART = 1;
 const ASSIST_SOFT = 0, ASSIST_HARD = 1;
 const RETREAT_FIRE_NONE = 0, RETREAT_FIRE_BEARING = 1;
-const SETTING_FRACTIONS = ['rankSwapAt', 'rankSwapFresh', 'rankSwapGap', 'lineRankRotateAt', 'bombardShieldShare', 'swarmDockStallQuietShare', 'allyNudgeDeep', 'facingTieShare', 'freshSideShare', 'freshSideShareAlways', 'freshSideArmour', 'placesPicketShare', 'bbAcidAblativeShare', 'bbRegrowHull', 'bbRegrowPlate', 'bbEnergyPlateEffect', 'bbFocusPerTick', 'bbBeamFullShare', 'bbBeamMinPower', 'bbHeatHitShare', 'bbRadiatorFoldShare', 'bbPdStopCap', 'bbFlakSmallBonus', 'bbMinArmorPass', 'piercingArmourShare', 'blastNeighbourShare', 'falloffBandBar', 'tightOrbitReach', 'cmdPassSoftPush', 'cmdGiveUpLossShare', 'cmdGiveUpOdds', 'cmdHelpOdds', 'cmdWithdrawRatio', 'cmdPlacesReach', 'moraleRallyAt', 'moraleCarryOver', 'moraleFleetWithdrawShare', 'moraleAbandonAt', 'cmdRearToughShare', 'cmdRotateBelow', 'cmdStrikeLossShare', 'cmdBoundFactor', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'cmdSplitMain', 'cmdSplitSecond', 'cmdSplitThird', 'cmdSplitRaid', 'cmdFleetWornShare', 'alienWaveJitter', 'alienGatherRatio', 'alienPullBackRatio', 'alienTargetWeakest', 'alienTargetMain', 'capitalBuildShare', 'placesReachShare', 'placesContestShare', 'rotateWornShare', 'mainEffortFreeRein', 'repertoireSwapLow', 'repertoireSwapHigh', 'repertoireKeepDoctrineAbove', 'centripetalUse', 'exploreChance', 'orbitSpeedFraction', 'lineCreepFraction', 'sidestepFraction', 'faceSideGunShare', 'standoffMinShare', 'ringTieBand', 'impatienceCreep', 'anchorBetterFactor', 'routCaution', 'fallbackCalmFraction', 'fallbackBackMargin', 'minHitChance', 'maxHitChance', 'assumedEvasion', 'effectiveHitChance', 'spawnEdgeMargin', 'spawnBandWidth', 'spawnVerticalMargin', 'minArmorPassFraction', 'separationStrength', 'formationHoldFraction', 'flankAlong',
+const SETTING_FRACTIONS = ['longLocalAdvanceShare', 'rankSwapAt', 'rankSwapFresh', 'rankSwapGap', 'lineRankRotateAt', 'bombardShieldShare', 'swarmDockStallQuietShare', 'allyNudgeDeep', 'facingTieShare', 'freshSideShare', 'freshSideShareAlways', 'freshSideArmour', 'placesPicketShare', 'bbAcidAblativeShare', 'bbRegrowHull', 'bbRegrowPlate', 'bbEnergyPlateEffect', 'bbFocusPerTick', 'bbBeamFullShare', 'bbBeamMinPower', 'bbHeatHitShare', 'bbRadiatorFoldShare', 'bbPdStopCap', 'bbFlakSmallBonus', 'bbMinArmorPass', 'piercingArmourShare', 'blastNeighbourShare', 'falloffBandBar', 'tightOrbitReach', 'cmdPassSoftPush', 'cmdGiveUpLossShare', 'cmdGiveUpOdds', 'cmdHelpOdds', 'cmdWithdrawRatio', 'cmdPlacesReach', 'moraleRallyAt', 'moraleCarryOver', 'moraleFleetWithdrawShare', 'moraleAbandonAt', 'cmdRearToughShare', 'cmdRotateBelow', 'cmdStrikeLossShare', 'cmdBoundFactor', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'cmdSplitMain', 'cmdSplitSecond', 'cmdSplitThird', 'cmdSplitRaid', 'cmdFleetWornShare', 'alienWaveJitter', 'alienGatherRatio', 'alienPullBackRatio', 'alienTargetWeakest', 'alienTargetMain', 'capitalBuildShare', 'placesReachShare', 'placesContestShare', 'rotateWornShare', 'mainEffortFreeRein', 'repertoireSwapLow', 'repertoireSwapHigh', 'repertoireKeepDoctrineAbove', 'centripetalUse', 'exploreChance', 'orbitSpeedFraction', 'lineCreepFraction', 'sidestepFraction', 'faceSideGunShare', 'standoffMinShare', 'ringTieBand', 'impatienceCreep', 'anchorBetterFactor', 'routCaution', 'fallbackCalmFraction', 'fallbackBackMargin', 'minHitChance', 'maxHitChance', 'assumedEvasion', 'effectiveHitChance', 'spawnEdgeMargin', 'spawnBandWidth', 'spawnVerticalMargin', 'minArmorPassFraction', 'separationStrength', 'formationHoldFraction', 'flankAlong',
   'lineMaxGapFraction', 'roleHeavyNorm', 'roleFastNorm', 'reserveMaxDepthFraction', 'arrivalEdgeMargin', 'arrivalEdgeHeight', 'repairForwardSetback',
   'learningSoftZone', 'learningMaxRoomShare', 'learningMinWindow', 'learningMinActivity', 'adaptabilityMin', 'successScore', 'notableScore', 'objectiveMinShare'];   // normally 0 to 1 (a warning, not an error, outside)
 
@@ -16647,8 +16687,8 @@ function officerNameClash(name, used) {
 function nextRecruitName(side, rank) {
   const used = {};
   for (let k = 0; k < OFFICER_ROSTER.length; k++) used[OFFICER_ROSTER[k].name] = true;
-  const names = OFFICER_NAMES[side] || OFFICER_NAMES[0];
-  for (let k = 0; k < names.length; k++) if (!officerNameClash(names[k], used)) return names[k];
+  const names = OFFICER_NAMES[side] || OFFICER_NAMES[0], keys = officerNameKeys(used);   // (v291.0) keys made once: one quick look per name
+  for (let k = 0; k < names.length; k++) if (!keys.has(officerNameKey(names[k]))) return names[k];
   return randomOfficerName(side, rank || '', 0x5eed, OFFICER_ROSTER.length, used);
 }
 // A recruit: random axes within 0.5 +/- recruitAxisSpread and skills between recruitSkillLow and recruitSkillHigh, all from officerRand (section 3), with the given rank.
@@ -16691,8 +16731,11 @@ const ALIEN_NAME_WORDS = ['Drift', 'Ember', 'Spire', 'Coil', 'Rend', 'Veil', 'Hu
 function officerNameRand(seed, n) { return hash32((seed >>> 0) ^ Math.imul(n + 1, 0x9E3779B1) ^ 0x2c1b3c6d) / 4294967296; }
 function officerNamePick(list, seed, n) { return list[Math.floor(officerNameRand(seed, n) * list.length) % list.length]; }
 // A random name for an officer of a side and rank that no record in `used` has. count: where in the seed's run of numbers to start.
+// (v291.0) The names in `used` are turned into their keys once (officerNameKeys, section 2-5), so each try is one quick look; when the 400 tries find
+// nothing free (the pools are nearly full in a long war), the endless name book (section 2-5) gives a free name from a bigger space: a
+// double-barrelled surname for us, a longer designation for an alien. Before, the last resort was "Officer 1837": numerals, and some twice.
 function randomOfficerName(side, rank, seed, count, used) {
-  const tier = rankTier(rank);
+  const tier = rankTier(rank), keys = officerNameKeys(used);
   for (let tries = 0; tries < 400; tries++) {
     const n = count * 256 + tries * 4;
     let name;
@@ -16701,9 +16744,9 @@ function randomOfficerName(side, rank, seed, count, used) {
       const word = tier === 'fleet' || tier === 'nfleet' ? 'Overseer' : (tier === 'division' ? 'Warden' : officerNamePick(ALIEN_NAME_WORDS, seed, n + 2));
       name = ALIEN_NAME_LETTERS[Math.floor(officerNameRand(seed, n) * ALIEN_NAME_LETTERS.length) % ALIEN_NAME_LETTERS.length] + '-' + (1 + Math.floor(officerNameRand(seed, n + 1) * 9) % 9) + ' ' + word;
     }
-    if (!officerNameClash(name, used)) return name;                // (v56) a surname may come twice, never with the same first initial
+    if (!keys.has(officerNameKey(name))) return name;               // (v56) a surname may come twice, never with the same first initial
   }
-  return 'Officer ' + (count + 1);
+  return endlessOfficerName(side, rank, seed, count, keys) || 'Officer ' + (count + 1);   // (the book always finds one; the old words are only a guard)
 }
 let officerNameSeedNext = null;                    // the name seed the next campaignStart puts on its campaign (set by the Menu's New campaign), or null: none
 // The name seed of the running campaign, or null when names are the old fixed ones.
@@ -17047,6 +17090,150 @@ function makeDefaultSetup() {
 function engageOptions() { return Object.keys(SETTINGS.engageFractions); }
 // (rebuildTypeTables() is run for the first time at the end of section 3, once the lists it fills have been created.)
 
+// =====================================================================
+// 2-5. (v291.0, Alex 20 Nov: "there was reports of running out of officer names, running out of swarm IDs, etc. we need to handle that")
+// THE ENDLESS NAME BOOK: one shared way for every part of the game that hands out names or call signs, so none of them can ever run out,
+// however long the war goes on (a campaign runs 500 weeks and more).
+//
+// Before, each name maker had its own small pool and its own way of giving up when the pool was full:
+//   - human officers: 76 first names x 83 surnames, but the naming rule (never the same first initial with the same surname) allows only
+//     26 x 83 = 2,158 officers; after that every recruit was called "Officer 1837" and so on (numerals, and some twice);
+//   - Swarm officers: letter-digit-word designations ("K-8 Drift"): 7,776 for squadron officers but only 216 Wardens (commodores) and
+//     216 Overseers (admirals), then "Officer 13001" again;
+//   - Sylph pilots: 20 names, then "Sylph 21";
+//   - our squadrons' call signs: 48 words x 9 numbers in one battle, then the same call sign twice (a long-map battle never ends).
+//
+// How it works now. Every kind of name is a list of LEVELS, each a bigger space of names than the one before, without end:
+//   human officers   level 0 "Thea Mercer", level 1 "Thea Mercer-Holm", level 2 "Thea Mercer-Holm-Park" ... (a double-barrelled surname: no numerals)
+//   Swarm officers   level 0 "K-8 Drift", level 1 "K-48 Drift", level 2 "K-482 Drift" ... (a longer designation)
+//   Sylph pilots     level 0 is the 20 names, level 1 "Ilien Sorale", level 2 "Ilien Sorale Oriel" ... (more given names)
+//   call signs       level 0 "IRON CHOIR 3", level 1 "IRON CHOIR 37", level 2 "IRON CHOIR 371" ...
+// endlessPick walks the levels from the smallest and, within a level, visits every name of it once in a scrambled order that depends on
+// a seed (so the same seed always gives the same names, and nearby numbers do not give look-alike names). The first name the caller says is
+// free is taken. A level is only left when every name in it is taken, so the short names are used first and a new name is always found.
+// Each name maker keeps its old first choice (the same names as before for a seed) and only asks the book when that fails.
+// =====================================================================
+
+// A step through 0..size-1 that visits every number once: a big prime that does not divide size.
+const ENDLESS_STRIDES = [104729, 1299709, 15485863, 7919, 611953];
+function endlessStride(size) {
+  const gcd = function (a, b) { while (b) { const t = a % b; a = b; b = t; } return a; };
+  for (const p of ENDLESS_STRIDES) if (gcd(p % size || size, size) === 1) return p % size || 1;
+  return 1;
+}
+// kind = { size(level) -> how many names that level holds (0 = none), at(level, i) -> the i-th name of that level (or '' to skip it) }.
+// seed and start pick where in each level the walk begins. isFree(name) -> true when the name may be used.
+// Returns a name; it always finds one (each level is bigger than the last). maxLevels is only a guard.
+function endlessPick(kind, seed, start, isFree, maxLevels) {
+  const top = maxLevels || 8;
+  for (let level = 0; level < top; level++) {
+    const size = Math.floor(kind.size(level));
+    if (!(size > 0)) continue;
+    const stride = endlessStride(size), off = hash32(((seed >>> 0) ^ Math.imul((start | 0) + 1, 0x9E3779B1) ^ Math.imul(level + 1, 0x85EBCA6B)) >>> 0) % size;
+    for (let k = 0; k < size; k++) {
+      const name = kind.at(level, (off + k * stride) % size);
+      if (name && isFree(name)) return name;
+    }
+  }
+  return '';
+}
+// The i-th way of writing `count` parts from a list (a mixed-radix number): [list[a], list[b], ...]. Two same parts side by side give null.
+function endlessParts(list, count, i) {
+  const out = [];
+  for (let k = 0; k < count; k++) { const p = list[i % list.length]; i = Math.floor(i / list.length); if (out.length && out[out.length - 1] === p) return null; out.push(p); }
+  return out;
+}
+
+// ---- The kinds of names ----
+// A human officer: first name + surname; each level adds a surname to the double-barrelled name.
+const ENDLESS_HUMAN = {
+  size: function (level) { return OFFICER_FIRST_NAMES.length * Math.pow(OFFICER_SURNAMES.length, level + 1); },
+  at: function (level, i) {
+    const first = OFFICER_FIRST_NAMES[i % OFFICER_FIRST_NAMES.length];
+    const sur = endlessParts(OFFICER_SURNAMES, level + 1, Math.floor(i / OFFICER_FIRST_NAMES.length));
+    return sur ? first + ' ' + sur.join('-') : '';
+  }
+};
+// An alien officer of a rank: letter, number, word (Overseer for an admiral, Warden for a commodore); each level adds a digit to the number.
+function endlessAlienKind(rank) {
+  const tier = rankTier(rank || '');
+  const words = tier === 'fleet' || tier === 'nfleet' ? ['Overseer'] : (tier === 'division' ? ['Warden'] : ALIEN_NAME_WORDS);
+  const numbers = function (level) { return 9 * Math.pow(10, level); };       // 1-9, then 10-99, 100-999 ...
+  return {
+    size: function (level) { return ALIEN_NAME_LETTERS.length * numbers(level) * words.length; },
+    at: function (level, i) {
+      const L = ALIEN_NAME_LETTERS.length, n = numbers(level);
+      const letter = ALIEN_NAME_LETTERS[i % L], num = Math.pow(10, level) + Math.floor(i / L) % n, word = words[Math.floor(i / (L * n)) % words.length];
+      return letter + '-' + num + ' ' + word;
+    }
+  };
+}
+// A Sylph pilot: level 0 is the one-word names, then two, three ... given names.
+const ENDLESS_SYLPH = {
+  size: function (level) { return Math.pow(SYLPH_NAMES.length, level + 1); },
+  at: function (level, i) { const p = endlessParts(SYLPH_NAMES, level + 1, i); return p ? p.join(' ') : ''; }
+};
+// One of our squadrons' call signs: a word and a number; each level adds a digit to the number.
+const ENDLESS_CALL_SIGN = {
+  size: function (level) { return CALL_SIGN_WORDS.length * 9 * Math.pow(10, level); },
+  at: function (level, i) { const W = CALL_SIGN_WORDS.length; return (CALL_SIGN_WORDS[i % W] + ' ' + (Math.pow(10, level) + Math.floor(i / W))).toUpperCase(); }
+};
+
+// ---- Officers: the naming rule, made quick ----
+// The keys (section 2-4 officerNameKey: "C. Kovac") of every name in `used` (an object whose keys are names), so a name is checked in one step.
+function officerNameKeys(used) { const keys = new Set(); for (const u in used) keys.add(officerNameKey(u)); return keys; }
+// A free officer name of a side and rank from the book (used when the quick random draw of randomOfficerName finds nothing free).
+function endlessOfficerName(side, rank, seed, count, keys) {
+  const kind = side === 0 ? ENDLESS_HUMAN : endlessAlienKind(rank);
+  return endlessPick(kind, seed, count, function (name) { return !keys.has(officerNameKey(name)); });
+}
+// (v291.0) An old save may hold officers named by the old last resort ("Officer 1837", numerals, sometimes twice) or two officers whose names break
+// the naming rule: each such officer after the first gets a fresh name from the book. The war's name seed is used when it has one. Returns how many.
+function rosterRepairNames(list, seed) {
+  if (!Array.isArray(list)) return 0;
+  const keys = new Set(), redo = [];
+  for (let k = 0; k < list.length; k++) {
+    const r = list[k];
+    if (!r || typeof r.name !== 'string') continue;
+    const key = officerNameKey(r.name);
+    if (/^Officer \d+$/.test(r.name) || keys.has(key)) { redo.push(k); continue; }
+    keys.add(key);
+  }
+  for (const k of redo) {
+    const r = list[k], name = endlessOfficerName(r.side === 1 ? 1 : 0, r.rank, typeof seed === 'number' ? seed : 0x5eed, k, keys);
+    if (!name) continue;
+    r.name = name; keys.add(officerNameKey(name));
+  }
+  return redo.length;
+}
+// (v291.0) LETTING GO OF OFFICERS WHO NEVER SERVED. Before v291.0 the long map's endless battle drafted a new officer every time a Division or squadron
+// was formed, and never gave back the officer of one that was broken up, so a long Swarm war piled up thousands of officers who never fought
+// (a week-231 save held 12,655 Swarm commodores; the save was 11 MB). On loading, the officers of a side and rank who never fought (no battles, no
+// experience, no medals), sit in no fleet and are named nowhere in the war are let go, keeping the first `keep` of each side and rank as a spare pool.
+// Returns how many were let go. A fresh war never has that many spare officers of one rank, so it loses none.
+function rosterPruneIdle(data, keep) {
+  if (!data || !Array.isArray(data.roster) || !data.campaign) return 0;
+  const spare = Math.max(1, Math.floor(keep || 60));
+  const named = new Set(), text = JSON.stringify(data.campaign), re = /"([A-Z]{2}-\d{4,})"/g;
+  let m;
+  while ((m = re.exec(text)) !== null) named.add(m[1]);
+  const plain = { id: 1, side: 1, name: 1, rank: 1, status: 1, woundedUntil: 1, posting: 1, axes: 1, skills: 1, xp: 1, xpBy: 1, repertoire: 1, medals: 1, scars: 1, learned: 1, service: 1, formLean: 1 };   // (formLean: a Commodore's small formation habit; one who never fought loses little)
+  const kept = {}, out = [];
+  let gone = 0;
+  for (const r of data.roster) {
+    const idle = r && typeof r.id === 'string' && (r.status === 'active' || r.status === 'reserve') && !named.has(r.id) && !(+r.xp > 0)
+      && (!r.service || (!(r.service.battles > 0) && !(r.service.history && r.service.history.length))) && !(r.medals && r.medals.length) && !(r.scars && r.scars.length)
+      && Object.keys(r).every(function (key) { return plain[key]; });        // (an officer with anything more, a library officer for one, is always kept)
+    if (idle) {
+      const key = r.side + ':' + r.rank;
+      kept[key] = (kept[key] || 0) + 1;
+      if (kept[key] > spare) { gone++; continue; }
+    }
+    out.push(r);
+  }
+  if (gone > 0) data.roster = out;
+  return gone;
+}
 // ---------------------------------------------------------------------
 // 2m. PARTS AND FRAMES  (the Design Bureau's catalogue, v20: the designer rework)
 //     Read only by the new designer (SETTINGS.designModel 1, sections 10b and 10c) and by the designs it saves. The old 12 x 8 designer (designModel 0)
@@ -36817,6 +37004,7 @@ function aoDivisions(a, th, live, ao, forLook) {
     if (dv.coreRole !== 'line' && dv.coreRole !== 'assault') continue;
     if (aoOfDivision(th, dv) !== ao.id) continue;
     if (aoAdmiralOn(a.side) && aoFallingBack(dv)) continue;                                      // (06c7: on its way back within fuel reach after a forward station fell)
+    if (aoFrontReserveOn(a.side) && aoMovingUp(dv)) continue;                                   // (v286.0, 06c9: on its way to the AO the Assault Fleet waits in; no line on the way takes it)
     // (v210.0, 06c7) the Assault Fleet taking this AO follows the Advance, not the AO's line ... but with no Defence Fleet here yet it is the only
     // defence of what it took: it is counted in the look (even on its way to the next place), and stands as the AO's line while the enemy presses
     if (dv.coreRole === 'assault' && adv) { if (own === 0 && (forLook || ao.posture !== 'advance')) line.push(dv); continue; }
@@ -37090,7 +37278,9 @@ function aoStep(a, th, v, live, offer) {
   if (look) aoLook(a, th, live);
   if (adm) aoMobStep(a, th, live, look);                                                         // (v211.0, 06c8) a mass mobilization: called on a look, ended as soon as its time is up
   if (adm) aoAdvanceStep(a, th, v, live);                                                       // (v210.0, 06c7) the War Council's Take order, the Advance and its forward stations
+  if (aoFrontReserveOn(a.side) && S.list.size > 0) aoFrontReserveStep(a, th, v);                // (v286.0, 06c9) a waiting Assault Fleet moves up to the front, or to the AO that needs help
   const taken = new Set();
+  if (aoFrontReserveOn(a.side)) for (const dv of live) if (aoMovingUp(dv)) taken.add(dv);        // (v286.0) on its way there: the old place rules leave it alone too
   S.list.forEach(function (ao) {
     if (ao.posture === '') return;
     const D = aoDivisions(a, th, live, ao);
@@ -37417,8 +37607,16 @@ function aoGarrisonStep(a, th, live, A, sqs) {
       r.F = to; have += r.strength; moved++; ships += sqAlive[r.sq];
     }
     if (moved > 0) {
-      logEvent(side, 'The Admiral hands the ' + aoPlain(ao.name) + ' over: ' + plural(moved, 'squadron') + ' (' + plural(ships, 'ship') + ') of the ' + A.name + ' stay as the ' + to.name + ' to hold it.');
-      aoDispatch('Fleet Command', 'The ' + aoPlain(ao.name) + ' is handed over', 'The Assault Fleet hands the ' + aoPlain(ao.name) + ' over to the ' + to.name + ': ' + plural(ships, 'ship') + ' stay to hold it. The rest go on when the War Council orders the next AO.', 'handover:' + ao.id);
+      // ((v286.0) the hand over is said ONCE for an AO. Every later top-up (the AO's Defence Fleet worn down below its need while the enemy presses it)
+      // is a reinforcement, said in the log only: a playtester got "The Mars AO is handed over" in the Dispatches every week of a long siege, and read it
+      // as the AO changing hands.)
+      const T = aoTheatreRec();
+      if (!T.handed || typeof T.handed !== 'object') T.handed = {};
+      if (T.handed[ao.id] === undefined) {
+        T.handed[ao.id] = Math.round(campaign.week * 1000) / 1000;
+        logEvent(side, 'The Admiral hands the ' + aoPlain(ao.name) + ' over: ' + plural(moved, 'squadron') + ' (' + plural(ships, 'ship') + ') of the ' + A.name + ' stay as the ' + to.name + ' to hold it.');
+        aoDispatch('Fleet Command', 'The ' + aoPlain(ao.name) + ' is handed over', 'The Assault Fleet hands the ' + aoPlain(ao.name) + ' over to the ' + to.name + ': ' + plural(ships, 'ship') + ' stay to hold it. The rest go on when the War Council orders the next AO.', 'handover:' + ao.id);
+      } else logEvent(side, 'The Admiral reinforces the ' + to.name + ' with ' + plural(moved, 'squadron') + ' (' + plural(ships, 'ship') + ') of the ' + A.name + ': the ' + aoPlain(ao.name) + ' needs ' + Math.round(need) + ' strength to hold against the enemy there and now has ' + Math.round(have) + '.');
     }
   });
 }
@@ -37792,11 +37990,12 @@ function aoFleetOrders(a, th) {
       else if (adv.state === 'done' && S.list.get(adv.ao) && aoFleetsIn(side, adv.ao).length === 0) aoOrderGive(a, F, 'handover', 'the ' + name, adv.ao, -1);
       else {
         // waiting: behind the line of the AO most of it stands in; in the line when that line is pressed
-        const ao = aoAssaultHomeAo(a, th, F);
+        // ((v286.0, 06c9) or of the AO the Admiral picked for it from the whole map: the front, or the AO that asks for help)
+        const ao = (aoFrontReserveOn(side) ? aoFrontAo(th) : null) || aoAssaultHomeAo(a, th, F);
         if (!ao) continue;
         const defs = aoFleetsIn(side, ao.id), top = ao.top >= 0 ? battlePlaces[ao.top].name : aoPlain(ao.name);
         if (ao.mob && ao.mob.on) aoOrderGive(a, F, 'support', 'the push in the ' + aoPlain(ao.name) + ' under ' + ao.mob.leadName, ao.id, ao.top);
-        else if (ao.line && ao.line.posture === 'committed') aoOrderGive(a, F, 'support', 'the ' + (defs.length > 0 ? defs[0].name : 'line') + ' in the ' + aoPlain(ao.name), ao.id, ao.top);
+        else if ((ao.line && ao.line.posture === 'committed') || (aoFrontReserveOn(side) && th.front && th.front.ao === ao.id && th.front.why === 'help')) aoOrderGive(a, F, 'support', 'the ' + (defs.length > 0 ? defs[0].name : 'line') + ' in the ' + aoPlain(ao.name), ao.id, ao.top);
         else aoOrderGive(a, F, 'reserve', top, ao.id, ao.top);
       }
     }
@@ -38103,6 +38302,125 @@ const AO_MOB_MOVES = ['line_advance', 'pin_and_turn', 'guard_goes_in', 'pursuit'
 function aoMobBarsMove(F, row) {
   const a = admirals[F.side], th = a && a.theatre ? a.theatre : null;
   return !!th && aoMobFrozen(th, F) && AO_MOB_MOVES.indexOf(row.id) < 0;
+}
+// =====================================================================
+// 5x9. THE ASSAULT FLEET WAITS AT THE FRONT, AND GOES WHERE HELP IS NEEDED  (v286.0, SETTINGS.aoFrontReserve 1: on the long map, our side; 0 = v285.0)
+//
+//   A playtester (forwarded by Alex, 20 Nov 2026): "Earth fleets need better priority, they're bad to the point of it being tilting"; "advancing fleets
+//   don't move to the front line, even if it's seemingly safe ... I literally have to just wait for Mars to fall so that my Earth constructions will
+//   reinforce the AO". Alex's rule: fix the cause, not the symptom.
+//
+//   THE CAUSE. Since v207.0 every AO where we hold a place owns the Divisions that stand in it (06c6 aoDivisions): the Defence Fleets stand on its line,
+//   and the Assault Fleet stands in reserve behind that line. That is right for an AO's own defence, but it also meant that NOTHING ever sent ships
+//   from one AO of ours to another. The v189.0 rule that moved idle Divisions from the rear up to the front (06c3 longMoveUp) only sees the Divisions
+//   the AO step leaves over, so once AOs had postures it never saw a ship standing at Earth again. And a new ship is built at Earth's yard, so:
+//     * the ships that can make the crossing all report to the Assault Fleet (06e part 6), and while the Assault Fleet has no target of its own (no
+//       Take order, not yet strong enough for its next place, halted for fuel, or its AO just taken) it waited "behind the line of the AO it is in"
+//       (06c7 aoAssaultHomeAo): at Earth, where it was built;
+//     * when a forward AO such as Mars was pressed, its line "asked for help", but only an Assault Fleet already standing IN that AO could answer.
+//   So the new ships sat at a quiet Earth while Mars fell, and only fought once the enemy came to Earth.
+//   (Ships with no transfer at all, Local ships, still cannot leave their own AO: their fuel does not reach the next one. That is the fuel rule, not
+//   this; they are the Defence Fleet of the AO they are built in.)
+//
+//   WHAT THIS DOES. While the Assault Fleet is WAITING (the Advance has no target it is going for: 06c7 states none, wait, halt or done, and no mass
+//   mobilization), the Admiral picks ONE AO of ours for it to wait in, from the whole map, each look:
+//     1. HELP FIRST. An AO of ours that is pressed (its line closing in or falling back, or weaker than the enemy in it and heading for it) and whose
+//        line is short of coreLoopDefenceRatio x that enemy: the one shortest of ships. Home is one of these too, so a raid on Earth brings it back.
+//     2. ELSE THE FRONT. The AO of ours nearest the enemy's places: where the next fight will be, and where the Advance starts from.
+//   Only an AO with a standing station or peopled colony of ours (a fuel anchor) can be picked, and a Division is only sent there when its fuel reaches
+//   (06c theatreReachOk). The pick is kept at least aoFrontHoldSeconds, unless an AO that needs help turns up while the one it waits in does not.
+//   The Assault Fleet's Divisions in other AOs then MOVE UP to the picked AO's main place ("move up"); on the way no AO's line takes them (aoMovingUp),
+//   and once there they stand in reserve behind its line, go into it when it is pressed (06c6 aoAssaultPosture), and may be handed to its Defence Fleet
+//   when it is short (06c7 aoGarrisonStep). New ships that can cross join the Assault Fleet by flying to its nearest Division (06c5 vaOwnJoinTarget),
+//   so they now go straight to the front. Its standing order says where it waits ("Reserve behind the line at Mars", or "Support the Mars Defence
+//   Fleet" when that AO is pressed), and one log line says each move ("Admiral: the Assault Fleet moves up to Mars ...").
+//   With aoFrontReserve 0, or off the long map, nothing here runs. Check: tools/v286.0/front-reserve-check.js.
+// =====================================================================
+
+function aoFrontReserveOn(side) { return SETTINGS.aoFrontReserve === 1 && aoAdmiralOn(side); }
+// The front-reserve notes on the Admiral's theatre state: { ao, since, why }.
+function aoFrontOf(th) { if (!th.front) th.front = { ao: '', since: -Infinity, why: '' }; return th.front; }
+// Is the Assault Fleet waiting (the Advance has nothing it is going for)?
+function aoFrontWaiting(th) {
+  const adv = aoAdvOf(th), s = adv.state;
+  if (th.mob && th.mob.on) return false;
+  return s === 'none' || s === 'wait' || s === 'halt' || s === 'done';
+}
+// How much an AO's line is short of what the enemy in it and heading for it calls for (0 when it is not).
+function aoFrontShort(ao) { return Math.max(0, Math.max(0, SETTINGS.coreLoopDefenceRatio) * (ao.theirs || 0) - (ao.lineS || 0)); }
+// Is the AO pressed (06c6 aoAssaultPosture's own test, without the "no line" case)?
+function aoFrontPressed(ao) { return ao.posture === 'close' || ao.posture === 'fallback' || ((ao.theirs || 0) > 0 && (ao.lineS || 0) < ao.theirs); }
+// Does the AO have a fuel anchor of ours (a standing station, or our people)?
+function aoFrontAnchored(side, ao) {
+  const anchors = theatreAnchors(side);
+  for (const k of ao.places) if (anchors.indexOf(k) >= 0) return true;
+  return false;
+}
+// How far the AO's main place is from the nearest place the enemy holds (Infinity when it holds none).
+function aoFrontEnemyDist(side, ao) {
+  const P = battlePlaces[ao.top];
+  let d = Infinity;
+  for (const p of battlePlaces) if (p.owner === 1 - side) d = Math.min(d, longMapFuelDist(side, p.x, p.y, P.x, P.y));
+  return d;
+}
+// THE PICK: { ao, why: 'help' | 'front' }, or null when no AO of ours can be picked.
+function aoFrontPick(a, th) {
+  const side = a.side, S = aoStateOf(th), cands = [];
+  S.list.forEach(function (ao) { if (ao.top >= 0 && ao.posture !== '' && aoFrontAnchored(side, ao)) cands.push(ao); });
+  if (cands.length === 0) return null;
+  let help = null;
+  for (const ao of cands) if (aoFrontPressed(ao) && aoFrontShort(ao) > 0 && (help === null || aoFrontShort(ao) > aoFrontShort(help))) help = ao;
+  if (help !== null) return { ao: help, why: 'help' };
+  let front = null, bestD = Infinity;
+  for (const ao of cands) { const d = aoFrontEnemyDist(side, ao); if (front === null || d < bestD) { bestD = d; front = ao; } }
+  return { ao: front, why: 'front' };
+}
+// Is this Division on its way to the AO the Assault Fleet waits in (so no AO's line on the way takes it)? Clears itself when it has arrived, or when
+// some other order has sent it elsewhere.
+function aoMovingUp(dv) {
+  if (!(dv.aoUpTo >= 0)) return false;
+  if (dv.dissolved || dv.place !== dv.aoUpTo || dv.coreRole !== 'assault' || divisionAliveSquads(dv).length === 0) { dv.aoUpTo = -1; return false; }
+  if (vaOwnAoOf(divisionCentre(dv).x) === aoOfPlace(dv.aoUpTo)) { dv.aoUpTo = -1; return false; }
+  return true;
+}
+// The AO the Assault Fleet waits in now (06c7 aoFleetOrders reads it for its standing order), or null.
+function aoFrontAo(th) {
+  if (!th.front || th.front.ao === '' || !aoFrontWaiting(th)) return null;
+  return aoStateOf(th).list.get(th.front.ao) || null;
+}
+// THE STEP (from 06c6 aoStep, after the look and the Advance).
+function aoFrontReserveStep(a, th, v) {
+  const side = a.side, R = aoFrontOf(th), S = aoStateOf(th);
+  if (!aoFrontWaiting(th)) { R.ao = ''; return; }                                              // (the Advance has its Divisions: it moves them itself)
+  const pick = aoFrontPick(a, th);
+  if (pick === null) { R.ao = ''; return; }
+  let choose = pick;
+  const cur = R.ao !== '' ? S.list.get(R.ao) || null : null;
+  if (cur && cur !== pick.ao && cur.top >= 0 && aoFrontAnchored(side, cur) && simTime - R.since < Math.max(0, SETTINGS.aoFrontHoldSeconds)) {
+    const urgent = pick.why === 'help' && !(aoFrontPressed(cur) && aoFrontShort(cur) > 0);         // (an AO that needs help turns up while ours is quiet: go now)
+    if (!urgent) choose = { ao: cur, why: R.why };
+  }
+  const ao = choose.ao, k = ao.top, P = battlePlaces[k], name = aoPlain(ao.name);
+  const changed = R.ao !== ao.id;
+  if (changed) { R.ao = ao.id; R.since = simTime; R.why = choose.why; }
+  const why = choose.why === 'help'
+    ? 'the ' + name + ' is pressed (' + (isFinite(ao.odds) ? ao.odds.toFixed(2) + ' to 1' : 'no line') + ') and asks for help'
+    : 'the ' + name + ' is the front: the Assault Fleet waits there for its next move';
+  let n = 0, ships = 0;
+  const from = new Set();
+  for (const dv of aoAssaultDivisions(a)) {
+    if (theatreInOp(th, dv) || aoFallingBack(dv) || dv.placeTask === 'fall back') continue;
+    const here = vaOwnAoOf(divisionCentre(dv).x);
+    if (here === ao.id) { if (dv.aoUpTo >= 0) dv.aoUpTo = -1; continue; }                       // (already there: the AO's own line puts it in reserve)
+    if (dv.aoUpTo === k && dv.place === k) continue;                                             // (on its way)
+    if (!theatreReachOk(side, dv, k)) continue;                                                  // (its fuel does not reach: it stays where it is)
+    dv.lineAt = -1; dv.aoBusy = false;
+    if (theatreMove(a, v, dv, k, 'move up to ' + P.name + ': ' + why, 'move up')) {
+      dv.aoUpTo = k; dv.longUpAt = simTime; n++; ships += orgDivisionShips(dv);
+      if (here !== '') from.add(aoPlain(longMapRegionById(here) ? longMapRegionById(here).name : here));
+    }
+  }
+  if (n > 0) logEvent(side, 'Admiral: the Assault Fleet moves up to ' + P.name + ' (' + plural(n, 'Division') + ', ' + plural(ships, 'ship') + (from.size > 0 ? ' from the ' + Array.from(from).join(' and the ') : '') + '): ' + why + '.');
 }
 // =====================================================================
 // 5y. THE AO SECURED, THE SIEGE NUMBERS, THE PERIODIC REPORTS AND THE WAR-ROOM VIEW  (v21 stop 4; on a places map only, section 5w)
@@ -39877,7 +40195,7 @@ function campaignRosterReserve() {
   }
   for (let side = 0; side < 2; side++) {
     let hasAdmiral = false;
-    for (const id in link.entering[side]) { const r = rosterById(id); if (r && rankTier(r.rank) === 'fleet' && (r.status === 'active' || r.status === 'reserve')) hasAdmiral = true; }
+    for (const id in link.entering[side]) { const r = rosterById(id); if (r && rankTier(r.rank) === 'fleet' && !r.relieved && (r.status === 'active' || r.status === 'reserve')) hasAdmiral = true; }   // (v289.0: a relieved Admiral riding along does not count)
     if (!hasAdmiral) continue;
     for (let k = 0; k < OFFICER_ROSTER.length; k++) { const r = OFFICER_ROSTER[k]; if (r.side === side && !link.entering[side][r.id] && !rosterInBattle[r.id]) { rosterInBattle[r.id] = true; link.reservedPool[side].push(r.id); } }
   }
@@ -40630,6 +40948,7 @@ function campaignTakeSnapshot(nextId) {
       b.groups.forEach(function (g) { groups.push({ type: g.type, design: g.design, count: g.count, hull: g.allWhole ? [] : g.hull, shield: g.allWhole ? [] : g.shield, parts: g.anyParts ? g.parts : [], kit: g.anyKit ? g.kit : [], jumps: g.jumps, jumpsMax: g.jumpsMax }); });
       const ships = groups.reduce(function (n, g) { return n + g.count; }, 0);
       const f = campaignCmdFillRecord({ id: 'F' + next++, side: side, groups: groups, officers: b.officers.slice(), at: front, place: b.place, transit: null, edge: side === 0 ? 'west' : 'east', inBattle: false, order: null }, b.no);   // (v25: the Fleet's identity)
+      campaignFleetOfficersTrim(f);                                // (v291.0) no more officers than the fleet can use; the rest go to the home pool
       if (ships === 0) { const home = campaignHomeByEdge(side, f.edge); if (home !== front) { const lane = laneBetween(front, home), weeks = lane ? laneWeeks(lane) : 1; f.at = null; f.place = null; f.transit = { from: front, to: home, departWeek: campaign.week, arriveWeek: campaign.week + weeks, edge: f.edge }; } }
       fleets.push(f);
     });
@@ -40672,6 +40991,22 @@ function campaignShipKitOf(sq, i) {
     if (cg !== null) e.c = cg;
   }
   return e;
+}
+// (v291.0) A campaign fleet carries at most one officer per ship plus SETTINGS.fleetOfficerSpare; the others leave its list and so wait in the home pool
+// (officers in no fleet), where a new fleet or a new command finds them. The officers its ships' kits name and its Vice Admiral always stay, and the
+// first ones on the list (the live commanders when a battle is parked) are kept before the rest. Before, every officer of a long battle was parked into one
+// fleet: a week-231 save had 8,927 Swarm officers riding with 111 ships. Returns how many left the list.
+function campaignFleetOfficersTrim(f) {
+  if (!f || !Array.isArray(f.officers)) return 0;
+  const cap = fleetShipCount(f) + Math.max(0, Math.floor(SETTINGS.fleetOfficerSpare));
+  if (f.officers.length <= cap) return 0;
+  const must = new Set();
+  if (f.viceAdmiral) must.add(f.viceAdmiral);
+  for (const g of f.groups || []) for (const e of campaignKitList(g)) if (e) { if (e.o) must.add(e.o); if (e.c) must.add(e.c); }
+  let room = Math.max(0, cap - f.officers.filter(function (id) { return must.has(id); }).length);
+  const before = f.officers.length;
+  f.officers = f.officers.filter(function (id) { if (must.has(id)) return true; if (room > 0) { room--; return true; } return false; });
+  return before - f.officers.length;
 }
 // The live officer object of a roster id in this battle (for its fallen or wounded flags), or null.
 function campaignLiveOfficer(id) {
@@ -41043,11 +41378,27 @@ function campaignCheckObject(data) {
   campaignCheckDocks(c, messages);                           // (v170.0) the dock economy test's fields (06f2)
   return messages;
 }
+// (v291.0) TIDYING THE OFFICERS OF AN OLD SAVE (long wars before v291.0), in this order: each fleet's officer list is cut to what it can use
+// (campaignFleetOfficersTrim, above), then the officers who never fought and are now named nowhere are let go down to a spare pool (2-5 rosterPruneIdle),
+// then every stand-in or rule-breaking name is replaced from the endless name book (2-5 rosterRepairNames). A save that needs none of it is not changed.
+function campaignRepairOfficers(data) {
+  const out = { trimmed: 0, pruned: 0, names: 0 };
+  if (!data || typeof data !== 'object' || !data.campaign || !Array.isArray(data.roster)) return out;
+  try {                                                        // (a broken save is left for campaignCheckObject to report)
+    if (Array.isArray(data.campaign.fleets)) for (const f of data.campaign.fleets) if (f && !f.inBattle && Array.isArray(f.groups)) out.trimmed += campaignFleetOfficersTrim(f);
+    out.pruned = rosterPruneIdle(data, SETTINGS.rosterSpareKeep);
+    out.names = rosterRepairNames(data.roster, typeof data.campaign.nameSeed === 'number' ? data.campaign.nameSeed : 0x5eed);
+  } catch (e) { console.warn('Officer tidy-up skipped: ' + e.message); }
+  return out;
+}
 // Makes a checked save the running campaign (and its roster the roster). Returns { ok, messages } like the setup screen's import.
 function campaignImportObject(data) {
   const fixedIds = data && typeof data === 'object' && typeof rosterRepairIds === 'function' ? rosterRepairIds(data.roster) : 0;   // (v287.0) repeated officer ids from the old id rule (section 2-4)
+  const tidy = campaignRepairOfficers(data);                    // (v291.0) old saves from long wars: crowded fleets, idle drafts, "Officer 1837" names
   const messages = campaignCheckObject(data);
   if (fixedIds > 0) messages.unshift({ level: 'warn', text: fixedIds + ' officer records shared one id (an old numbering fault); they have been given new ids.' });
+  if (tidy.names > 0) messages.unshift({ level: 'warn', text: tidy.names + ' officers had a stand-in name (like "Officer 1837") or a name that broke the naming rule; they have been given proper names.' });
+  if (tidy.pruned > 0) messages.unshift({ level: 'warn', text: tidy.pruned + ' officers who were drafted but never served or held a post have been let go (an old drafting fault in long battles).' });
   if (messages.some(function (m) { return m.level === 'error'; })) return { ok: false, messages: messages };
   campaignPeekEnd();                                           // (v27.1) a look at a quiet AO ends first
   campaignDropBattle();                                        // (stop 2) a live battle is dropped: the save has its own snapshot
@@ -45737,6 +46088,7 @@ function campaignDockDawn(pot) {
   if (swarmDocksOn()) campaignSwarmDockStall();
   if (dockEvoOn()) { campaignEvoWeek(); campaignEvoBench(); }   // (v172.0) the ledgers decay, poor designs are benched (06f3)
   if (typeof longDockMoveBack === 'function') longDockMoveBack();   // (v237.0) docks caught in the front region move back (06f5)
+  if (typeof longLocalAdvance === 'function') longLocalAdvance();   // (v287.2) Local ships in quiet regions we hold go back into dock and move up nearer the front (06f5)
   const d = campaign.docks, S = SETTINGS, today = Math.floor(campaign.week + 1e-9), list = d.list;
   const mix = swarmDocksOn() ? campaignAlienMix() : null;
   for (let side = 0; side < 2; side++) {
@@ -46835,6 +47187,10 @@ function longLocalPlan(id) {
   if (fc < 0 || fc <= homeCol) plan = { at: 'earth' };
   else {
     for (const f of longLocalFobs()) if (f.have < f.cap && rank <= f.rank) { plan = { at: 'fob', place: f.id }; break; }
+    if (plan.at === 'none' && SETTINGS.longLocalRear === 1) {
+      // (v287.2, Alex) Local designs are always built: no room at the front, so at our stations just behind it (Earth when that is Earth's own region)
+      const near = longLocalNearFront(); plan = near ? { at: 'near', place: near } : { at: 'earth' };
+    }
     if (plan.at === 'none') {
       // nothing else on the yards that could take the Alloys: Earth builds it (no Alloys unused, v205.0)
       // (v287.0) "nothing else" means no other design that can really take them today: one approved but benched, waiting on a resource or with no
@@ -46864,6 +47220,91 @@ function longLocalNearFront() {
     if (key < bestKey - 1e-9) { bestKey = key; best = p.id; }
   }
   return best;
+}
+// ---- (v287.2) Local ships move up ----
+// Alex 20 Nov: "allow local ships in secured systems to re dock, be refunded, and move forward when it makes sense". Once a week (06f2 campaignDockDawn):
+// a Local dock of ours in a region we hold that is quiet (no enemy ships there: not besieged), behind a place nearer the front that has room for it,
+// sends its ship back into dock and moves there. Where to: a station of ours in the front region with room for Local ships (06f5 longLocalFobs), else
+// our stations just behind the front (longLocalNearFront), and only ever forward. The ship goes back into its dock (it leaves the battle; it is not lost
+// and nothing is charged or paid: the dock already paid for it) and the dock's next ship comes out at the new place after longLocalAdvanceWeeks.
+// Paced: at most longLocalAdvanceShare of the docks that could move, longLocalAdvanceMax a week, the farthest back first. A ship in a fight stays.
+function longColAtX(x) {
+  const regs = longMapRegions(), slot = longMapSlotWidth();
+  for (const r of regs) { const left = longMapRegionLeft(r.col); if (x >= left - 0.5 * slot && x <= left + 1.5 * slot) return r.col; }
+  return -1;
+}
+function longLocalAdvance() {
+  if (!longDockOn() || SETTINGS.longLocalRear !== 1) return 0;
+  const fc = longFrontCol();
+  if (fc < 0) return 0;
+  const S = SETTINGS, near = longLocalNearFront(), nearCol = near ? longPlaceCol(near) : -1, fobs = longLocalFobs();
+  const quiet = function (pl) { const st = typeof longRegionStateAt === 'function' ? longRegionStateAt(pl) : null; return !!st && st.securedBy === 0 && !st.besieged; };
+  // the docks that could move up: Local, ours, not holding an old ship, awake, in a quiet region we hold, behind a place that could take them
+  const cand = [];
+  for (const r of campaign.docks.list) {
+    if (r.side !== 0) continue;
+    const info = campaignShipInfo(r.design);
+    if (!info || !info.local || !campaignDockActive(r)) continue;
+    // a dock still holding an older ship (06f2b) moves only when that ship is an older Local one too: it goes back into dock and the new version comes
+    // out at the front; a dock holding a ship that can travel (a frigate whose dock was refitted to a Local design) keeps it
+    let shipId = r.design;
+    if (typeof campaignDockHolding === 'function' && campaignDockHolding(r)) {
+      const ids = Object.keys(r.hold), hi = ids.length === 1 ? campaignShipInfo(ids[0]) : null;
+      if (!hi || !hi.local || Math.abs(r.hold[ids[0]] - 1) > 1e-6) continue;
+      shipId = ids[0];
+    }
+    const col = longPlaceCol(r.place);
+    if (col < 0 || col >= fc || !quiet(r.place)) continue;
+    const rank = berthRank(info.berth || info.sizeClass || 'small');
+    const canFob = fobs.some(function (f) { return f.have < f.cap && rank <= f.rank; });
+    if (!canFob && !(nearCol > col)) continue;
+    cand.push({ r: r, col: col, rank: rank, type: typeIndexById(shipId) });
+  }
+  if (!cand.length) return 0;
+  cand.sort(function (a, b) { return a.col - b.col || a.r.id - b.r.id; });
+  const most = Math.min(Math.max(0, Math.floor(S.longLocalAdvanceMax || 0)), Math.max(1, Math.ceil(cand.length * Math.max(0, S.longLocalAdvanceShare || 0))));
+  const live = typeof campaignBattleLive === 'function' && campaignBattleLive(), used = {}, moved = {};
+  let n = 0;
+  for (const c of cand) {
+    if (n >= most) break;
+    const f = fobs.find(function (q) { return q.have < q.cap && c.rank <= q.rank; });
+    const to = f ? f.id : (nearCol > c.col ? near : '');
+    if (!to || to === c.r.place) continue;
+    // its ship goes back into dock: a living ship of the design in the dock's region, not fighting (none found: the dock just moves)
+    if (live && c.type >= 0) {
+      let pick = -1;
+      for (let i = 0; i < highWater; i++) {
+        if (used[i] || shipAlive[i] !== 1 || shipSide[i] !== 0 || shipType[i] !== c.type || shipRetreating[i] !== 0) continue;
+        if (shipTarget[i] >= 0 || longColAtX(shipX[i]) !== c.col) continue;
+        pick = i; break;
+      }
+      if (pick < 0) continue;                                      // (its ship is busy or elsewhere: it waits for a quieter week)
+      used[pick] = true;
+      longLocalRedockShip(pick);
+      delete c.r.hold;                                             // (its held older ship has gone back into dock: the dock's own design comes out next)
+    } else if (c.r.hold) continue;                                 // (off the battle the held ship cannot be found: it stays)
+    const from = c.r.place;
+    c.r.place = to;
+    c.r.spare = campaign.week + Math.max(0, S.longLocalAdvanceWeeks || 0);
+    if (f) f.have++;
+    const k = from + '>' + to; moved[k] = (moved[k] || 0) + 1; n++;
+  }
+  if (n > 0) {
+    longLocalCache.key = '';
+    campaign.docks.stats.advanced = (campaign.docks.stats.advanced || 0) + n;
+    campaignLog('dock', pluralV3(n, 'Local ship', 'Local ships') + ' went back into dock in quiet regions and moved up nearer the front: ' + Object.keys(moved).map(function (k) { const p = k.split('>'); return moved[k] + ' from ' + campaignLocName(p[0]) + ' to ' + campaignLocName(p[1]); }).join(', ') + '. They come out there in about ' + plural(Math.max(1, Math.round(S.longLocalAdvanceWeeks || 1)), 'week') + '.');
+  }
+  return n;
+}
+// A ship of ours goes back into its dock: it leaves the battle alive and is not counted as lost or as got away (its dock gives the next one out elsewhere).
+function longLocalRedockShip(i) {
+  const side = shipSide[i];
+  if (typeof fgShipGone === 'function') fgShipGone(i);
+  campaignShipOffRecord(i);
+  shipAlive[i] = 0; shipVX[i] = 0; shipVY[i] = 0;
+  shipCount[side]--;
+  removeShipFromCommand(i);
+  freeSlots[freeCount++] = i;
 }
 // (v287.0) Is any approved design that is not Local being built today: on some yard's build list and not waiting on a resource (06r)?
 function longLocalOtherBuilds() {
@@ -47258,6 +47699,7 @@ function campaignExecutiveWeek() {
   const win = campaignLedgerWeek(view);                            // (v31 C1) the Fleet Admiral: the week's row, the window's sums, the feed mode
   campaignIndustrialistWeek();                                    // (v31 C1) the Industrialist: development's share of next week's pot
   campaignDirectorWeek();                                         // (v31 C1) the Director of Research: the design favoured in the resource split
+  if (typeof admiraltyWeek === 'function') admiraltyWeek();       // (v289.0, 06h2) the Council's review of our Admiral, on its own clock (the core loop holds no council sessions)
   let p = null;
   if (coreLoopOn()) {                                             // (v79) the core loop: the council only places markers, and the advance is the battle's own (clear means go, 06e part 4)
     p = campaignExecutivePriority(view);
@@ -48548,7 +48990,7 @@ Object.assign(CAMPAIGN_API, {
 //          * scores every move on the table: the sum of its backers' influence (the members who picked it, and your marker with the Bureau's) x urgency x
 //            feasibility. The highest feasible move is the MAIN EFFORT, the next two feasible ones the SUPPORTING TASKS, the rest DEFERRED (with why);
 //          * judges each Admiral case: each seat votes back, reprimand or replace by how bad things look (a place lost, Mars not secured, no ships saved) against
-//            its own temper; the verdict is the most influence. It is put on record in the minutes (it changes no officer in this slice);
+//            its own temper; the verdict is the most influence. It is put on record in the minutes ((v289.0) a REPLACE now relieves the Admiral in command: 06h2);
 //          * your MARKER: whether the move it backs was adopted (main effort or a supporting task) goes on record (v31 B3: the boost now comes from the
 //            location markers at their AO, every day, not from adoption);
 //          * research: the money as it stands (each seat's research pick and share, from the research engine, 06m: v30 C1) is written down;
@@ -49078,6 +49520,8 @@ function councilSession(view, why) {
   const m = { no: k.session, week: Math.round(c.week * 1000) / 1000, emergency: why.kind, emergencyPlace: why.place || '', emergencyThreat: why.threat || 0, emergencyOurs: why.ours || 0,
               picks: picks, marker: marker, markerPlace: k.player.place, markerBacks: k.player.backs, markerAdopted: adopted, places: copyJson(k.places || {}), main: row(t.main), sup: t.sup.map(row), def: t.def.map(row),
               surveyDeferred: k.surveyDeferred, adm: adm, research: councilResearchSplit(), priority: councilMovePriority(t.main.move) };
+  { const gone = adm.map(admiraltyAbandonCase).filter(function (x) { return x; });   // (v289.0, 06h2) a REPLACE verdict on the Admiral in command now relieves them
+    m.admiralty = gone.length ? gone[0] : admiraltyThisWeek(); }                 // (v289.0) else this week's review on results, if one was held (06h2 admiraltyWeek)
   m.vadm = councilReviewViceAdmirals(view);                        // (v25 stop 5c, section 7r) the Chief of Staff reviews the Vice Admirals (before the split: a replacement keeps the Fleet)
   m.designs = councilDesignNotes();                                // (v25 stop 5c) how our designs are doing, for the minutes
   m.split = councilSplitForces(view, why.kind ? 'emergency' : '');   // (v25) the Chief of Staff's split of the forces at the front into Fleets (null: nothing to split)
@@ -49222,6 +49666,291 @@ Object.assign(CAMPAIGN_API, {
   councilMoves: function () { return councilMoves().map(function (id) { return { id: id, name: councilMoveName(id), spot: councilMoveSpot(id), priority: councilMovePriority(id) }; }); },
   councilTestAbandon: function (admiral, ships) { return councilTestAbandon(admiral || 'Adm. Test', ships); }   // (stop 8, for tests) as if our Admiral abandoned the field at a park
 });
+// =====================================================================
+// 5z (continued). THE ADMIRALTY REVIEWS OUR ADMIRAL  (v289.0, Alex 20 Nov; SETTINGS.admiraltyReview)
+//   Since v285.0 every new war deals the built-in officers a fresh character, so Earth's Admiral may be cautious, reckless or anything between.
+//   Alex: "if we are going to have random admirals, we will need a way for the admiralty to change out who's commanding, if their personality is
+//   detrimental". The player still gives no orders: the War Council decides.
+//   WHAT IT DOES. Every councilSessionWeeks war weeks (06g campaignExecutiveWeek calls admiraltyWeek; the core loop holds no council sessions, so the
+//   review keeps its own clock) the Council judges Earth's Admiral (the one commanding the fleet now) on RESULTS,
+//   never on the personality itself:
+//     * the EXCHANGE: worth of enemy ships destroyed against worth of ours lost since the last review;
+//     * the GROUND: how many long-map regions our front moved forward (or back) since the last review;
+//     * an EDGE NOT USED: war weeks where Command's ledger said an assault was ready AND our line at the front out-weighed the enemy there by
+//       admiraltyEdgeRatio, while the front did not move forward (a commander who sits on a winning hand).
+//   The figures give a score; the score gives a SEVERITY (0 to 1), raised by admiraltySecondStrike when the last review was already a reprimand.
+//   Each seat votes by its own temper (COUNCIL_MEMBERS.temper, the same rule as the abandoned-field cases in 06h): back, reprimand or replace;
+//   the most influence wins (a tie goes to the milder verdict). A clear good stretch with the Council backing is a COMMENDATION.
+//   A new Admiral is not reviewed until admiraltyProbationWeeks after taking command; a review needs admiraltyWindowWeeks since the last one.
+//   RELIEVED: the Admiral keeps the rank but is marked rec.relieved and is never drawn as Admiral again while anyone else can be (07 officerFromRoster).
+//   THE SUCCESSOR: the first free Admiral of the roster (the built-in spare), else the most experienced free Vice Admiral (promoted), else a new
+//   Admiral from the academy (a recruit). In a live battle the successor arrives by shuttle and takes over through the usual handover (18 setCommander);
+//   while parked, the successor takes the old Admiral's place in the campaign fleets.
+//   The abandoned-field cases (06h councilJudge) now mean it too: a REPLACE verdict on the Admiral now in command relieves them the same way.
+//   The minutes keep the row (m.admiralty), the record keeps service.reviews, the campaign log says it, and a Dispatch tells the player (30b).
+//   The minutes may name a LIKELY CAUSE in the Admiral's character, only when the figures point at it (the evidence rule, 00e): an unused edge with a
+//   Cautious or Tight-rein Admiral, heavy losses with a Bold one. Nothing here draws a random number or changes how any Admiral fights.
+//   Check: tools/v289.0/admiralty-check.js.
+// =====================================================================
+
+SETTING_WHOLE_NUMBERS.push('admiraltyReview');
+SETTING_CHOICES.admiraltyReview = [0, 1];
+SETTING_MUST_BE_POSITIVE.push('admiraltyWindowWeeks', 'admiraltyEdgeRatio');
+SETTING_MUST_BE_NON_NEGATIVE.push('admiraltyProbationWeeks', 'admiraltySecondStrike', 'admiraltyEdgeMinShips', 'admiraltyMotionWeight', 'admiraltyMotionWeeks', 'admiraltyMotionMinWeeks');
+
+function admiraltyOn() { return SETTINGS.admiraltyReview === 1 && SETTINGS.officerModel === 1 && councilActive(); }
+
+// The campaign's Admiralty record (a fresh war or an older save): { id, since, from: {week, ours, theirs, front}, lastReview, lastVerdict, weeks: [], reviews: [] }
+function admiraltyFields(c) {
+  if (!c.admiralty || typeof c.admiralty !== 'object' || Array.isArray(c.admiralty)) c.admiralty = {};
+  const A = c.admiralty;
+  if (typeof A.id !== 'string') A.id = '';
+  if (typeof A.since !== 'number') A.since = 0;
+  if (!A.from || typeof A.from !== 'object') A.from = null;
+  if (typeof A.lastVerdict !== 'string') A.lastVerdict = '';
+  if (!Array.isArray(A.weeks)) A.weeks = [];                       // one sample a war week: { week, ready, line, enemy, lineShips }
+  if (!Array.isArray(A.reviews)) A.reviews = [];
+  return A;
+}
+
+// Is this roster record free to take the post (not fallen, wounded or retired; not relieved; not already in this battle)?
+function admiraltyFree(r, old) {
+  if (!r || r.side !== 0 || (old && r.id === old.id) || r.relieved) return false;
+  if (!(r.status === 'active' || r.status === 'reserve')) return false;
+  return !(campaignBattleLive() && rosterInBattle[r.id]);
+}
+// Earth's Admiral now: the live one in a battle (not a stand-in or an acting officer), else the one the next battle would draw. null when none.
+function admiraltyCurrent() {
+  if (campaignBattleLive()) {
+    const a = admirals[0];
+    if (!a || !a.officer || !a.officer.rosterId || a.officer.standIn === 1 || a.officer.actingFrom) return null;
+    return rosterById(a.officer.rosterId);
+  }
+  for (const r of OFFICER_ROSTER) if (rankTier(r.rank) === 'fleet' && admiraltyFree(r, null)) return r;
+  return null;
+}
+// Where the front stands: the index of the council's long-map front region (0 = home), or 0 off the long map.
+function admiraltyFrontIndex() {
+  if (!longMapOn()) return 0;
+  const regs = longMapRegions(), F = councilLongFront();
+  return Math.max(0, regs.findIndex(function (r) { return r.id === F.id; }));
+}
+function admiraltyMark() {
+  const st = campaign.stats;
+  return { week: Math.round(campaign.week * 1000) / 1000, ours: Math.round(st.lostWorth[0] || 0), theirs: Math.round(st.lostWorth[1] || 0), front: admiraltyFrontIndex() };
+}
+
+// ---- Each war week (06g campaignExecutiveWeek, after the ledger's row): the sample, and every councilSessionWeeks the review ----
+// (The review keeps its own clock because the core loop, the default game, holds no council sessions: 06g gives the council's slot only to the old executive.)
+function admiraltyWeek() {
+  if (!admiraltyOn()) return null;
+  admiraltyDawn();
+  const c = campaign, A = admiraltyFields(c);
+  if (typeof A.nextReview !== 'number') A.nextReview = Math.floor(c.week + 1e-9) + Math.max(1, SETTINGS.councilSessionWeeks);
+  if (c.week + 1e-9 < A.nextReview) return null;
+  while (A.nextReview <= c.week + 1e-9) A.nextReview += Math.max(1, SETTINGS.councilSessionWeeks);
+  return admiraltyReview(councilView(), false);
+}
+// The review held this war week, for the council's minutes (null when none).
+function admiraltyThisWeek() {
+  const A = campaign && campaign.admiralty, wk = Math.floor(campaign.week + 1e-9);
+  if (!A || !Array.isArray(A.reviews) || !A.reviews.length) return null;
+  const r = A.reviews[A.reviews.length - 1];
+  return Math.floor(r.week + 1e-9) === wk ? r : null;
+}
+// Follow who is in command (a new Admiral starts fresh), and sample the week once.
+function admiraltyDawn() {
+  if (!admiraltyOn()) return;
+  const c = campaign, A = admiraltyFields(c), cur = admiraltyCurrent();
+  if (cur && cur.id !== A.id) {                                    // a new Admiral (the first, or after a death or a relief): a fresh start
+    A.id = cur.id; A.since = c.week; A.from = admiraltyMark(); A.lastVerdict = ''; A.weeks = [];
+  }
+  const wk = Math.floor(c.week + 1e-9);
+  if (A.weeks.length && A.weeks[A.weeks.length - 1].week === wk) return;
+  const X = c.ai && c.ai.exec ? c.ai.exec : null, row = X && X.ledger && X.ledger.length ? X.ledger[X.ledger.length - 1] : null;
+  A.weeks.push({ week: wk, ready: !!(X && X.assaultReady), line: row ? row.line : 0, lineShips: row ? row.lineShips : 0, enemy: row ? row.enemy : 0, front: admiraltyFrontIndex() });
+  if (A.weeks.length > 30) A.weeks.splice(0, A.weeks.length - 30);
+}
+
+// The figures since the last review (or since taking command): { weeks, dealt, lost, exch, ground, edgeWeeks, score, why }
+function admiraltyFigures(A) {
+  const S = SETTINGS, now = admiraltyMark(), from = A.from || now;
+  const dealt = Math.max(0, now.theirs - from.theirs), lost = Math.max(0, now.ours - from.ours);
+  const exch = (dealt + 200) / (lost + 200);                       // (200 worth added to each side: a quiet stretch counts as even, not as a bad trade)
+  const ground = now.front - from.front;
+  const weeks = A.weeks.filter(function (w) { return w.week >= Math.floor(from.week + 1e-9); });
+  let edgeWeeks = 0;
+  for (const w of weeks) if (w.ready && w.lineShips >= S.admiraltyEdgeMinShips && w.line >= S.admiraltyEdgeRatio * Math.max(1, w.enemy)) edgeWeeks++;
+  const edgeUnused = ground <= 0 && edgeWeeks >= 2;
+  const score = Math.max(-1.5, Math.min(1.5, Math.log2(exch))) + Math.max(-2, Math.min(2, ground)) - (edgeUnused ? 1 : 0);
+  const parts = ['enemy losses worth ' + dealt + ' to ours worth ' + lost];
+  if (longMapOn()) parts.push(ground > 0 ? 'the front moved forward ' + plural(ground, 'region') : (ground < 0 ? 'the front fell back ' + plural(-ground, 'region') : 'the front did not move'));
+  if (edgeUnused) parts.push(plural(edgeWeeks, 'week') + ' with an assault ready and the stronger line, unused');
+  return { span: Math.round((now.week - from.week) * 10) / 10, dealt: dealt, lost: lost, exch: exch, ground: ground, edgeWeeks: edgeWeeks, edgeUnused: edgeUnused, score: Math.round(score * 100) / 100, why: parts.join('; ') };
+}
+// The likely cause in the Admiral's character, only when the figures point at it ('' otherwise).
+function admiraltyCause(rec, f) {
+  const o = { boldness: num(rec.axes.boldness, 0.5), discipline: num(rec.axes.discipline, 0.5), rein: num(rec.axes.rein, 0.5) };
+  const words = personalityWords(o);
+  if (f.edgeUnused) { const w = words.filter(function (x) { return x === 'Cautious' || x === 'Tight rein'; }); if (w.length) return w.join(', ') + ': held back with the stronger hand'; }
+  if (f.lost > 0 && f.exch < 0.6) { if (words.indexOf('Bold') >= 0) return 'Bold: costly attacks'; if (words.indexOf('Independent') >= 0) return 'Independent: the fleet fought apart'; }
+  return '';
+}
+// The vote: each seat by its temper on the severity, the most influence wins (a tie goes to the milder verdict).
+function admiraltyVote(sev, aide) {
+  const votes = {}, weight = { back: 0, reprimand: 0, replace: 0 }, count = { back: 0, reprimand: 0, replace: 0 };
+  for (const m of COUNCIL_SEATS) {
+    const t = COUNCIL_MEMBERS[m].temper;
+    const v = m === 'aide' && aide ? aide : (sev < t.back ? 'back' : (sev >= t.replace ? 'replace' : 'reprimand'));   // (v289.1) your motion fixes the aide's vote
+    votes[m] = v; weight[v] += COUNCIL_MEMBERS[m].influence; count[v]++;
+  }
+  let verdict = 'back';
+  for (const v of COUNCIL_VOTE_ORDER) if (weight[v] > weight[verdict] + 1e-9) verdict = v;
+  return { votes: votes, verdict: verdict, forIt: count[verdict], against: COUNCIL_SEATS.length - count[verdict] };
+}
+
+// ---- The review (admiraltyWeek above, or a test). Returns the minutes' row, or null when nobody was reviewed. ----
+// motion (v289.1): '' (the regular review), 'noconf' (your vote of no confidence: held now, the aide votes REPLACE, the severity raised) or 'standby'
+// (you stand by the Admiral: kept in A.standby until the next regular review, where the aide votes BACK and the severity is lowered).
+function admiraltyReview(view, alreadyRelieved, motion) {
+  if (!admiraltyOn() || alreadyRelieved) return null;
+  const S = SETTINGS, c = campaign, A = admiraltyFields(c), rec = admiraltyCurrent();
+  if (!rec || rec.id !== A.id || !A.from) return null;
+  if (motion !== 'noconf') {
+    if (c.week - A.since < S.admiraltyProbationWeeks - 1e-9) return null;         // a new Admiral settles in first
+    if (c.week - A.from.week < S.admiraltyWindowWeeks - 1e-9) return null;        // too soon since the last review
+  }
+  const standby = motion !== 'noconf' && A.standby === A.id;                       // (v289.1) you stood by this Admiral since the last review
+  const f = admiraltyFigures(A);
+  let sev = Math.max(0, Math.min(1, 0.4 - 0.25 * f.score));          // (an even stretch, score 0, reads 0.4: most seats back it; about -1 is a reprimand, -2.4 or a second bad stretch a relief)
+  if (A.lastVerdict === 'reprimand') sev = Math.min(1, sev + S.admiraltySecondStrike);
+  if (motion === 'noconf') sev = Math.min(1, sev + S.admiraltyMotionWeight);
+  if (standby) sev = Math.max(0, sev - S.admiraltyMotionWeight);
+  A.standby = '';
+  sev = Math.round(sev * 100) / 100;
+  const vote = admiraltyVote(sev, motion === 'noconf' ? 'replace' : (standby ? 'back' : ''));
+  let verdict = vote.verdict === 'back' ? (f.score >= 1.5 ? 'praised' : 'noted') : (vote.verdict === 'reprimand' ? 'reprimanded' : 'replaced');
+  const row = { week: Math.round(c.week * 1000) / 1000, admiral: recordTitle(rec), id: rec.id, verdict: verdict, why: f.why, cause: admiraltyCause(rec, f), score: f.score, severity: sev,
+                votes: vote.votes, forIt: vote.forIt, against: vote.against, successor: '', successorId: '', promoted: false, recruit: false, motion: motion === 'noconf' ? 'noconf' : (standby ? 'standby' : '') };
+  if (row.motion) row.why += row.motion === 'noconf' ? '; on the Bureau\'s vote of no confidence' : '; the Bureau stood by them';
+  if (verdict === 'replaced') {
+    const done = admiraltyRelieve(rec, 'the Council\'s review');
+    if (done) { row.successor = done.title; row.successorId = done.id; row.promoted = done.promoted; row.recruit = done.recruit; }
+    else { row.verdict = verdict = 'reprimanded'; row.why += '; no one free to take command'; }
+  }
+  const s = rec.service;
+  if (verdict === 'praised') s.commendations = (s.commendations || 0) + 1;
+  if (verdict === 'reprimanded' || verdict === 'replaced') s.reprimands = (s.reprimands || 0) + 1;
+  if (!Array.isArray(s.reviews)) s.reviews = [];
+  s.reviews.push({ week: row.week, verdict: verdict === 'replaced' ? 'relieved of command of the fleet' : verdict, why: f.why });
+  if (verdict !== 'replaced') { A.from = admiraltyMark(); A.lastVerdict = verdict === 'reprimanded' ? 'reprimand' : verdict; }
+  A.reviews.push(row);
+  if (A.reviews.length > 40) A.reviews.shift();
+  if (verdict !== 'noted') campaignLog('council', 'The War Council ' + (verdict === 'praised' ? 'commends' : (verdict === 'reprimanded' ? 'reprimands' : 'relieves')) + ' ' + row.admiral +
+    (verdict === 'replaced' ? ' of command of the fleet' : '') + ' (' + f.why + ')' + (row.cause && verdict !== 'praised' ? '. Likely cause: ' + row.cause : '') + ', ' + row.forIt + ' to ' + row.against +
+    (row.successor ? '; ' + row.successor + (row.promoted ? ' is promoted to Admiral and' : '') + ' takes command' : '') + '.');
+  return row;
+}
+
+// ---- Relieve the Admiral now in command. why: for the log. Returns { id, title, promoted, recruit } of the successor, or null when nobody can take over. ----
+function admiraltyRelieve(rec, why) {
+  const c = campaign, A = admiraltyFields(c);
+  // the successor: the first free Admiral of the roster, else the most experienced free Vice Admiral (promoted), else a recruit
+  let succ = null, promoted = false, recruit = false;
+  for (const r of OFFICER_ROSTER) if (rankTier(r.rank) === 'fleet' && admiraltyFree(r, rec)) { succ = r; break; }
+  if (succ === null) for (const r of OFFICER_ROSTER) if (r.rank === 'vice-admiral' && admiraltyFree(r, rec) && (succ === null || num(r.xp, 0) > num(succ.xp, 0))) succ = r;
+  if (succ !== null && rankTier(succ.rank) !== 'fleet') { succ.rank = 'admiral'; promoted = true; if (c.stats) c.stats.promoted = (c.stats.promoted || 0) + 1; }
+  if (succ === null) { succ = makeRecruitRecord(0, 'admiral'); recruit = true; }
+  if (!succ) return null;
+  rec.relieved = { week: Math.round(c.week * 1000) / 1000, why: why };
+  const a = campaignBattleLive() ? admirals[0] : null;
+  if (a && a.officer && a.officer.rosterId === rec.id) {                          // live: the old Admiral's record keeps what the command did; the new one arrives by shuttle
+    retireOfficerNow(a.officer, 0, 'Admiral', admiralInfo(a), fleetKillValue(0), fleetLostValue(0));
+    rosterInBattle[succ.id] = true;
+    succ.posting.role = 'admiral';
+    const o = officerFromRecord(succ, ++officerSerial);
+    setCommander('fleet', a, o, 'arrived');
+    a.presetName = o.name;
+    if (SETTINGS.officerModel === 1) admiralPickFlagship(a);
+  } else {                                                                         // parked: the successor takes the old Admiral's place with the fleets
+    for (const f of c.fleets) if (f.side === 0 && Array.isArray(f.officers)) {
+      const k = f.officers.indexOf(rec.id);
+      if (k >= 0) { if (f.officers.indexOf(succ.id) < 0) f.officers[k] = succ.id; else f.officers.splice(k, 1); }
+    }
+  }
+  rec.posting.role = '';
+  if (!Array.isArray(succ.service.reviews)) succ.service.reviews = [];
+  succ.service.reviews.push({ week: rec.relieved.week, verdict: (promoted ? 'promoted to Admiral and ' : '') + 'given command of the fleet', why: '' });
+  A.id = succ.id; A.since = c.week; A.from = admiraltyMark(); A.lastVerdict = ''; A.weeks = [];
+  return { id: succ.id, title: recordTitle(succ), promoted: promoted, recruit: recruit };
+}
+
+// ---- An abandoned-field case (06h councilJudge) voted REPLACE: relieve the Admiral now in command when the case is about them ----
+function admiraltyAbandonCase(a) {
+  if (!admiraltyOn() || !a || a.verdict !== 'replace') return null;
+  const rec = admiraltyCurrent();
+  if (!rec) return null;
+  const named = String(a.admiral || '');
+  if (named.indexOf(rec.name) < 0 && named.indexOf('the Admiral at ') !== 0) return null;   // (the case is about someone no longer in command)
+  const done = admiraltyRelieve(rec, 'abandoned the field');
+  if (!done) return null;
+  if (!Array.isArray(rec.service.reviews)) rec.service.reviews = [];
+  rec.service.reviews.push({ week: rec.relieved.week, verdict: 'relieved of command of the fleet', why: 'abandoned the field' });
+  const row = { week: rec.relieved.week, admiral: recordTitle(rec), id: rec.id, verdict: 'replaced', why: 'abandoned the field', cause: '', score: 0, severity: a.severity, votes: a.votes, forIt: a.forIt, against: a.against,
+                successor: done.title, successorId: done.id, promoted: done.promoted, recruit: done.recruit };
+  admiraltyFields(campaign).reviews.push(row);
+  campaignLog('council', 'The War Council relieves ' + row.admiral + ' of command of the fleet (abandoned the field); ' + done.title + (done.promoted ? ' is promoted to Admiral and' : '') + ' takes command.');
+  return row;
+}
+
+// ---- (v289.1, Alex 20 Nov: option C) YOUR MOTION, through the aide's seat in the Council Room ----
+// You never give the Admiral orders; you can only put the question to the Council. 'noconf': a vote of no confidence, held at once (the Admiral must have
+// commanded admiraltyMotionMinWeeks); the Council still votes on the figures, so a motion against a good Admiral fails. 'standby': the aide backs the
+// Admiral at the next regular review. Either one, then nothing more for admiraltyMotionWeeks war weeks.
+// Returns { ok, why, row } (row: the review a vote of no confidence produced).
+function admiraltyMotionState() {
+  if (!campaign || !admiraltyOn()) return { can: false, why: 'The Council does not review the Admiral in this war.' };
+  const c = campaign, A = admiraltyFields(c), rec = admiraltyCurrent();
+  if (!rec || rec.id !== A.id) return { can: false, why: 'No Admiral of record is in command right now.' };
+  const wait = num(A.motionWeek, -1e9) + SETTINGS.admiraltyMotionWeeks - c.week;
+  if (wait > 1e-9) return { can: false, why: 'The Bureau put a motion in week ' + Math.floor(A.motionWeek) + '; the Council will hear another from week ' + Math.ceil(A.motionWeek + SETTINGS.admiraltyMotionWeeks) + '.', rec: rec };
+  const young = A.since + SETTINGS.admiraltyMotionMinWeeks - c.week;
+  return { can: true, noconf: young <= 1e-9, why: young > 1e-9 ? 'A vote of no confidence needs ' + plural(SETTINGS.admiraltyMotionMinWeeks, 'war week') + ' in command first.' : '', rec: rec, standby: A.standby === A.id };
+}
+function admiraltyMotion(kind) {
+  const st = admiraltyMotionState();
+  if (!st.can) return { ok: false, why: st.why };
+  const c = campaign, A = admiraltyFields(c);
+  if (kind === 'standby') {
+    if (A.standby === A.id) return { ok: false, why: 'The Bureau already stands by this Admiral.' };
+    A.standby = A.id; A.motionWeek = c.week;
+    campaignLog('council', 'The Bureau stands by ' + recordTitle(st.rec) + ': the aide will back them at the next review.');
+    return { ok: true, why: '' };
+  }
+  if (kind !== 'noconf') return { ok: false, why: 'Unknown motion.' };
+  if (!st.noconf) return { ok: false, why: st.why };
+  A.motionWeek = c.week;
+  const row = admiraltyReview(councilView(), false, 'noconf');
+  return row ? { ok: true, why: '', row: row } : { ok: false, why: 'The Council could not hear the motion.' };
+}
+
+// The words for a review row (the minutes and the Dispatch): no field is left empty, because the line filler writes '-' for an empty one.
+function admiraltyWords(r) {
+  return { admiral: r.admiral, why: r.why, tally: r.forIt + ' to ' + r.against, cause: r.cause && r.verdict !== 'praised' ? ' Likely cause: ' + r.cause + '.' : ' ',
+           next: r.successor ? r.successor + (r.promoted ? ' is promoted to Admiral and takes command.' : (r.recruit ? ', fresh from the academy, takes command.' : ' takes command.')) : ' ' };
+}
+// For the tests: EW.campaign.admiralty
+function admiraltyApi() {
+  return {
+    state: function () { return campaign ? copyJson(admiraltyFields(campaign)) : null; },
+    current: function () { const r = campaign ? admiraltyCurrent() : null; return r ? { id: r.id, name: r.name, rank: r.rank, axes: copyJson(r.axes) } : null; },
+    figures: function () { return campaign ? admiraltyFigures(admiraltyFields(campaign)) : null; },
+    review: function () { return campaign ? admiraltyReview(councilView(), false) : null; },
+    motion: function (kind) { return admiraltyMotion(kind); },
+    relieve: function () { const r = campaign ? admiraltyCurrent() : null; return r ? admiraltyRelieve(r, 'a test') : null; }
+  };
+}
+Object.assign(CAMPAIGN_API, { admiralty: function () { return admiraltyApi(); } });                  // (v289.0) EW.campaign.admiralty().state() / current() / figures() / review() / relieve()
 // ---------------------------------------------------------------------
 // Section 5z, the Fleets' part (v25, stop 1 of the chain of command): numbered Fleets in the campaign.
 //
@@ -53931,7 +54660,7 @@ function campaignDesignYardState(id) {
     if (info.local && typeof longDockOn === 'function' && longDockOn()) {   // (v287.0) where its ships go, so a Local design never seems to be built for nothing
       const plan = longLocalPlan(id), at = plan.place ? campaignLocName(plan.place) : '';
       if (plan.at === 'fob') return { on: true, key: 'local', short: 'Local: for ' + at + ', at the front', why: 'Its ships go to ' + at + ', our station at the front.' };
-      if (plan.at === 'near') return { on: true, key: 'local', short: 'Local: for ' + at + ', behind the front', why: 'Our stations at the front have no room for Local ships (or we hold none there), and no other design of ours can take the Alloys just now, so its ships go to ' + at + ', in the region just behind the front.' };
+      if (plan.at === 'near') return { on: true, key: 'local', short: 'Local: for ' + at + ', behind the front', why: 'Our stations at the front have no room for Local ships (or we hold none there), so its ships go to ' + at + ', in the region just behind the front. As room opens at the front, Local ships in quiet regions go back into dock and move up.' };
       return { on: true, key: 'local', short: 'Local: guards Earth', why: 'Its ships stay at Earth: ' + (longFrontCol() <= longPlaceCol(campaignHomeYard(0)) ? 'the front is Earth\'s own region.' : 'we hold no station nearer the front.') };
     }
     if (info.local && !(typeof dockModelOn === 'function' && dockModelOn())) return { on: true, key: 'local', short: 'Local: built at ' + campaignYardName(fitAt), why: 'Local ships never leave their region, so it is built at ' + campaignYardName(fitAt) + ', the yard of ours nearest the front.' };
@@ -54072,7 +54801,8 @@ function sylphNewPilot(house, rank) {
   const S = campaign.sylph, used = {};
   for (const q of S.pilots) used[q.name] = 1;
   const free = SYLPH_NAMES.filter(function (n) { return !used[n]; });
-  const name = free.length ? free[Math.floor(campaignRand() * free.length)] : 'Sylph ' + S.nextId;
+  // (v291.0) when all 20 names are taken (the fallen keep theirs), the endless name book (section 2-5) gives two, then three given names, never "Sylph 21"
+  const name = free.length ? free[Math.floor(campaignRand() * free.length)] : (endlessPick(ENDLESS_SYLPH, campaign.nameSeed || 0x51f, S.nextId, function (n) { return !used[n]; }) || 'Sylph ' + S.nextId);
   const p = { id: S.nextId++, name: name, house: house, rank: Math.max(0, Math.min(SYLPH_RANK_MAX, rank)), alive: true, at: 'home', raids: 0, kills: 0, came: Math.round(campaign.week * 100) / 100 };
   S.pilots.push(p);
   return p;
@@ -54918,13 +55648,14 @@ const rosterInBattle = {};                                 // rosterInBattle[rec
 function officerFromRoster(side, tier, st) {
   { const o = lsCommandOfficer(side, tier); if (o !== null) return o; }                        // (v101.2, section 8h) a Last Stand run's Admiral, Vice Admirals and Commodores (the roster is not touched)
   if (tier === 'nfleet') return cmdDrawViceAdmiral(side, '');                                   // (v25, section 5cc) a numbered Fleet's Vice Admiral
-  let rec = null, any = null, junior = null, exact = null;
+  let rec = null, any = null, junior = null, exact = null, relieved = null;
   const cls = st !== undefined ? SIZE_CLASSES.classes[typeClass[st % TYPE_COUNT]].id : '';
   const wanted = st !== undefined && tier === 'squadron' ? cmdRankWanted(st) : 0;              // (v25) the rank by hull size (0 = any: the switch is off)
   const need = st !== undefined && tier === 'squadron' ? (wanted > 0 ? wanted : orgRankNeeded(st)) : 0;   // (v23, section 5z: a big command needs a senior officer; 0 = any)
   for (let k = 0; k < OFFICER_ROSTER.length && rec === null; k++) {
     const r = OFFICER_ROSTER[k];
     if (!(r.side === side && rankTier(r.rank) === tier && (r.status === 'active' || r.status === 'reserve') && !rosterInBattle[r.id])) continue;
+    if (r.relieved) { if (relieved === null) relieved = r; continue; }                   // (v289.0, 06h2) an Admiral the Council relieved takes the post only when nobody else can
     if (need > 0 && rankIndex(r.rank) < need) { if (junior === null || rankIndex(r.rank) > rankIndex(junior.rank)) junior = r; continue; }
     if (wanted > 0 && rankIndex(r.rank) === wanted) { exact = r; break; }                      // (v25) the very rank the hull calls for
     const rank = rankById(r.rank);
@@ -54936,6 +55667,7 @@ function officerFromRoster(side, tier, st) {
   if (rec === null && wanted > 0) rec = junior;             // (v25) no one of the rank is free: the most senior junior officer, else a recruit at the rank the hull calls for
   if (rec === null && wanted > 0) rec = makeRecruitRecord(side, cmdRankIdAt(wanted));
   if (rec === null) rec = junior;                          // (v23) no one senior enough is free: the most senior junior officer
+  if (rec === null) rec = relieved;                       // (v289.0) a relieved Admiral before a raw recruit
   if (rec === null) rec = makeRecruitRecord(side, tier === 'fleet' ? 'admiral' : (tier === 'division' ? 'commodore' : 'lieutenant'));
   rosterInBattle[rec.id] = true;
   rec.posting.role = tier === 'fleet' ? 'admiral' : (tier === 'division' ? 'commodore' : 'squadron');
@@ -57687,11 +58419,20 @@ function divisionLabel(dv) {                   // "1st Division (Cdre Ines Vale)
   const o = dv.officer, rk = o && o.rank ? rankById(o.rank) : null;
   return dv.name + ' (' + (rk ? rk.short + ' ' : '') + (o ? o.name : '?') + (o && o.actingFrom ? ', acting' : '') + ')';
 }
+// (v291.0) The name of a new Division: the lowest "Nth Division" no Division of the side has now. Before, it was one more than the number of Divisions,
+// so after the 2nd was broken up a new one was called "3rd Division" while the old 3rd was still there: two Divisions with one name.
+function divisionFreeName(side) {
+  const taken = new Set();
+  for (const id of fleets[side].divisions) { const dv = divisions[id]; if (dv && !dv.dissolved) taken.add(dv.name); }
+  let k = 1;
+  while (taken.has(ordinalWord(k) + ' Division')) k++;
+  return ordinalWord(k) + ' Division';
+}
 function makeDivision(side, squads, officerGiven) {      // officerGiven (stop 7): the Commodore the order of battle names
   const fleet = fleets[side];
   const officer = officerGiven || officerFromRoster(side, 'division');
   const dv = {
-    id: divisions.length, side: side, name: ordinalWord(fleet.divisions.length + 1) + ' Division', officer: officer, node: null, squads: [],
+    id: divisions.length, side: side, name: divisionFreeName(side), officer: officer, node: null, squads: [],
     task: { id: 'hold', params: {}, since: simTime, serial: 0, started: true }, taskLog: [],
     anchorX: 0, anchorY: 0, frontage: 0, strength: 0, startStrength: 0, odds: 1, meanRange: 0, fast: 0, fastStart: 0, sizeStart: squads.length, contactAt: -Infinity,
     nextThink: simTime + cmdThinkSeconds(firstThinkDelay(SETTINGS.commodoreThinkMin, SETTINGS.commodoreThinkMax)), thinkCount: 0,
@@ -68385,6 +69126,7 @@ function enterRepairPoint(i, p) {
   const rec = sendShipAway(i);
   rec.point = repairPoints.indexOf(p);
   rec.queuedAt = simTime;
+  if (typeof refitArrived === 'function') refitArrived(i, rec);   // (v290.0, 17c3) a ship on a refit trip: its record remembers its Fleet
   p.queue.push(rec);
   if (p.queue.length > p.peakQueue) p.peakQueue = p.queue.length;
 }
@@ -69850,6 +70592,7 @@ function cplReset() {
   cplNextCheck = 0; cplFeedCallAt = -1e9; cplScuttling = false;
   cplStats = cplStatsBlank();
   cplScuttled.names = []; cplScuttled.told = -1e9;
+  if (typeof refitReset === 'function') refitReset();                     // (v290.0) the refit trips (17c3)
   if (typeof towReset === 'function') towReset();                         // (v212.0) the tow jobs (17c2)
 }
 
@@ -70442,6 +71185,189 @@ function towFleetStep() {
     logEvent(side, T.name + ' (' + F.name + ') sends a ' + typeName[shipType[best.m]] + ' of the ' + best.dv.name + ' to tow a crippled ' + typeName[shipType[best.J.c]] + ' in.');
   }
 }
+// =====================================================================
+// 5jr. REFIT TRIPS: OLD-VERSION SHIPS SLIP OFF THE LINE TO BE REBUILT  (v290.0, Alex 20 Nov; SETTINGS.refitTrips, 0 = as v289)
+//
+//   Alex, 20 Nov 2026: "we need a way for ships with pending version upgrades to slip off the line and go get a refit, if they can get away with it".
+//
+//   WHAT WAS MISSING. Since v277.0 (06f2b) an old-version ship whose dock now builds the new version is rebuilt as the new version when it goes into one
+//   of our stations' repair docks. But a ship only went to a repair dock when it was badly hurt, so a healthy old ship fought on in its old version until
+//   it was hit hard enough or lost: on a quiet stretch of the front it might never change over.
+//
+//   THE RULE NOW. Every refitLookSeconds each of our Fleets' Vice Admirals looks at its old-version ships that have a refit waiting (one of our docks
+//   holds a ship of that design and builds a live design: the same test the repair dock uses, 06f2b campaignDockRepairRefit). It may send a few of them
+//   on an ordinary repair trip (17 startRepair), where the repair dock rebuilds them: a rebuild takes as long as mending dockRepairRefitShare of the new
+//   design's hull, and the ship comes back as the new version in a squadron of its own. Nothing new is invented for the trip itself: the ship flies,
+//   queues and docks exactly as a damaged one does.
+//   It only lets a ship go when it can get away with it:
+//     - its Division is out of contact (no fighting lately) and not on a transfer, and its Fleet is not in a mass mobilization;
+//     - the front near the Division is not pressing: the enemy within refitPressureRadius is at most refitPressureOdds of our strength there;
+//     - the ship itself is safe: the enemy within refitDangerRadius of it is at most refitDangerOdds of ours, and the same at the station it would go to;
+//     - the station is within refitMaxTrip of it (no flight across half the map);
+//     - only a few at a time: the Fleet's ships away on refit trips (on the way or in the docks) stay under refitMaxShare of the Fleet (always at least
+//       one), at most refitPerLook sent in one look, and at most one send every refitFleetSeconds;
+//     - never more ships of a design than there are refits waiting for it (ships of that design already on their way to a dock count too).
+//   THE VICE ADMIRAL'S CHARACTER: a bold one takes more risk (higher odds allowed, a bigger share away, sooner again), a cautious one less, by up to
+//   refitBoldSwing either way; a good Command stat makes it look sooner (06c8 aoCharPace). Ships most worn are sent first (they gain most), the reserve's
+//   ships before the line's.
+//   One log line a send ("Vice Admiral Hale (Earth Defence Fleet) sends 2 old-version ships off the line to be refitted: Picket, Harrier.").
+//   Not for fighters, drone wings or carriers (the repair dock does not rebuild them: 06f2b), nor for the aliens (they have no versions to refit).
+//   With refitTrips 0, the docks economy off, dockHoldModel 0 or dockRepairRefit 0, nothing here runs.
+//   Check: tools/v290.0/refit-trips-check.js. Notes: notes/v290.0/summary.md.
+// =====================================================================
+
+// Is the refit trip rule on for this side in the battle now?
+function refitTripsOn(side) {
+  return side === 0 && SETTINGS.refitTrips === 1 && SETTINGS.dockRepairRefit === 1 && typeof dockHoldOn === 'function' && dockHoldOn() &&
+         typeof campaignBattleActive !== 'undefined' && campaignBattleActive && SETTINGS.repairOffMap === 0;
+}
+
+// Ships sent on a refit trip and still flying to the dock: slot -> { fleet: Fleet id, type: its type }. (In the dock, the repair record carries
+// refitFleet instead: 17 enterRepairPoint.)
+const refitOut = new Map();
+let refitNextLook = 0;
+let refitStats = { sent: [0, 0], looks: 0, held: 0 };
+function refitReset() { refitOut.clear(); refitNextLook = 0; refitStats = { sent: [0, 0], looks: 0, held: 0 }; }
+// (17 enterRepairPoint) a ship reached its station: if it was on a refit trip, its record keeps the Fleet it came from (so the Fleet still counts it).
+function refitArrived(i, rec) {
+  const e = refitOut.get(i);
+  if (!e) return;
+  refitOut.delete(i);
+  if (e.type === rec.type) rec.refitFleet = e.fleet;
+}
+
+// The refits waiting now, by old design id: how many old ships the docks could still rebuild, less those already on their way to a dock.
+function refitWaiting(side) {
+  const out = {};
+  if (typeof campaign === 'undefined' || !campaign || !campaign.docks) return out;
+  for (const r of campaign.docks.list) {
+    if (r.side !== side || !campaignDockHolding(r) || !campaignDockActive(r) || !campaignDockDesignLive(side, r.design, null)) continue;
+    for (const id in r.hold) { if (id === r.design) continue; const n = Math.floor(r.hold[id] + 1e-9); if (n > 0) out[id] = (out[id] || 0) + n; }
+  }
+  if (Object.keys(out).length === 0) return out;
+  // already going: ships of ours flying to a dock (for any reason) and ships waiting in a dock's queue (the rebuild happens as they move in)
+  for (let m = 0; m < highWater; m++) {
+    if (shipAlive[m] !== 1 || shipSide[m] !== side || shipState[m] !== STATE_REPAIR) continue;
+    const id = SHIP_TYPES[shipType[m]] ? SHIP_TYPES[shipType[m]].id : null;
+    if (id && out[id] > 0) out[id]--;
+  }
+  for (const p of repairPoints) {
+    if (p.side !== side || p.kind === 'carrier' || p.kind === 'tender') continue;
+    for (const rec of p.queue) { const id = SHIP_TYPES[rec.type] ? SHIP_TYPES[rec.type].id : null; if (id && out[id] > 0) out[id]--; }
+  }
+  return out;
+}
+
+// Can ship m make a refit trip at all (a free, ordinary, moving ship of ours in the fight's ordinary states)?
+function refitCanGo(m) {
+  if (m < 0 || shipAlive[m] !== 1) return false;
+  const s = shipState[m], t = shipType[m], st = shipSide[m] * TYPE_COUNT + t;
+  if (s === STATE_REPAIR || s === STATE_RETREAT || s === STATE_REGROUP || s === STATE_FALLBACK || shipRetreating[m] === 1) return false;
+  if (SHIP_TYPES[t].fighter === true || stImmobile[st] === 1) return false;
+  if (typeof shipBay !== 'undefined' && shipBay.length > m && shipBay[m] >= 0) return false;                 // (a carried craft)
+  if (typeof wingN !== 'undefined' && wingN.length > m && wingN[m] > 0) return false;                        // (a wing)
+  if (typeof fgCarrierOfSlot !== 'undefined' && fgCarrierOfSlot.length > m && fgCarrierOfSlot[m] >= 0) return false;   // (a carrier)
+  if (typeof cplState !== 'undefined' && cplState.length > m && (cplState[m] !== CR_NONE || cplCtl[m] !== CTL_NONE || cplPartner[m] >= 0)) return false;   // (crippled, towing, or eating)
+  return true;
+}
+
+// A swing round 1 from the Vice Admiral's boldness: bold above 1 (more risk), cautious below.
+function refitRisk(boldness) { return 1 + clampNumber(SETTINGS.refitBoldSwing, 0, 0.9) * (clampNumber(boldness, 0, 1) - 0.5) * 2; }
+
+// This Fleet's ships away on refit trips now: flying to a dock, waiting in its queue, or being rebuilt.
+function refitAwayOf(F) {
+  let n = 0;
+  refitOut.forEach(function (e, m) {
+    if (shipAlive[m] !== 1 || shipState[m] !== STATE_REPAIR || shipType[m] !== e.type) { refitOut.delete(m); return; }
+    if (e.fleet === F.id) n++;
+  });
+  for (const p of repairPoints) {
+    if (p.kind === 'carrier' || p.kind === 'tender') continue;
+    for (const rec of p.queue) if (rec.refitFleet === F.id) n++;
+    for (const rec of p.docks) if (rec.refitFleet === F.id) n++;
+  }
+  return n;
+}
+
+// The middle of a Division (its squadrons' centres), or null.
+function refitDivCentre(dv) {
+  let x = 0, y = 0, n = 0;
+  for (const sq of dv.squads) if (sqAlive[sq] > 0) { x += sqCenterX[sq]; y += sqCenterY[sq]; n++; }
+  return n > 0 ? { x: x / n, y: y / n } : null;
+}
+
+// ---- The look (from 36, after the movement) ----
+function refitStep() {
+  const side = 0;
+  if (!refitTripsOn(side) || simTime < refitNextLook) return;
+  refitNextLook = simTime + Math.max(1, SETTINGS.refitLookSeconds);
+  const waiting = refitWaiting(side);
+  let total = 0;
+  for (const id in waiting) total += waiting[id];
+  if (total <= 0) return;
+  refitStats.looks++;
+  const a = admirals[side], th = a && typeof theatreStateOf === 'function' ? theatreStateOf(a) : null;
+  const dangerR = Math.max(100, SETTINGS.refitDangerRadius), pressR = Math.max(100, SETTINGS.refitPressureRadius), trip = Math.max(0, SETTINGS.refitMaxTrip);
+  for (const F of cmdLiveFleets(side)) {
+    if (th && typeof aoMobFrozen === 'function' && aoMobFrozen(th, F)) continue;
+    const T = coreVaTraits(F), risk = refitRisk(T.boldness), pace = typeof aoCharPace === 'function' ? aoCharPace(side, F.officer) : 1;
+    if (!F.refit) F.refit = { at: -Infinity, sent: 0 };
+    if (simTime - F.refit.at < Math.max(0, SETTINGS.refitFleetSeconds) / risk * pace) continue;
+    const divs = cmdFleetDivisions(F);
+    let ships = 0;
+    for (const dv of divs) for (const sq of dv.squads) ships += sqAlive[sq] > 0 ? sqAlive[sq] : 0;
+    if (ships <= 0) continue;
+    const cap = Math.max(1, Math.floor(ships * clampNumber(SETTINGS.refitMaxShare, 0, 1) * risk + 1e-9));
+    let room = Math.min(cap - refitAwayOf(F), Math.max(1, Math.floor(SETTINGS.refitPerLook)));
+    if (room <= 0) continue;
+    // the candidates: old-version ships with a refit waiting, in quiet Divisions where the front is not pressing
+    const cands = [];
+    for (const dv of divs) {
+      if (dv.transfer !== null && dv.transfer !== undefined) continue;
+      if (divisionInContact(dv)) continue;
+      const c = refitDivCentre(dv);
+      if (!c || oddsAt(side, c.x, c.y, pressR) > SETTINGS.refitPressureOdds * risk) continue;
+      const w = dv.vaTag === 'reserve' ? 0 : 1;
+      for (const sq of dv.squads) for (let k = 0; k < sqSize[sq]; k++) {
+        const m = sqMembers[sqStart[sq] + k];
+        if (!refitCanGo(m)) continue;
+        const id = SHIP_TYPES[shipType[m]].id;
+        if (!(waiting[id] > 0)) continue;
+        const st = side * TYPE_COUNT + shipType[m];
+        cands.push({ m: m, id: id, key: w * 10 + shipHp[m] / Math.max(1, stHull[st]), dv: dv });
+      }
+    }
+    if (cands.length === 0) continue;
+    cands.sort(function (p, q) { return p.key - q.key; });
+    const sent = [];
+    for (const C of cands) {
+      if (room <= 0) break;
+      if (!(waiting[C.id] > 0)) continue;
+      const m = C.m;
+      if (oddsAt(side, shipX[m], shipY[m], dangerR) > SETTINGS.refitDangerOdds * risk) continue;
+      const pk = chooseRepairPoint(m);
+      if (pk < 0) continue;
+      const P = repairPoints[pk], dx = P.x - shipX[m], dy = P.y - shipY[m];
+      if (trip > 0 && dx * dx + dy * dy > trip * trip) continue;
+      if (oddsAt(side, P.x, P.y, dangerR) > SETTINGS.refitDangerOdds * risk) continue;
+      // go: an ordinary repair trip (17), to the station just chosen
+      startRepair(m, side * TYPE_COUNT + shipType[m]);
+      shipRepairPoint[m] = pk;
+      refitOut.set(m, { fleet: F.id, type: shipType[m] });
+      waiting[C.id]--; room--;
+      sent.push(typeName[shipType[m]]);
+    }
+    if (sent.length === 0) continue;
+    F.refit.at = simTime; F.refit.sent += sent.length;
+    refitStats.sent[side] += sent.length;
+    const names = sent.filter(function (n, k) { return sent.indexOf(n) === k; }).join(', ');
+    logEvent(side, T.name + ' (' + F.name + ') sends ' + (sent.length === 1 ? 'an old-version ship' : sent.length + ' old-version ships') + ' off the line to be refitted: ' + names + '.');
+  }
+}
+
+Object.assign(CAMPAIGN_API, {
+  refitTrips: function () { return { sent: refitStats.sent.slice(), looks: refitStats.looks, away: refitOut.size, waiting: typeof campaign !== 'undefined' && campaign && campaign.docks ? refitWaiting(0) : {} }; }   // (v290.0) for the tests
+});
 // =====================================================================
 // 5jt. TENDERS AND FERRIES IN BATTLE  (v95; Alex 31 Oct: "now that we have tenders and hangars, we need to make these a bit more robust, and make sure
 //      the ai can use them intelligently ... ship carriers be willing to move back and forth hustling local ships from a previous ao to the front, and
@@ -76776,7 +77702,36 @@ const OFFICER_PART_KEYS = ['kills', 'lost', 'judged', 'repaired', 'towed', 'scut
 function officerWriteBackPart(why) {
   if (SETTINGS.officerModel !== 1 || writeBackDone || batchMode) return [];
   const events = writeBackOfficers(why === 'week' ? 'week' : 'save') || [];
+  if (why === 'week' && SETTINGS.officerReleaseWeekly === 1) officerReleaseRetired();   // (v291.0) their records are written: they may serve again
   return events;
+}
+// (v291.0, Alex 20 Nov: "running out of officer names, running out of swarm IDs") GIVING BACK THE OFFICERS OF COMMANDS THAT ENDED. When a Division is broken
+// up or a squadron is struck off, its officer goes on the retired list (for the write-back) and stays marked as having a command in this battle
+// (rosterInBattle), so it cannot be given a new one until the battle ends. On the long map the battle never ends, so every new Division or squadron
+// drafted a brand-new officer and the old ones were never used again: a week-231 Swarm war held 13,435 Swarm officers (12,655 of them commodores who
+// never fought), and their numbered ids and names ran out. Now, once a war week, right after the week's write-back, every officer on the retired list who
+// holds no command now (no live squadron, Division, Fleet or flag), is not riding in a campaign fleet and is not waiting to enter, is free again: the
+// next new command takes it before anyone is drafted. Fallen officers simply leave the list (their record already says so); wounded ones may now heal.
+function officerReleaseRetired() {
+  if (retiredOfficers.length === 0) return 0;
+  const held = new Set(), add = function (o) { if (o && o.rosterId) held.add(o.rosterId); };
+  for (let side = 0; side < 2; side++) { const a = admirals[side]; if (a) add(a.officer); }
+  for (let d = 1; d < divisions.length; d++) if (divisions[d] && !divisions[d].dissolved) add(divisions[d].officer);
+  for (let sq = 1; sq < squadronCount; sq++) if (sqRetired[sq] !== 1) add(sqOfficer[sq]);
+  if (typeof cmdFleetList !== 'undefined') for (const F of cmdFleetList) if (F && !(F.attachedTo >= 0)) add(F.officer);
+  if (typeof campaign !== 'undefined' && campaign && Array.isArray(campaign.fleets)) for (const f of campaign.fleets) if (f && !f.inBattle && Array.isArray(f.officers)) f.officers.forEach(function (id) { held.add(id); });
+  const link = typeof campaignLink !== 'undefined' ? campaignLink : null;
+  if (link && link.reserved) for (const id in link.reserved) held.add(id);
+  if (link && link.entering) for (let side = 0; side < 2; side++) for (const id in (link.entering[side] || {})) held.add(id);
+  let freed = 0, keep = 0;
+  for (let k = 0; k < retiredOfficers.length; k++) {
+    const r = retiredOfficers[k], id = r && r.o ? r.o.rosterId : '';
+    if (id && held.has(id)) { retiredOfficers[keep++] = r; continue; }
+    if (id) { delete rosterInBattle[id]; officerWrittenSoFar.delete(id); }
+    freed++;
+  }
+  retiredOfficers.length = keep;
+  return freed;
 }
 function writeBackOfficers(part) {
   const midway = part === 'week' || part === 'save';                          // (v190.0) written part-way: the battle goes on
@@ -81803,7 +82758,7 @@ function closeKeepCanvas(canvas, key, meta) {
 // (CLOSE_LOOK.keepDrawn). what: everything the picture is drawn from, as text (the art, the design, the size, the livery). It is filed under that and
 // the build's fingerprint (CLOSE_BUILD_PRINT, made by tools/build.js from every source file), so a picture drawn by older art is never read back.
 // cb(pic): the same { canvas, ... } as make() gives (read back: a fresh canvas with the kept measurements), or null when it could not be drawn.
-const CLOSE_BUILD_PRINT = '06d0c5bcf341';
+const CLOSE_BUILD_PRINT = '156057c98e02';
 function closeKeptPicture(what, make, cb) {
   const fresh = function (key) {
     let pic = null;
@@ -86223,12 +87178,14 @@ function squadCallSign(sq) {
   let c = callSignOf.get(key);
   if (c) return c;
   const h = displayHash(battleSeed, side * 7919 + 13, sqLabelNo[sq]);
-  let w = h % CALL_SIGN_WORDS.length, n = (h >>> 8) % 9;
+  let w = h % CALL_SIGN_WORDS.length, n = (h >>> 8) % 9, free = false;
   for (let tries = 0; tries < CALL_SIGN_WORDS.length * 9; tries++) {      // the same sign is never used twice in a battle
     c = (CALL_SIGN_WORDS[w] + ' ' + (n + 1)).toUpperCase();
-    if (!callSignUsed.has(c)) break;
+    if (!callSignUsed.has(c)) { free = true; break; }
     n = (n + 1) % 9; if (n === 0) w = (w + 1) % CALL_SIGN_WORDS.length;
   }
+  // (v291.0) all 432 word-and-digit signs taken (a long-map battle never ends): the endless name book (section 2-5) goes on to "IRON CHOIR 37" and so on
+  if (!free) c = endlessPick(ENDLESS_CALL_SIGN, battleSeed, sqLabelNo[sq], function (s) { return !callSignUsed.has(s); }) || c;
   callSignUsed.add(c);
   callSignOf.set(key, c);
   return c;
@@ -88032,7 +88989,7 @@ function feedbackScreenWords() {
 // Everything the game adds to a note by itself. Each line is a short label and a value.
 function feedbackContext() {
   const c = {};
-  c.build = typeof GAME_VERSION !== 'undefined' ? GAME_VERSION : 'v288.0';
+  c.build = typeof GAME_VERSION !== 'undefined' ? GAME_VERSION : 'v291.0';
   c.where = feedbackScreenWords();
   if (typeof campaign !== 'undefined' && campaign && typeof gameModeNow === 'function' && gameModeNow() === 'campaign') {
     c.warWeek = Math.floor(campaign.week || 0);
@@ -92562,7 +93519,7 @@ function councilFaceHtml(id, lt) {
 }
 // (v160.0) Which member signs a dispatch sent from this office ('' for none): the aide, Kask's works, the Research Directorate, the War Council (the Chair).
 const COUNCIL_DISPATCH_FACES = { 'Capt. Halloran': 'aide', 'Kask Orbital Works': 'ind', 'Research Directorate': 'res', 'War Council': 'chair' };
-const crState = { built: false, office: '', minutesNo: 0, logs: {}, flash: '', flashUntil: 0 };
+const crState = { built: false, office: '', minutesNo: 0, logs: {}, flash: '', flashUntil: 0, admMsg: '' };   // (v289.1) admMsg: what came of your last motion
 const CR_SIL = '<svg viewBox="0 0 100 120" aria-hidden="true"><circle cx="50" cy="38" r="21"/><path d="M8 120c2-30 18-46 42-46s40 16 42 46z"/></svg>';
 const CR_FLASK = '<svg class="cr-fl" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 1.5h4M7 1.5v5L2.5 13.5h11L9 6.5v-5"/></svg>';
 const CR_PIN = '<svg class="cr-fl" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 15s-5-5.2-5-8.6a5 5 0 0 1 10 0C13 9.8 8 15 8 15z"/><circle cx="8" cy="6.4" r="1.8"/></svg>';
@@ -92869,6 +93826,8 @@ function crMinutesHtml(m) {
     const against = COUNCIL_SEATS.filter(function (s) { return a.votes[s] !== a.verdict; }).map(function (s) { return COUNCIL_MEMBERS[s].title.replace(/^The /, 'the '); });
     return '<div>' + line('council.min.adm.case', { admiral: a.admiral, week: 'WEEK ' + Math.floor(a.week), ships: plural(a.ships, 'ship'), VERDICT: { back: 'BACKED', reprimand: 'REPRIMANDED', replace: 'REPLACED' }[a.verdict], tally: a.forIt + ' to ' + a.against, against: against.length ? ' (' + against.join(', ') + ' against)' : '' }) + '</div>';
   }).join('') : '<div>' + line('council.min.adm.none', {}) + '</div>');
+  if (m.admiralty) { const r = m.admiralty;                                // (v289.0, 06h2) the Council's review of Earth's Admiral
+    h += '<div class="k">The Admiral</div><div>' + line('council.min.admiralty.' + r.verdict, admiraltyWords(r)) + '</div>'; }
   if (m.vadm && m.vadm.length) h += '<div class="k">Vice Admirals</div>' + m.vadm.map(function (r) {     // (v25 stop 5c) the Chief of Staff's review of each Fleet's Vice Admiral
     return '<div>' + line('council.min.vadm.' + r.verdict, { va: r.va, fleet: r.fleet, why: r.why, successor: r.successor, promoted: r.promoted ? ' is promoted to Vice Admiral and' : '' }) + '</div>';
   }).join('');
@@ -93016,6 +93975,7 @@ function crSideOffice(id) {
     return '<div><span>' + ax[0] + '</span><span class="dots">' + [1, 2, 3, 4, 5].map(function (n) { return '<i' + (n <= v[0] ? ' class="on"' : '') + '></i>'; }).join('') + '</span><b>' + v[1] + '</b></div>';
   }).join('') + '</div>';
   if (M.you) {
+    h += crAdmiralHtml();                                         // (v289.1) the fleet's Admiral: the record, and your motion
     // (v31 B3) your location marker: back a member's place, or put it on any place we hold
     h += '<div class="sec-h">Back a member\'s place</div><div class="cr-opts" role="group" aria-label="Back a member\'s place">' + COUNCIL_VOTERS.map(function (m) {
       const e = crPlaceOf(m);
@@ -93054,6 +94014,34 @@ function crSideOffice(id) {
     '<dt>' + (M.you ? 'Markers in an adopted move' : 'Main efforts carried') + '</dt><dd>' + (M.you ? k.stats.markerAdopted + ' of ' + (k.stats.markerAdopted + k.stats.markerDeferred) : carried + ' of the last ' + files.length) + '</dd>' +
     '<dt>Admirals judged</dt><dd>' + (votes.back + votes.reprimand + votes.replace ? 'backed ' + votes.back + ', reprimanded ' + votes.reprimand + ', replaced ' + votes.replace : 'none yet') + '</dd></dl></div>';
   cmSideSet('Personnel file', M.letter, h);
+}
+
+// ---- (v289.1, 06h2) The fleet's Admiral in the aide's office: who commands, how the Council's reviews went, and your motion ----
+function crAdmiralHtml() {
+  if (typeof admiraltyMotionState !== 'function' || !admiraltyOn()) return '';
+  const st = admiraltyMotionState(), A = admiraltyFields(campaign), rec = st.rec || admiraltyCurrent();
+  if (!rec) return '<div class="sec-h">The fleet\'s Admiral</div><p class="note-ai">No Admiral of record is in command right now.</p>';
+  const last = A.reviews.length ? A.reviews[A.reviews.length - 1] : null, f = A.from ? admiraltyFigures(A) : null;
+  const verdictWord = { praised: 'commended', noted: 'backed', reprimanded: 'reprimanded', replaced: 'relieved' };
+  let h = '<div class="sec-h">The fleet\'s Admiral</div><div class="cr-row"><span class="cr-sq">A</span><span>' + esc(recordTitle(rec)) + '<small>' + esc(personalityWords(rec.axes).join(', ')) +
+    ' &middot; in command since week ' + Math.floor(A.since) + '</small></span></div>';
+  h += '<dl class="kv" style="margin-top:6px"><dt>Last review</dt><dd>' + (last && last.id === rec.id ? esc(verdictWord[last.verdict] || last.verdict) + ', week ' + Math.floor(last.week) : 'not reviewed yet') + '</dd>' +
+    '<dt>Since then</dt><dd>' + esc(f ? f.why : '-') + '</dd>' + '<dt>Next review</dt><dd>week ' + Math.max(Math.ceil(campaign.week - 1e-9), Math.floor(num(A.nextReview, campaign.week + 1))) + '</dd></dl>';
+  const dis = function (on) { return on ? '' : ' disabled'; };
+  h += '<div class="cr-opts" role="group" aria-label="Your motion on the Admiral">' +
+    '<button type="button" data-cm="council" data-id="admnoconf"' + dis(st.can && st.noconf) + '>Call a vote of no confidence</button>' +
+    '<button type="button" data-cm="council" data-id="admstandby" aria-pressed="' + !!st.standby + '"' + dis(st.can && !st.standby) + '>Stand by the Admiral</button></div>';
+  h += '<p class="note-ai">You cannot order the Admiral, but the Bureau can put the question to the Council. A vote of no confidence is held at once and the Council still judges on the figures, so it can fail. Standing by the Admiral counts at the next review. After either, the Council hears no other motion for ' + plural(SETTINGS.admiraltyMotionWeeks, 'war week') + '.' + (st.why ? ' ' + esc(st.why) : '') + '</p>';
+  if (crState.admMsg) h += '<p class="typed" style="font-size:13px">' + esc(crState.admMsg) + '</p>';
+  return h;
+}
+function crAdmiralMotionText(res) {
+  if (!res.ok) return res.why;
+  if (!res.row) return 'The aide will stand by the Admiral at the next review.';
+  const r = res.row, tally = r.forIt + ' to ' + r.against;
+  if (r.verdict === 'replaced') return 'The motion carries, ' + tally + '. ' + r.admiral + ' is relieved. ' + admiraltyWords(r).next;
+  if (r.verdict === 'reprimanded') return 'The motion falls short: the Council reprimands ' + r.admiral + ' instead, ' + tally + '.';
+  return 'The motion fails: the Council backs ' + r.admiral + ', ' + tally + ' (' + r.why + ').';
 }
 
 // ---- Clicks (data-cm="council", from the campaign screen's click handler, section 7l) ----
@@ -93096,7 +94084,9 @@ function councilRoomClick(t) {
   if (what === 'backm' && COUNCIL_MEMBERS[arg]) { councilBack(arg); crState.flash = 'aide'; crState.flashUntil = performance.now() + 6000; return; }
   if (what === 'mark') { councilSetMarker(arg); crState.flash = 'aide'; crState.flashUntil = performance.now() + 6000; return; }
   if (what === 'research') { councilSetResearch(arg); return; }
-  if (what === 'rstab') { researchTabOpen(arg); return; }                   // (v30 C3) the Research tab, on a project
+  if (what === 'rstab') { researchTabOpen(arg); return; }
+  if (what === 'admnoconf') { crState.admMsg = crAdmiralMotionText(admiraltyMotion('noconf')); return; }    // (v289.1, 06h2)
+  if (what === 'admstandby') { crState.admMsg = crAdmiralMotionText(admiraltyMotion('standby')); return; }                   // (v30 C3) the Research tab, on a project
 }
 // Esc in an office goes back to the table (true when it did).
 function councilRoomEsc() { if (!crState.office) return false; crState.office = ''; return true; }
@@ -96919,7 +97909,10 @@ Object.assign(DISPATCH_LINES, {
   'brief.perf.designWell':    { kind: 'perf', crit: false, from: 'Flag, the front', title: 'The {design} proves itself', text: '{lead} {cost}' },
   'brief.perf.designBadly':   { kind: 'perf', crit: false, from: 'Flag, the front', title: 'The {design} struggles', text: '{lead} {cost}' },
   'brief.perf.designMiscast': { kind: 'perf', crit: true,  from: 'Flag, the front', title: 'The {design} seems miscast', text: '{lead} {cost} {hint}' },
-  'brief.off.vadmReview':     { kind: 'off',  crit: false, from: 'Secretary to the Council', title: 'The Council {verdict} {va}', text: '{va} of the {fleet} is {verdictLong}.' }
+  'brief.off.vadmReview':     { kind: 'off',  crit: false, from: 'Secretary to the Council', title: 'The Council {verdict} {va}', text: '{va} of the {fleet} is {verdictLong}.' },
+  // (v289.0, 06h2) the Council's review of Earth's Admiral: only a commendation, a reprimand or a relief is told
+  'brief.off.admReview':      { kind: 'off',  crit: false, from: 'Secretary to the Council', title: 'The Council {verdict} {admiral}', text: '{admiral} is {verdictLong} ({why}).{cause}' },
+  'brief.off.admRelieved':    { kind: 'off',  crit: true,  from: 'Secretary to the Council', title: 'The Council relieves {admiral}', text: '{admiral} is relieved of command of the fleet ({why}).{cause} {next}' }
 });
 // (v280.0) The design report's pieces. The lead says what the rating was judged on (its role's measure, the same words as the battle report's
 // "Your designs" line), the cost says what it lost, only as far as the figures go, the hint says which role its numbers suit. Tags: section 0e.
@@ -96939,12 +97932,13 @@ const DESIGN_REPORT_LINES = {
 };
 // The first piece whose claims hold (the lists are in order: the strongest true thing first).
 function designReportPiece(list, d) { const ok = claimAllowed(list, d); return ok.length ? claimText(ok[0]) : ''; }
-const recWatch = { c: null, stretch: 0, review: 0 };
+const recWatch = { c: null, stretch: 0, review: 0, adm: 0 };
 function recordsDispatchWatch(c) {
   if (!c || !c.cmd || !cmdOn()) return;
   cmdRecordsCampaignFields(c);
   const k = c.cmd;
-  if (recWatch.c !== c) { recWatch.c = c; recWatch.stretch = k.stretchNo; recWatch.review = k.reviews.length; return; }
+  const admRows = c.admiralty && Array.isArray(c.admiralty.reviews) ? c.admiralty.reviews : [];   // (v289.0, 06h2)
+  if (recWatch.c !== c) { recWatch.c = c; recWatch.stretch = k.stretchNo; recWatch.review = k.reviews.length; recWatch.adm = admRows.length; return; }
   for (const st of k.stretches) {
     if (st.no <= recWatch.stretch) continue;
     let n = 0;
@@ -96975,6 +97969,14 @@ function recordsDispatchWatch(c) {
       verdictLong: r.verdict === 'praised' ? 'commended by the Council' : (r.verdict === 'reprimanded' ? 'reprimanded by the Council' : 'relieved of command. ' + r.successor + (r.promoted ? ' is promoted to Vice Admiral and' : '') + ' takes the Fleet') }, 'council');
   }
   recWatch.review = k.reviews.length;
+  if (recWatch.adm > admRows.length) recWatch.adm = 0;          // (the list keeps its last 40: an old start means it was trimmed)
+  for (let n = recWatch.adm; n < admRows.length; n++) {          // (v289.0, 06h2) the Council's review of Earth's Admiral
+    const r = admRows[n], w = admiraltyWords(r);
+    if (r.verdict === 'replaced') dispatchAdd('brief.off.admRelieved', w, 'council');
+    else if (r.verdict === 'praised' || r.verdict === 'reprimanded' || r.motion === 'noconf') dispatchAdd('brief.off.admReview', Object.assign(w, { verdict: r.verdict === 'praised' ? 'commends' : (r.verdict === 'reprimanded' ? 'reprimands' : 'backs'),
+      verdictLong: r.verdict === 'praised' ? 'commended by the Council' : (r.verdict === 'reprimanded' ? 'reprimanded by the Council' : 'backed by the Council') }), 'council');   // (v289.1: a failed vote of no confidence is told too)
+  }
+  recWatch.adm = admRows.length;
 }
 
 // ---- The debug API (added to EW.command) ----
@@ -117227,7 +118229,7 @@ BUREAU2_SCREEN_API.testRange = { run: testRangeRun, state: testRange, plan: func
 //   adopted habits come along in its copy code and into every new campaign. A doctrine changed in the Bureau after the save updates the plan's copy.
 //   DOCTRINE TEMPLATES (LIBRARY.templates: [{ name, doctrine, savedAt }]) live here too, so they carry over as well. A plan from before v37 has no doctrine: Auto.
 // =====================================================================
-const GAME_VERSION = 'v288.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
+const GAME_VERSION = 'v291.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
 const LIBRARY_KEY = 'engineersWar.library';
 const LIBRARY_FORMAT = 1;
 const LIBRARY_CODE_SHIP = 'EW-SHIP-1:', LIBRARY_CODE_LIB = 'EW-LIB-1:';
@@ -119734,6 +120736,7 @@ function simulateStep(dt) {
   updateMovementAndTargeting(dt);
   cplStep(dt);
   grabStep(dt);                                  // (v258.6, section 5vm) the Devourer's catches held in its jaws, chewed, and let go                                   // (v66) ... their moves, and the look for crippled ships and the Swarm's meals
+  if (!peek && typeof refitStep === 'function') refitStep();   // (v290.0, section 5jr) Vice Admirals send old-version ships off the line to be refitted
   if (!peek) dvStep();                           // (v75, section 5vc) a crewed Delver ship whose time is up, or who is hurt, jumps away
   if (!peek) dvWingStep();                       // (v262.1, section 5jy) short Delver wings of one design close together merge
   if (!peek) syStep(dt);                         // (v77, section 5vc) the Sylph pilots: Barriers fill, goals are picked and kept, the hurt and the done leave
