@@ -240,6 +240,7 @@
 .mode-front {
   --select:#FFE14D;      /* the squadron you clicked: never a side colour */
   --boom:#FFA640;        /* explosions */
+  --engineer:#FF7A1A;    /* engineer orange: what the yards are building now (the Bureau's version buttons) */
   --map-bg:#03060B;      /* battle map background (darker than any panel) */
   --map-grid:#16263A;    --map-frame:#8FA6BF;
   --map-text:#E6EEF7;    --map-dim:#8EA3B9;
@@ -2674,6 +2675,9 @@ hr.rule { border:0; border-top:var(--line-w) solid var(--line); margin:var(--sp-
 #bureau2Screen .dl small { font: 500 11px var(--font-data); color: var(--dim); }
 #bureau2Screen .dl .vers { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 4px; }
 #bureau2Screen .dl .vers button { padding: 0 6px; border: 1px solid var(--line-strong); background: transparent; color: var(--text); font: 600 11px var(--font-data); cursor: pointer; }
+#bureau2Screen .dl .vers { align-items: center; }
+#bureau2Screen .dl .vers button.yards { padding: 1px 8px; font-size: 13px; font-weight: 800; color: var(--engineer, #FF7A1A); border: 2px solid var(--engineer, #FF7A1A); background: color-mix(in srgb, var(--engineer, #FF7A1A) 16%, transparent); }   /* (v309.0, Alex) the version the yards build: engineer orange, a little bigger */
+#bureau2Screen .dl .vers button[aria-current="true"] { text-decoration: underline; text-underline-offset: 3px; }   /* (v309.0) the version open on the sheet */
 #bureau2Screen .dl .acts { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 5px; }
 #bureau2Screen .fresh { font: 400 12.5px/1.45 var(--type); color: var(--dim); padding: 10px; margin: 8px; border: 1px dashed var(--line-strong); }
 #bureau2Screen .stamp { display: inline-block; font: 400 13px var(--type); letter-spacing: .12em; text-transform: uppercase; padding: 1px 8px; border: 2px solid currentColor;
@@ -2719,6 +2723,9 @@ hr.rule { border:0; border-top:var(--line-w) solid var(--line); margin:var(--sp-
 #bureau2Screen .btag { display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px 1px 2px; font: 600 11px var(--font-data); color: var(--text);
   border: 1px solid var(--mc); background: color-mix(in srgb, var(--mc) 16%, transparent); cursor: help; }
 #bureau2Screen .btag svg { width: 14px; height: 14px; }
+/* (v307.0) the "passes power and heat" mark, and the frame bonuses a part gets */
+#bureau2Screen .carrytag { display: inline-flex; align-items: center; gap: 3px; }
+#bureau2Screen svg.carry { width: 14px; height: 14px; flex: none; }
 #bureau2Screen .tools { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 5px 14px; padding: 5px 10px; border-bottom: 1px solid var(--line); }
 #bureau2Screen .tg { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 #bureau2Screen .tg button { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border: 1px solid var(--line-strong); background: transparent; color: var(--text);
@@ -3745,6 +3752,9 @@ body.cm-sheet-open #tutLayer { display: none; }
   background: none; border: 0; padding: 1px 2px; font-family: inherit; font-size: inherit; line-height: inherit; }
 .ewtip .tw svg { width: 1.1em; height: 1.1em; }
 .ewtip .seen { margin-top: 6px; font: 500 11.5px "IBM Plex Mono", Consolas, monospace; color: #9a978d; }
+/* (v307.0) a frame bonus the part gets (bright), and the "passes power and heat" mark */
+.ewtip .seen.good { color: #e4e0d3; }
+.ewtip .seen svg.bsw, .ewtip .seen svg.carry { width: 13px; height: 13px; vertical-align: -2px; }
 .ewtip .eg { margin-top: 6px; padding: 5px 7px; background: #1b1b19; font: 500 11.5px "IBM Plex Mono", Consolas, monospace; color: #ECE8DC; }
 .ewtip .nums { margin-top: 6px; display: grid; grid-template-columns: auto auto; gap: 1px 12px; font: 500 11.5px "IBM Plex Mono", Consolas, monospace; color: #cfccc2; }
 .ewtip .nums span:nth-child(odd) { color: #9a978d; }
@@ -4150,7 +4160,7 @@ html.ew-phone-ui #campaignScreen .rates button, html.ew-phone-ui #campaignScreen
     <section class="panel hidden" id="mmPanel"><div class="panel-head" id="mmPanelHead"></div><div class="panel-body" id="mmPanelBody"></div></section>
     <input type="file" id="mmFile" accept=".json,application/json,text/plain" class="hidden">
   </div>
-  <div class="mm-version" title="The version of the game you are playing">Version v306.0</div>
+  <div class="mm-version" title="The version of the game you are playing">Version v310.0</div>
 </div>
 
 <!-- (v31 A2, section 7l) the end of the war: the game-over screen (Earth's people are gone) or the victory screen (the aliens' home secured). It lies over
@@ -11011,9 +11021,13 @@ lvPattern = function (c, p, b, r, L) {
 // ---- bolder noses ----
 Object.assign(LV_NOSE, { needle: 'Needle lance', claw: 'Forked claw', hammer: 'Hammerhead', bulb: 'Bulb bow', ziggurat: 'Stepped prow' });
 function lvAtTip(R, ins) {   // put new points between the nose's two front corners
+  // (v308.0, Alex: "a lot of the nose cone top arts are asymmetric and wonky") a narrow bow (front face under 2.2 squares) ends in ONE point, not two
+  // corners. The new points used to go in AFTER that point, so the shape ran from the centre out to one side and back: claws with one prong,
+  // hammerheads and bulbs bulging to one side. Now that single point is REPLACED by the new points, which run from one side of the centre line to
+  // the other, so every bolder nose is a mirror image of itself on any frame.
   for (var i = 0; i < R.pts.length - 1; i++) { var a = R.pts[i], b = R.pts[i + 1];
     if (Math.abs(a[0] - R.tip.x) < 1e-6 && Math.abs(b[0] - R.tip.x) < 1e-6) { R.pts.splice.apply(R.pts, [i + 1, 0].concat(ins)); return R; } }
-  for (i = 0; i < R.pts.length; i++) if (Math.abs(R.pts[i][0] - R.tip.x) < 1e-6) { R.pts.splice.apply(R.pts, [i + 1, 0].concat(ins)); return R; }
+  for (i = 0; i < R.pts.length; i++) if (Math.abs(R.pts[i][0] - R.tip.x) < 1e-6) { R.pts.splice.apply(R.pts, [i, 1].concat(ins)); return R; }
   return R;
 }
 var _lvNose2 = htNose;
@@ -13689,6 +13703,9 @@ const SETTINGS = {
   bbShedFocusMul: 0.5,       // ... the share of Focus a beam builds against it (Alex's P2: x0.5): half the climb, and half the extra at the top (x2 instead of x3)
   sporeFieldModel: 1,        // 1 = SPORE CENSERS work (the spore-field plan, swarm-tier01.md s10): every enemy missile inside a censer's cloud loses its spore damage a
                              //     second (no dice), the strongest cloud only (they do not stack), weaker as the censer is hurt. 0 = the censer does nothing
+  sporeGapEvery: 10,         // (v310.0) NO DEFENCE IS A WALL: one enemy missile in this many that flies into a spore cloud finds a gap in it and is not eaten (the spores
+                             //     never touch it), so ships that fire only missiles can always wear down a ship behind a cloud in the end. Counted, not rolled (no dice,
+                             //     the battle's dice are not touched). 0 = the old rule: the cloud eats every missile it can
   bbBurst: 1,                // 1 = a BURST SAC body (the Swarm's Burster) bursts on touch and on death. 0 = it never bursts (the sac is dead weight)
   bbBurstTouch: 60,          // it bursts when it is this close to an enemy's hull (its distance less the target's size): one hit of the sac's damage, Blast and Corrosive
   bbBurstDeathReach: 150,    // ... or when it dies within this of an enemy ship (on the nearest one)
@@ -15630,7 +15647,7 @@ const SETTING_MUST_BE_POSITIVE = ['commandThinkRate', 'moonOrbitMinutes', 'moonO
   'serviceLastMax', 'serviceHistoryMax', 'serviceEventsMax', 'recentChangeSeconds', 'dossierLastActions', 'reportOfficerRows', 'dossierChartMinSpan',
   'orbitRateHeadroom', 'orbitMinRate', 'facingLeadFactor', 'interceptMaxLead', 'orbitRangeFraction', 'orbitTurnMargin', 'tightOrbitSizeRatio', 'tightOrbitHulls', 'tightOrbitStraySeconds', 'tightOrbitSpacings', 'tacticMinSeconds', 'chaseGiveUpSeconds', 'noChaseSeconds',
   'shapeEnterFactor', 'shapeExitFactor', 'axisTurnRate'];
-const SETTING_MUST_BE_NON_NEGATIVE = ['longLocalAdvanceMax', 'longLocalAdvanceWeeks', 'dvWingMergeRange', 'dockRepairRefitShare', 'dvWingMergeSeconds', 'rankSwapSeconds', 'noseArcDeg', 'noseNearFactor', 'noseNearMin', 'noseBackSeconds', 'turnRampSeconds', 'quietStepMul', 'quietMinSpeed', 'chainLagSeconds', 'chainSpreadSeconds', 'slowRegrowSeconds', 'slowSporeSteps', 'slowFireMapSteps', 'slowGunRetrySeconds', 'lineRankMinWidth', 'lineRankDepth', 'lineRankRotateAt', 'batteryDepthFactor', 'swarmSpreadWidth', 'swarmSpreadDepth', 'swarmSpreadRejig', 'swarmPressOdds', 'swarmFallBackOdds', 'bombardShieldShare', 'bombardHoldSeconds', 'swarmDockStallCap', 'swarmDockStallQuietShare', 'stationHullMendQuiet', 'alloysNeverIdleNote', 'refitTrips', 'refitLookSeconds', 'refitFleetSeconds', 'refitPerLook', 'refitMaxShare', 'refitPressureRadius', 'refitPressureOdds', 'refitDangerRadius', 'refitDangerOdds', 'refitMaxTrip', 'refitBoldSwing', 'towJobs', 'towWaitSeconds', 'towFreshSeconds', 'towLookSeconds', 'towFleetSeconds', 'towBoldSwing', 'towDangerRadius', 'towDangerOdds', 'aoMobilizeOdds', 'aoMobilizeBoldSwing', 'aoMobilizeReinSwing', 'aoMobilizeSeconds', 'aoMobilizeLossShare', 'aoMobilizeBeatenShare', 'aoMobilizeOtherShips', 'aoMobilizeEnemySpeed', 'aoMobilizeWaitSeconds', 'aoCharLineSwing', 'aoCharCommandSwing', 'aoCharMovePull', 'aoCharDisciplineSwing', 'aoPostureSeconds', 'aoPostureMinSeconds', 'aoMeetOdds', 'aoOddsOutShare', 'aoFallBackOdds', 'aoBoldLean', 'aoMeetReachSlots', 'aoMeetStandoff', 'aoEngageDist', 'aoGroupDist', 'aoEdgeSlots', 'aoInboundSlots', 'aoRetakeLooseShare', 'aoDangerDist', 'aoRetakeStayShare', 'aoRetakeGatherSeconds', 'aoDefenceSplitShips', 'aoFleetMax', 'aoGarrisonShare', 'aoForwardStationSpeed', 'aoRefitShare', 'divisionOwnerSeconds', 'divisionOwnerFirstSeconds', 'divisionOwnerCountBand', 'divisionOwnerJoinSeconds', 'admiralNeedsLean', 'admiralNeedsReachRatio', 'admiralNeedsDefenceRatio', 'admiralNeedsWorksRatio', 'admiralNeedsPdShare', 'scuttleKillShare', 'scuttleXpCost', 'campaignTidySeconds', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftPressed', 'coreLoopShiftQuiet', 'coreLoopShiftMax', 'coreLoopHiveHoldShare', 'coreLoopAssessSeconds', 'coreLoopAssaultMixShare', 'coreLoopReinSwing', 'coreLoopReserveShare', 'coreLoopStrikeShare', 'coreLoopBoldAbove', 'coreLoopVaSeconds', 'coreLoopVaSlack', 'coreLoopVaWornShare', 'coreLoopDefenceRatio', 'coreLoopFleetHoldSeconds', 'coreLoopDivisionMinShips', 'coreLoopAssaultRatio', 'coreLoopAssaultFloor', 'coreLoopPlaceDefenceWorth', 'placesHomeEdgeBias', 'placesBrokenBonus', 'coreLoopStreamWeeks', 'coreLoopStreamMinShips', 'coreLoopLineKeep', 'coreLoopLineSeconds', 'coreLoopLineLooks', 'coreLoopLineDepth', 'coreLoopLineStep', 'coreLoopLineWindow', 'coreLoopTipRatio', 'coreLoopClearSeconds', 'coreLoopBackSeconds', 'coreLoopHoldSeconds', 'coreLoopBerths', 'divisionMergeSlack', 'swarmNestRetakeKeep', 'swarmGrowWindowWeeks', 'swarmGrowLowLoss', 'swarmGrowHighLoss', 'swarmGrowFromShare', 'swarmGrowStep', 'swarmGrowSmallCut', 'swarmGrowBigGain', 'swarmSpreadWeeks', 'hangarRefillWeeks', 'hangarRestockShare', 'wingMaxTiny', 'wingLaunchRange', 'wingScreenRadius', 'wingStrikeRange', 'wingMaxSmall', 'wingSpread', 'hangarBuildMul', 'swarmMiteRegrowSeconds', 'swarmCraftRegrowSeconds', 'fighterTurnaroundSeconds', 'fighterLaunchSeconds', 'fighterLaunchRange', 'fighterTickSeconds', 'stationFighterGuardRadius', 'droneJamReach', 'droneJamScatterMul', 'droneJamLoseChance', 'dcNoRoomSeconds', 'cmdPaceFormSeconds', 'cmdPaceMinShare', 'cmdPaceLeadSeconds', 'cmdPaceMinMarch', 'divisionSpeedSort', 'divisionSlowBelow', 'divisionFastAbove', 'swarmPaceFormSeconds', 'swarmDrift', 'swarmDivDrift', 'wreckHitShare', 'repairPartsWeeks', 'repairAutoBelow', 'dockQueueWarnSeconds', 'crippledCheckSeconds', 'towSpeedShare', 'towMaxShare', 'towHealthyHull', 'feedHullBelow', 'feedSeconds', 'feedSquadSeconds', 'feedHullShare', 'feedAmmoShare', 'feedGrabRange', 'feedHungryHull', 'feedHungryAmmo', 'feedHatchlingRange', 'swarmInfestTierGain', 'swarmInfestGrowShare', 'swarmInfestStartShare', 'swarmSurfaceInfest', 'swarmBurnPerDps', 'swarmBurnHotMul', 'swarmBurnPerKill', 'swarmRegrowSeconds', 'swarmSporeEvery', 'swarmSporeShotsPer', 'swarmSporeDpsPerInf', 'swarmBileEvery', 'swarmBileFrom', 'swarmBileDpsPerInf', 'swarmConvertCap', 'swarmConvertAimShare', 'swarmConvertFromWeek', 'swarmConvertFullWeek', 'swarmConvertDepthShare', 'swarmConvertWaste', 'facingTwoSidedAngle', 'freshSideHoldSeconds', 'crossTEdge', 'crossTCreepFraction', 'crossTWidth', 'crossTTurnEdge', 'placesPicketSpread', 'placesPicketMove', 'placesPicketMax', 'placesWithdrawGatherSeconds', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerTargetShare', 'ledgerLineMin', 'ledgerLossMargin', 'ledgerSaveFloor', 'ledgerMinLoss', 'ledgerSurplusShare', 'withdrawRatio', 'withdrawHoldWeeks', 'ledgerAssaultWeeks', 'indDevShareSave', 'indDevShareIdle', 'dirPriorityMul', 'resourceHeldShare', 'devGraceWeeks', 'devCapStart', 'devCapAlien', 'devPotShare', 'devIdleWeeks', 'devMaxBuilds', 'bbAcidSeconds', 'bbAcidMaxPatches', 'bbRegrowQuiet', 'bbRegrowHull', 'bbRegrowPlate', 'bbRegrowHeatStop', 'bbBurstTouch', 'bbBurstDeathReach', 'bbBurstSeek', 'bbVolleySpread', 'bbMissileRetries', 'bbPdRoundsPerShot', 'bbPdFlakRounds', 'bbPdReadyRounds', 'bbPdLaserHeat', 'bbRadiatorFoldSeconds', 'bbSideWeight', 'deflectRatio', 'deflectCallSeconds', 'readyRoundsPerGun', 'boostFuEarth', 'boostFuOther', 'boostGrowth', 'alloysEarthStart', 'alloysEarthRampTo', 'alloysEarthRampWeeks', 'alloysGrowth', 'fissilesGrowth', 'alienAlloysStart', 'alienAlloysGrowth', 'alienAlloysPerStep', 'alienBoostPerStep', 'alienNodeLossShare', 'shipUpkeepMaxShare', 'berthIdleWeeks', 'berthBoostWeeks', 'berthMaxGrowth', 'campaignBuildDays', 'campaignLiveEnterShips', 'civilianNoteWeeks', 'leaderNewsCooldown', 'leaderNewsCombatGap', 'stationRebuildYardBonus', 'stationRebuildSecuredBonus', 'stationRebuildNearShare', 'stationRebuildAlloys', 'cmdAttackMaxSeconds', 'cmdPaceGap', 'radioQuietSeconds', 'cmdSummaryMinutes', 'designRemarkSeconds', 'cmdReviewBattles', 'huntMaxShips', 'huntGraceSeconds', 'pursuitFleeingBonus', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'dangerConeSeconds', 'placesAttackStallSeconds', 'campaignAttackStallSeconds', 'campaignStragglerShips', 'campaignStragglerShare', 'campaignStragglerSeconds', 'campaignStandoffSeconds', 'campaignStandoffWeeks', 'campaignRetakeWeeks', 'comebackMassWeeks', 'alienGarrisonCap', 'campaignFallenMax', 'campaignPoolCap', 'campaignGarrisonCap', 'campaignStartOwnShips', 'campaignAlienGarrison', 'campaignAdvanceKeep', 'campaignAdvanceRatio', 'campaignAdvanceTake', 'campaignAdvanceAfterWaves', 'campaignAdvanceHoldWeeks', 'campaignRearKeep', 'campaignFrontMoveMinShips', 'campaignFrontMoveShare', 'executiveMassRatio', 'executiveAssaultRatio', 'executiveAssaultMin', 'campaignPriorityWeight', 'alienShoveWeeks', 'alienGatherRatio', 'alienGatherTarget', 'alienGatherMinShips', 'alienGatherMaxWeeks', 'alienPullBackRatio', 'alienStateHoldWeeks', 'alienFirstPool', 'alienWaveJitter', 'alienWarnWeeks', 'alienWaveBoostWeeks', 'alienTargetWeakest', 'alienTargetMain', 'alienFirstWaveWeek', 'minLaunchShips', 'placesHoldClearOdds', 'campaignYardEvery', 'boostPerMarker', 'campaignRefuelShare', 'capitalBuildShare', 'assaultMaxWaitWeeks', 'repairPerWeek', 'campaignDesignBoostPerMass', 'campaignDesignBuildPerCost', 'campaignDesignAlloysShare', 'campaignDesignWeight', 'placesReachShare', 'placesFailRaise', 'placesContestShare', 'aoSecureShare', 'aoLoseShare', 'siegeBoostTrickle', 'boostFootholdShare', 'siegeGrowthFactor', 'siegeResourceFactor', 'placesReportMinutes', 'placesHysteresis', 'placesMaxOpposite', 'internalChance', 'internalFresh', 'externalCover', 'deepBelowHull', 'dcSeconds', 'blastToHull', 'blastToParts', 'profileNudgeMax', 'profileNudgeTurn', 'profileNudgeFiring', 'reactorWallShare', 'trackSquareCut', 'pressDryValue', 'pressFleetRatio', 'pressOdds', 'pressHealthEdge', 'pressOddsHealthy', 'pressDangerShare', 'pressHitChance', 'pressAfter', 'pressProgress', 'pressHold', 'pressStep', 'pressRingMin', 'lockFormShare', 'looseJitter', 'looseRein', 'lockSettleSeconds', 'lockRein', 'lockBreakHull', 'lockMinShare', 'closeRanksDelay', 'mergeBelow', 'mergeMaxOdds', 'disbandAt', 'stragglerSeconds', 'divisionLeash', 'pursuitBase', 'formBeforeAttack', 'gatherSeconds', 'fallenKeep', 'topUpBelow', 'stagingContactSeconds', 'stagingMaxWait', 'minNewSquadron', 'entryDangerRatio', 'entryCheckFactor', 'entryRetrySeconds', 'rallyInset', 'joinWornBelow', 'survivorEdgeMargin', 'flagKilled', 'flagWounded', 'flagSurviveSwing', 'woundedSkillPenalty', 'woundedBattles', 'woundedWeeks', 'scarShakenCombatMinutes', 'replacementDelay', 'handoverSeconds', 'standInSkill', 'pinRenewSeconds', 'divisionTaskMinSeconds', 'rotateWornShare', 'divisionRefuseOdds', 'divisionRallyOdds', 'divisionCounterPressure', 'mainEffortMinOdds', 'mainEffortFreeRein', 'pinRenewFactor', 'supportSeconds', 'supportMaxTravelSeconds', 'divisionTargetBonus', 'localAttackOdds', 'memberCompactShare', 'recruitAxisSpread', 'recruitSkillLow', 'recruitSkillHigh', 'rosterAxisLow', 'rosterAxisHigh', 'skillPerLevel', 'readinessXpPerRepair', 'medalSkillAdd', 'scarShakenBoldness', 'repertoirePull', 'spawnEdgeMargin', 'doctrinePull', 'matchupPull', 'experimentMinSeconds', 'experimentCooldown', 'tacticLearnStep', 'tacticWeightMax', 'exploreLearnBoost', 'spawnBandWidth', 'spawnVerticalMargin', 'shieldRechargeDelay', 'minArmorPassFraction', 'separationStrength',
+const SETTING_MUST_BE_NON_NEGATIVE = ['longLocalAdvanceMax', 'sporeGapEvery', 'longLocalAdvanceWeeks', 'dvWingMergeRange', 'dockRepairRefitShare', 'dvWingMergeSeconds', 'rankSwapSeconds', 'noseArcDeg', 'noseNearFactor', 'noseNearMin', 'noseBackSeconds', 'turnRampSeconds', 'quietStepMul', 'quietMinSpeed', 'chainLagSeconds', 'chainSpreadSeconds', 'slowRegrowSeconds', 'slowSporeSteps', 'slowFireMapSteps', 'slowGunRetrySeconds', 'lineRankMinWidth', 'lineRankDepth', 'lineRankRotateAt', 'batteryDepthFactor', 'swarmSpreadWidth', 'swarmSpreadDepth', 'swarmSpreadRejig', 'swarmPressOdds', 'swarmFallBackOdds', 'bombardShieldShare', 'bombardHoldSeconds', 'swarmDockStallCap', 'swarmDockStallQuietShare', 'stationHullMendQuiet', 'alloysNeverIdleNote', 'refitTrips', 'refitLookSeconds', 'refitFleetSeconds', 'refitPerLook', 'refitMaxShare', 'refitPressureRadius', 'refitPressureOdds', 'refitDangerRadius', 'refitDangerOdds', 'refitMaxTrip', 'refitBoldSwing', 'towJobs', 'towWaitSeconds', 'towFreshSeconds', 'towLookSeconds', 'towFleetSeconds', 'towBoldSwing', 'towDangerRadius', 'towDangerOdds', 'aoMobilizeOdds', 'aoMobilizeBoldSwing', 'aoMobilizeReinSwing', 'aoMobilizeSeconds', 'aoMobilizeLossShare', 'aoMobilizeBeatenShare', 'aoMobilizeOtherShips', 'aoMobilizeEnemySpeed', 'aoMobilizeWaitSeconds', 'aoCharLineSwing', 'aoCharCommandSwing', 'aoCharMovePull', 'aoCharDisciplineSwing', 'aoPostureSeconds', 'aoPostureMinSeconds', 'aoMeetOdds', 'aoOddsOutShare', 'aoFallBackOdds', 'aoBoldLean', 'aoMeetReachSlots', 'aoMeetStandoff', 'aoEngageDist', 'aoGroupDist', 'aoEdgeSlots', 'aoInboundSlots', 'aoRetakeLooseShare', 'aoDangerDist', 'aoRetakeStayShare', 'aoRetakeGatherSeconds', 'aoDefenceSplitShips', 'aoFleetMax', 'aoGarrisonShare', 'aoForwardStationSpeed', 'aoRefitShare', 'divisionOwnerSeconds', 'divisionOwnerFirstSeconds', 'divisionOwnerCountBand', 'divisionOwnerJoinSeconds', 'admiralNeedsLean', 'admiralNeedsReachRatio', 'admiralNeedsDefenceRatio', 'admiralNeedsWorksRatio', 'admiralNeedsPdShare', 'scuttleKillShare', 'scuttleXpCost', 'campaignTidySeconds', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftPressed', 'coreLoopShiftQuiet', 'coreLoopShiftMax', 'coreLoopHiveHoldShare', 'coreLoopAssessSeconds', 'coreLoopAssaultMixShare', 'coreLoopReinSwing', 'coreLoopReserveShare', 'coreLoopStrikeShare', 'coreLoopBoldAbove', 'coreLoopVaSeconds', 'coreLoopVaSlack', 'coreLoopVaWornShare', 'coreLoopDefenceRatio', 'coreLoopFleetHoldSeconds', 'coreLoopDivisionMinShips', 'coreLoopAssaultRatio', 'coreLoopAssaultFloor', 'coreLoopPlaceDefenceWorth', 'placesHomeEdgeBias', 'placesBrokenBonus', 'coreLoopStreamWeeks', 'coreLoopStreamMinShips', 'coreLoopLineKeep', 'coreLoopLineSeconds', 'coreLoopLineLooks', 'coreLoopLineDepth', 'coreLoopLineStep', 'coreLoopLineWindow', 'coreLoopTipRatio', 'coreLoopClearSeconds', 'coreLoopBackSeconds', 'coreLoopHoldSeconds', 'coreLoopBerths', 'divisionMergeSlack', 'swarmNestRetakeKeep', 'swarmGrowWindowWeeks', 'swarmGrowLowLoss', 'swarmGrowHighLoss', 'swarmGrowFromShare', 'swarmGrowStep', 'swarmGrowSmallCut', 'swarmGrowBigGain', 'swarmSpreadWeeks', 'hangarRefillWeeks', 'hangarRestockShare', 'wingMaxTiny', 'wingLaunchRange', 'wingScreenRadius', 'wingStrikeRange', 'wingMaxSmall', 'wingSpread', 'hangarBuildMul', 'swarmMiteRegrowSeconds', 'swarmCraftRegrowSeconds', 'fighterTurnaroundSeconds', 'fighterLaunchSeconds', 'fighterLaunchRange', 'fighterTickSeconds', 'stationFighterGuardRadius', 'droneJamReach', 'droneJamScatterMul', 'droneJamLoseChance', 'dcNoRoomSeconds', 'cmdPaceFormSeconds', 'cmdPaceMinShare', 'cmdPaceLeadSeconds', 'cmdPaceMinMarch', 'divisionSpeedSort', 'divisionSlowBelow', 'divisionFastAbove', 'swarmPaceFormSeconds', 'swarmDrift', 'swarmDivDrift', 'wreckHitShare', 'repairPartsWeeks', 'repairAutoBelow', 'dockQueueWarnSeconds', 'crippledCheckSeconds', 'towSpeedShare', 'towMaxShare', 'towHealthyHull', 'feedHullBelow', 'feedSeconds', 'feedSquadSeconds', 'feedHullShare', 'feedAmmoShare', 'feedGrabRange', 'feedHungryHull', 'feedHungryAmmo', 'feedHatchlingRange', 'swarmInfestTierGain', 'swarmInfestGrowShare', 'swarmInfestStartShare', 'swarmSurfaceInfest', 'swarmBurnPerDps', 'swarmBurnHotMul', 'swarmBurnPerKill', 'swarmRegrowSeconds', 'swarmSporeEvery', 'swarmSporeShotsPer', 'swarmSporeDpsPerInf', 'swarmBileEvery', 'swarmBileFrom', 'swarmBileDpsPerInf', 'swarmConvertCap', 'swarmConvertAimShare', 'swarmConvertFromWeek', 'swarmConvertFullWeek', 'swarmConvertDepthShare', 'swarmConvertWaste', 'facingTwoSidedAngle', 'freshSideHoldSeconds', 'crossTEdge', 'crossTCreepFraction', 'crossTWidth', 'crossTTurnEdge', 'placesPicketSpread', 'placesPicketMove', 'placesPicketMax', 'placesWithdrawGatherSeconds', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerTargetShare', 'ledgerLineMin', 'ledgerLossMargin', 'ledgerSaveFloor', 'ledgerMinLoss', 'ledgerSurplusShare', 'withdrawRatio', 'withdrawHoldWeeks', 'ledgerAssaultWeeks', 'indDevShareSave', 'indDevShareIdle', 'dirPriorityMul', 'resourceHeldShare', 'devGraceWeeks', 'devCapStart', 'devCapAlien', 'devPotShare', 'devIdleWeeks', 'devMaxBuilds', 'bbAcidSeconds', 'bbAcidMaxPatches', 'bbRegrowQuiet', 'bbRegrowHull', 'bbRegrowPlate', 'bbRegrowHeatStop', 'bbBurstTouch', 'bbBurstDeathReach', 'bbBurstSeek', 'bbVolleySpread', 'bbMissileRetries', 'bbPdRoundsPerShot', 'bbPdFlakRounds', 'bbPdReadyRounds', 'bbPdLaserHeat', 'bbRadiatorFoldSeconds', 'bbSideWeight', 'deflectRatio', 'deflectCallSeconds', 'readyRoundsPerGun', 'boostFuEarth', 'boostFuOther', 'boostGrowth', 'alloysEarthStart', 'alloysEarthRampTo', 'alloysEarthRampWeeks', 'alloysGrowth', 'fissilesGrowth', 'alienAlloysStart', 'alienAlloysGrowth', 'alienAlloysPerStep', 'alienBoostPerStep', 'alienNodeLossShare', 'shipUpkeepMaxShare', 'berthIdleWeeks', 'berthBoostWeeks', 'berthMaxGrowth', 'campaignBuildDays', 'campaignLiveEnterShips', 'civilianNoteWeeks', 'leaderNewsCooldown', 'leaderNewsCombatGap', 'stationRebuildYardBonus', 'stationRebuildSecuredBonus', 'stationRebuildNearShare', 'stationRebuildAlloys', 'cmdAttackMaxSeconds', 'cmdPaceGap', 'radioQuietSeconds', 'cmdSummaryMinutes', 'designRemarkSeconds', 'cmdReviewBattles', 'huntMaxShips', 'huntGraceSeconds', 'pursuitFleeingBonus', 'kiteDiscount', 'dangerBoldSwing', 'dangerNoiseMax', 'dangerConeSeconds', 'placesAttackStallSeconds', 'campaignAttackStallSeconds', 'campaignStragglerShips', 'campaignStragglerShare', 'campaignStragglerSeconds', 'campaignStandoffSeconds', 'campaignStandoffWeeks', 'campaignRetakeWeeks', 'comebackMassWeeks', 'alienGarrisonCap', 'campaignFallenMax', 'campaignPoolCap', 'campaignGarrisonCap', 'campaignStartOwnShips', 'campaignAlienGarrison', 'campaignAdvanceKeep', 'campaignAdvanceRatio', 'campaignAdvanceTake', 'campaignAdvanceAfterWaves', 'campaignAdvanceHoldWeeks', 'campaignRearKeep', 'campaignFrontMoveMinShips', 'campaignFrontMoveShare', 'executiveMassRatio', 'executiveAssaultRatio', 'executiveAssaultMin', 'campaignPriorityWeight', 'alienShoveWeeks', 'alienGatherRatio', 'alienGatherTarget', 'alienGatherMinShips', 'alienGatherMaxWeeks', 'alienPullBackRatio', 'alienStateHoldWeeks', 'alienFirstPool', 'alienWaveJitter', 'alienWarnWeeks', 'alienWaveBoostWeeks', 'alienTargetWeakest', 'alienTargetMain', 'alienFirstWaveWeek', 'minLaunchShips', 'placesHoldClearOdds', 'campaignYardEvery', 'boostPerMarker', 'campaignRefuelShare', 'capitalBuildShare', 'assaultMaxWaitWeeks', 'repairPerWeek', 'campaignDesignBoostPerMass', 'campaignDesignBuildPerCost', 'campaignDesignAlloysShare', 'campaignDesignWeight', 'placesReachShare', 'placesFailRaise', 'placesContestShare', 'aoSecureShare', 'aoLoseShare', 'siegeBoostTrickle', 'boostFootholdShare', 'siegeGrowthFactor', 'siegeResourceFactor', 'placesReportMinutes', 'placesHysteresis', 'placesMaxOpposite', 'internalChance', 'internalFresh', 'externalCover', 'deepBelowHull', 'dcSeconds', 'blastToHull', 'blastToParts', 'profileNudgeMax', 'profileNudgeTurn', 'profileNudgeFiring', 'reactorWallShare', 'trackSquareCut', 'pressDryValue', 'pressFleetRatio', 'pressOdds', 'pressHealthEdge', 'pressOddsHealthy', 'pressDangerShare', 'pressHitChance', 'pressAfter', 'pressProgress', 'pressHold', 'pressStep', 'pressRingMin', 'lockFormShare', 'looseJitter', 'looseRein', 'lockSettleSeconds', 'lockRein', 'lockBreakHull', 'lockMinShare', 'closeRanksDelay', 'mergeBelow', 'mergeMaxOdds', 'disbandAt', 'stragglerSeconds', 'divisionLeash', 'pursuitBase', 'formBeforeAttack', 'gatherSeconds', 'fallenKeep', 'topUpBelow', 'stagingContactSeconds', 'stagingMaxWait', 'minNewSquadron', 'entryDangerRatio', 'entryCheckFactor', 'entryRetrySeconds', 'rallyInset', 'joinWornBelow', 'survivorEdgeMargin', 'flagKilled', 'flagWounded', 'flagSurviveSwing', 'woundedSkillPenalty', 'woundedBattles', 'woundedWeeks', 'scarShakenCombatMinutes', 'replacementDelay', 'handoverSeconds', 'standInSkill', 'pinRenewSeconds', 'divisionTaskMinSeconds', 'rotateWornShare', 'divisionRefuseOdds', 'divisionRallyOdds', 'divisionCounterPressure', 'mainEffortMinOdds', 'mainEffortFreeRein', 'pinRenewFactor', 'supportSeconds', 'supportMaxTravelSeconds', 'divisionTargetBonus', 'localAttackOdds', 'memberCompactShare', 'recruitAxisSpread', 'recruitSkillLow', 'recruitSkillHigh', 'rosterAxisLow', 'rosterAxisHigh', 'skillPerLevel', 'readinessXpPerRepair', 'medalSkillAdd', 'scarShakenBoldness', 'repertoirePull', 'spawnEdgeMargin', 'doctrinePull', 'matchupPull', 'experimentMinSeconds', 'experimentCooldown', 'tacticLearnStep', 'tacticWeightMax', 'exploreLearnBoost', 'spawnBandWidth', 'spawnVerticalMargin', 'shieldRechargeDelay', 'minArmorPassFraction', 'separationStrength',
   'separationMaxStepFraction', 'reengageMinGap', 'kiteEnterFactor', 'kiteExitFactor', 'kiteBackSpeed', 'debugMaxLines', 'formationHoldFraction', 'formationPaceMin',
   'formationBreakAngle', 'formationBreakSeconds', 'formationPassBend', 'leaderCloserMin', 'escortHoldFraction', 'escortStandOff', 'flankMarginFactor', 'flankAlong', 'flankContactFactor', 'flankArriveFactor', 'flankMapMarginFactor',
   'shotLengthSizes', 'minShipScreenPixels', 'maxTriangleShips', 'defaultReengage', 'defaultSeed',
@@ -15647,7 +15664,7 @@ const SETTING_MUST_BE_NON_NEGATIVE = ['longLocalAdvanceMax', 'longLocalAdvanceWe
   'arrivalStandOff', 'arrivalEdgeMargin', 'arrivalEdgeHeight', 'repairOffMapMinSeconds', 'repairForwardSetback', 'repairReleaseSpreadFactor', 'repairReturnDelay',
   'learningSpeed', 'learningStep', 'learningSoftZone', 'learningMaxRoomShare', 'levelEffect', 'serviceEffectPerHour', 'adaptabilityMin', 'xpPerAction', 'xpScoreBonus', 'driftSize', 'learningMinWindow', 'learningMinActivity',
   'expectationWeight', 'successScore', 'notableScore', 'arrowThreshold', 'objectiveMinShare', 'fireBarLowStoreBelow', 'pdProtectedFactor', 'pdSlugPerMount', 'pdSlugCap', 'pdCrossingKill', 'spinalDeadband', 'safeRingMargin', 'stationHysteresis', 'holdHysteresis', 'stationLeeBelow', 'hotWeaveOutgunned', 'hotWeaveShare', 'stragglerFactorSurvival', 'probeWindow', 'probeRecover', 'probeShieldBack', 'probeLossLimit', 'probeOutgunned', 'commitOdds', 'commitDropFactor', 'aheadMax', 'screenAhead', 'marchQuantile', 'massAttackOdds', 'massAttackWaitedOdds', 'flankMinSquadrons', 'survivalPressSeconds', 'abandonAfter', 'abandonRatio', 'abandonRatioNow', 'abandonWaitReinf', 'abandonLossShare', 'dangerRadiusPad', 'surroundRadiusFactor', 'surroundShare', 'supportRadiusFactor', 'supportWant', 'lineSpacingMin', 'dangerAttackFactor', 'dangerWeakFactor', 'dangerWeakBelow'];
-const SETTING_WHOLE_NUMBERS = ['orderAmend', 'radioSelectedPerMinute', 'radioSoundsPerMinute', 'slowSporeSteps', 'slowFireMapSteps', 'lineRanks', 'swarmSpread', 'swarmLine', 'warValves', 'bombardShield', 'stationCrewWithStation', 'placeHoldFollow', 'aoMobilize', 'aoCharacter', 'aoAdmiral', 'cmdFormMoves', 'orderMovesObeyed', 'huntDetach', 'cmdStatLeans', 'huntDetachMax', 'huntDetachWhole', 'alloysNeverIdle', 'aoPostures', 'divisionOwner', 'longMapLine', 'cmdFormRealSize', 'cmdCapShare', 'cmdCapPerWard', 'cmdCapLongGuns', 'matchupsInPlay', 'calmShips', 'calmLookEvery', 'cmRenderParts', 'simBudgetModel', 'simKeepPace', 'closeWarmAll', 'closeKeepPictures', 'allyShoveOff', 'allyNudge', 'allyNudgeEvery', 'allyNudgeChecks', 'divisionSpots', 'divisionSpotsInFight', 'allyFineGrid', 'campaignTidyLive', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftMax', 'campaignSensors', 'showBoost', 'coreLoop', 'coreLoopFleetCommand', 'coreLoopFleetDivisions', 'coreLoopRecompose', 'coreLoopAlienCommand', 'coreLoopDivisionShips', 'coreLoopDivisionMinShips', 'coreLoopStreamMinShips', 'coreLoopLine', 'coreLoopLineLooks', 'coreLoopBerths', 'divisionMergeSmall', 'mergeFarOutOfContact', 'divisionMergeSlack', 'repairOffMap', 'supplyNoteWeeks', 'divisionPaceModel', 'swarmFormations', 'campaignBuildDays', 'campaignLiveEnterShips', 'cmdMaxAbreast', 'divisionFormations', 'doctrineModel', 'doctrineAlienClose', 'facingByGuns', 'facingVsTarget', 'facingTwoSided', 'freshSide', 'crossT', 'facingDodge', 'doctrineFindBattles', 'doctrineReviewMinLosses', 'doctrineReviewWeeks', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerMinLoss', 'ledgerAssaultWeeks', 'devCapStart', 'devCapAlien', 'devMaxBuilds', 'bbBeams', 'bbHeatModel', 'bbMissiles', 'bbPointDefence', 'bbBeamTicks', 'bbMissileRetries', 'bbPdFlakMax', 'bbLineOfFire', 'lineMinRanks', 'lineDeepRanks', 'lineDeepAbove', 'squadronMaxShips', 'tightOrbit', 'stationRebuild', 'radioMaxPerMinute', 'cmdReviewBattles', 'huntMaxShips', 'commandModel', 'cmdPassThrough', 'cmdSquadronBudget', 'cmdSquadronMax', 'cmdFleetMax', 'cmdRankBumpShips', 'cmdDivisionsMin', 'cmdDivisionsPerFleet', 'cmdDivisionsMax', 'orgScale', 'orgSquadronBudget', 'orgSquadronMax', 'orgDivisionTarget', 'orgDivisionMax', 'campaignLateAdmiral', 'campaignStartKit', 'placesFacilityApart', 'campaignFacilityApart', 'campaignStragglerShips', 'alienGarrisonCap', 'alienGatherMinShips', 'alienFirstPool', 'campaignFallenMax', 'placesHoldClear', 'campaignHoldClear', 'campaignPoolCap', 'campaignGarrisonCap', 'minLaunchShips', 'campaignYardShips', 'campaignModel', 'officerCarryOver', 'campaignAutosave', 'campaignLogMax', 'placesRetry', 'placesSweep', 'placesDecisive', 'siegeYardSlowdown', 'placesModel', 'placesAllowAbandon', 'placesTheatre', 'placesMaxOpposite', 'designModel', 'bureauBattle', 'moduleDamage', 'pressModel', 'partLossCall', 'crewRuleSquares', 'supplyReach', 'heatReach', 'exhaustLane', 'designMinSquares', 'designMaxSquares', 'survivalModel', 'allowAbandon', 'flankMinSquadrons', 'weaponModel', 'maxMissiles', 'pdSlugMaxMounts', 'missileInboundCall', 'formationModel', 'lockStep', 'columnMaxFile', 'wedgeMaxArm', 'reorgModel', 'disbandAt', 'fallenKeep', 'stagingModel', 'entrySegments', 'minNewSquadron', 'successionMode', 'woundedBattles', 'woundedWeeks', 'divisionTier', 'divisionTargetSize', 'divisionMinSize', 'divisionMaxSize', 'divisionMinSquadrons', 'rosterHistoryKeep', 'repertoireSize', 'aceKills', 'scarShakenBattles', 'maxShipsTotal', 'maxGridCells', 'targetCandidates', 'maxSalvosPerStep', 'maxShots', 'maxFlashes', 'formationMatchMaxShips', 'defaultSquadronSize',
+const SETTING_WHOLE_NUMBERS = ['orderAmend', 'sporeGapEvery', 'radioSelectedPerMinute', 'radioSoundsPerMinute', 'slowSporeSteps', 'slowFireMapSteps', 'lineRanks', 'swarmSpread', 'swarmLine', 'warValves', 'bombardShield', 'stationCrewWithStation', 'placeHoldFollow', 'aoMobilize', 'aoCharacter', 'aoAdmiral', 'cmdFormMoves', 'orderMovesObeyed', 'huntDetach', 'cmdStatLeans', 'huntDetachMax', 'huntDetachWhole', 'alloysNeverIdle', 'aoPostures', 'divisionOwner', 'longMapLine', 'cmdFormRealSize', 'cmdCapShare', 'cmdCapPerWard', 'cmdCapLongGuns', 'matchupsInPlay', 'calmShips', 'calmLookEvery', 'cmRenderParts', 'simBudgetModel', 'simKeepPace', 'closeWarmAll', 'closeKeepPictures', 'allyShoveOff', 'allyNudge', 'allyNudgeEvery', 'allyNudgeChecks', 'divisionSpots', 'divisionSpotsInFight', 'allyFineGrid', 'campaignTidyLive', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftMax', 'campaignSensors', 'showBoost', 'coreLoop', 'coreLoopFleetCommand', 'coreLoopFleetDivisions', 'coreLoopRecompose', 'coreLoopAlienCommand', 'coreLoopDivisionShips', 'coreLoopDivisionMinShips', 'coreLoopStreamMinShips', 'coreLoopLine', 'coreLoopLineLooks', 'coreLoopBerths', 'divisionMergeSmall', 'mergeFarOutOfContact', 'divisionMergeSlack', 'repairOffMap', 'supplyNoteWeeks', 'divisionPaceModel', 'swarmFormations', 'campaignBuildDays', 'campaignLiveEnterShips', 'cmdMaxAbreast', 'divisionFormations', 'doctrineModel', 'doctrineAlienClose', 'facingByGuns', 'facingVsTarget', 'facingTwoSided', 'freshSide', 'crossT', 'facingDodge', 'doctrineFindBattles', 'doctrineReviewMinLosses', 'doctrineReviewWeeks', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerMinLoss', 'ledgerAssaultWeeks', 'devCapStart', 'devCapAlien', 'devMaxBuilds', 'bbBeams', 'bbHeatModel', 'bbMissiles', 'bbPointDefence', 'bbBeamTicks', 'bbMissileRetries', 'bbPdFlakMax', 'bbLineOfFire', 'lineMinRanks', 'lineDeepRanks', 'lineDeepAbove', 'squadronMaxShips', 'tightOrbit', 'stationRebuild', 'radioMaxPerMinute', 'cmdReviewBattles', 'huntMaxShips', 'commandModel', 'cmdPassThrough', 'cmdSquadronBudget', 'cmdSquadronMax', 'cmdFleetMax', 'cmdRankBumpShips', 'cmdDivisionsMin', 'cmdDivisionsPerFleet', 'cmdDivisionsMax', 'orgScale', 'orgSquadronBudget', 'orgSquadronMax', 'orgDivisionTarget', 'orgDivisionMax', 'campaignLateAdmiral', 'campaignStartKit', 'placesFacilityApart', 'campaignFacilityApart', 'campaignStragglerShips', 'alienGarrisonCap', 'alienGatherMinShips', 'alienFirstPool', 'campaignFallenMax', 'placesHoldClear', 'campaignHoldClear', 'campaignPoolCap', 'campaignGarrisonCap', 'minLaunchShips', 'campaignYardShips', 'campaignModel', 'officerCarryOver', 'campaignAutosave', 'campaignLogMax', 'placesRetry', 'placesSweep', 'placesDecisive', 'siegeYardSlowdown', 'placesModel', 'placesAllowAbandon', 'placesTheatre', 'placesMaxOpposite', 'designModel', 'bureauBattle', 'moduleDamage', 'pressModel', 'partLossCall', 'crewRuleSquares', 'supplyReach', 'heatReach', 'exhaustLane', 'designMinSquares', 'designMaxSquares', 'survivalModel', 'allowAbandon', 'flankMinSquadrons', 'weaponModel', 'maxMissiles', 'pdSlugMaxMounts', 'missileInboundCall', 'formationModel', 'lockStep', 'columnMaxFile', 'wedgeMaxArm', 'reorgModel', 'disbandAt', 'fallenKeep', 'stagingModel', 'entrySegments', 'minNewSquadron', 'successionMode', 'woundedBattles', 'woundedWeeks', 'divisionTier', 'divisionTargetSize', 'divisionMinSize', 'divisionMaxSize', 'divisionMinSquadrons', 'rosterHistoryKeep', 'repertoireSize', 'aceKills', 'scarShakenBattles', 'maxShipsTotal', 'maxGridCells', 'targetCandidates', 'maxSalvosPerStep', 'maxShots', 'maxFlashes', 'formationMatchMaxShips', 'defaultSquadronSize',
   'farGoalBlocksAcross', 'debugMaxLines', 'maxTriangleShips', 'sectorsAcross', 'eventLogMax', 'logPanelLines', 'logBatchDetail', 'lineOrderRetries',
   'reportSquadronRows', 'reportPacketRows', 'reinforceMaxSquadrons', 'flankMaxSquadrons', 'counterMaxSquadrons', 'withdrawSamples', 'versionLogMax', 'serviceLastMax', 'serviceHistoryMax', 'serviceEventsMax', 'dossierLastActions', 'reportOfficerRows',
   'movementModel', 'hitModel', 'tacticsModel', 'flightAssist', 'retreatFiring', 'simultaneousFire', 'officerModel', 'strengthMapSteps', 'oddsCellsPerRadius', 'oddsMaxCells', 'maxRouts', 'maxBreakOffs', 'overheatFallback', 'smartTargetCandidates'];
@@ -21153,21 +21170,42 @@ const DEFENCE_FAMILIES = {
 
 // What a lettered frame square does for the part on it. cat = the module type it belongs to (its colour tints the square).
 const FRAME_SQUARE_BONUSES = {
-  E: { id: 'E', name: 'Drive bay',   cat: 'drives',      stat: 'thrust',     mul: 1.15, text: '+15% thrust for drives here' },
-  H: { id: 'H', name: 'Hardpoint',   cat: 'weapons',     stat: 'mountMass',  mul: 0.90, text: 'Mounts here are 10% lighter' },
-  C: { id: 'C', name: 'Citadel',     cat: 'crew',        stat: 'deep',       mul: 1,    text: 'Parts here are hit last, and a bridge here takes 20% less damage' },
-  S: { id: 'S', name: 'Spine',       cat: 'weapons',     stat: 'range',      mul: 1.10, text: 'A spinal cradle here: +10% range' },
-  W: { id: 'W', name: 'Sponson',     cat: 'weapons',     stat: 'fireRate',   mul: 1.10, text: 'Weapons here fire 10% faster' },
-  M: { id: 'M', name: 'Mast',        cat: 'electronics', stat: 'sensor',     mul: 2,    text: 'Sensors, ECM jammers and point defence here count twice; parts here are hit first' },
-  G: { id: 'G', name: 'Hangar bay',  cat: 'ports',       stat: 'hangar',     mul: 1.20, text: 'A hangar here launches 20% faster' },
-  R: { id: 'R', name: 'Heat trunk',  cat: 'heat',        stat: 'cooling',    mul: 1.15, text: 'Radiators here shed 15% more heat' },
+  E: { id: 'E', name: 'Drive bay',   cat: 'drives',      stat: 'thrust',     mul: 1.15, text: '+15% thrust for drives here', fits: function (u) { return u.s.thrust > 0; } },
+  H: { id: 'H', name: 'Hardpoint',   cat: 'weapons',     stat: 'mass',       mul: 0.90, text: 'Weapons here weigh 10% less, and fixed guns here aim 10% tighter', fits: function (u) { return !!u.s.weapon; } },
+  C: { id: 'C', name: 'Citadel',     cat: 'crew',        stat: 'deep',       mul: 1,    text: 'Parts here are hit last, and a bridge here takes 20% less damage', fits: function () { return true; } },
+  S: { id: 'S', name: 'Spine',       cat: 'weapons',     stat: 'range',      mul: 1.10, text: 'A spinal cradle here: +10% range', fits: function (u) { return !!u.s.weapon && u.s.weapon.mountKind === 'spinal'; } },
+  W: { id: 'W', name: 'Sponson',     cat: 'weapons',     stat: 'fireRate',   mul: 1.10, text: 'Weapons here fire 10% faster', fits: function (u) { return !!u.s.weapon; } },
+  M: { id: 'M', name: 'Mast',        cat: 'electronics', stat: 'sensor',     mul: 2,    text: 'Sensors, ECM jammers and point defence here count twice; parts here are hit first', fits: function () { return true; } },
+  G: { id: 'G', name: 'Hangar bay',  cat: 'ports',       stat: 'hangar',     mul: 1.20, text: 'A hangar here rearms and relaunches its craft 20% faster', fits: function (u) { return !!u.m.hangar && !u.m.foundry; } },
+  R: { id: 'R', name: 'Heat trunk',  cat: 'heat',        stat: 'cooling',    mul: 1.15, text: 'Radiators here shed 15% more heat', fits: function (u) { return u.s.cooling > 0; } },
   // (v27 C2) the colour zones of the Sentry frame (first-fighter.md): two new bonuses, a gun bay (as a sponson well) and two guide-only zones
-  P: { id: 'P', name: 'Power bay',   cat: 'power',       stat: 'power',      mul: 1.10, text: '+10% power for batteries and reactors here' },
-  A: { id: 'A', name: 'Armour strip', cat: 'defence',    stat: 'armour',     mul: 1.10, text: '+10% armour for plates here' },
-  B: { id: 'B', name: 'Gun bay',     cat: 'weapons',     stat: 'fireRate',   mul: 1.10, text: 'Guns here fire 10% faster' },
-  T: { id: 'T', name: 'Tank spot',   cat: 'drives',      stat: '',           mul: 1,    text: 'A fuel tank goes here, touching its rocket (no bonus: a guide)' },
-  Q: { id: 'Q', name: 'Ammo bay',    cat: 'ammo',        stat: '',           mul: 1,    text: 'A magazine goes here, touching its gun (no bonus: a guide)' }
+  P: { id: 'P', name: 'Power bay',   cat: 'power',       stat: 'power',      mul: 1.10, text: '+10% power for batteries and reactors here', fits: function (u) { return u.s.power > 0; } },
+  A: { id: 'A', name: 'Armour strip', cat: 'defence',    stat: 'armour',     mul: 1.10, text: '+10% armour for plates here', fits: function (u) { return u.m.role === 'armour'; } },
+  B: { id: 'B', name: 'Gun bay',     cat: 'weapons',     stat: 'fireRate',   mul: 1.10, text: 'Guns here fire 10% faster', fits: function (u) { return !!u.s.weapon; } },
+  T: { id: 'T', name: 'Tank spot',   cat: 'drives',      stat: '',           mul: 1,    text: 'A fuel tank goes here, touching its rocket (no bonus: a guide)', fits: function () { return false; } },
+  Q: { id: 'Q', name: 'Ammo bay',    cat: 'ammo',        stat: '',           mul: 1,    text: 'A magazine goes here, touching its gun (no bonus: a guide)', fits: function () { return false; } }
 };
+// (v307.0, Alex 24 Nov: "just have any module touching the region get the bonus") THE ONE RULE FOR BONUS SQUARES. A part gets a bonus square's bonus,
+// in full, when ANY ONE of its squares is on a square of that letter (and the bonus is for its kind of part: fits above). Nothing is shared out
+// square by square and nothing needs the whole part inside. Every place in the game that uses a bonus asks these three, so the Bureau's numbers, the
+// battle and the tooltips can never disagree. u = a laid part of a layout (35d layoutV3: u.m the module, u.s its numbers, u.bonus the count of its
+// squares on each letter).
+const FRAME_BONUS_RULE_TEXT = 'A part gets the bonus in full when any one of its squares is on these squares.';
+function frameBonusOn(u, ch) {
+  const bn = FRAME_SQUARE_BONUSES[ch];
+  return !!(bn && u && u.bonus && u.bonus[ch] > 0 && u.m && u.s && bn.fits(u));
+}
+function frameBonusMul(u, ch) { return frameBonusOn(u, ch) ? FRAME_SQUARE_BONUSES[ch].mul : 1; }
+// The bonuses a laid part really gets, as letters ('E', 'W' ...), and the ones it touches that do nothing for its kind of part.
+// (v307.0, Alex 24 Nov: "for the items that propagate heat and power, we need a way to clarify that") THE PARTS THAT PASS POWER AND HEAT ON.
+// Power and heat share one network (35d passPowerV3): a part with conducts carries it through itself like a conduit, so anything touching it is on
+// the same network. This is that one rule: the Bureau's network and its tooltips, icons and parts list all ask it.
+function partCarriesPowerV3(m) { return !!(m && m.conducts); }
+function frameBonusesOf(u) {
+  const on = [], idle = [];
+  if (u && u.bonus) for (const ch in u.bonus) { if (!(u.bonus[ch] > 0) || !FRAME_SQUARE_BONUSES[ch] || !FRAME_SQUARE_BONUSES[ch].stat) continue;   /* (the guide squares T and Q give nothing) */ (frameBonusOn(u, ch) ? on : idle).push(ch); }
+  return { on: on, idle: idle };
+}
 // (v27 C2) THE KINDS OF PART a colour zone takes (first-fighter.md section 1), with the zone letter written into the frame's rows. fits(m) says whether a
 // module is that kind. bureauPartKind(id) names a module's kind for the tutorial's events ('gun', 'ammo', 'power', 'fuel', 'drive', 'heat', 'armour',
 // 'bridge', or 'other').
@@ -22276,17 +22314,18 @@ const MODULES_V3 = [
   //      Missiles only: shells, beams and small craft are not touched, and the Swarm's own spores fly through it. No power, no ammunition, no heat.
   { id: 'sporecenser', name: 'Spore censer', cat: 'defence', sub: 'Point defence', line: 'alien', w: 4, h: 4, role: 'machine', cost: 16, power: 0, heat: 0, crew: 1, volatile: 0, res: 'bio', alien: true,
     sporeField: { reach: 300, rate: 3 },
-    rule: 'A gland that breathes a cloud of spores 300 around the body. Every enemy missile in the cloud loses 3 hit points a second (no dice): fast or tough missiles get through, slow small ones die. Clouds do not stack; it weakens as the censer is hurt. Missiles only.' },
+    rule: 'A gland that breathes a cloud of spores 300 around the body. Every enemy missile in the cloud loses 3 hit points a second (no dice): fast or tough missiles get through, slow small ones die. One missile in ten finds a gap and gets through untouched. Clouds do not stack; it weakens as the censer is hurt. Missiles only.' },
   // (v97.7, the spore-field plan, swarm-tier01.md s10.2 and s10.6) THE SPORE VENTS: the escort's spore cloud, on the outside of the body. The same cloud as the
   //      censer (05f-3 bbSporeFieldsStep reads sporeField): every enemy missile inside loses the cloud's spore damage a second, no dice, the strongest cloud
   //      only, weaker as the vent is hurt. The big vent (3 x 3, reach 600, 4 a second) is the Haze escort's (two of them); the small one (2 x 2, reach 200,
-  //      2 a second) is the Puffer small craft's, enough to stop Light chemical missiles only. No power, no ammunition, no heat, like the other grown parts.
+  //      2 a second) is the Puffer small craft's, enough to stop Light chemical missiles only.
+  //      (v310.0) One missile in ten finds a gap in any cloud (SETTINGS.sporeGapEvery, 05f-3), so no cloud is a wall. No power, no ammunition, no heat, like the other grown parts.
   { id: 'sporevent', name: 'Spore vent', cat: 'defence', sub: 'Point defence', line: 'alien', w: 3, h: 3, role: 'external', edge: true, cost: 10, power: 0, heat: 0, crew: 1, volatile: 0, res: 'bio', alien: true,
     sporeField: { reach: 600, rate: 4 },
-    rule: 'On the outside: a vent that coughs a wide cloud of spores 600 around the body. Every enemy missile in the cloud loses 4 hit points a second (no dice): fast or tough missiles get through, slow small ones die. Clouds do not stack; it weakens as the vent is hurt. Missiles only.' },
+    rule: 'On the outside: a vent that coughs a wide cloud of spores 600 around the body. Every enemy missile in the cloud loses 4 hit points a second (no dice): fast or tough missiles get through, slow small ones die. One missile in ten finds a gap and gets through untouched. Clouds do not stack; it weakens as the vent is hurt. Missiles only.' },
   { id: 'sporevent_s', name: 'Small spore vent', cat: 'defence', sub: 'Point defence', line: 'alien', w: 2, h: 2, role: 'external', edge: true, cost: 5, power: 0, heat: 0, crew: 0, volatile: 0, res: 'bio', alien: true,
     sporeField: { reach: 200, rate: 2 },
-    rule: 'On the outside: a small vent that puffs a cloud of spores 200 around the body. Every enemy missile in the cloud loses 2 hit points a second (no dice): enough for Light chemical missiles; anything bigger or faster gets through. Clouds do not stack; it weakens as the vent is hurt. Missiles only.' },
+    rule: 'On the outside: a small vent that puffs a cloud of spores 200 around the body. Every enemy missile in the cloud loses 2 hit points a second (no dice): enough for most Light chemical missiles; anything bigger or faster gets through. One missile in ten finds a gap and gets through untouched. Clouds do not stack; it weakens as the vent is hurt. Missiles only.' },
   // (v52, tiny-hull.md s6) THE SWARM'S TINY CRAFT PARTS: the nerve knot is a Mite's mind (a 1 x 1 bridge that counts as a drone CPU, so a Mite is a drone:
   //      unbreakable, and confused by enemy jamming like any drone), and the brood pouch is the Swarm's fighter hangar (a 10 x 5 pouch on the outside of a
   //      body that holds one Mite, the same rule as the human fighter hangar). Internal mode only, like every Swarm part.
@@ -27887,6 +27926,7 @@ let mslDt, mslDmg;                                              // (stop 4, sect
 let mslSpd, mslTrn, mslTr, mslBlast;   // (v87) mslBlast: a Blast-shape missile's burst radius (0 = none)
 let mslLance, mslLinger;               // (v90) a Lance missile's firing distance (0 = none); a Lingering missile's cloud (null = none)
 let mslSiege;                          // (v97) 1 = a titan's siege missile: missileBlast gives it the full blast (4,000 at the centre, half at the edge)
+let mslSporeSeen = new Uint8Array(0);   // (v310.0) has this missile met an enemy spore cloud yet, and did it find a gap (05f-3 bbSporeFieldsStep)
                                       // top speed (u/s), turn rate (rad/s), the warhead's trait bits (Piercing, Flak, Nuclear ...)
 let mslFreeCount = 0, mslHigh = 0, mslInFlight = 0;
 // The report's counts, per side + type of the launcher (statMslLaunched ...: made with the other per-type lists, section 3).
@@ -27909,6 +27949,7 @@ function allocateMissiles() {
     mslSpd = new Float32Array(n); mslTrn = new Float32Array(n); mslTr = new Int32Array(n); mslBlast = new Float32Array(n);   // (v30 B2; v87 mslBlast)
     mslLance = new Float32Array(n); mslLinger = new Array(n).fill(null);   // (v90)
     mslSiege = new Uint8Array(n);   // (v97) a titan's siege missile (05f-2c): its own blast
+    mslSporeSeen = new Uint8Array(n);   // (v310.0) 0 = not yet in an enemy spore cloud; 1 = in one, eaten as usual; 2 = it found a gap (05f-3 bbSporeFieldsStep)
   }
 }
 
@@ -27917,6 +27958,7 @@ function resetMissiles() {
   allocateMissiles();
   mslAlive.fill(0);
   mslFreeCount = 0; mslHigh = 0; mslInFlight = 0;
+  bbSporeGapCount = 0;   // (v310.0) the spore clouds' gap count starts again each battle (05f-3)
   statMslLaunched.fill(0); statMslHit.fill(0); statMslMissed.fill(0); statMslDowned.fill(0); statMslFuel.fill(0); statMslWaits.fill(0);
   const m = sqSide.length;
   if (sqInbound.length !== m) { sqInbound = new Int32Array(m); sqInboundPrev = new Int32Array(m); sqInboundCalled = new Float64Array(m); inbList = new Int32Array(m); inbPrevList = new Int32Array(m); }
@@ -27957,6 +27999,7 @@ function launchMissiles(i, st, target, n, ux, uy, p, band, d, dtIn, dmgIn, mslIn
     mslSpd[slot] = mslIn && mslIn.speed > 0 ? mslIn.speed : 0; mslTrn[slot] = mslIn && mslIn.turn > 0 ? mslIn.turn : 0; mslTr[slot] = trIn || 0; mslBlast[slot] = mslIn && mslIn.blastRadius > 0 ? mslIn.blastRadius : 0;   // (v30 B2; v87 the blast shape)
     mslLance[slot] = mslIn && mslIn.lanceReach > 0 ? mslIn.lanceReach : 0; mslLinger[slot] = mslIn && mslIn.linger ? mslIn.linger : null;   // (v90) the lance and lingering shapes
     mslSiege[slot] = mslIn && mslIn.siege ? 1 : 0;   // (v97)
+    mslSporeSeen[slot] = 0;   // (v310.0)
     mslTarget[slot] = target; mslShooter[slot] = i; mslSt[slot] = st; mslSq[slot] = shipSquad[i]; mslState[slot] = shipState[i];
     mslBand[slot] = band; mslRetries[slot] = Math.floor(mslIn ? SETTINGS.bbMissileRetries : dmgMslRetries[dt]);
     mslDt[slot] = dt; mslDmg[slot] = dmgIn !== undefined ? dmgIn : -1;
@@ -28984,7 +29027,7 @@ function bbStatsBlank() {
            // (v30 B2) beams: seconds fired, ticks in them, hits, the power (and so the heat) they spent, seconds not fired for want of power, the highest Focus
            // reached; the heat meter: seconds overheated and the heat hits put on ships; point defence: shots, bursts, missiles killed, small-craft shots
            overPen: 0, overPenStopped: 0, meltHits: 0, irradHits: 0, crewKilled: 0, rakeHits: 0, splitHits: 0, railShots: 0, railDry: 0, lanceHits: 0, lingerClouds: 0, lingerHits: 0, screenHits: 0,   // (v90, Tier 3)
-           beamSeconds: 0, beamTicks: 0, beamHits: 0, beamPower: 0, beamHeat: 0, beamDry: 0, focusTop: 1, fastCapSeconds: 0, blastSplashes: 0, sandClouds: 0, sandBeams: 0, armMends: 0, armHull: 0, cargoGiven: 0, minesLaid: 0, mineHits: 0, pdOutOfLoad: 0, pdNoCharge: 0, magCharged: 0, magSlugs: 0, magDeflected: 0, shedHits: 0, sporeKills: 0, sporeDamage: 0, heatHits: 0, heatOnTargets: 0, overheatSeconds: 0,
+           beamSeconds: 0, beamTicks: 0, beamHits: 0, beamPower: 0, beamHeat: 0, beamDry: 0, focusTop: 1, fastCapSeconds: 0, blastSplashes: 0, sandClouds: 0, sandBeams: 0, armMends: 0, armHull: 0, cargoGiven: 0, minesLaid: 0, mineHits: 0, pdOutOfLoad: 0, pdNoCharge: 0, magCharged: 0, magSlugs: 0, magDeflected: 0, shedHits: 0, sporeKills: 0, sporeDamage: 0, sporeGaps: 0, heatHits: 0, heatOnTargets: 0, overheatSeconds: 0,
            pdShots: 0, pdBursts: 0, pdKills: 0, pdSmallShots: 0, pdNoAmmo: 0, missileVolleys: 0, missilesOut: 0,
            blastHull: 0, blastKills: 0,   // hull hit points lost to chain explosions, and ships whose hull went in one
            blastKillsFresh: 0,            // (v30 Bfix) ... of them, ships that had at least BB_FRESH_SHARE of their hull when the chain began (one hit, one dead ship)
@@ -29529,12 +29572,11 @@ function bbLineOfFireTables(L, S, tracks) {
     if (tr.indexOf('Heat-shedding') >= 0) flags |= BB_PF_SHEDDING;   // (v69) heat-shedding chitin
     if (tr.indexOf('Weeping') >= 0) flags |= BB_PF_WEEPING;   // (v92) weeping hide
     if (tr.indexOf('Crystal') >= 0) flags |= BB_PF_CRYSTAL;   // (v93) Delver crystal plate
-    const per = s.armour > 0 ? s.armour / Math.max(1, u.cells.length) * armMul : 0;
+    const per = s.armour > 0 ? s.armour / Math.max(1, u.cells.length) * armMul * frameBonusMul(u, 'A') : 0;   // (A, an armour strip: +10% for the whole plate when any square of it is on the strip; v307.0)
     for (let c = 0; c < u.cells.length; c++) {
       const k = u.cells[c]; if (k < 0) continue;
       let v = per;
       if (L.cellBonus[k] === 87) v *= 0.5;                                   // (W, a sponson square: half armour, as the summary counts it)
-      if (L.cellBonus[k] === 65) v *= FRAME_SQUARE_BONUSES.A.mul;            // (A, an armour strip: +10%)
       cellArmour[k] = v; cellFlags[k] = flags;
     }
   }
@@ -31517,6 +31559,7 @@ function bbRepairPick(ms) {
 // small craft are untouched, and the Swarm's own spore pods fly through its own clouds.
 // ---------------------------------------------------------------------
 const bbSporeClouds = [];   // this step's clouds, five numbers each: side, x, y, reach squared, spore damage a second
+let bbSporeGapCount = 0;   // (v310.0) the missiles that have met an enemy cloud this battle (every sporeGapEvery-th finds a gap)
 let bbSporeBuiltAt = -1e9;   // (v245.0) the step the clouds' list was last made
 function bbSporeFieldsStep(dt) {
   if (SETTINGS.sporeFieldModel !== 1 || mslInFlight === 0 || !(dt > 0)) return;
@@ -31571,6 +31614,10 @@ function bbSporeFieldsStep(dt) {
       if (dx * dx + dy * dy <= C[c + 3]) best = C[c + 4];
     }
     if (best <= 0) continue;
+    // (v310.0) NO DEFENCE IS A WALL: the first time a missile meets an enemy cloud, one in every sporeGapEvery finds a gap and the spores never touch it
+    // (counted in turn, not rolled). Like the armour's floor and point defence's cap, so a ship that fires only missiles can always get some through.
+    if (mslSporeSeen[k] === 0) { mslSporeSeen[k] = 1; const g = SETTINGS.sporeGapEvery; if (g > 0 && (++bbSporeGapCount % g) === 0) { mslSporeSeen[k] = 2; if (bbStats) bbStats.sporeGaps++; } }
+    if (mslSporeSeen[k] === 2) continue;
     const eat = best * dt;
     if (bbStats) bbStats.sporeDamage += Math.min(eat, Math.max(0, mslHp[k]));
     mslHp[k] -= eat;
@@ -47744,8 +47791,10 @@ function campaignDockKeepShip(r, toDesign) {
   r.design = toDesign;
   campaignDockHoldSet(r, ships);
 }
-// (06f2 campaignDockDawn) The newest version of a design's own family among the designs on the yards (active: 06f2's list), or null. A dock of an older
-// version follows it, instead of going to whichever design of its size has the fewest docks.
+// (06f2 campaignDockDawn) The version of a design's own family that is on the yards (active: 06f2's list; one version at a time since v168.0), or null.
+// A dock of a version taken off the yards follows it, instead of going to whichever design of its size has the fewest docks.
+// (v309.0) It need not be a NEWER version: when the player rolls a design back (approves v1 again instead of v2), the docks of v2 follow v1, their
+// v2 ships are held and rebuilt as v1 like any other refit, and v1's own ships are simply current again (no refit waits for them).
 function campaignDockNewVersion(id, active) {
   const t = typeIndexById(id), rec = t >= 0 ? SHIP_TYPES[t] : null;
   if (!rec || typeof designFamily !== 'function') return null;
@@ -71058,7 +71107,7 @@ function fgTypeBays(t) {
   for (let k = 0; k < hangars.length; k++) {
     const pm = rec.design && rec.design.parts && rec.design.parts[hangars[k].part] ? MODULE_BY_ID[rec.design.parts[hangars[k].part].p] : null;
     if (pm && pm.foundry) continue;   // (v93) a Delver drone foundry builds its drones in the fight (05g dvFoundryStep): not a bay that launches once
-    const f = typeIndexById(hangars[k].id); if (f >= 0 && SHIP_TYPES[f].design && SHIP_TYPES[f].design.v === 3) list.push({ part: fgBayKey(hangars[k]), type: f });
+    const f = typeIndexById(hangars[k].id); if (f >= 0 && SHIP_TYPES[f].design && SHIP_TYPES[f].design.v === 3) list.push({ part: fgBayKey(hangars[k]), type: f, turnMul: hangars[k].turnMul > 0 ? hangars[k].turnMul : 1 });   // (v307.0) turnMul: a hangar on a Hangar bay square
   }   // (v68) any carried design: a fighter, a small craft or a corvette (Tier 2 hangars)
   fgTypeBayCache.set(t, list);
   return list;
@@ -71123,7 +71172,7 @@ function fgTakePending() {
     const ci = fgCarriers.length;
     fgCarriers.push(c);
     fgCarrierOfSlot[slot] = ci;
-    for (let k = 0; k < bays.length; k++) { c.bays.push(fgBays.length); fgBays.push({ carrier: ci, part: bays[k].part, type: bays[k].type, state: BAY_READY, fighter: -1, readyAt: 0, rec: null }); }
+    for (let k = 0; k < bays.length; k++) { c.bays.push(fgBays.length); fgBays.push({ carrier: ci, part: bays[k].part, type: bays[k].type, turnMul: bays[k].turnMul > 0 ? bays[k].turnMul : 1, state: BAY_READY, fighter: -1, readyAt: 0, rec: null }); }
     const kept = fgKeptBySlot.get(slot);
     if (kept) { fgKeptBySlot.delete(slot); fgApplyKept(c, kept); }
     if (station >= 0) lsCarrierMade(c);                              // (v100.1, section 8h) the Last Stand's station: its hangars are the run's
@@ -71337,13 +71386,16 @@ function fgSendHome(i, c) {
   shipTarget[i] = -1;
   setShipState(i, STATE_REPAIR);
 }
+// (v307.0) How long a bay takes to rearm its craft and send it out again: fighterTurnaroundSeconds, shorter for a hangar on a Hangar bay square
+// (the frame's G bonus, 02c frameBonusMul, carried on the design's summary as turnMul). 17b2's wings ask it too.
+function fgTurnaroundSeconds(b) { return SETTINGS.fighterTurnaroundSeconds / (b && b.turnMul > 0 ? b.turnMul : 1); }
 // (17 sendShipAway, through the queue of the carrier's point) A fighter has docked: it is rearmed for fighterTurnaroundSeconds.
 function fgTakeIn(rec) {
   const b = fgBays[rec.bay];
   if (typeof lsClosedBayTakeIn === 'function' && lsClosedBayTakeIn(rec)) return;   // (v288.0, 8h6) a Last Stand ship standing down: it leaves here
   if (!b || b.state !== BAY_OUT) { fgDropAwayRec(rec); return; }
   if (b.wing) wingTakeIn(rec.bay, rec);                          // (v248.0, 17b2) a wing docks as one: every bay of it goes in
-  else { b.state = BAY_TURN; b.fighter = -1; b.rec = rec; b.readyAt = simTime + SETTINGS.fighterTurnaroundSeconds; }
+  else { b.state = BAY_TURN; b.fighter = -1; b.rec = rec; b.readyAt = simTime + fgTurnaroundSeconds(b); }
   fgStats.docked++;
 }
 // A docked fighter's record is dropped (its carrier died with it inside): its squadron stops waiting for it, and it is a loss.
@@ -71755,7 +71807,7 @@ function wingGone(slot, lead) {
 // (17b fgTakeIn) Wing ship docked (rec): every bay of it goes in to rearm. Only the lead bay keeps the record; it brings the whole wing out again.
 function wingTakeIn(lead, rec) {
   const bays = wingBaysOf(lead);
-  for (const bi of bays) { const b = fgBays[bi]; if (b.state !== BAY_OUT) continue; b.state = BAY_TURN; b.fighter = -1; b.rec = bi === lead ? rec : null; b.readyAt = simTime + SETTINGS.fighterTurnaroundSeconds; }
+  for (const bi of bays) { const b = fgBays[bi]; if (b.state !== BAY_OUT) continue; b.state = BAY_TURN; b.fighter = -1; b.rec = bi === lead ? rec : null; b.readyAt = simTime + fgTurnaroundSeconds(fgBays[lead] || b); }   // (v307.0: the lead bay's hangar sets the wing's pace)
 }
 // (17b fgRelaunch) The lead bay's record came back as ship `slot`: it flies out as the whole wing, rearmed and patched up.
 function wingRelaunch(slot, lead) {
@@ -72812,7 +72864,7 @@ function towFleetStep() {
 //   THE VICE ADMIRAL'S CHARACTER: a bold one takes more risk (higher odds allowed, a bigger share away, sooner again), a cautious one less, by up to
 //   refitBoldSwing either way; a good Command stat makes it look sooner (06c8 aoCharPace). Ships most worn are sent first (they gain most), the reserve's
 //   ships before the line's.
-//   One log line a send ("Vice Admiral Hale (Earth Defence Fleet) sends 2 old-version ships off the line to be refitted: Picket, Harrier.").
+//   One log line a send ("Vice Admiral Hale (Earth Defence Fleet) sends 2 ships off the line to be refitted to the version on the yards: Picket, Harrier.").
 //   Not for fighters, drone wings or carriers (the repair dock does not rebuild them: 06f2b), nor for the aliens (they have no versions to refit).
 //   With refitTrips 0, the docks economy off, dockHoldModel 0 or dockRepairRefit 0, nothing here runs.
 //   Check: tools/v290.0/refit-trips-check.js. Notes: notes/v290.0/summary.md.
@@ -72963,7 +73015,7 @@ function refitStep() {
     F.refit.at = simTime; F.refit.sent += sent.length;
     refitStats.sent[side] += sent.length;
     const names = sent.filter(function (n, k) { return sent.indexOf(n) === k; }).join(', ');
-    logEvent(side, T.name + ' (' + F.name + ') sends ' + (sent.length === 1 ? 'an old-version ship' : sent.length + ' old-version ships') + ' off the line to be refitted: ' + names + '.');
+    logEvent(side, T.name + ' (' + F.name + ') sends ' + (sent.length === 1 ? 'a ship' : sent.length + ' ships') + ' off the line to be refitted to the version on the yards: ' + names + '.');   // (v309.0) after a rollback that version is an older one
   }
 }
 
@@ -84702,7 +84754,7 @@ function closeKeepCanvas(canvas, key, meta) {
 // (CLOSE_LOOK.keepDrawn). what: everything the picture is drawn from, as text (the art, the design, the size, the livery). It is filed under that and
 // the build's fingerprint (CLOSE_BUILD_PRINT, made by tools/build.js from every source file), so a picture drawn by older art is never read back.
 // cb(pic): the same { canvas, ... } as make() gives (read back: a fresh canvas with the kept measurements), or null when it could not be drawn.
-const CLOSE_BUILD_PRINT = 'e75e2fbb471b';
+const CLOSE_BUILD_PRINT = '6fe7f629ab2d';
 function closeKeptPicture(what, make, cb) {
   const fresh = function (key) {
     let pic = null;
@@ -90952,7 +91004,7 @@ function feedbackScreenWords() {
 // Everything the game adds to a note by itself. Each line is a short label and a value.
 function feedbackContext() {
   const c = {};
-  c.build = typeof GAME_VERSION !== 'undefined' ? GAME_VERSION : 'v306.0';
+  c.build = typeof GAME_VERSION !== 'undefined' ? GAME_VERSION : 'v310.0';
   c.where = feedbackScreenWords();
   if (typeof campaign !== 'undefined' && campaign && typeof gameModeNow === 'function' && gameModeNow() === 'campaign') {
     c.warWeek = Math.floor(campaign.week || 0);
@@ -100193,7 +100245,7 @@ function stModel(fam) {
   }
   // the shell: the average plate a shot meets walking in from each side (front, rear, left, right), and how much of each side has plate outside
   const W = L.W, H = L.H, mul = shipMul(a, 'armour');
-  const val = function (k) { const i = L.cellPart[k]; if (i < 0) return 0; const u = L.parts[i]; if (!(u.s.armour > 0)) return 0; let v = u.s.armour / u.cells.length * mul; if (L.cellBonus[k] === 87) v *= 0.5; if (L.cellBonus[k] === 65 && u.m.role === 'armour') v *= FRAME_SQUARE_BONUSES.A.mul; return v; };
+  const val = function (k) { const i = L.cellPart[k]; if (i < 0) return 0; const u = L.parts[i]; if (!(u.s.armour > 0)) return 0; let v = u.s.armour / u.cells.length * mul; if (L.cellBonus[k] === 87) v *= 0.5; v *= frameBonusMul(u, 'A'); return v; };
   const side = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]];   // per side: lines, lines with plate outside, plate met
   const walk = function (cells, f) { side[f][0]++; if (val(cells[0]) > 0) side[f][1]++; let met = 0; for (const k of cells) { const v = val(k); if (v > 0) met += v; else break; } side[f][2] += met; };
   for (let y = 0; y < H; y++) { const row = []; for (let x = 0; x < W; x++) if (L.cellPart[y * W + x] >= 0) row.push(y * W + x); if (row.length) { walk(row.slice().reverse(), 0); walk(row, 1); } }
@@ -112339,7 +112391,7 @@ function passBridgeV3(L, a) {
 // 4. The edge: parts that must touch the outside (radiators, airlocks, ports, missile racks, point defence, sensors, shields, RCS).
 function passEdgeV3(L, a) {
   const inside = [];
-  for (let i = 0; i < L.parts.length; i++) { const u = L.parts[i]; if (u.m.edge && !u.edge && !u.bonus.M) { inside.push(u); notWorkingV3(u, 'does not touch the outside'); } }
+  for (let i = 0; i < L.parts.length; i++) { const u = L.parts[i]; if (u.m.edge && !u.edge && !frameBonusOn(u, 'M')) { inside.push(u); notWorkingV3(u, 'does not touch the outside'); } }
   if (inside.length > 0) addProblem(a, 'EDGE_INSIDE', 'warning', pluralV3(inside.length, 'part must', 'parts must') + ' touch the outside and does not (' + Array.from(new Set(inside.map(function (u) { return u.s.name.toLowerCase(); }))).join(', ') + '): it does nothing.', partsAt(L, inside), partsSquares(L, inside), partIdxs(inside));
   // (v88, v90, v304.0) ONE RULE for every part that draws from the capacitors (02c-4 capacitorDrawV3: a repeating laser battery, a railgun or a Delver
   // driver, a laser or particle beam): with no capacitor on the ship it does nothing, because in battle it fires only from the capacitors (which the
@@ -112422,7 +112474,7 @@ function passLanesV3(L, a) {
 // 6. Power and heat on one network: conduits and the parts that carry power. Every part that uses power must be joined to a working reactor; heat sinks
 //    and radiators must be joined too; each component's hot parts must have radiators on it. Energy weapons need a capacitor on their component.
 function passPowerV3(L, a) {
-  const net = buildNetwork(L, { id: 'power', track: 'conduit', corners: true, carries: function (u) { return u.m.conducts; }, source: function (u) { return u.s.power > 0 && u.working; },
+  const net = buildNetwork(L, { id: 'power', track: 'conduit', corners: true, carries: function (u) { return partCarriesPowerV3(u.m); }, source: function (u) { return u.s.power > 0 && u.working; },
                                  consumer: function (u) { return u.s.power < 0 || u.m.heatNet || u.s.heat > 0; } });
   a.nets.power = net;
   const reactors = L.parts.filter(function (u) { return u.s.power > 0; });
@@ -112436,7 +112488,7 @@ function passPowerV3(L, a) {
     if (uses) { if (id < 0 || !net.fed[id]) { dark.push(u); u.dark = true; notWorkingV3(u, 'no power'); } }
     if (u.m.heatNet && (id < 0 || net.comp[id] < 0 || !net.compLive[net.comp[id]])) { loose.push(u); notWorkingV3(u, 'not joined to the power network'); }
     u.comp = compOf(u);
-    if (u.working && u.s.cooling > 0 && u.comp >= 0) compCool[u.comp] += u.s.cooling * (u.bonus.R ? FRAME_SQUARE_BONUSES.R.mul : 1) * shipMul(a, 'cooling');
+    if (u.working && u.s.cooling > 0 && u.comp >= 0) compCool[u.comp] += u.s.cooling * frameBonusMul(u, 'R') * shipMul(a, 'cooling');
     if (u.working && u.m.capacitor > 0 && u.comp >= 0) compCap[u.comp] = 1;
   }
   for (let i = 0; i < L.parts.length; i++) {
@@ -112467,7 +112519,7 @@ function passPowerV3(L, a) {
   powerNetworksV3(L, a, net, compCool);   // (v71) the networks numbered, and each one's heat (section 10d start)
   // overlay: 3 source, 2 fed consumer, 1 dark consumer, 4 live conduit, 5 dead conduit
   for (let k = 0; k < L.N; k++) if (L.cellTrack[k] & TRACK_BITS.conduit) { const id = net.cellNode[k]; a.overlays.power[k] = id >= 0 && net.comp[id] >= 0 && net.compLive[net.comp[id]] ? 4 : 5; }
-  for (let i = 0; i < L.parts.length; i++) { const u = L.parts[i]; const v = u.s.power > 0 ? 3 : ((u.s.power < 0) ? (u.working ? 2 : 1) : (u.m.conducts ? (u.comp >= 0 && net.compLive[u.comp] ? 4 : 5) : 0)); if (v) for (let c = 0; c < u.cells.length; c++) a.overlays.power[u.cells[c]] = v; }
+  for (let i = 0; i < L.parts.length; i++) { const u = L.parts[i]; const v = u.s.power > 0 ? 3 : ((u.s.power < 0) ? (u.working ? 2 : 1) : (partCarriesPowerV3(u.m) ? (u.comp >= 0 && net.compLive[u.comp] ? 4 : 5) : 0)); if (v) for (let c = 0; c < u.cells.length; c++) a.overlays.power[u.cells[c]] = v; }
   if (reactors.length === 0 && dark.length > 0) addProblem(a, 'POWER_NONE', 'warning', 'No reactor: nothing that needs power works.', partsAt(L, dark), partsSquares(L, dark), partIdxs(dark));
   else if (dark.length > 0) addProblem(a, 'POWER_DARK', 'warning', pluralV3(dark.length, 'part gets', 'parts get') + ' no power: not joined to a power source (a reactor or battery) by conduits or parts that carry power (' + Array.from(new Set(dark.map(itemName))).join(', ') + ').', partsAt(L, dark), partsSquares(L, dark), partIdxs(dark));
   if (loose.length > 0) addProblem(a, 'HEAT_LOOSE', 'warning', pluralV3(loose.length, 'radiator or heat sink is', 'radiators or heat sinks are') + ' not joined to the power network: it sheds nothing.', partsAt(L, loose), partsSquares(L, loose), partIdxs(loose));
@@ -113002,9 +113054,9 @@ function passNumbersV3(L, a) {
   let squares = 0;
   for (let i = 0; i < L.parts.length; i++) {
     const u = L.parts[i], s = u.s;
-    const m = s.mass;
+    const m = s.mass * frameBonusMul(u, 'H');   // (v307.0) H, a hardpoint: a weapon on it weighs 10% less
     mass += m; mx += m * u.cx; my += m * u.cy;
-    hp += s.hp * (u.bonus.C && u.m.bridge ? 1.2 : 1);
+    hp += s.hp * (u.m.bridge && frameBonusOn(u, 'C') ? 1.2 : 1);
     cost += s.cost;
     res.alloys += Math.ceil(s.alloys); res.iridium += s.iridium; res.helium3 += s.helium3; res.rareEarths += s.rareEarths; res.fissiles += s.fissiles; res.antimatter = (res.antimatter || 0) + (s.antimatter || 0);
     squares += u.cells.length;
@@ -113041,7 +113093,7 @@ function passNumbersV3(L, a) {
   let thrustMul = shipMul(a, 'thrust');
   for (let i = 0; i < L.parts.length; i++) {
     const u = L.parts[i];
-    if (u.s.thrust > 0) drives.push({ part: u.idx, push: roundTo(u.s.thrust * (u.bonus.E ? FRAME_SQUARE_BONUSES.E.mul : 1) * thrustMul, 1), x: roundTo(u.cx, 2), y: roundTo(u.cy, 2), dir: u.dir, working: u.working ? 1 : 0, boostFactor: u.m.boostFactor || 1 });
+    if (u.s.thrust > 0) drives.push({ part: u.idx, push: roundTo(u.s.thrust * frameBonusMul(u, 'E') * thrustMul, 1), x: roundTo(u.cx, 2), y: roundTo(u.cy, 2), dir: u.dir, working: u.working ? 1 : 0, boostFactor: u.m.boostFactor || 1 });
     if (u.m.rcsThrust > 0) rcs.push({ part: u.idx, push: roundTo(u.s.rcsThrust, 1), x: roundTo(u.cx, 2), y: roundTo(u.cy, 2), working: u.working ? 1 : 0 });
   }
   const bal = balanceFromDrives({ centre: [xc, yc], gridH: H, gridW: W, mass: mass, drives: drives, rcs: rcs });   // (v147.0) mass and length: the RCS turning bonus
@@ -113058,10 +113110,10 @@ function passNumbersV3(L, a) {
   let fcUnits = L.parts.filter(function (u) { return u.m.spreadMul > 0 && u.working; });
   let scatter = 1, radar = 0;
   const sensors = L.parts.filter(function (u) { return u.m.scatterMul > 0 && u.working; }).sort(function (p, q) { return p.s.scatterMul - q.s.scatterMul; });
-  for (let k = 0; k < sensors.length && radar < 3; k++) { const times = sensors[k].bonus.M ? 2 : 1; for (let t = 0; t < times && radar < 3; t++) { scatter *= sensors[k].s.scatterMul; radar++; } }
+  for (let k = 0; k < sensors.length && radar < 3; k++) { const times = frameBonusOn(sensors[k], 'M') ? 2 : 1; for (let t = 0; t < times && radar < 3; t++) { scatter *= sensors[k].s.scatterMul; radar++; } }
   a.scatterMul = scatter;
   // (v140.0, Alex 8 Nov) an ECM jammer on a mast counts twice, like a sensor (still two counts at most)
-  const jammers = L.parts.filter(function (u) { return u.m.jam > 0 && u.working; }); let jamN = 0; for (let k = 0; k < jammers.length && jamN < 2; k++) { const times = jammers[k].bonus.M ? 2 : 1; for (let t = 0; t < times && jamN < 2; t++) { a.jam += jammers[k].s.jam; jamN++; } }
+  const jammers = L.parts.filter(function (u) { return u.m.jam > 0 && u.working; }); let jamN = 0; for (let k = 0; k < jammers.length && jamN < 2; k++) { const times = frameBonusOn(jammers[k], 'M') ? 2 : 1; for (let t = 0; t < times && jamN < 2; t++) { a.jam += jammers[k].s.jam; jamN++; } }
   // (v30 A1) the bridge's bonus (s9.2: a combat bridge +3%, a command deck +5% to accuracy, reload and turn)
   const bridgeBonus = L.bridge && L.bridge.working && L.bridge.m.bridgeBonus > 1 ? L.bridge.m.bridgeBonus : 1;
   a.bridgeBonus = bridgeBonus;
@@ -113080,9 +113132,9 @@ function passNumbersV3(L, a) {
     let sm = (w.scatterMul || 1) / bridgeBonus, tm = (w.trackingMul || 1) * bridgeBonus;
     const fc = fcUnits.find(function (f) { return partsTouchV3(L, f, u) !== null; });
     if (fc) { sm *= fc.s.spreadMul; tm *= fc.s.trackingMul; a.fcCovered++; if (fcBonus > 0) { sm /= 1 + fcBonus; tm *= 1 + fcBonus; } }   // (v91) Neural interfaces: +5% accuracy for guns touching fire control
-    if (u.bonus.H && mountKind === 'fixed') sm *= 0.9;
-    const rateMul = (u.bonus.W ? FRAME_SQUARE_BONUSES.W.mul : 1) * (u.bonus.B ? FRAME_SQUARE_BONUSES.B.mul : 1) * (1 - pen) * a.crewShare * bridgeBonus;   // (v27 C2: B, the Sentry's gun bays)
-    const rangeMul = (u.bonus.S && mountKind === 'spinal') ? FRAME_SQUARE_BONUSES.S.mul : 1;
+    if (frameBonusOn(u, 'H') && mountKind === 'fixed') sm *= 0.9;   // (H, a hardpoint: fixed guns aim 10% tighter; their weight is in passNumbersV3)
+    const rateMul = frameBonusMul(u, 'W') * frameBonusMul(u, 'B') * (1 - pen) * a.crewShare * bridgeBonus;   // (v27 C2: B, the Sentry's gun bays)
+    const rangeMul = frameBonusMul(u, 'S');
     const key = s.module.id + '#' + s.mk + '#' + (s.optKey || '') + '#' + facing;
     let g = groupOf[key];
     if (!g) {
@@ -113122,7 +113174,7 @@ function passNumbersV3(L, a) {
   // point defence (s6): the average mount, plus the shells they stop (3% a gun PD mount up to 6 mounts and SETTINGS.bbPdStopCap, 15%, in all; a Flak battery about 6%)
   // (v140.0, Alex 8 Nov) point defence on a mast counts as two mounts
   let pdN = 0, stopShells = 0, pdGunMounts = 0; const pd = { pdRange: 0, pdRate: 0, pdDamage: 0, pdKill: 0 };
-  for (let i = 0; i < L.parts.length; i++) { const u = L.parts[i]; if (!u.m.pd || !u.working) continue; for (let t = u.bonus.M ? 2 : 1; t > 0; t--) { pdN++; pd.pdRange += u.s.pdRange; pd.pdRate += u.s.pdRate; pd.pdDamage += u.s.pdDamage; pd.pdKill += u.s.pdKill; if (u.m.pdTier === 'gun' || u.m.pdTier === 'laser' || u.m.pdTier === 'coil') { if (pdGunMounts < 6) stopShells += u.s.pdStopShells || 0; pdGunMounts++; } else stopShells += u.s.pdStopShells || 0; } }
+  for (let i = 0; i < L.parts.length; i++) { const u = L.parts[i]; if (!u.m.pd || !u.working) continue; for (let t = frameBonusOn(u, 'M') ? 2 : 1; t > 0; t--) { pdN++; pd.pdRange += u.s.pdRange; pd.pdRate += u.s.pdRate; pd.pdDamage += u.s.pdDamage; pd.pdKill += u.s.pdKill; if (u.m.pdTier === 'gun' || u.m.pdTier === 'laser' || u.m.pdTier === 'coil') { if (pdGunMounts < 6) stopShells += u.s.pdStopShells || 0; pdGunMounts++; } else stopShells += u.s.pdStopShells || 0; } }
   a.pdMounts = pdN; if (pdN > 0) a.pd = { pdRange: pd.pdRange / pdN, pdRate: pd.pdRate / pdN, pdDamage: pd.pdDamage / pdN, pdKill: pd.pdKill / pdN, stopShells: Math.min(SETTINGS.bbPdStopCap, roundTo(stopShells, 3)) };
   // the power chart: what each class needs (parts that are joined to a reactor), what it gets, where it runs out.
   // (v71, Alex 2026-10-29) ONE CHART PER POWER NETWORK: a reactor or battery powers only the parts on its own network (as a radiator cools only its own),
@@ -113131,7 +113183,7 @@ function passNumbersV3(L, a) {
   const pn = function (c) { if (pnOf[c] === undefined) { pnOf[c] = pNets.length; const nd = {}; for (let k = 0; k < POWER_CHART.length; k++) nd[POWER_CHART[k].id] = 0; pNets.push({ comp: c, no: a.netNo[c] || 0, made: 0, need: nd, parts: [] }); } return pNets[pnOf[c]]; };
   for (let i = 0; i < L.parts.length; i++) {
     const u = L.parts[i];
-    if (u.s.power > 0 && u.working && u.comp >= 0) { const p = pn(u.comp); p.made += u.s.power * (u.bonus.P ? FRAME_SQUARE_BONUSES.P.mul : 1); p.parts.push(i); }   // (v27 C2: P, the Sentry's power bays: +10%)
+    if (u.s.power > 0 && u.working && u.comp >= 0) { const p = pn(u.comp); p.made += u.s.power * frameBonusMul(u, 'P'); p.parts.push(i); }   // (v27 C2: P, the Sentry's power bays: +10%)
     const uses = -(u.s.power < 0 ? u.s.power : 0);
     if (uses > 0 && !u.dark && u.comp >= 0) { const p = pn(u.comp), cls = p.need[u.m.powerClass] !== undefined ? u.m.powerClass : 'rest'; p.need[cls] += uses; p.parts.push(i); }
   }
@@ -113166,21 +113218,21 @@ function passNumbersV3(L, a) {
   for (let i = 0; i < L.parts.length; i++) { const u = L.parts[i]; if (u.working && u.s.shield > 0) { shield += u.s.shield; shieldRe += u.s.shieldRecharge; } }
   a.shield = shield; a.shieldRecharge = shieldRe;
   const armour = [0, 0, 0, 0], plates = [0, 0, 0, 0], armMul = shipMul(a, 'armour');
-  const plate = function (k, facing) { const i = L.cellPart[k]; if (i < 0) return; const u = L.parts[i]; if (!(u.s.armour > 0)) return; let v = u.s.armour / u.cells.length * armMul; if (L.cellBonus[k] === 87) v *= 0.5; if (L.cellBonus[k] === 65 && u.m.role === 'armour') v *= FRAME_SQUARE_BONUSES.A.mul;   /* (v27 C2: A, an armour strip: +10%) */ armour[facing] += v; plates[facing]++; };
+  const plate = function (k, facing) { const i = L.cellPart[k]; if (i < 0) return; const u = L.parts[i]; if (!(u.s.armour > 0)) return; let v = u.s.armour / u.cells.length * armMul; if (L.cellBonus[k] === 87) v *= 0.5; v *= frameBonusMul(u, 'A');   /* (v27 C2: A, an armour strip: +10%; v307.0: the whole plate, when any square of it is on the strip) */ armour[facing] += v; plates[facing]++; };
   for (let y = 0; y < H; y++) { let min = -1, max = -1; for (let x = 0; x < W; x++) if (L.cellPart[y * W + x] >= 0) { if (min < 0) min = x; max = x; } if (min >= 0) { plate(y * W + max, 0); plate(y * W + min, 1); } }
   for (let x = 0; x < W; x++) { let min = -1, max = -1; for (let y = 0; y < H; y++) if (L.cellPart[y * W + x] >= 0) { if (min < 0) min = y; max = y; } if (min >= 0) { plate(min * W + x, 2); plate(max * W + x, 3); } }
   a.armor = armour.map(function (v) { return roundTo(v, 2); }); a.armorPlates = plates;
   const areas = [];
   for (let i = 0; i < L.parts.length; i++) {
     const u = L.parts[i];
-    const kind = u.m.role === 'armour' ? 'armour' : ((u.m.role === 'external' || u.bonus.M) ? 'external' : 'internal');
+    const kind = u.m.role === 'armour' ? 'armour' : ((u.m.role === 'external' || frameBonusOn(u, 'M')) ? 'external' : 'internal');
     let best = 0, bestLen = Infinity;
     for (let dir = 0; dir < 4; dir++) {
       let len = Infinity;
       for (let c = 0; c < u.cells.length; c++) { let x = u.cells[c] % W, y = (u.cells[c] - x) / W, n = 0; while (n < 200) { x += DIR_STEP[dir][0]; y += DIR_STEP[dir][1]; if (x < 0 || y < 0 || x >= W || y >= H || L.cellFrame[y * W + x] < 0) break; n++; } if (n < len) len = n; }
       if (len < bestLen) { bestLen = len; best = dir; }
     }
-    u.kind = kind; u.facing = best; u.deep = !!u.bonus.C && u.bonus.C === u.cells.length; u.hpMax = u.s.hp;
+    u.kind = kind; u.facing = best; u.deep = frameBonusOn(u, 'C');   // (v307.0: any square in the citadel, as every bonus) u.hpMax = u.s.hp;
     areas.push({ part: u.idx, name: itemName(u), module: u.m.id, cat: u.m.cat, squares: u.cells.length, kind: kind, facing: best, deep: u.deep ? 1 : 0, working: u.working ? 1 : 0, why: u.why });
   }
   // stores per gun, as v20 counted them (the stand-in battle's one store): shots, so rounds are divided by the rounds a shot
@@ -113240,7 +113292,7 @@ function passNumbersV3(L, a) {
     // fighter hangars with what each holds ([{ part, id, name }]) with the fighters' resources (already inside `resources` and `cost`) listed on their own
     fighter: !!(hl.cls && hl.cls.fighter), seatBridge: !!a.seatBridge, drone: !!a.drone, seats: L.seats ? L.seats.length : 0,
     // (v95.2) a hangar's 2nd, 3rd... craft carries its seat (the battle names its bay by it: 17b fgBayKey)
-    hangars: (a.hangarsHeld || []).map(function (h) { const o = { part: h.part, id: h.id, name: h.name }; if (h.seat > 0) o.seat = h.seat; return o; }), fighterResources: Object.assign({}, fighterRes, fighterAdv), fighterPartsAdvanced: Object.assign({}, a.fighterPartsAdv || {}),
+    hangars: (a.hangarsHeld || []).map(function (h) { const o = { part: h.part, id: h.id, name: h.name }; if (h.seat > 0) o.seat = h.seat; const hb = frameBonusMul(L.parts[h.part], 'G'); if (hb !== 1) o.turnMul = hb; return o; }),   // (v307.0) turnMul: on a Hangar bay square, its craft rearm and relaunch 20% faster (17b) fighterResources: Object.assign({}, fighterRes, fighterAdv), fighterPartsAdvanced: Object.assign({}, a.fighterPartsAdv || {}),
     massProd: a.massProd || null,   // (v68) Mass production applied: { alloys: 0.8, time: 0.7 } (the Alloys above already carry it; 06k reads the time)
     crewSlowHalf: !!a.crewSlowHalf, crewMind: a.crewMind || 0,   // (v91) Cybernetic implants (05f bbRecompute); the crew a ship mind works
     problems: a.problems.map(function (p) { return { code: p.code, level: p.level }; })
@@ -114124,7 +114176,8 @@ const B2_TIPS = {
   simple: ['Simple mode', 'Small craft are exempt from rooms, passageways, life support and the airlock: the cockpit crews everything and is its own airlock. A corvette still skips rooms, passageways and the airlock, but its crew must be housed and kept alive. The rest arrive with the frigate.'],
   sizerules: ['Rules by size', 'Rules arrive as ships grow. A Tiny or Small craft needs only its bridge, power, drives and fuel: the cockpit crews everything and is its own airlock. A corvette must also house its crew in quarters and keep them alive with life support. From the frigate up, every room must be joined by passageways to an airlock on the outside. Cruisers and bigger also need a supply port to refuel and rearm in the field.'],
   power: ['Power priority', 'One chart for every ship, so you never set it. When power runs short, the lowest items switch off first: life support and the bridge keep power longest, then repair, then moving, then fighting.'],
-  bonus: ['Frame bonus', 'Square bonuses tint the squares they apply to, in the colour of the module type that gains; a part gets the bonus when all its squares are on them. Whole-ship bonuses show as tags on the slot. The Frame overlay shows them.'],
+  bonus: ['Frame bonus', 'Square bonuses tint the squares they apply to, in the colour of the module type that gains. ' + FRAME_BONUS_RULE_TEXT + ' A part\'s tooltip and the bar under the sheet list the bonuses it gets. Whole-ship bonuses show as tags on the slot. The Frame overlay shows them.'],
+  carries: ['Passes power and heat', 'Power and heat flow through this part as if it were a power conduit: every part touching it is on the same network. Reactors, batteries, capacitors, solar panels, heat sinks and radiators do this. Other parts take power but do not pass it on, so they need a conduit or one of these beside them to reach further parts.'],
   freed: ['Freed squares', 'Upgrading a part to a smaller mark leaves its old squares hatched and empty, ready to fill.'],
   passage: ['Passageway', 'A 1 x 1 track. Joins rooms to each other and to an airlock; damage control works along it.'],
   conduit: ['Power conduit', 'A 1 x 1 track. Carries power and heat between the parts it joins; reactors, capacitors, heat sinks and radiators carry it on through themselves.'],
@@ -114143,6 +114196,13 @@ const B2_TIPS = {
 
 // ---- Small helpers ----
 function b2Plural(n, one, many) { return n + ' ' + (n === 1 ? one : (many || one + 's')); }
+// (v307.0) The small "passes power and heat" mark: a square with a line running through it, in the power colour. Shown in the parts list, the part's
+// tooltip and the bar under the sheet for every part that carries the network on (02c partCarriesPowerV3).
+function b2CarryIcon() {
+  const c = b2Cat('power').colour, h = b2Cat('heat').colour;
+  return '<svg class="carry" viewBox="0 0 16 16" aria-hidden="true"><rect x="4" y="4" width="8" height="8" fill="none" stroke="' + c + '" stroke-width="1.6"/><path d="M1 8H15" stroke="' + h + '" stroke-width="1.8"/><path d="M12 5.5L15 8L12 10.5" fill="none" stroke="' + h + '" stroke-width="1.6"/></svg>';
+}
+function b2CarryTag() { return '<span class="term carrytag" data-k="carries">' + b2CarryIcon() + 'passes power &amp; heat</span>'; }
 function b2Term(key, text) { return '<span class="term" data-k="' + key + '">' + text + '</span>'; }
 function b2Round(x, p) { return roundTo(x, p === undefined ? 1 : p); }
 // (v45) Every resource other than Alloys that a part, or a whole ship, costs to build, in plain words ("Iridium 2 · Volatiles 1"), or '' when none.
@@ -114733,6 +114793,7 @@ function b2RenderParts() {
       else if (mk > 1 && (s.w * s.h < m.w * m.h)) meta += '<span>' + s.w + '×' + s.h + ' at Mk ' + B2_ROMAN[mk] + '</span>';
       if (m.armourBase > 0) meta += '<span>armour ' + b2Round(s.armour / Math.max(1, s.squares), 1) + ' a square</span>';
       if (m.edge) meta += b2Term('edge', 'edge');
+      if (partCarriesPowerV3(m)) meta += b2CarryTag();   // (v307.0)
       if (m.fuel) meta += '<span>burns ' + esc((FUEL_BY_ID[m.fuel.type] || { name: m.fuel.type }).name) + '</span>';
       if (m.ownFuel) meta += '<span>own fuel</span>';
       if (b2ModLocked(m)) meta += b2Term('locked', 'locked') + (m.tech && m.tech !== 'Tier 0' ? '<span class="tech">' + esc(b2TechWords(m.tech)) + '</span>' : '');
@@ -115086,6 +115147,18 @@ function b2RenderDesigns() {
   if (old > 0) h += '<div class="fresh">' + b2Plural(old, 'older design', 'older designs') + ' (the v20 Bureau) cannot be opened here: switch the design model to 1 in the Rules to edit them.</div>';
   b2El('b2Dlist').innerHTML = h;
 }
+// (v309.0) The yards button of one VERSION of a design (the Designs list row and the bar over the sheet use the same one; 35e-3 b2Activate is its press).
+//   this version on the yards:            "✓ Ready for the yards"        (a press takes it off)
+//   another version of it on the yards:   "Approve v1 for the yards"     (a press puts this one on instead: a rollback, or forward again)
+//   no version on the yards:              "Approve for the yards"
+function b2YardsButtonHtml(v, head) {
+  const onNow = designFamilyActive(designFamily(v));
+  const label = v.yardsReady === true ? '✓ Ready for the yards' : (onNow ? 'Approve v' + designVersion(v) + ' for the yards' : 'Approve for the yards');
+  const tip = v.yardsReady === true ? v.name + ' is the version the yards build. A press takes it off the yards.' :
+    (onNow ? 'The yards build ' + onNow.name + ' now. A press puts ' + v.name + ' on the yards instead: the yards build ' + v.name + ' from then on, and ships of ' + onNow.name + ' are refitted to it.' :
+      'Mark ' + v.name + ' ready for the yards (the campaign builds it)');
+  return '<button class="btn" type="button"' + (head ? ' id="b2Approve"' : '') + ' data-activate="' + esc(v.id) + '" title="' + esc(tip) + '">' + label + '</button>';
+}
 // One saved design's row: its name and numbers, its stamps, its versions and its buttons.
 function b2DesignRowHtml(rec) {
   const sm = rec.summary || {}, fam = designFamily(rec);
@@ -115093,7 +115166,7 @@ function b2DesignRowHtml(rec) {
   const cls = HULL_BY_ID[sm.sizeClass || rec.design.hull];
   // (v168.0, Alex 9 Nov) the row is the newest version, but the version on the yards may be an older one (an old save): the stamp says which ("v1 Active")
   const onNow = designFamilyActive(fam), onOld = !!onNow && onNow !== rec;
-  const actStamp = onNow ? '<span class="stamp green"' + (onOld ? ' title="The yards build ' + esc(onNow.name) + ', an older version, not the newest. Ready for the yards takes it off; one more press puts the newest version on."' : '') + '>' + (onOld ? 'v' + designVersion(onNow) + ' Active' : 'Active') + '</span>' : '';
+  const actStamp = onNow ? '<span class="stamp green"' + (onOld ? ' title="The yards build ' + esc(onNow.name) + ', an older version, not the newest (rolled back). Open another version and press its Approve button to build that one instead."' : '') + '>' + (onOld ? 'v' + designVersion(onNow) + ' Active' : 'Active') + '</span>' : '';
   // (v287.0) an approved design no yard builds (or one waiting on a resource) says so beside its Active stamp, with the reason in its tooltip (06r2)
   const yst = onNow && !b2InLibrary() && typeof campaignDesignYardState === 'function' && campaign && !campaign.over ? campaignDesignYardState(onNow.id) : null;
   const notBuiltStamp = yst && !yst.on && yst.key !== 'off' ? '<span class="stamp amber" title="' + esc(yst.why) + '">' + (yst.key === 'held' ? 'Waits: ' + esc(yst.short) : 'Not built') + '</span>' : '';
@@ -115107,11 +115180,13 @@ function b2DesignRowHtml(rec) {
     (rec.stockV3 ? '<span class="stamp grey">Stock</span>' : '') +
     (onNow ? actStamp + notBuiltStamp : (b2InLibrary() ? '' : '<span class="stamp amber">Draft</span>')) +
     (rec.outdated ? '<span class="stamp red" title="The Bureau\'s rules changed since this design was made. Its ships are kept; open it, fix what the checks list and save a new version.">Outdated</span>' : '') + (rec.local ? '<span class="stamp local">Local</span>' : '');
-  if (versions.length > 1) h += '<div class="vers">' + versions.map(function (v) { return '<button type="button" data-design="' + esc(v.id) + '" title="Open ' + esc(v.name) + '">v' + designVersion(v) + (v.yardsReady ? ' ✓' : '') + '</button>'; }).join('') + '</div>';
+  // (v309.0, Alex 24 Nov) the version the yards build stands out in engineer orange, a little bigger, so it is plain which v is being built
+  if (versions.length > 1) h += '<div class="vers">' + versions.map(function (v) { const on = v.yardsReady === true; return '<button type="button" data-design="' + esc(v.id) + '"' + (on ? ' class="yards"' : '') + (v.id === b2.serviceId ? ' aria-current="true"' : '') + ' title="Open ' + esc(v.name) + (on ? ' (on the yards: this is the version being built)' : '') + '">v' + designVersion(v) + (on ? ' ✓' : '') + '</button>'; }).join('') + '</div>';
+  const target = versions.some(function (v) { return v.id === b2.serviceId; }) ? SHIP_TYPES[typeIndexById(b2.serviceId)] : rec;   // (v309.0) the button acts on the version open on the sheet
   h += '<div class="acts"><button class="btn" type="button" data-refit="' + esc(rec.id) + '" title="A new version with the same layout to fill in">Refit</button>' +
     '<button class="btn" type="button" data-lib="designCode" data-lid="' + esc(rec.id) + '" title="Pack this design into a copy code (one line of text to paste anywhere): v32">Copy code</button>' +
     dlFolderBtnHtml('designs', fam) +
-    (b2InLibrary() ? '' : '<button class="btn" type="button" data-activate="' + esc(rec.id) + '" title="The yards may build the designs marked ready (the campaign); every saved design can be used on the setup screen">' + (onNow ? '✓ Ready for the yards' : 'Approve for the yards') + '</button>') +   // (v234.0) no yards in the library's Bureau
+    (b2InLibrary() ? '' : b2YardsButtonHtml(target, false)) +   // (v234.0) no yards in the library's Bureau
     (rec.stockV3 ? '<button class="btn" type="button" data-ddel="hide" data-did="' + esc(rec.id) + '" title="Stock designs cannot be deleted. Hidden, it leaves this list (Show: Hidden brings it back).">' + (dlIsHidden(fam) ? 'Unhide' : 'Hide') + '</button>'
       : '<button class="btn" type="button" data-ddel="ask" data-did="' + esc(rec.id) + '" title="Delete this version or the whole design">Delete…</button>') + '</div>' +
     (b2.delAsk && versions.some(function (v) { return v.id === b2.delAsk; }) ? b2DeleteAskHtml(b2.delAsk, versions) : '') +
@@ -115323,8 +115398,8 @@ function b2RenderHead() {
   st.textContent = active ? 'Active' : (same && svc ? 'Saved' : 'Draft'); st.className = 'stamp ' + (active ? 'green' : (same && svc ? 'grey' : 'amber'));
   // (v27 C2) the design on the sheet, once saved, can be approved for the yards right here (the same as Activate in the Designs list)
   const ab = b2El('b2ApproveBox');
-  if (ab) ab.innerHTML = svc && same && !b2InLibrary() ? '<button class="btn" type="button" id="b2Approve" data-activate="' + esc(svc.id) + '" title="Mark this design ready for the yards (the campaign builds it)">' + (designFamilyActive(designFamily(svc)) ? '✓ Ready for the yards' : 'Approve for the yards') + '</button>' +
-    (designFamilyActive(designFamily(svc)) ? '' : supPreviewHtml(svc.id, true)) : '';   // (v168.0) the button is the design's, whichever version is on the yards   // (v67, section 7v) the Activate preview
+  if (ab) ab.innerHTML = svc && same && !b2InLibrary() ? b2YardsButtonHtml(svc, true) +
+    (designFamilyActive(designFamily(svc)) ? '' : supPreviewHtml(svc.id, true)) : '';   // (v309.0) the button is the open version's own   // (v67, section 7v) the Activate preview
   const rev = latest ? String.fromCharCode(64 + Math.min(26, same && svc ? designVersion(svc) : next)) : 'A';
   b2El('b2Tblk').innerHTML = '<div class="big">' + esc((b2.name || 'New design').toUpperCase()) + '</div><div><small>CLASS</small>' + esc(cls ? cls.name.toUpperCase() : '?') + '</div><div><small>REV</small>' + rev + '</div><div><small>TONNAGE</small>' + (sm ? sm.tonnage.toLocaleString('en-GB') + ' T' : '-') + '</div>' +
     '<div><small>GRID</small>' + b2.a.layout.W + ' × ' + b2.a.layout.H + '</div><div><small>SQUARES</small>' + b2.a.layout.frameSquares + '</div><div><small>RANGE</small>' + (sm && sm.fuel ? (sm.fuel.local ? 'LOCAL' : b2Plural(sm.fuel.jumps, 'TRANSFER')) : '-') + '</div><div><small>DATE</small>' + b2DateText() + '</div>';
@@ -115878,6 +115953,8 @@ function b2RenderInsp() {
   h = '<span data-mtk="' + b2.sel + '">' + b2Swatch(m.cat) + '</span><b data-mtk="' + b2.sel + '">' + esc(s.name) + '</b><span>' + esc(s.markName) + ' · ' + s.w + '×' + s.h + (m.sizes ? ' size piece' : '') + ' · ' + esc(cat.name.toLowerCase()) + '</span>';
   const lk = partLockV3(rec);   // (v27 C2) a part fitted with the frame
   if (lk) h += '<span class="lockline">' + (lk === 'locked' ? 'Locked: ' : 'Removable: ') + esc(b2LockText(rec)) + '</span>';
+  if (partCarriesPowerV3(m)) h += b2CarryTag();   // (v307.0) it passes power and heat on
+  if (u) { const fb = frameBonusesOf(u); for (const ch of fb.on) { const bn = FRAME_SQUARE_BONUSES[ch]; h += '<span class="btag" style="--mc:' + b2Cat(bn.cat).colour + '" data-bonus="' + ch + '">' + b2Swatch(bn.cat, '') + esc(bn.name) + ' bonus</span>'; } }   // (v307.0) the frame bonuses it gets
   if (!u) h += '<span class="bad">' + b2Term('sketch', 'a sketch') + ': not on the frames, or on another part</span>';
   else if (!u.working) h += '<span class="bad">Not working: ' + esc(u.why) + '</span>';
   // (v30 A2) a built part: its picks, each a drop-down (locked picks greyed with the reason), changed where it stands
@@ -116106,20 +116183,17 @@ function b2NoFightNoDrive(rec) {
 }
 function b2Activate(id, sure) {   // (v93.2) sure: no second press asked (the test tools' call)
   const t = typeIndexById(id); if (t < 0) return;
-  const rec = SHIP_TYPES[latestLiveVersionIndex(designFamily(SHIP_TYPES[t]))] || SHIP_TYPES[t];   // (v109.0) never a deleted version
+  // (v309.0, player feedback 24 Nov: "he wasn't happy with v2 ... click v1, and approve v1 for the yards, and have the game build v1s again")
+  // ROLLING BACK. The button works on the VERSION it was pressed for (the one open on the sheet), not always the newest. Approving an older version is
+  // the very same step as approving a new one: designMakeOnlyActive puts it on the yards and takes whichever version was there off, so one press rolls
+  // the design back. From then on the version on the yards is the design's current version everywhere in the war: the docks of the version taken off
+  // follow it (06f2 campaignDockDawn, 06f2b campaignDockNewVersion), and the ships of that version are the ones that are refitted (06f2b, 17c3).
+  // Before v309.0 the press always went to the newest version, and an older version could only be taken off.
+  const asked = SHIP_TYPES[t];
+  const rec = asked.removed ? (SHIP_TYPES[latestLiveVersionIndex(designFamily(asked))] || asked) : asked;   // (v109.0) never a deleted version
   if (rec.removed) return;
-  // (v168.0, Alex 9 Nov) one version of a design on the yards at a time. When an OLDER version is the one on the yards (an old save), this press takes it
-  // off, like the press on the version that builds would: the design is then off the yards, and the next press puts its newest version on.
   const onNow = designFamilyActive(designFamily(rec));
-  if (onNow && onNow !== rec) {
-    for (const r of SHIP_TYPES) if (r && r.design && r.yardsReady === true && designFamily(r).toLowerCase() === designFamily(rec).toLowerCase()) r.yardsReady = false;
-    if (typeof campaignFighterPickForget === 'function') campaignFighterPickForget();
-    b2.activateArmed = null; b2.msgBad = false;
-    b2.msg = '"' + onNow.name + '" (an older version) is off the yards: they stop building it. Press "Approve for the yards" to put the newest version, "' + rec.name + '", on instead.';
-    if (typeof campaign !== 'undefined' && campaign && typeof campaignV3ActiveRecs === 'function' && campaignV3ActiveRecs().length === 0) { b2.msg += ' No design of ours is on the yards now, so they build nothing.'; b2.msgBad = true; }
-    b2RenderDesigns(); b2RenderHead();
-    return;
-  }
+  const swap = !rec.yardsReady && onNow && onNow !== rec ? onNow : null;   // the version this press takes off (a rollback, or a move forward again)
   if (!rec.yardsReady && typeof tutorialApproveVeto === 'function') { const no = tutorialApproveVeto(rec); if (no) { b2.msg = no; b2.msgBad = true; b2RenderMsg(); return; } }   // (v27.1) the tutorial refuses an unarmed design (section 7t)
   if (!rec.yardsReady && typeof libActivateVeto === 'function' && !b2.unlockAll) { const no = libActivateVeto(rec); if (no) { b2.msg = no; b2.msgBad = true; b2RenderMsg(); return; } }   // (v32) a library plan waits for its research (section 10h)
   if (!rec.yardsReady && rec.outdated && typeof campaignV3OutdatedWhy === 'function') { const why = campaignV3OutdatedWhy(rec); if (why) { b2.msg = 'Not activated: "' + rec.name + '" is outdated. The Bureau\'s rules changed since it was made: ' + why + ' Open it, fix that and save a new version; the new version can go on the yards.'; b2.msgBad = true; b2RenderMsg(); return; } }   // (v98.1) an outdated design from an old save
@@ -116139,12 +116213,20 @@ function b2Activate(id, sure) {   // (v93.2) sure: no second press asked (the te
   if (rec.yardsReady) rec.yardsReady = false; else designMakeOnlyActive(rec);   // (v168.0) switched on, it is the family's only version on the yards
   if (typeof campaignFighterPickForget === 'function') campaignFighterPickForget();   // (v51) the stations pick their fighter again (06p)
   b2.msgBad = false;
-  b2.msg = rec.yardsReady ? '"' + rec.name + '" is active: marked ready for the yards (the campaign builds it).' + (rec.local ? ' It is Local: it never transfers, and defends the AO that builds it.' : '') : '"' + rec.name + '" is off the yards: they stop building it. Press "Approve for the yards" to put it back.';
+  b2.msg = rec.yardsReady ? (swap ? b2SwapText(rec, swap) : '"' + rec.name + '" is active: marked ready for the yards (the campaign builds it).') + (rec.local ? ' It is Local: it never transfers, and defends the AO that builds it.' : '') : '"' + rec.name + '" is off the yards: they stop building it. Press "Approve for the yards" to put it back.';
   if (!rec.yardsReady && typeof campaign !== 'undefined' && campaign && typeof campaignV3ActiveRecs === 'function' && campaignV3ActiveRecs().length === 0) { b2.msg += ' No design of ours is on the yards now, so they build nothing.'; b2.msgBad = true; }
   const fit = rec.yardsReady && rec.summary ? campaignV3BerthFit(rec.summary) : null;   // (stop 5) the warning when no berth fits it yet
   if (fit && fit.none) { b2.msg += ' ' + fit.text; b2.msgBad = true; }
   b2RenderDesigns(); b2RenderHead();
   if (rec.yardsReady) tutorialEvent('designApproved', { id: rec.id, name: rec.name, local: !!rec.local, frames: rec.design && rec.design.frames ? rec.design.frames.slice() : [], family: designFamily(rec) });   // (v27 C1) activated: the tutorial's "approve" (section 7t; v27 C2: + frames, family)
+}
+// (v309.0) The words when approving one version took another off the yards: v1 back on instead of v2 (a rollback), or v3 on instead of v1.
+// What happens to the ships of the version taken off is the same either way: the version on the yards is the current one.
+function b2SwapText(rec, off) {
+  const back = designVersion(rec) < designVersion(off);
+  let w = '"' + rec.name + '" is on the yards ' + (back ? 'again' : 'now') + ', instead of "' + off.name + '": the yards build ' + rec.name + ' from now on (ships already being built to ' + off.name + ' still finish).';
+  if (typeof dockHoldOn === 'function' && dockHoldOn()) w += ' Ships of ' + off.name + ' already in service serve on: each is rebuilt as ' + rec.name + ' when it docks for repairs or slips off the line for a refit, or replaced by one when lost.';
+  return w;
 }
 // (v268.0, Alex 18 Nov: "i want the gui interface for the proving grounds for the player, not the developer test page") "Save and test in the
 //   Proving grounds" saves the design and opens the player's Proving grounds panel (section 8j, the one on the main menu) with it filled in on our
@@ -117197,7 +117279,8 @@ function b2TipModule(id, mk, sz, item, opt) {
     h += b2MissileFeedTip(s);   // (v70) a launcher lists the magazines that can feed it, and how many of its missiles each holds
     // (v94.1) in a campaign the kit alone says what is locked: a part's own paper flag (every Mk III or IV reads as locked) was showing "later tech" on researched parts
     if (((s.locked && !b2Kit()) || b2ModLocked(m) || b2MarkLocked(s.mk, m.line) || (b2Kit() && bureauKitAllowsPart(b2Kit(), { p: id, mk: s.mk, opt: s.opt })))) h += '<div class="seen bad">Locked: ' + esc((b2Kit() && bureauKitAllowsPart(b2Kit(), { p: id, mk: s.mk, opt: s.opt })) || 'later tech') + (b2.unlockAll ? ' (unlocked for testing)' : '') + '.</div>';
-    if (item) { if (!item.working) h += '<div class="eg bad">Not working: ' + esc(item.why) + '</div>'; h += b2CapShipTip(s); if (partLockV3(item.rec)) h += '<div class="seen">' + (partLockV3(item.rec) === 'locked' ? 'Locked: ' : 'Removable: ') + esc(b2LockText(item.rec)) + '.</div>'; }
+    h += b2CarryTip(m);   // (v307.0)
+    if (item) { if (!item.working) h += '<div class="eg bad">Not working: ' + esc(item.why) + '</div>'; h += b2CapShipTip(s); h += b2BonusTip(item); if (partLockV3(item.rec)) h += '<div class="seen">' + (partLockV3(item.rec) === 'locked' ? 'Locked: ' : 'Removable: ') + esc(b2LockText(item.rec)) + '.</div>'; }
     else h += '<div class="seen">Its picks open under it in the parts list; a laid one\'s picks change in the bar under the sheet.</div>';
     return h;
   }
@@ -117233,11 +117316,12 @@ function b2TipModule(id, mk, sz, item, opt) {
   const tr = b2Traits(m); if (tr.length) h += '<div class="chips">' + tr.map(b2TraitWord).join('') + '</div>';
   h += b2MissileFeedTip(s);   // (v70) a missile magazine lists the missile sizes it can feed, how many of each, and which launchers fire them
   if (m.edge) h += '<div class="seen">Must touch the outer edge.</div>';
+  h += b2CarryTip(m);   // (v307.0)
   if (((m.locked || s.locked) && !b2Kit()) || b2ModLocked(m) || b2MarkLocked(s.mk, m.line)) h += '<div class="seen bad">Needs research' + (m.tech && m.tech !== 'Tier 0' ? ' (' + esc(b2TechWords(m.tech)) + ')' : '') + (b2.unlockAll ? ' (unlocked for testing)' : (b2Kit() ? ' (not in the campaign\'s kit yet)' : '')) + '.</div>';
   if (item) {
     if (!item.working) h += '<div class="eg bad">Not working: ' + esc(item.why) + '</div>';
     h += b2CapShipTip(s);   // (v304.0) on this ship: do its capacitors cover it?
-    const bs = Object.keys(item.bonus || {}); if (bs.length) h += '<div class="seen">On frame bonus squares: ' + esc(bs.map(function (b) { return (FRAME_SQUARE_BONUSES[b] || { name: b }).name; }).join(', ')) + '</div>';
+    h += b2BonusTip(item);   // (v307.0) the frame bonuses it really gets
     if (partLockV3(item.rec)) h += '<div class="seen">' + (partLockV3(item.rec) === 'locked' ? 'Locked: ' : 'Removable: ') + esc(b2LockText(item.rec)) + '.</div>';   // (v27 C2)
   }
   if (m.proto) h += '<div class="seen">Luna prototype: when the Luna deposit yields ' + esc(m.proto) + ', research it on the Research tab (free) to open it.</div>';   // (v27 C2)
@@ -117295,9 +117379,22 @@ function b2MissileFeedTip(s) {
   }
   return '';
 }
+// (v307.0, Alex 24 Nov) A laid part's frame bonuses, by the one rule (02c frameBonusesOf): each bonus it gets, in plain words, and any bonus squares
+// it touches that do nothing for its kind of part (a radiator on a Sponson square), so the player is never left guessing.
+function b2BonusTip(u) {
+  const fb = frameBonusesOf(u); let h = '';
+  for (const ch of fb.on) { const bn = FRAME_SQUARE_BONUSES[ch]; h += '<div class="seen good">' + b2Swatch(bn.cat, 'bsw') + ' Frame bonus, ' + esc(bn.name) + ': ' + esc(bn.text) + '.</div>'; }
+  if (fb.idle.length) h += '<div class="seen">Touches ' + esc(fb.idle.map(function (c) { return FRAME_SQUARE_BONUSES[c].name; }).join(', ')) + ' squares: no bonus for this kind of part.</div>';
+  return h;
+}
+// (v307.0, Alex 24 Nov) A part that passes power and heat on through itself says so (02c partCarriesPowerV3).
+function b2CarryTip(m) {
+  if (!partCarriesPowerV3(m)) return '';
+  return '<div class="seen carryline">' + b2CarryIcon() + ' Passes power and heat on: parts touching it join its network, as with a power conduit.</div>';
+}
 function b2TipBonus(ch) {
   const bn = FRAME_SQUARE_BONUSES[ch]; if (!bn) return '';
-  return '<div class="t1" style="--tc:' + b2Cat(bn.cat).colour + '">' + b2Swatch(bn.cat, '') + '<div><b>' + esc(bn.name) + '</b><small>frame bonus square (' + ch + ')</small></div></div><p>' + esc(bn.text || '') + '</p><div class="seen">A part gets it when all its squares are on these squares.</div>';
+  return '<div class="t1" style="--tc:' + b2Cat(bn.cat).colour + '">' + b2Swatch(bn.cat, '') + '<div><b>' + esc(bn.name) + '</b><small>frame bonus square (' + ch + ')</small></div></div><p>' + esc(bn.text || '') + '</p><div class="seen">' + esc(FRAME_BONUS_RULE_TEXT) + '</div>';
 }
 // (v298.0) The Bureau's tips go through the game's one tooltip system (section 0f, js/00f-0f-tooltips.js), which lets a tip be pinned
 // (keep still or press Shift) so the trait chips and words inside it open their own tips. anchor = what the tip belongs to (default: the sheet).
@@ -120719,7 +120816,7 @@ BUREAU2_SCREEN_API.testRange = { run: testRangeRun, state: testRange, plan: func
 //   adopted habits come along in its copy code and into every new campaign. A doctrine changed in the Bureau after the save updates the plan's copy.
 //   DOCTRINE TEMPLATES (LIBRARY.templates: [{ name, doctrine, savedAt }]) live here too, so they carry over as well. A plan from before v37 has no doctrine: Auto.
 // =====================================================================
-const GAME_VERSION = 'v306.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
+const GAME_VERSION = 'v310.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
 const LIBRARY_KEY = 'engineersWar.library';
 const LIBRARY_FORMAT = 1;
 const LIBRARY_CODE_SHIP = 'EW-SHIP-1:', LIBRARY_CODE_LIB = 'EW-LIB-1:';
