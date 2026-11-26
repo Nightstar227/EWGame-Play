@@ -4488,7 +4488,7 @@ html.ew-phone-ui #stCard .st-card-k { font-size: 11px; }
     <section class="panel hidden" id="mmPanel" data-mat="screen small"><div class="panel-head" id="mmPanelHead"></div><div class="panel-body" id="mmPanelBody"></div></section>
     <input type="file" id="mmFile" accept=".json,application/json,text/plain" class="hidden">
   </div>
-  <div class="mm-version" title="The version of the game you are playing">Version v341.0</div>
+  <div class="mm-version" title="The version of the game you are playing">Version v346.0</div>
 </div>
 
 <!-- (v31 A2, section 7l) the end of the war: the game-over screen (Earth's people are gone) or the victory screen (the aliens' home secured). It lies over
@@ -15732,7 +15732,8 @@ const SETTINGS = {
   engageFractions: { close: 0.35, short: 0.5, medium: 0.65, long: 0.8, max: 0.95 },   // (v37: short and long added for the Doctrine tab's Range buttons)
   retargetSeconds: 0.4,      // how often each ship re-checks for a target (s)
   shieldRechargeDelay: 3,    // seconds after the last hit before a ship's shield starts recharging (s)
-  minArmorPassFraction: 0.2, // armor can never stop more than (1 - this) of a hit: at least this fraction always gets through
+  minArmorPassFraction: 0,   // the share of a hit that always gets through armour, on old table ships and in the AI's estimates (v345.0, Alex 26 Nov 2026: no floor,
+                             //   a hit that does not beat the armour does nothing; was 0.2)
 
   // ---- Ship movement with thrusters (the Combat Update; read when movementModel is 1, section 4c "Thrusters"). The sideways numbers are also read by the hit chance below. ----
   defaultAccelSeconds: 1.5,  // seconds a ship takes to reach its top speed (rows without accelTime)
@@ -15809,7 +15810,7 @@ const SETTINGS = {
   searchRangeCap: 6000,      // u; a gun never looks for targets farther away than this (it looks only as far as its hit chance stays above the lowest firing bar)
   openMinHitChance: 0.005,  // no shot is ever less likely to hit than this (minHitChance, 0.02, under weaponModel 0): low enough that the lowest firing bar marks a real reach
   fireRateScale: 0.5,       // (v99.5, Alex's longer-battles plan) the fire rate dial: every weapon of a designed ship fires this x as often (0.5 = half; beams burn this x as many seconds). Point defence is not changed
-  hpScale: 2,               // (v99.5, Alex's longer-battles plan) the HP dial: the hull and every part of a ship has this x its hit points (they take this many times less damage). Shields are not changed
+  hpScale: 1,               // (v99.5) the HP dial: hulls and parts take this many times less damage. (v344.0, Alex 26 Nov: "increase the hp numbers rather than halve or quarter them in secret") x1: the old x2 is now written into the hit points themselves (HULL_CLASS_RULES, PART_RULES), so a weapon does the damage it says; the debug menu's slider still moves it
   evasionStrength: 4,       // (v99.5, Alex's longer-battles plan) E, the evasion dial: every weaving ship's dodge counts this many times over (after the dodge cap, so the cap rises with it), and a missile's
                              // sideways-thrust term too. 1 = as before. 4 makes ships dodge about 1.8x the shots they did (2 = 1.3x): only about a third of shots are at a ship that is weaving
   openDodgeCap: 12,          // a weaving target's dodge counts for up to this x its silhouette (dodgeCapFactor, 2, under weaponModel 0): a far, fast, weaving target is really hard to hit
@@ -15958,10 +15959,14 @@ const SETTINGS = {
   // ---- (v30 B1) Hits and armour on the Bureau v2 ships (section 5vb; notes/v30/b1-hits-armour.md). Only Bureau v2 designs read these; every other ship type is untouched. ----
   bbLineOfFire: 1,           // 1 = a hit on a Bureau v2 ship picks the SQUARE it lands on (the side facing the shooter bbSideWeight times likelier) and only the plates between that
                              //     square and the hit side count as armour; plates can be hit and destroyed. 0 = the old rule (the outermost plates of the side hit, part picks by area)
+  bbTrample: 1,              // (v344.0, section 5vb part 2e) 1 = DAMAGE FROM THE OUTSIDE IN: the picked square only chooses the row or column; the damage enters at the
+                             //     hull's edge, the outer plates' armour comes off once, then it lands on the outermost square still standing and what is over that part's
+                             //     hit points carries on inward; the HP dial counts once for parts. 0 = the v30 rule (the hit lands on the picked square itself)
   bbSideWeight: 3,           // the squares nearest the side facing the shooter are this many times likelier to be hit than the rest (spec 3.1)
-  bbMinArmorPass: 0.1,       // the damage that gets through a Bureau v2 ship's plates is never below this share of the hit (spec 3.1; Deflecting plates are the exception)
+  bbMinArmorPass: 0,         // the damage that gets through a Bureau v2 ship's plates is never below this share of the hit. (v345.0, Alex 26 Nov 2026: 0, no floor:
+                             //   a hit that does not beat the armour on its line does nothing to the plates, the parts or the hull. Was 0.1)
   bbEnergyPlateEffect: 1,    // (v30 Bfix) the share of the plates on the line of fire that counts against an 'energy' hit on a Bureau v2 ship (the Swarm's acid spitters,
-                             //   spine launchers and bile lances). Classic battles keep the damage type's own rule (energy ignores armour); 0 here = that rule
+                             //   spine launchers and bile lances). (v345.0) every damage type now counts armour in full (02-2 DAMAGE_TYPES), so this matches it
   deflectRatio: 1,           // Deflecting plates (steel): a projectile whose damage is no more than this x the Deflecting armour on its line does nothing at all
   deflectCallSeconds: 45,    // the "no effect" line is said at most once per squadron and target type in this many seconds (so it does not spam the log)
   piercingArmourShare: 0.5,  // a Piercing shot counts only this share of the plates on its line, unless a Spaced plate or a Hardened bulkhead lies on it (then all of it)
@@ -15975,8 +15980,15 @@ const SETTINGS = {
   //      designs read these. ----
   bbBeams: 1,                // 1 = a laser emitter fires a CONTINUOUS BEAM, worked out once a second as one hit of bbBeamTicks ticks (spec 7.1). 0 = it fires like a gun (B1's rule)
   bbBeamTicks: 10,           // the ticks a second of beam: armour is subtracted in full from each tick, and the 10% floor is applied once to the second's total
-  bbFocusPerTick: 0.01,      // Focus: the beam's damage grows by this much a tick while it stays on the same target (+1% a tick: x3 after 20 s)
-  bbFocusMax: 3,             // ... up to this multiplier. Switching target resets it; a target with the Rolling trait (RCS jets) stops it building at all
+  bbFocusSeconds: 60,        // Focus: the beam's damage multiplier climbs while it stays on the same target, fast at first and slower and slower, reaching bbFocusMax
+                             //   after this many seconds (v345.0, Alex 26 Nov 2026: lasers "stay hitting the same line, scaling its damage over time to their maximum";
+                             //   "reach that x10 number, but in a much longer time than 10 seconds ... growth slows over the duration"). 0 = the old straight climb below
+  bbFocusPerTick: 0.01,      // (with bbFocusSeconds 0 only) the straight climb: Focus grows by this much a tick
+  bbFocusMax: 3,             // ... up to this multiplier (v345.0: lasers count no armour now, so Focus went back to x3; it was x10 while armour counted). Switching target resets it; a rolling target (the Rolling trait, weaving) resets it and throws the beam off its line
+  bbBeamMove: 1,             // (v345.0, Alex 26 Nov 2026: "dont let a laser linger on an empty square. lasers should have to hit modules to do their damage, if they burn through
+                             //   a line, they move their target to a new random line") 1 = a locked beam whose line has no standing plate or working part left moves to a new
+                             //   random line that has one, and its Focus starts again; what a beam burns out through the far side does not count against the hull. 0 = it stays
+  bbBeamLock: 1,             // (v345.0) 1 = a beam keeps hitting the same line of its target (05f bbArmourPass, bbBeamCell) until it changes target or the target rolls; 0 = a new square each second
   bbBeamFullShare: 0.3333,   // a beam does its full damage out to this share of its range, and ((this x range) / distance) ^ 2 of it beyond (spec 7.1: 44% at half range, 11% at full)
   bbBeamMinPower: 0.1,       // a beam fires a second only when it can power at least this share of it (spare reactor power first, then the capacitors: spec 7.4)
   // (v87, the Tier 0 to 2 gap parts: faction-modules-t0-t3.md s2b) first-guess numbers, not balance
@@ -17394,6 +17406,7 @@ const SETTINGS = {
   fallbackCalmFraction: 0.1, // a ship without a shield that broke off returns once the fire coming in has fallen to this share of what it was when it broke off...
   fallbackSafeTtdFactor: 2,  // ... and it would last at least this x its break-off time at that rate
   overheatFallback: 1,       // 1 = a designed ship whose guns have shut down from heat falls back until they cool; 0 = it stays in the fight
+  heatRunaway: 1,            // (v343.0, 07c) 1 = it falls back from heat only with an enemy in reach and only if backing off can cool it; a hold leash never sits at the map's corner; asleep ships still cool. 0 = as v342
   fallbackBackMargin: 0.7,   // a falling-back ship backs off facing the enemy if its backing-off speed is at least this x the threat's speed; otherwise it turns and runs
   repairDangerSeconds: 30,   // choosing a repair point: every 1.0 of odds (enemy strength to own) at the point counts like this many seconds of extra travel
   // Killing intent (stage 9): the "smart" and "threat" target priorities (section 4a), read only under smart tactics.
@@ -17468,6 +17481,7 @@ const SETTINGS = {
   backupBridgeSlow: 1.15,          // (v94.2) a ship whose bridge is knocked out but whose backup bridge works: its guns wait this many times as long (1.5 with no backup)
   backupBridgeRepair: 0.9,         // (v94.2) the backup bridge's own perk: while it works, damage control takes this share of the usual time for each repair (10% faster)
   flagBridgeReach: 2,              // (v91, Tier 3 plan s3h) a side with a working flag bridge on the field: its Divisions' target reach x this (05f-2b bbFlagReachMul)
+  officerChair: 1,                 // (v342.0) 1 = an officer uses its full skill only from a real bridge: on our corvettes and bigger whose bridge is a Cockpit, skills above 0.5 count as 0.5 (07-5b officerChairCap); 0 = no such rule
   divisionTargetRangeFactor: 1.5,  // the Division target (tight rein): the strongest enemy contact within this x the Division's mean weapon range of its anchor
   divisionTargetBonus: 0.5,        // smart targeting: the score of an enemy ship of the Division's target squadron x (1 + this)
   localAttackOdds: 1.5,            // a Commodore with slack discipline turns a hold into a local attack when its local odds are at least this (x boldness, localAttackSwing)
@@ -17904,6 +17918,8 @@ const DESIGN_RULES = {
   heatLimit: 100,            // when a ship's heat meter reaches this, its guns shut down...
   heatResumeFraction: 0.5,   // ...and switch on again when the meter has fallen to this fraction of the limit
   passiveCooling: 3,         // heat every ship loses by itself each second, whatever its radiators do
+  hotAtRestRefused: 1,       // (v346.0, Alex 26 Nov 2026) 1 = the Bureau refuses a design that makes more heat at rest (no gun firing) than it sheds (HEAT_HOT is a
+                             //     problem: it cannot be saved, and a saved one comes back OUTDATED). 0 = the old warning only
   turnRate: 3.0,             // turning speed of every designed ship (radians per second) while physicsTurning is 0, and the calibration target when it is 1
   physicsTurning: 0,         // 0 = every design turns at turnRate. 1 = a design's turn rate follows its shape: turnScale x (bridgeGyro + its turning thrust) / its inertia (section 10).
                              //     Saved designs are worked out again from their grids when this is imported, so switching it changes every design's turn rate at once.
@@ -18031,12 +18047,12 @@ const SETTING_MUST_BE_NON_NEGATIVE = ['doctrineFindMoves', 'doctrineBriefBase', 
   'arrivalStandOff', 'arrivalEdgeMargin', 'arrivalEdgeHeight', 'repairOffMapMinSeconds', 'repairForwardSetback', 'repairReleaseSpreadFactor', 'repairReturnDelay',
   'learningSpeed', 'learningStep', 'learningSoftZone', 'learningMaxRoomShare', 'levelEffect', 'serviceEffectPerHour', 'adaptabilityMin', 'xpPerAction', 'xpScoreBonus', 'driftSize', 'learningMinWindow', 'learningMinActivity',
   'expectationWeight', 'successScore', 'notableScore', 'arrowThreshold', 'objectiveMinShare', 'fireBarLowStoreBelow', 'pdProtectedFactor', 'pdSlugPerMount', 'pdSlugCap', 'pdCrossingKill', 'spinalDeadband', 'safeRingMargin', 'stationHysteresis', 'holdHysteresis', 'stationLeeBelow', 'hotWeaveOutgunned', 'hotWeaveShare', 'stragglerFactorSurvival', 'probeWindow', 'probeRecover', 'probeShieldBack', 'probeLossLimit', 'probeOutgunned', 'commitOdds', 'commitDropFactor', 'aheadMax', 'screenAhead', 'marchQuantile', 'massAttackOdds', 'massAttackWaitedOdds', 'flankMinSquadrons', 'survivalPressSeconds', 'abandonAfter', 'abandonRatio', 'abandonRatioNow', 'abandonWaitReinf', 'abandonLossShare', 'dangerRadiusPad', 'surroundRadiusFactor', 'surroundShare', 'supportRadiusFactor', 'supportWant', 'lineSpacingMin', 'dangerAttackFactor', 'dangerWeakFactor', 'dangerWeakBelow'];
-const SETTING_WHOLE_NUMBERS = ['squadTagRoles', 'orderAmend', 'sporeGapEvery', 'radioSelectedPerMinute', 'radioSoundsPerMinute', 'slowSporeSteps', 'slowFireMapSteps', 'lineRanks', 'swarmSpread', 'swarmLine', 'warValves', 'bombardShield', 'stationCrewWithStation', 'placeHoldFollow', 'aoMobilize', 'aoCharacter', 'aoAdmiral', 'cmdFormMoves', 'orderMovesObeyed', 'huntDetach', 'cmdStatLeans', 'huntDetachMax', 'huntDetachWhole', 'alloysNeverIdle', 'aoPostures', 'divisionOwner', 'longMapLine', 'cmdFormRealSize', 'cmdCapShare', 'cmdCapPerWard', 'cmdCapLongGuns', 'matchupsInPlay', 'calmShips', 'calmLookEvery', 'cmRenderParts', 'simBudgetModel', 'simKeepPace', 'closeWarmAll', 'closeKeepPictures', 'allyShoveOff', 'allyNudge', 'allyNudgeEvery', 'allyNudgeChecks', 'divisionSpots', 'divisionSpotsInFight', 'allyFineGrid', 'campaignTidyLive', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftMax', 'campaignSensors', 'showBoost', 'coreLoop', 'coreLoopFleetCommand', 'coreLoopFleetDivisions', 'coreLoopRecompose', 'coreLoopAlienCommand', 'coreLoopDivisionShips', 'coreLoopDivisionMinShips', 'coreLoopStreamMinShips', 'coreLoopLine', 'coreLoopLineLooks', 'coreLoopBerths', 'divisionMergeSmall', 'mergeFarOutOfContact', 'divisionMergeSlack', 'repairOffMap', 'supplyNoteWeeks', 'divisionPaceModel', 'swarmFormations', 'campaignBuildDays', 'campaignLiveEnterShips', 'cmdMaxAbreast', 'divisionFormations', 'doctrineModel', 'doctrineAlienClose', 'facingByGuns', 'facingVsTarget', 'facingTwoSided', 'freshSide', 'crossT', 'facingDodge', 'doctrineFindBattles', 'doctrineBriefMinWeeks', 'doctrineBriefItems', 'doctrineReviewMinLosses', 'doctrineReviewWeeks', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerMinLoss', 'ledgerAssaultWeeks', 'devCapStart', 'devCapAlien', 'devMaxBuilds', 'bbBeams', 'bbHeatModel', 'bbMissiles', 'bbPointDefence', 'bbBeamTicks', 'bbMissileRetries', 'bbPdFlakMax', 'bbLineOfFire', 'lineMinRanks', 'lineDeepRanks', 'lineDeepAbove', 'squadronMaxShips', 'tightOrbit', 'stationRebuild', 'radioMaxPerMinute', 'cmdReviewBattles', 'huntMaxShips', 'commandModel', 'cmdPassThrough', 'cmdSquadronBudget', 'cmdSquadronMax', 'cmdFleetMax', 'cmdRankBumpShips', 'cmdDivisionsMin', 'cmdDivisionsPerFleet', 'cmdDivisionsMax', 'orgScale', 'orgSquadronBudget', 'orgSquadronMax', 'orgDivisionTarget', 'orgDivisionMax', 'campaignLateAdmiral', 'campaignStartKit', 'placesFacilityApart', 'campaignFacilityApart', 'campaignStragglerShips', 'alienGarrisonCap', 'alienGatherMinShips', 'alienFirstPool', 'campaignFallenMax', 'placesHoldClear', 'campaignHoldClear', 'campaignPoolCap', 'campaignGarrisonCap', 'minLaunchShips', 'campaignYardShips', 'campaignModel', 'officerCarryOver', 'campaignAutosave', 'campaignLogMax', 'placesRetry', 'placesSweep', 'placesDecisive', 'siegeYardSlowdown', 'placesModel', 'placesAllowAbandon', 'placesTheatre', 'placesMaxOpposite', 'designModel', 'bureauBattle', 'moduleDamage', 'pressModel', 'partLossCall', 'crewRuleSquares', 'supplyReach', 'heatReach', 'exhaustLane', 'designMinSquares', 'designMaxSquares', 'survivalModel', 'allowAbandon', 'flankMinSquadrons', 'weaponModel', 'maxMissiles', 'pdSlugMaxMounts', 'missileInboundCall', 'formationModel', 'lockStep', 'columnMaxFile', 'wedgeMaxArm', 'reorgModel', 'disbandAt', 'fallenKeep', 'stagingModel', 'entrySegments', 'minNewSquadron', 'successionMode', 'woundedBattles', 'woundedWeeks', 'divisionTier', 'divisionTargetSize', 'divisionMinSize', 'divisionMaxSize', 'divisionMinSquadrons', 'rosterHistoryKeep', 'repertoireSize', 'aceKills', 'scarShakenBattles', 'maxShipsTotal', 'maxGridCells', 'targetCandidates', 'maxSalvosPerStep', 'maxShots', 'maxFlashes', 'formationMatchMaxShips', 'defaultSquadronSize',
+const SETTING_WHOLE_NUMBERS = ['bbTrample', 'bbBeamLock', 'bbBeamMove', 'officerChair', 'squadTagRoles', 'orderAmend', 'sporeGapEvery', 'radioSelectedPerMinute', 'radioSoundsPerMinute', 'slowSporeSteps', 'slowFireMapSteps', 'lineRanks', 'swarmSpread', 'swarmLine', 'warValves', 'bombardShield', 'stationCrewWithStation', 'placeHoldFollow', 'aoMobilize', 'aoCharacter', 'aoAdmiral', 'cmdFormMoves', 'orderMovesObeyed', 'huntDetach', 'cmdStatLeans', 'huntDetachMax', 'huntDetachWhole', 'alloysNeverIdle', 'aoPostures', 'divisionOwner', 'longMapLine', 'cmdFormRealSize', 'cmdCapShare', 'cmdCapPerWard', 'cmdCapLongGuns', 'matchupsInPlay', 'calmShips', 'calmLookEvery', 'cmRenderParts', 'simBudgetModel', 'simKeepPace', 'closeWarmAll', 'closeKeepPictures', 'allyShoveOff', 'allyNudge', 'allyNudgeEvery', 'allyNudgeChecks', 'divisionSpots', 'divisionSpotsInFight', 'allyFineGrid', 'campaignTidyLive', 'campaignTidyKeep', 'coreLoopDefenceFleets', 'coreLoopDefenceSplitShips', 'coreLoopShiftMax', 'campaignSensors', 'showBoost', 'coreLoop', 'coreLoopFleetCommand', 'coreLoopFleetDivisions', 'coreLoopRecompose', 'coreLoopAlienCommand', 'coreLoopDivisionShips', 'coreLoopDivisionMinShips', 'coreLoopStreamMinShips', 'coreLoopLine', 'coreLoopLineLooks', 'coreLoopBerths', 'divisionMergeSmall', 'mergeFarOutOfContact', 'divisionMergeSlack', 'repairOffMap', 'supplyNoteWeeks', 'divisionPaceModel', 'swarmFormations', 'campaignBuildDays', 'campaignLiveEnterShips', 'cmdMaxAbreast', 'divisionFormations', 'doctrineModel', 'doctrineAlienClose', 'facingByGuns', 'facingVsTarget', 'facingTwoSided', 'freshSide', 'crossT', 'facingDodge', 'doctrineFindBattles', 'doctrineBriefMinWeeks', 'doctrineBriefItems', 'doctrineReviewMinLosses', 'doctrineReviewWeeks', 'ledgerKeepWeeks', 'ledgerWindowWeeks', 'ledgerMinLoss', 'ledgerAssaultWeeks', 'devCapStart', 'devCapAlien', 'devMaxBuilds', 'bbBeams', 'bbHeatModel', 'bbMissiles', 'bbPointDefence', 'bbBeamTicks', 'bbMissileRetries', 'bbPdFlakMax', 'bbLineOfFire', 'lineMinRanks', 'lineDeepRanks', 'lineDeepAbove', 'squadronMaxShips', 'tightOrbit', 'stationRebuild', 'radioMaxPerMinute', 'cmdReviewBattles', 'huntMaxShips', 'commandModel', 'cmdPassThrough', 'cmdSquadronBudget', 'cmdSquadronMax', 'cmdFleetMax', 'cmdRankBumpShips', 'cmdDivisionsMin', 'cmdDivisionsPerFleet', 'cmdDivisionsMax', 'orgScale', 'orgSquadronBudget', 'orgSquadronMax', 'orgDivisionTarget', 'orgDivisionMax', 'campaignLateAdmiral', 'campaignStartKit', 'placesFacilityApart', 'campaignFacilityApart', 'campaignStragglerShips', 'alienGarrisonCap', 'alienGatherMinShips', 'alienFirstPool', 'campaignFallenMax', 'placesHoldClear', 'campaignHoldClear', 'campaignPoolCap', 'campaignGarrisonCap', 'minLaunchShips', 'campaignYardShips', 'campaignModel', 'officerCarryOver', 'campaignAutosave', 'campaignLogMax', 'placesRetry', 'placesSweep', 'placesDecisive', 'siegeYardSlowdown', 'placesModel', 'placesAllowAbandon', 'placesTheatre', 'placesMaxOpposite', 'designModel', 'bureauBattle', 'moduleDamage', 'pressModel', 'partLossCall', 'crewRuleSquares', 'supplyReach', 'heatReach', 'exhaustLane', 'designMinSquares', 'designMaxSquares', 'survivalModel', 'allowAbandon', 'flankMinSquadrons', 'weaponModel', 'maxMissiles', 'pdSlugMaxMounts', 'missileInboundCall', 'formationModel', 'lockStep', 'columnMaxFile', 'wedgeMaxArm', 'reorgModel', 'disbandAt', 'fallenKeep', 'stagingModel', 'entrySegments', 'minNewSquadron', 'successionMode', 'woundedBattles', 'woundedWeeks', 'divisionTier', 'divisionTargetSize', 'divisionMinSize', 'divisionMaxSize', 'divisionMinSquadrons', 'rosterHistoryKeep', 'repertoireSize', 'aceKills', 'scarShakenBattles', 'maxShipsTotal', 'maxGridCells', 'targetCandidates', 'maxSalvosPerStep', 'maxShots', 'maxFlashes', 'formationMatchMaxShips', 'defaultSquadronSize',
   'farGoalBlocksAcross', 'debugMaxLines', 'maxTriangleShips', 'sectorsAcross', 'eventLogMax', 'logPanelLines', 'logBatchDetail', 'lineOrderRetries',
   'reportSquadronRows', 'reportPacketRows', 'reinforceMaxSquadrons', 'flankMaxSquadrons', 'counterMaxSquadrons', 'withdrawSamples', 'versionLogMax', 'serviceLastMax', 'serviceHistoryMax', 'serviceEventsMax', 'dossierLastActions', 'reportOfficerRows',
   'movementModel', 'hitModel', 'tacticsModel', 'flightAssist', 'retreatFiring', 'simultaneousFire', 'officerModel', 'strengthMapSteps', 'oddsCellsPerRadius', 'oddsMaxCells', 'maxRouts', 'maxBreakOffs', 'overheatFallback', 'smartTargetCandidates'];
 // The switches (section 1b, "The rules in force"): the values each may have, and the names the code uses for them.
-const SETTING_CHOICES = { woundHandOver: [0, 1], delverCommand: [0, 1], delverJumpDelivery: [0, 1], radioVoices: [0, 1], squadTagRoles: [0, 1], orderAmend: [0, 1], sectionT: [0, 1], longLocalRear: [0, 1], dvWingModel: [0, 1], noseModel: [0, 1], rankSwap: [0, 1], devourerGrab: [0, 1], killRecordModel: [0, 1], priorityTargetModel: [0, 1], badMatchModel: [0, 1], acidMortar: [0, 1], frenzyGland: [0, 1], lsBayRule: [0, 1], lsFrenzy: [0, 1], biteModel: [0, 1], lsMixModel: [0, 1], sizeHitModel: [0, 1], calmLookSkipAsleep: [0, 1], gunPace: [0, 1], alienLoopsByArrival: [0, 1], quietSteps: [0, 1], sleepLockedSquads: [0, 1], commandPace: [0, 1], placesByX: [0, 1], slowClock: [0, 1], lineRanks: [0, 1], swarmSpread: [0, 1], longSolarReach: [0, 1], longDockModel: [0, 1], swarmLine: [0, 1], warValves: [0, 1], bombardShield: [0, 1, 2], stationCrewWithStation: [0, 1], placeHoldFollow: [0, 1], aoMobilize: [0, 1], aoCharacter: [0, 1], aoAdmiral: [0, 1], cmdFormMoves: [0, 1], orderMovesObeyed: [0, 1], huntDetach: [0, 1], cmdStatLeans: [0, 1], huntDetachWhole: [0, 1], aoPostures: [0, 1], divisionOwner: [0, 1], admiralNeedsModel: [0, 1], longMapLine: [0, 1], cmdFormRealSize: [0, 1], cmdCapShare: [0, 1], cmdCapLongGuns: [0, 1], moonOrbits: [0, 1], dockHoldModel: [0, 1], dockRepairRefit: [0, 1], refitTrips: [0, 1], dockSpareModel: [0, 1], dockSpareSwarm: [0, 1], scuttleOnLedger: [0, 1], dockEvoModel: [0, 1], dockEvoSwarmSplit: [0, 1], matchupsInPlay: [0, 1], calmShips: [0, 1], cmRenderParts: [0, 1], simBudgetModel: [0, 1], simKeepPace: [0, 1], closeWarmAll: [0, 1], closeKeepPictures: [0, 1], allyShoveOff: [0, 1], allyNudge: [0, 1], divisionSpots: [0, 1], divisionSpotsInFight: [0, 1], campaignSensors: [0, 1], showBoost: [0, 1], coreLoop: [0, 1], coreLoopLine: [0, 1], coreLoopFleetCommand: [0, 1], coreLoopFleetDivisions: [0, 1], coreLoopRecompose: [0, 1], coreLoopAlienCommand: [0, 1], divisionMergeSmall: [0, 1], mergeFarOutOfContact: [0, 1], berthPairingModel: [0, 1], swarmNestModel: [0, 1], swarmGrowUpModel: [0, 1], swarmOpeningSpread: [0, 1], swarmLifeModel: [0, 1], swarmSurfaceModel: [0, 1], swarmEatsEnemies: [0, 1], swarmEatsHatchlings: [0, 1], fighterHangarModel: [0, 1], fighterLaunchModel: [0, 1], hangarRefillFromFleet: [0, 1], hangarRestock: [0, 1], wingModel: [0, 1], wingAirGroups: [0, 1], hangarRefillFree: [0, 1], swarmCarrierRegrow: [0, 1], hangarOrphansStay: [0, 1], tenderDocking: [0, 1], supplyRuns: [0, 1], cargoKept: [0, 1], ferryRuns: [0, 1], stationFighterGuard: [0, 1], stationNoSquadron: [0, 1], stationCrewSquad: [0, 1], stationPass: [0, 1], droneJamModel: [0, 1], divisionPaceModel: [0, 1], swarmFormations: [0, 1], facingVsTarget: [0, 1], facingTwoSided: [0, 1], freshSide: [0, 1], crossT: [0, 1], facingDodge: [0, 1], placesPicket: [0, 1], placesPicketSwarm: [0, 1], campaignStandoffPark: [0, 1], placesWithdrawOrder: [0, 1], placesWithdrawGuardDry: [0, 1], campaignLiveYardDawn: [0, 1], longMapReach: [0, 1], longMapLeash: [0, 1], longMapFog: [0, 1], sleepShips: [0, 1, 2], campaignResourceGate: [0, 1], bbAcid: [0, 1], bbRegrow: [0, 1], bbBurst: [0, 1], bbMissileStoreBySize: [0, 1], bbBeams: [0, 1], bbHeatModel: [0, 1], bbMissiles: [0, 1], bbPointDefence: [0, 1], bbLineOfFire: [0, 1], tightOrbit: [0, 1], placesCrush: [0, 1], placesMassAttack: [0, 1], assaultSendAll: [0, 1], assaultReachOnly: [0, 1], placesNoLeapfrog: [0, 1], placesClaimKeeps: [0, 1], placesClaimFirm: [0, 1], placesSwarmPress: [0, 1], commandModel: [0, 1], stationRebuild: [0, 1], stationHullMend: [0, 1], cmdHelpMarches: [0, 1], cmdOpCommit: [0, 1, 2], cmdPassThrough: [0, 1, 2], orgScale: [0, 1], campaignLateAdmiral: [0, 1], campaignStartKit: [0, 1], placesFacilityApart: [0, 1], campaignFacilityApart: [0, 1], placesHoldClear: [0, 1], campaignHoldClear: [0, 1], campaignModel: [0, 1], officerCarryOver: [0, 1], campaignAutosave: [0, 1], placesRetry: [0, 1], placesSweep: [0, 1], placesDecisive: [0, 1], siegeYardSlowdown: [0, 1], placesModel: [0, 1], placesAllowAbandon: [0, 1], placesTheatre: [0, 1], designModel: [0, 1, 2], bureauBattle: [0, 1], moduleDamage: [0, 1], pressModel: [0, 1], partLossCall: [0, 1], survivalModel: [0, 1], allowAbandon: [0, 1], weaponModel: [0, 1], formationModel: [0, 1], lockStep: [0, 1], reorgModel: [0, 1], movementModel: [0, 1], hitModel: [0, 1, 2], tacticsModel: [0, 1], flightAssist: [0, 1], retreatFiring: [0, 1], overheatFallback: [0, 1], newSetupDefaults: [0, 1], unmannedRearGuard: [0, 1], simultaneousFire: [0, 1], officerModel: [0, 1], promoteNeedsVacancy: [0, 1], divisionTier: [0, 1], successionMode: [0, 1, 2], stagingModel: [0, 1] };
+const SETTING_CHOICES = { officerChair: [0, 1], woundHandOver: [0, 1], delverCommand: [0, 1], delverJumpDelivery: [0, 1], radioVoices: [0, 1], squadTagRoles: [0, 1], orderAmend: [0, 1], sectionT: [0, 1], longLocalRear: [0, 1], dvWingModel: [0, 1], noseModel: [0, 1], rankSwap: [0, 1], devourerGrab: [0, 1], killRecordModel: [0, 1], priorityTargetModel: [0, 1], badMatchModel: [0, 1], acidMortar: [0, 1], frenzyGland: [0, 1], lsBayRule: [0, 1], lsFrenzy: [0, 1], biteModel: [0, 1], lsMixModel: [0, 1], sizeHitModel: [0, 1], calmLookSkipAsleep: [0, 1], gunPace: [0, 1], alienLoopsByArrival: [0, 1], quietSteps: [0, 1], sleepLockedSquads: [0, 1], commandPace: [0, 1], placesByX: [0, 1], slowClock: [0, 1], lineRanks: [0, 1], swarmSpread: [0, 1], longSolarReach: [0, 1], longDockModel: [0, 1], swarmLine: [0, 1], warValves: [0, 1], bombardShield: [0, 1, 2], stationCrewWithStation: [0, 1], placeHoldFollow: [0, 1], aoMobilize: [0, 1], aoCharacter: [0, 1], aoAdmiral: [0, 1], cmdFormMoves: [0, 1], orderMovesObeyed: [0, 1], huntDetach: [0, 1], cmdStatLeans: [0, 1], huntDetachWhole: [0, 1], aoPostures: [0, 1], divisionOwner: [0, 1], admiralNeedsModel: [0, 1], longMapLine: [0, 1], cmdFormRealSize: [0, 1], cmdCapShare: [0, 1], cmdCapLongGuns: [0, 1], moonOrbits: [0, 1], dockHoldModel: [0, 1], dockRepairRefit: [0, 1], refitTrips: [0, 1], dockSpareModel: [0, 1], dockSpareSwarm: [0, 1], scuttleOnLedger: [0, 1], dockEvoModel: [0, 1], dockEvoSwarmSplit: [0, 1], matchupsInPlay: [0, 1], calmShips: [0, 1], cmRenderParts: [0, 1], simBudgetModel: [0, 1], simKeepPace: [0, 1], closeWarmAll: [0, 1], closeKeepPictures: [0, 1], allyShoveOff: [0, 1], allyNudge: [0, 1], divisionSpots: [0, 1], divisionSpotsInFight: [0, 1], campaignSensors: [0, 1], showBoost: [0, 1], coreLoop: [0, 1], coreLoopLine: [0, 1], coreLoopFleetCommand: [0, 1], coreLoopFleetDivisions: [0, 1], coreLoopRecompose: [0, 1], coreLoopAlienCommand: [0, 1], divisionMergeSmall: [0, 1], mergeFarOutOfContact: [0, 1], berthPairingModel: [0, 1], swarmNestModel: [0, 1], swarmGrowUpModel: [0, 1], swarmOpeningSpread: [0, 1], swarmLifeModel: [0, 1], swarmSurfaceModel: [0, 1], swarmEatsEnemies: [0, 1], swarmEatsHatchlings: [0, 1], fighterHangarModel: [0, 1], fighterLaunchModel: [0, 1], hangarRefillFromFleet: [0, 1], hangarRestock: [0, 1], wingModel: [0, 1], wingAirGroups: [0, 1], hangarRefillFree: [0, 1], swarmCarrierRegrow: [0, 1], hangarOrphansStay: [0, 1], tenderDocking: [0, 1], supplyRuns: [0, 1], cargoKept: [0, 1], ferryRuns: [0, 1], stationFighterGuard: [0, 1], stationNoSquadron: [0, 1], stationCrewSquad: [0, 1], stationPass: [0, 1], droneJamModel: [0, 1], divisionPaceModel: [0, 1], swarmFormations: [0, 1], facingVsTarget: [0, 1], facingTwoSided: [0, 1], freshSide: [0, 1], crossT: [0, 1], facingDodge: [0, 1], placesPicket: [0, 1], placesPicketSwarm: [0, 1], campaignStandoffPark: [0, 1], placesWithdrawOrder: [0, 1], placesWithdrawGuardDry: [0, 1], campaignLiveYardDawn: [0, 1], longMapReach: [0, 1], longMapLeash: [0, 1], longMapFog: [0, 1], sleepShips: [0, 1, 2], campaignResourceGate: [0, 1], bbAcid: [0, 1], bbRegrow: [0, 1], bbBurst: [0, 1], bbMissileStoreBySize: [0, 1], bbBeams: [0, 1], bbHeatModel: [0, 1], bbMissiles: [0, 1], bbPointDefence: [0, 1], bbLineOfFire: [0, 1], tightOrbit: [0, 1], placesCrush: [0, 1], placesMassAttack: [0, 1], assaultSendAll: [0, 1], assaultReachOnly: [0, 1], placesNoLeapfrog: [0, 1], placesClaimKeeps: [0, 1], placesClaimFirm: [0, 1], placesSwarmPress: [0, 1], commandModel: [0, 1], stationRebuild: [0, 1], stationHullMend: [0, 1], cmdHelpMarches: [0, 1], cmdOpCommit: [0, 1, 2], cmdPassThrough: [0, 1, 2], orgScale: [0, 1], campaignLateAdmiral: [0, 1], campaignStartKit: [0, 1], placesFacilityApart: [0, 1], campaignFacilityApart: [0, 1], placesHoldClear: [0, 1], campaignHoldClear: [0, 1], campaignModel: [0, 1], officerCarryOver: [0, 1], campaignAutosave: [0, 1], placesRetry: [0, 1], placesSweep: [0, 1], placesDecisive: [0, 1], siegeYardSlowdown: [0, 1], placesModel: [0, 1], placesAllowAbandon: [0, 1], placesTheatre: [0, 1], designModel: [0, 1, 2], bureauBattle: [0, 1], moduleDamage: [0, 1], pressModel: [0, 1], partLossCall: [0, 1], survivalModel: [0, 1], allowAbandon: [0, 1], weaponModel: [0, 1], formationModel: [0, 1], lockStep: [0, 1], reorgModel: [0, 1], movementModel: [0, 1], hitModel: [0, 1, 2], tacticsModel: [0, 1], flightAssist: [0, 1], retreatFiring: [0, 1], overheatFallback: [0, 1], newSetupDefaults: [0, 1], unmannedRearGuard: [0, 1], simultaneousFire: [0, 1], officerModel: [0, 1], promoteNeedsVacancy: [0, 1], divisionTier: [0, 1], successionMode: [0, 1, 2], stagingModel: [0, 1] };
 // Rule switches that an imported file may lack: a missing one is read as 0 (the file was made before the rule existed), not as this version's default (stage 12).
 const SETTING_SWITCHES_OLD_FILES = ['commandModel', 'orgScale', 'movementModel', 'hitModel', 'tacticsModel', 'newSetupDefaults', 'simultaneousFire', 'officerModel', 'divisionTier', 'stagingModel', 'reorgModel', 'formationModel', 'lockStep', 'weaponModel', 'survivalModel', 'designModel', 'moduleDamage', 'pressModel', 'placesModel'];
 const MOVE_CLASSIC = 0, MOVE_THRUST = 1;
@@ -18225,13 +18241,14 @@ const CLASSIC_REGISTRY_AXES = {
 //        (0.5 means the shield is twice as good against this type; 0 means the shield soaks it for free.)
 //     3. What gets past the shield meets the ARMOR on the side that was hit.
 //        armorEffect = how much of that armor counts (1 = all of it, 0 = none).
-//        Armor is taken off the hit, but at least minArmorPassFraction of it always gets through (section 1).
+//        Armor is taken off the hit (v345.0: there is no floor any more, minArmorPassFraction 0: a hit no bigger than the armour does nothing).
 //     4. Whatever is left damages the hull. At 0 hull HP the ship is destroyed.
 //
 //   In plain English:
 //     kinetic = armor stops it, shields are normal against it
-//     energy  = ignores armor, but shields are twice as good against it
-//     missile = half of armor counts; double damage to light ships, 0.6x to heavy ships
+//     energy  = armor stops it (v345.0; it once ignored armor), shields are twice as good against it
+//     missile = armor stops it (v345.0; half once counted); the same damage to every ship (v345.0; was x2 to light ships, 0.6x to heavy ones)
+//     laser   = ignores armor (v345.0)
 //   To add a damage type, add a row. Its vsClass lists class ids from 2b, for example { light: 2, heavy: 0.6 }.
 //
 //   The gunnery columns (the Combat Update; read only when hitModel is not 0; a row may leave them out and gets the defaults 1 / 1 / 0.2 / 0 / 0):
@@ -18262,16 +18279,25 @@ const CLASSIC_REGISTRY_AXES = {
 const PD_TIERS = [
   { id: 'basic', name: 'Basic point defence', ignoresShield: false, ignoresArmor: false }
 ];
+// (v345.0, Alex 26 Nov 2026: "all damage should treat all armors the same unless traits are involved via the weapon or armor type") every damage
+// type's armorEffect is 1: armour counts in full against all of them. Only traits change that (Piercing, Over-penetrating, Irradiating on the weapon;
+// Spaced, Hardened, Reactive and so on on the plate). Before: missiles and lasers counted half the armour, the old table ships' acid none.
+// (v345.0, Alex 26 Nov 2026: "make regular armor not apply at all to lasers, which have low damage but steadily burn through hp") the one exception:
+// LASERS count no armour (armorEffect 0). Plates are still in the way as blocks with hit points, and the anti-laser plates (Ablative, heat-shedding
+// chitin, crystal) still work on the beam's Focus.
+// (v345.0, Alex 26 Nov 2026: "Missiles should do their full damage"; "remove missiles x2 against small targets") a missile does its warhead's damage
+// to every ship: the 0.6x against the heaviest third and the x2 against the lightest third are gone. No damage type has a vsClass number now; the
+// table still reads one if a row is given it.
 const DAMAGE_TYPES = [
   { name: 'kinetic', shieldCost: 1.0, armorEffect: 1.0, vsClass: {},                         spreadMul: 1.0, trackingMul: 1.25, dodgeWindow: 0.2, flightTime: 1.2, guidance: 0,
     shotSpeed: 600, aimSpread: 15, autoFireAt: 0.20, store: 400, storeRefill: 0, dockRefill: 10 },
-  { name: 'energy',  shieldCost: 0.5, armorEffect: 0.0, vsClass: {},                         spreadMul: 0.8, trackingMul: 1.0,  dodgeWindow: 0.6, flightTime: 0,   guidance: 0,
+  { name: 'energy',  shieldCost: 0.5, armorEffect: 1.0, vsClass: {},                         spreadMul: 0.8, trackingMul: 1.0,  dodgeWindow: 0.6, flightTime: 0,   guidance: 0,
     shotSpeed: 0, aimSpread: 20, autoFireAt: 0.15, store: 20, storeRefill: 0.75, dockRefill: 10 },
-  { name: 'missile', shieldCost: 1.0, armorEffect: 0.5, vsClass: { light: 2.0, heavy: 0.6 }, spreadMul: 1.0, trackingMul: 1.0,  dodgeWindow: 0.2, flightTime: 3.0, guidance: 0.6,
+  { name: 'missile', shieldCost: 1.0, armorEffect: 1.0, vsClass: {},                         spreadMul: 1.0, trackingMul: 1.0,  dodgeWindow: 0.2, flightTime: 3.0, guidance: 0.6,
     shotSpeed: 300, aimSpread: 25, autoFireAt: 0.35, store: 60, storeRefill: 0, dockRefill: 2,
     missile: { speed: 300, accel: 900, turn: 4, fuel: 14, hp: 1, retries: 1, seekerCone: 60, proximity: 8 } },
   // (v18) The two new damage types. Under weaponModel 0 nothing uses them.
-  { name: 'laser',   shieldCost: 1.0, armorEffect: 0.5, vsClass: {},                         spreadMul: 0.6, trackingMul: 1.0,  dodgeWindow: 0.4, flightTime: 0,   guidance: 0,
+  { name: 'laser',   shieldCost: 1.0, armorEffect: 0.0, vsClass: {},                         spreadMul: 0.6, trackingMul: 1.0,  dodgeWindow: 0.4, flightTime: 0,   guidance: 0,
     shotSpeed: 0, aimSpread: 1.5, autoFireAt: 0.35, store: 6, storeRefill: 1, dockRefill: 10, falloffHalf: 1200 },
   { name: 'pd',      shieldCost: 1.0, armorEffect: 1.0, vsClass: {},                         spreadMul: 1.0, trackingMul: 1.0,  dodgeWindow: 0,   flightTime: 0,   guidance: 0,
     shotSpeed: 0, aimSpread: 4, autoFireAt: 0, store: 0, storeRefill: 0, dockRefill: 0, pd: 1 }
@@ -18428,7 +18454,7 @@ const SHIP_TYPES = [
     hull: 60000, armorFront: 20, armorRear: 20, armorLeft: 20, armorRight: 20, shield: 20000, shieldRecharge: 100,
     speed: 0, turnRate: 0,
     weapons: 4, damage: 40, damageType: 'energy', range: 1800, fireRate: 0.5, arc: 360,
-    docks: { capacity: 6, repairRate: 40 }, arrival: true,
+    docks: { capacity: 6, repairRate: 80 }, arrival: true,   // (v344.0: 80, was 40, as hit points doubled)
     aimSpread: 8,
     pdMounts: 8, pdRange: 300, pdRate: 4, pdDamage: 2, pdKill: 0.3,                              // (v18) point defence
     fleet: [
@@ -21586,8 +21612,8 @@ const TITAN_SUPER_SPECS = [
     note: 'a moving repair station: a repair-drone hive inside a ring, joined to its end blocks by two supply trunks',
     letters: {
       R: { part: 'hive', name: 'Repair-drone hive', cat: 'crew', core: 'largest', alloys: 1.2, adv: { rareEarths: 8 }, crew: 120, power: -100, powerClass: 'rest',
-           titanSupport: { kind: 'repair', reach: 1200, hullPerSecond: 20, partEvery: 30, drones: 24, droneReach: 3000, droneEvery: 20 },
-           rule: 'A repair field: every ship of ours within 1,200 gets 20 hull a second and a broken part mended every 30 s. Its 24 repair drones fly to hurt ships up to 3,000 away and each mend a part every 20 s. Uses 100 power.' },
+           titanSupport: { kind: 'repair', reach: 1200, hullPerSecond: 40, partEvery: 30, drones: 24, droneReach: 3000, droneEvery: 20 },
+           rule: 'A repair field: every ship of ours within 1,200 gets 40 hull a second and a broken part mended every 30 s. Its 24 repair drones fly to hurt ships up to 3,000 away and each mend a part every 20 s. Uses 100 power.' },
       C: { part: 'trunk', name: 'Supply trunk', cat: 'crew', alloys: 1.2,
            rule: 'Feeds spares and power from the end blocks into the hive. With a trunk broken the hive works at half pace.' },
       O: { part: 'door', name: 'Drone door', cat: 'crew', alloys: 1.2,
@@ -23343,8 +23369,8 @@ const BUREAU_RULES = {
 };
 // ---- (v30 A1) THE GENERAL PART RULES as data (tier01-content-spec.md s1, s2.4, s2.6, s2.7, s4, s5, s7, s9): the constants moduleStats and the built parts use. ----
 const PART_RULES = {
-  hpPerSquare: 1,               // every part has 1 hit point a square (s1); a frame's are HULL_CLASS_RULES
-  plateHpPerSquare: 3,          // (Alex, 24 Oct) except our armour plates: 3 hit points a square (x the plate's hpMul, so ablative is 6), so hits and acid take longer to break them
+  hpPerSquare: 2,               // every part has 2 hit points a square (s1; v344.0: doubled from 1 when the hidden x2 HP dial went); a frame's are HULL_CLASS_RULES
+  plateHpPerSquare: 6,          // (Alex, 24 Oct) except our armour plates: 6 hit points a square (v344.0: doubled from 3 with the dial gone; x the plate's hpMul, so ablative is 12), so hits and acid take longer to break them
   powerStep: 0.5,               // power numbers are rounded to the nearest 0.5 (s1)
   gunAlloysPerSquare: 2.4,      // Alloys: 2.4 a gun square (s2.4; v30.1: x0.2, so the Bureau's Alloys are the campaign's price) ...
   ringAlloysPerSquare: 1.2,     // ... and 1.2 a mount-ring square (a part's total is rounded to a whole number, at least 1)
@@ -23359,15 +23385,17 @@ const PART_RULES = {
   beamTicksPerSecond: 10        // a beam's second is split into ten ticks (s7.1): damage a second = beam a tick x 10
 };
 // By hull class (s4.1, s8, s9.1): base mass per hull square, frame hit points per square, hull crew per square. Copied onto HULL_CLASSES[].rules.
+// (v344.0, Alex 26 Nov) the frame hit points are DOUBLED from v343 (tiny 1.5, small 2, corvette 2.5, frigate 3, destroyer 3.5, cruiser 4.5, capital 5.5, titan 6.5):
+// the old hidden x2 HP dial (SETTINGS.hpScale) is now x1 and its x2 is written into the numbers themselves, so a weapon does exactly the damage it says.
 const HULL_CLASS_RULES = {
-  tiny:      { massPerSquare: 0.6,  hpPerSquare: 1.5, crewPerSquare: 0 },   // (v51) the fighter hull: lighter and thinner than a small craft (notes/plans/ships/tiny-hull.md s2)
-  small:     { massPerSquare: 0.75, hpPerSquare: 2,   crewPerSquare: 0 },
-  corvette:  { massPerSquare: 1,    hpPerSquare: 2.5, crewPerSquare: 0.1 },
-  frigate:   { massPerSquare: 1.15, hpPerSquare: 3,   crewPerSquare: 0.15 },
-  destroyer: { massPerSquare: 1.35, hpPerSquare: 3.5, crewPerSquare: 0.2 },
-  cruiser:   { massPerSquare: 1.75, hpPerSquare: 4.5, crewPerSquare: 0.25 },
-  capital:   { massPerSquare: 2.25, hpPerSquare: 5.5, crewPerSquare: 0.3 },
-  titan:     { massPerSquare: 3,    hpPerSquare: 6.5, crewPerSquare: 0.35 }
+  tiny:      { massPerSquare: 0.6,  hpPerSquare: 3,   crewPerSquare: 0 },   // (v51) the fighter hull: lighter and thinner than a small craft (notes/plans/ships/tiny-hull.md s2)
+  small:     { massPerSquare: 0.75, hpPerSquare: 4,   crewPerSquare: 0 },
+  corvette:  { massPerSquare: 1,    hpPerSquare: 5,   crewPerSquare: 0.1 },
+  frigate:   { massPerSquare: 1.15, hpPerSquare: 6,   crewPerSquare: 0.15 },
+  destroyer: { massPerSquare: 1.35, hpPerSquare: 7,   crewPerSquare: 0.2 },
+  cruiser:   { massPerSquare: 1.75, hpPerSquare: 9,   crewPerSquare: 0.25 },
+  capital:   { massPerSquare: 2.25, hpPerSquare: 11,  crewPerSquare: 0.3 },
+  titan:     { massPerSquare: 3,    hpPerSquare: 13,  crewPerSquare: 0.35 }
 };
 const MASS_RULES = { armourPerMass: 4,                   // (s4.1) a plate adds 1 mass per 4 armour; a bulkhead's 0.5 a square is on its row; tanks and magazines add none
                      alienFrameMul: 0.8 };               // (v30 S1, swarm-tier01.md s4.2) a Swarm body (an alien frame) weighs this share of the human mass per square of its class
@@ -23605,7 +23633,8 @@ const TRAIT_CLASSES = {
 const TRAITS = {
   // weapon traits (4g)
   Piercing:      { kind: 'weapon',  cls: 'imp',  tip: 'Goes right through a ship without spaced or very thick armour, damaging a random part inside.', by: ['Spaced', 'Hardened'] },
-  Focus:         { kind: 'weapon',  cls: 'heat', tip: 'Damage builds while the beam stays on one target. Agile ships spread it over all their armour.', by: ['Rolling', 'Ablative', 'Screening'] },
+  Focus:         { kind: 'weapon',  cls: 'heat', tip: 'The beam ignores armour. It stays on one line of its target and builds up its damage, fast at first then slower, to three times after a minute. Once nothing is left on the line it moves to a new one and starts again. Rolling ships throw it off.',   // (v345.0)
+                 by: ['Rolling', 'Ablative', 'Screening'] },
   Heat:          { kind: 'weapon',  cls: 'heat', tip: 'Adds heat to the target.', by: ['Cooling', 'Ablative'] },
   Melting:       { kind: 'weapon',  cls: 'heat', tip: 'Weakens the armour it hits.', by: ['Magnetic'] },
   Irradiating:   { kind: 'weapon',  cls: 'chg',  tip: 'Partly bypasses armour and causes widespread damage inside.', by: ['Magnetic', 'Hardened'] },
@@ -23621,11 +23650,12 @@ const TRAITS = {
   Raking:        { kind: 'area',    cls: 'imp',  tip: 'A line shot that hits every ship along its path, weaker after each one. Hits your own ships too.', by: ['Magnetic'] },
   // defence traits (4h)
   Spaced:        { kind: 'defence', cls: 'imp',  tip: 'An outer layer shatters slugs before they reach the main wall.', vs: ['Piercing', 'Spread'] },
-  Deflecting:    { kind: 'defence', cls: 'imp',  tip: 'Stops small, weak rounds outright, above a certain tier.', vs: ['Spread', 'Flak'] },
+  Deflecting:    { kind: 'defence', cls: 'imp',  tip: 'A hit no bigger than the armour on its line does nothing at all; a bigger one loses that much armour\'s worth. Lasers ignore armour.',   // (v345.0) what every plate does (no floor)
+                  vs: ['Spread', 'Flak'] },
   Jinking:       { kind: 'defence', cls: 'imp',  tip: 'Dodges slow shots: shells, rockets, plasma bolts.', vs: [] },
   Ablative:      { kind: 'defence', cls: 'heat', tip: 'Boils off to carry heat away. Used up as it works.', vs: ['Focus', 'Heat', 'Nuclear'] },
   Cooling:       { kind: 'defence', cls: 'heat', tip: 'Soaks heat before it causes trouble.', vs: ['Heat'] },
-  Rolling:       { kind: 'defence', cls: 'heat', tip: 'Spreads beam hits over all the armour, so no side breaks early.', vs: ['Focus'] },
+  Rolling:       { kind: 'defence', cls: 'heat', tip: 'While weaving, throws a beam off its line every second and its Focus starts again, so no line burns through.', vs: ['Focus'] },   // (v345.0)
   Magnetic:      { kind: 'defence', cls: 'chg',  tip: 'Bends charged matter away.', vs: ['Melting', 'Irradiating', 'Raking'] },
   Hardened:      { kind: 'defence', cls: 'chg',  tip: 'Shelters crew and electronics, and stops damage spreading inside.', vs: ['Irradiating', 'Pulse', 'Piercing', 'Lingering'] },
   Reactive:      { kind: 'defence', cls: 'rad',  tip: 'Bursts outward to break up incoming warheads. One use per patch.', vs: ['Nuclear', 'Interceptable'] },
@@ -24336,7 +24366,7 @@ function buildPartStatsV3(id, mk, opt) {
 const MODULES_V3 = [
   // ---- Crew and rooms (s9.1, s9.2, s9.3) ----
   { id: 'cockpit', name: 'Cockpit', cat: 'crew', sub: 'Bridges', line: 'bridge', w: 4, h: 3, role: 'room', bridge: true, cost: 6, power: -1, powerClass: 'bridge', crew: 2, houses: 4, res: 'general',
-    rule: 'A small craft\'s bridge: it is the whole crew space and counts as its own airlock.' },
+    rule: 'A small craft\'s bridge: it is the whole crew space and counts as its own airlock. On a corvette or bigger it has no room for an officer\'s staff: your officers\' skills above average count as average. Fit a Bridge to use their full talent.' },
   // (v51, notes/plans/ships/tiny-hull.md s4) THE FIGHTER'S BRIDGES. A pilot seat (2 long x 1 wide since v56, like a real fighter's canopy; crew 1): one or two seats together are the ship's one bridge, each
   // covering 1 crew of parts (the pilot also works the ship); a drone CPU (1 x 1, crew 0) is a bridge with no life in it, covering 1 crew of parts, and makes
   // the ship UNBREAKABLE in battle (it never pulls back on its own). Both only serve a Tiny or Small craft (section 10d passBridgeV3). The Crew CPU is a
@@ -24354,17 +24384,20 @@ const MODULES_V3 = [
   // quarters or life support (the hull's own crew and the parts' are covered). It is not a drone CPU: jamming does not confuse it and it pulls back like a crewed ship.
   { id: 'shipmind', name: 'Ship mind', cat: 'crew', sub: 'Bridges', line: 'bridge', w: 4, h: 4, role: 'room', bridge: true, shipMind: true, coversCrew: 120, cost: 60, power: -4, powerClass: 'bridge', crew: 0, houses: 0, res: 'magnetic', adv: { rareEarths: 4 },
     rule: 'A bridge with no crew that also works up to 120 crew of parts and hull: a corvette or frigate with one needs no quarters or life support. Uses 4 Rare earths. (Research: Ship minds.)' },
-  { id: 'bridge', name: 'Bridge', cat: 'crew', sub: 'Bridges', line: 'bridge', w: 4, h: 4, role: 'room', bridge: true, cost: 16, power: -2, powerClass: 'bridge', crew: 10, houses: 0, res: 'general',
-    rule: 'Every ship needs exactly one bridge (10 crew). A bridge in a citadel square takes 20% less damage.' },
-  { id: 'bridge_combat', name: 'Combat bridge', cat: 'crew', sub: 'Bridges', line: 'bridge', w: 5, h: 5, role: 'room', bridge: true, cost: 32, power: -3, powerClass: 'bridge', crew: 10, houses: 0, res: 'general', bridgeBonus: 1.03,
-    rule: 'A bigger bridge: +3% to accuracy, reload and turn. (Comes with the frigate.)' },
-  { id: 'bridge_command', name: 'Command deck', cat: 'crew', sub: 'Bridges', line: 'bridge', w: 6, h: 6, role: 'room', bridge: true, cost: 60, power: -4, powerClass: 'bridge', crew: 40, houses: 0, res: 'general', bridgeBonus: 1.05,
-    rule: 'A command deck (40 crew): +5% to accuracy, reload and turn. (Research: Command deck.)' },
+  // (v342.0, Alex 25 Nov: "make bridges worth using over cockpits") EVERY BRIDGE SLEEPS AND KEEPS ALIVE ITS OWN WATCH, as the Cockpit always has: houses and
+  // lifeSupport = its crew, so a bridge no longer drags in an extra bunk room and life support. And a real bridge is the OFFICER'S CHAIR: on a corvette or
+  // bigger with a Cockpit instead, the officer's skills above average count as average (07-5b officerChairCap).
+  { id: 'bridge', name: 'Bridge', cat: 'crew', sub: 'Bridges', line: 'bridge', w: 4, h: 4, role: 'room', bridge: true, cost: 16, power: -2, powerClass: 'bridge', crew: 10, houses: 10, lifeSupport: 10, res: 'general',
+    rule: 'Every ship needs exactly one bridge (10 crew, who sleep and breathe in it: no extra bunks or life support). Your officers use their full skill from a bridge. A bridge in a citadel square takes 20% less damage.' },
+  { id: 'bridge_combat', name: 'Combat bridge', cat: 'crew', sub: 'Bridges', line: 'bridge', w: 5, h: 5, role: 'room', bridge: true, cost: 32, power: -3, powerClass: 'bridge', crew: 10, houses: 10, lifeSupport: 10, res: 'general', bridgeBonus: 1.03,
+    rule: 'A bigger bridge (10 crew, who sleep and breathe in it): +3% to accuracy, reload and turn. Your officers use their full skill from it. (Comes with the frigate.)' },
+  { id: 'bridge_command', name: 'Command deck', cat: 'crew', sub: 'Bridges', line: 'bridge', w: 6, h: 6, role: 'room', bridge: true, cost: 60, power: -4, powerClass: 'bridge', crew: 40, houses: 40, lifeSupport: 40, res: 'general', bridgeBonus: 1.05,
+    rule: 'A command deck (40 crew, who sleep and breathe in it): +5% to accuracy, reload and turn. Your officers use their full skill from it. (Research: Command deck.)' },
   // (v91, Tier 3 plan s3h) THE FLAG BRIDGE: the command deck's bonus, and an Admiral's staff: while one works on the field, the side's Commodores reach twice as far
   // for their Division targets (15 bbFlagReachMul). Losing it slows the ship like any lost bridge.
-  { id: 'bridge_flag', name: 'Flag bridge', cat: 'crew', sub: 'Bridges', line: 'bridge', w: 8, h: 8, role: 'room', bridge: true, flagBridge: true, priority: 1.5, cost: 110, power: -6, powerClass: 'bridge', crew: 80, houses: 0, res: 'general', bridgeBonus: 1.05,
-    rule: 'A flag bridge (80 crew): the command deck\'s +5%, and while it works every Division on our side reaches twice as far for its targets. Titans and capitals. (Research: Flag bridge.)' },
-  { id: 'bridge_backup', name: 'Backup bridge', cat: 'crew', sub: 'Bridges', line: 'bridge', w: 3, h: 3, role: 'room', cost: 12, power: -1, powerClass: 'bridge', crew: 3, houses: 0, res: 'general', backupBridge: true,
+  { id: 'bridge_flag', name: 'Flag bridge', cat: 'crew', sub: 'Bridges', line: 'bridge', w: 8, h: 8, role: 'room', bridge: true, flagBridge: true, priority: 1.5, cost: 110, power: -6, powerClass: 'bridge', crew: 80, houses: 80, lifeSupport: 80, res: 'general', bridgeBonus: 1.05,
+    rule: 'A flag bridge (80 crew, who sleep and breathe in it): the command deck\'s +5%, and while it works every Division on our side reaches twice as far for its targets. Titans and capitals. (Research: Flag bridge.)' },
+  { id: 'bridge_backup', name: 'Backup bridge', cat: 'crew', sub: 'Bridges', line: 'bridge', w: 3, h: 3, role: 'room', cost: 12, power: -1, powerClass: 'bridge', crew: 3, houses: 3, lifeSupport: 3, res: 'general', backupBridge: true,
     rule: 'Takes over when the bridge is knocked out: the guns then slow only a little (x1.15 instead of x1.5). While it works, damage control is 10% faster. (Research: Command deck.)' },
   // quarters are long and 2 wide (s9.1): 2 x 1 sleeps 5, 2 x 2 12, 2 x 5 40, 2 x 8 100, the 2 x 18 crew deck 400
   { id: 'quarters', name: 'Bunks', cat: 'crew', sub: 'Crew', line: 'quarters', w: 2, h: 1, role: 'room', cost: 1.6, houses: 5, crew: 0, res: 'general', rule: 'A 2 x 1 bunk room: sleeps 5.' },
@@ -24401,18 +24434,19 @@ const MODULES_V3 = [
     rule: 'On the outside. Every room must reach an airlock along the passageways. Small ships resupply through it.' },
   { id: 'supplyport', name: 'Supply port', cat: 'ports', sub: 'Supply ports', line: 'fittings', w: 2, h: 1, role: 'machine', edge: true, lane: 'port', supplyPort: true, cost: 5, res: 'general',
     rule: 'On the outside, with a clear lane out. Cruisers and up need one to refuel and rearm; more ports resupply faster.' },
+  // (v344.0) the arms' hull numbers are doubled from v343, as every hit point was when the hidden x2 HP dial went.
   // (v89, faction-modules-t0-t3.md s2b) SUPPORT PARTS. A repair arm mends a nearby friendly ship in battle, slowly: every repairArm.seconds (shared over the ship's
   // working arms) it mends one broken part on the friend within reach that needs it most, or, with nothing broken, gives back repairArm.hull hit points (05f-3
   // bbSupportTick). The small one fits a corvette, so a carrier can launch repair corvettes. A ship with no crew (a drone) mends nothing, as with damage control.
-  { id: 'repairarm', name: 'Repair arm', cat: 'ports', sub: 'Support', line: 'repairarm', w: 4, h: 2, role: 'external', edge: true, cost: 16, power: -1, powerClass: 'rest', crew: 2, repairArm: { reach: 250, seconds: 20, hull: 10 }, res: 'general',
-    rule: 'On the outside. A crane and a work crew: every 20 seconds it mends one broken part on a friendly ship within 250 (or gives back 10 hull if nothing is broken). Fits a corvette. Never on a drone. (Research: Repair arms.)' },
-  { id: 'repairarm_6', name: 'Repair arm, medium', cat: 'ports', sub: 'Support', line: 'repairarm', w: 6, h: 3, role: 'external', edge: true, cost: 30, power: -2, powerClass: 'rest', crew: 4, repairArm: { reach: 350, seconds: 12, hull: 25 }, res: 'general',
-    rule: 'On the outside. Every 12 seconds it mends one broken part on a friendly ship within 350 (or gives back 25 hull). (Research: Repair arms.)' },
-  { id: 'repairarm_8', name: 'Repair arm, large', cat: 'ports', sub: 'Support', line: 'repairarm', w: 8, h: 4, role: 'external', edge: true, cost: 50, power: -3, powerClass: 'rest', crew: 6, repairArm: { reach: 450, seconds: 8, hull: 50 }, res: 'general',
-    rule: 'On the outside. Every 8 seconds it mends one broken part on a friendly ship within 450 (or gives back 50 hull). (Research: Repair arms.)' },
+  { id: 'repairarm', name: 'Repair arm', cat: 'ports', sub: 'Support', line: 'repairarm', w: 4, h: 2, role: 'external', edge: true, cost: 16, power: -1, powerClass: 'rest', crew: 2, repairArm: { reach: 250, seconds: 20, hull: 20 }, res: 'general',
+    rule: 'On the outside. A crane and a work crew: every 20 seconds it mends one broken part on a friendly ship within 250 (or gives back 20 hull if nothing is broken). Fits a corvette. Never on a drone. (Research: Repair arms.)' },
+  { id: 'repairarm_6', name: 'Repair arm, medium', cat: 'ports', sub: 'Support', line: 'repairarm', w: 6, h: 3, role: 'external', edge: true, cost: 30, power: -2, powerClass: 'rest', crew: 4, repairArm: { reach: 350, seconds: 12, hull: 50 }, res: 'general',
+    rule: 'On the outside. Every 12 seconds it mends one broken part on a friendly ship within 350 (or gives back 50 hull). (Research: Repair arms.)' },
+  { id: 'repairarm_8', name: 'Repair arm, large', cat: 'ports', sub: 'Support', line: 'repairarm', w: 8, h: 4, role: 'external', edge: true, cost: 50, power: -3, powerClass: 'rest', crew: 6, repairArm: { reach: 450, seconds: 8, hull: 100 }, res: 'general',
+    rule: 'On the outside. Every 8 seconds it mends one broken part on a friendly ship within 450 (or gives back 100 hull). (Research: Repair arms.)' },
   // (v91, Tier 3 plan s3i) the repair bay: 3 parts a minute on one ship within 300
-  { id: 'repairarm_12', name: 'Repair bay', cat: 'ports', sub: 'Support', line: 'repairarm', w: 12, h: 6, role: 'external', edge: true, cost: 100, power: -5, powerClass: 'rest', crew: 10, repairArm: { reach: 300, seconds: 20, hull: 100 }, res: 'general',
-    rule: 'On the outside. Every 20 seconds (3 a minute) it mends one broken part on a friendly ship within 300 (or gives back 100 hull). (Research: Repair bay.)' },
+  { id: 'repairarm_12', name: 'Repair bay', cat: 'ports', sub: 'Support', line: 'repairarm', w: 12, h: 6, role: 'external', edge: true, cost: 100, power: -5, powerClass: 'rest', crew: 10, repairArm: { reach: 300, seconds: 20, hull: 200 }, res: 'general',
+    rule: 'On the outside. Every 20 seconds (3 a minute) it mends one broken part on a friendly ship within 300 (or gives back 200 hull). (Research: Repair bay.)' },
   // A cargo hold is the tender's part: supplies (cargo, in rounds: a missile counts 10 a hit point of its size) that it hands to friendly ships near it in battle
   // through its supply port, topping up their magazines (bbSupportTick). With no supply port it does nothing (the designer warns).
   { id: 'cargo', name: 'Cargo hold', cat: 'ports', sub: 'Support', line: 'cargo', w: 4, h: 4, role: 'machine', cost: 12, cargo: 1000, res: 'general',
@@ -24731,8 +24765,10 @@ const MODULES_V3 = [
   { id: 'shield_sc_array', name: 'Superconducting shield array', cat: 'electronics', sub: 'Shields', line: 'shield', w: 6, h: 6, role: 'machine', edge: true, cost: 180, power: -36, powerClass: 'shields', heat: 6, crew: 2, slugCap: 550, shieldDeflect: 40, res: 'magnetic', adv: { antimatter: 3 }, traits: ['Magnetic', 'Deflecting'],
     rule: 'On the outside. The great field: Magnetic and Deflecting while it works. Plasma and particle beams do half damage, slugs under 550 damage do three quarters, and any slug of 40 damage or less (after that) bounces off. Lasers, Swarm acid and missiles are not stopped. Uses 3 Antimatter. (Research: Superconducting shields.)' },
   // ---- Armour and bulkheads (s3.2, s3.3, s4.1): plates are size pieces up to 5 x 5; armour a square = the base x the block's side; mass +1 per 4 armour. Bulkheads +0.5 mass a square. ----
+  // (v345.0, Alex 26 Nov 2026) DEFLECTING on a plate now names what every plate does (no floor: a hit no bigger than the armour on its line does
+  // nothing), as the tooltip to the player: "we will use the deflecting trait to describe what it is that armor does". It adds no rule of its own.
   { id: 'armour', name: 'Steel plate', cat: 'defence', sub: 'Armour', line: 'plate', w: 1, h: 1, sizes: true, maxSize: 5, shrink: false, role: 'armour', cost: 1, armourBase: 4, res: 'structure', traits: ['Deflecting'],
-    rule: 'Any size up to 5 x 5. Armour a square = 4 x the block\'s side (a 3 x 3 block is 12 a square). Deflecting: a shell no bigger than the plate does nothing at all. Mass +1 per 4 armour.' },
+    rule: 'Any size up to 5 x 5. Armour a square = 4 x the block\'s side (a 3 x 3 block is 12 a square). Deflecting: a hit no bigger than the armour on its line does nothing at all. Mass +1 per 4 armour.' },
   { id: 'plate_spaced', name: 'Spaced plate', cat: 'defence', sub: 'Armour', line: 'plate', w: 1, h: 1, sizes: true, maxSize: 5, shrink: false, role: 'armour', cost: 1.2, armourBase: 4, res: 'structure', traits: ['Spaced'],
     rule: 'Any size. Steel with a gap behind it: stops Piercing.' },
   { id: 'plate_reactive', name: 'Reactive plate', cat: 'defence', sub: 'Armour', line: 'plate', w: 1, h: 1, sizes: true, maxSize: 5, shrink: false, role: 'armour', cost: 1.6, armourBase: 4, res: 'structure', traits: ['Reactive'],
@@ -24953,8 +24989,8 @@ const MODULES_V3 = [
     rule: 'The bigger Veil: a jamming bubble 1,400 round the ship at 1.75 x a Veil jammer\'s strength (our Guided weapons fired into it miss 70% more, our guns scatter 35% more). Our Counter-jamming halves that, which still leaves it near a plain Veil. The strongest bubble over a target counts; bubbles do not stack.' },
   { id: 'dv_deepmind', name: 'Deep mind', cat: 'crew', sub: 'Bridges', line: 'alien', w: 4, h: 4, role: 'room', bridge: true, machineMind: true, shipMind: true, coversCrew: 600, cost: 40, power: 0, powerClass: 'bridge', crew: 0, houses: 0, lifeSupport: 0, res: 'magnetic', alien: true, faction: 'delver',
     rule: 'The Drone mind grown for a cruiser-size rock: a machine mind that works up to 600 of the crew the hull and parts need, so nothing aboard needs air or quarters. Nobody aboard: it never pulls back and mends nothing in battle (a Mending drone bay still works).' },
-  { id: 'dv_mendbay', name: 'Mending drone bay', cat: 'ports', sub: 'Support', line: 'alien', w: 6, h: 3, role: 'external', edge: true, cost: 30, power: -1, powerClass: 'rest', heat: 0, crew: 0, repairArm: { reach: 400, seconds: 60, hull: 20 }, droneMend: true, res: 'magnetic', alien: true, faction: 'delver',
-    rule: 'On the outside: little drones that fly to a Delver ship within 400 and mend one broken part a minute (or 20 hull when nothing is broken). The one repair an uncrewed Delver ship gets: a drone mind alone mends nothing.' },
+  { id: 'dv_mendbay', name: 'Mending drone bay', cat: 'ports', sub: 'Support', line: 'alien', w: 6, h: 3, role: 'external', edge: true, cost: 30, power: -1, powerClass: 'rest', heat: 0, crew: 0, repairArm: { reach: 400, seconds: 60, hull: 40 }, droneMend: true, res: 'magnetic', alien: true, faction: 'delver',
+    rule: 'On the outside: little drones that fly to a Delver ship within 400 and mend one broken part a minute (or 40 hull when nothing is broken). The one repair an uncrewed Delver ship gets: a drone mind alone mends nothing.' },
   { id: 'dv_slug_h', name: 'Heavy slug turret', cat: 'weapons', sub: 'Slug drivers', line: 'alien', w: 5, h: 3, role: 'external', edge: true, cost: 48, power: -6, powerClass: 'weapons', heat: 0.75, crew: 2, family: 'Kinetic', traits: ['Piercing'], res: 'magnetic', alien: true, faction: 'delver',
     weapon: { damage: 120, damageType: 'kinetic', range: 3200, fireRate: 0.125, arc: 360, ammo: 'rounds', roundsPerShot: 12, heatShot: 6, power: 4 },
     rule: 'The cruiser-size turret: a 120 slug every 8 seconds (Piercing) out to 3,200, all round. Needs 6 power; 6 heat a shot; slugs from a Slug hopper.' },
@@ -25768,6 +25804,7 @@ function allocateShipArrays(n) {
 }
 
 // ---- Stats for each side + ship type. Index = side * TYPE_COUNT + type. Filled in when a battle starts. ----
+let stArmorRow = new Float64Array(0);
 let stCount, stHull, stArmor, stShield, stShieldRecharge, stSpeed, stTurn, stDamage, stDmgType, stRange, stRange2, stFireInterval, stArcCos;
 let stStop, stStop2, stAware2, stPriority, stPriorityType, stRetreatBelow, stReengage, stCanReturn, stKite, stSquadSize, stOfficer, stFlank, stEscort;
 let stDesigned, stGuns, stGunTotal, stPowerRatio, stShotInterval, stDps, stHeatDrift, stHeatPerShot, stHeatLimit, stHeatResume, stMaxPush, stSweep2;
@@ -25801,6 +25838,7 @@ function allocateTypeArrays() {
   stCount = new Int32Array(n);
   stHull = new Float64Array(n);
   stArmor = new Float64Array(n * 4);              // [index * 4 + facing]: front, rear, left, right
+  stArmorRow = new Float64Array(n * 4);           // (v345.0) the same as the type's row gives it (a Bureau design: every row's outer plate added up along the side), kept for Last Stand's pricing, which was tuned on it; stArmor itself becomes the belt a hit meets (05f bbLoadType)
   stShield = new Float64Array(n);
   stShieldRecharge = new Float64Array(n);
   stSpeed = new Float64Array(n);
@@ -26020,7 +26058,7 @@ function loadTypeStats(r, side, t) {
   const mount = r.mountOverride !== undefined ? r.mountOverride : SHIP_TYPES[t].mount;
   const count = Math.floor(r.count);
   stCount[st] = count > 0 ? count : 0;
-  stHull[st] = r.hull;
+  stHull[st] = bbRecordOn(SHIP_TYPES[t]) ? r.hull : r.hull * 2;   // (v344.0) the old table ship types (not Bureau designs) were written for the hidden x2 HP dial, now gone: their hull is doubled here so they keep their toughness
   stArmor[st * 4 + 0] = r.armorFront;
   stArmor[st * 4 + 1] = r.armorRear;
   stArmor[st * 4 + 2] = r.armorLeft;
@@ -29839,6 +29877,7 @@ let hitQX = new Float64Array(hitQueueRoom), hitQY = new Float64Array(hitQueueRoo
 let hitQSt = new Int32Array(hitQueueRoom);       // (v18) the attacker's side + type when a missile gives it (section 5r), else -1
 let hitQDmg = new Float64Array(hitQueueRoom), hitQDt = new Int32Array(hitQueueRoom);   // (stop 4, section 5vb) the weapon group's damage and type when a Bureau v2 ship fired, else -1
 let hitQTr = new Int32Array(hitQueueRoom);       // (v30 B1, section 5vb) the shot's weapon trait bits when a Bureau v2 ship fired, else 0
+let hitQLk = new Int32Array(hitQueueRoom).fill(-1);   // (v345.0) the locked beam (05f bbBeamLockKey) of the shot, else -1
 let hitQWr = new Int32Array(hitQueueRoom).fill(-1);   // (v265.0, section 5vn) the weapon record line of the shot, else -1
 let hitQTk = new Int32Array(hitQueueRoom);      // (v30 B2, section 5vb) a beam's ticks in this hit (0 = not a beam)
 let hitQueueCount = 0;
@@ -29850,7 +29889,7 @@ function queueHit(a, t, vx, vy, facing, sqA, stateA, saIn, dmgIn, dtIn, trIn, tk
     const grow = (old, Kind) => { const n = new Kind(hitQueueRoom); n.set(old); return n; };
     hitQA = grow(hitQA, Int32Array); hitQT = grow(hitQT, Int32Array); hitQF = grow(hitQF, Int32Array); hitQSq = grow(hitQSq, Int32Array); hitQState = grow(hitQState, Int32Array);
     hitQX = grow(hitQX, Float64Array); hitQY = grow(hitQY, Float64Array); hitQSt = grow(hitQSt, Int32Array);
-    hitQDmg = grow(hitQDmg, Float64Array); hitQDt = grow(hitQDt, Int32Array); hitQTr = grow(hitQTr, Int32Array); hitQTk = grow(hitQTk, Int32Array); hitQWr = grow(hitQWr, Int32Array);
+    hitQDmg = grow(hitQDmg, Float64Array); hitQDt = grow(hitQDt, Int32Array); hitQTr = grow(hitQTr, Int32Array); hitQTk = grow(hitQTk, Int32Array); hitQWr = grow(hitQWr, Int32Array); hitQLk = grow(hitQLk, Int32Array);
   }
   const k = hitQueueCount++;
   hitQA[k] = a; hitQT[k] = t; hitQF[k] = facing === undefined ? -1 : facing;
@@ -29861,6 +29900,7 @@ function queueHit(a, t, vx, vy, facing, sqA, stateA, saIn, dmgIn, dtIn, trIn, tk
   hitQTr[k] = trIn === undefined ? 0 : trIn;
   hitQTk[k] = tkIn === undefined ? 0 : tkIn;   // (v30 B2) a beam's ticks
   hitQWr[k] = wrCur;                           // (v265.0, section 5vn)
+  hitQLk[k] = typeof bbBeamLockKey === 'number' ? bbBeamLockKey : -1;   // (v345.0)
 }
 
 // Lands the step's hits, in the order they were fired.
@@ -29870,9 +29910,10 @@ function applyQueuedHits() {
     if (shipAlive[t] === 0) { hitsOnWrecks++; continue; }
     const f = hitQF[k];
     wrCur = hitQWr[k];                               // (v265.0, section 5vn) the weapon whose hit this is
+    bbBeamLockKey = hitQLk[k];                       // (v345.0) a locked beam's hit keeps to its line
     if (hitQDmg[k] < 0) resolveHit(hitQA[k], t, hitQX[k], hitQY[k], f < 0 ? undefined : f, hitQSq[k], hitQState[k], hitQSt[k]);
     else resolveHit(hitQA[k], t, hitQX[k], hitQY[k], f < 0 ? undefined : f, hitQSq[k], hitQState[k], hitQSt[k], hitQDmg[k], hitQDt[k], hitQTr[k], hitQTk[k]);
-    wrCur = -1;
+    wrCur = -1; bbBeamLockKey = -1;
   }
   hitQueueCount = 0;
 }
@@ -30015,7 +30056,7 @@ function updateCombat(dt) {
   for (let i = 0; i < highWater; i++) {
     if (shipAlive[i] === 0) continue;
     if (bubbleMode !== 0 && bubbleSkipShip(i)) continue;   // (v311.1, 4b7b) a bubble step: the bubble's guns in the small steps, the rest in the big one
-    if (sleepActive && shipGunsAsleep(i)) continue;              // (v154.0, 4b5) asleep, no enemy anywhere near: no shields, heat or guns to work out this step
+    if (sleepActive && shipGunsAsleep(i)) { heatAsleepUpkeep(i, dt); continue; }   // (v154.0, 4b5) asleep, no enemy anywhere near: no guns to work out this step (v343.0, 07c: its shield and heat still change, now and then)
     const st = shipSide[i] * TYPE_COUNT + shipType[i];
     // (v257.1, 5vf) shields, heat and charge: once a second, by turns, with that second's worth (sdt), when the guns keep their own time
     const slowNow = !gp || slowTurn(i, gpN), sdt = gp ? dt * gpN : dt;
@@ -31517,7 +31558,7 @@ function mdCall(i, what) {
 function mdRepairSeconds(i, ms) {
   const sq = shipSquad[i];
   const o = sq > 0 && typeof sqOfficer !== 'undefined' && sqOfficer && sqOfficer[sq] ? sqOfficer[sq] : null;
-  const readiness = o && typeof o.readiness === 'number' ? o.readiness : 0.5;
+  const readiness = o && typeof o.readiness === 'number' ? officerChairCap(o.readiness, shipType[i]) : 0.5;   // (v342.0) through its bridge: the officer's chair
   let dc = 0;
   const U = ms.info.units;
   for (let k = 0; k < U.length; k++) if (U[k].dc > 0 && ms.out[k] === 0 && ms.dark[k] === 0) dc += U[k].dc;
@@ -31712,6 +31753,9 @@ let bbCornerSince = new Float32Array(0);           // [ship] (stop 6) battle tim
 let bbCorneredAt = new Float32Array(0);            // [ship] battle time it last turned to fight because it was cornered
 let bbHeatAdd = new Float32Array(0);               // [ship] (balance pass 1) the share of gun heat the radiators no longer shed, over the design's (0 for an untouched ship)
 let bbFocus = new Float32Array(0);                 // (v30 B2) [ship * BB_MAXG + group] a beam's Focus multiplier, grown while it holds the same target (1 = none)
+let bbBeamFace = new Int8Array(0);                 // (v345.0) [ship * BB_MAXG + group] the side the locked beam's line was entered from (0-3), so its line can be checked
+let bbBeamCell = new Int32Array(0);                // (v345.0) [ship * BB_MAXG + group] the square a beam is locked onto on its target (-1 = none yet; SETTINGS.bbBeamLock)
+let bbBeamLockKey = -1;                            // (v345.0) the beam (ship * BB_MAXG + group) whose hit is being landed, else -1 (read by bbArmourPass)
 let bbFocusTgt = new Int32Array(0);                // (v30 B2) [ship * BB_MAXG + group] the target that Focus was grown on (a new one resets it)
 let bbAblativeAt = new Float32Array(0);            // (v30 B2) [ship] battle time an Ablative plate of this ship last took a beam (Focus does not build while it does)
 let bbShedAt = new Float32Array(0);               // (v69) [ship] battle time a beam last hit this ship through a standing plate of heat-shedding chitin (its Focus builds at half)
@@ -31763,11 +31807,11 @@ function bbReset() {
     bbCool = new Float64Array(n * BB_MAXG); bbTgt = new Int32Array(n * BB_MAXG); bbSearchAt = new Float32Array(n * BB_MAXG);
     bbNarrowAt = new Float32Array(n); bbStore = new Float64Array(n * BB_SK); mdTurnMul = new Float32Array(n); mdAccelMul = new Float32Array(n); mdPdMul = new Float32Array(n); bbHeatAdd = new Float32Array(n);
     bbCornerSince = new Float32Array(n); bbCorneredAt = new Float32Array(n); mdFuelOut = new Uint8Array(n);
-    bbFocus = new Float32Array(n * BB_MAXG); bbFocusTgt = new Int32Array(n * BB_MAXG); bbAblativeAt = new Float32Array(n); bbShedAt = new Float32Array(n); bbPdAcc = new Float32Array(n * BB_PDK); bbPdLoad = new Float32Array(n * BB_PDK); bbSandUntil = new Float32Array(n); bbSandReady = new Float32Array(n);   // (v30 B2; v88)
+    bbFocus = new Float32Array(n * BB_MAXG); bbFocusTgt = new Int32Array(n * BB_MAXG); bbBeamCell = new Int32Array(n * BB_MAXG); bbBeamFace = new Int8Array(n * BB_MAXG); bbAblativeAt = new Float32Array(n); bbShedAt = new Float32Array(n); bbPdAcc = new Float32Array(n * BB_PDK); bbPdLoad = new Float32Array(n * BB_PDK); bbSandUntil = new Float32Array(n); bbSandReady = new Float32Array(n);   // (v30 B2; v88)
     bbArmAt = new Float32Array(n); bbCargoAt = new Float32Array(n); bbCargoLeft = new Float32Array(n);   // (v89)
     bbRegrowStop = new Float32Array(n); bbBurstDone = new Uint8Array(n);   // (v30 S1)
   }
-  bbFocus.fill(1); bbFocusTgt.fill(-1); bbAblativeAt.fill(-1e9); bbShedAt.fill(-1e9); bbPdAcc.fill(0); bbPdLoad.fill(-1); bbSandUntil.fill(-1e9); bbSandReady.fill(0);   // (v30 B2; v88)
+  bbFocus.fill(1); bbFocusTgt.fill(-1); bbBeamCell.fill(-1); bbAblativeAt.fill(-1e9); bbShedAt.fill(-1e9); bbPdAcc.fill(0); bbPdLoad.fill(-1); bbSandUntil.fill(-1e9); bbSandReady.fill(0);   // (v30 B2; v88)
   bbArmAt.fill(0); bbCargoAt.fill(0); bbCargoLeft.fill(-1); bbMines.length = 0; bbFieldsLaid = false;   // (v89; v89.2: the fields go down on the first step)
   if (typeof bbClouds !== 'undefined') { bbClouds.length = 0; bbScreenNext = 0; }   // (v90) the lingering clouds and the particle screens' clock
   bbRegrowStop.fill(-1e9); bbBurstDone.fill(0);   // (v30 S1)
@@ -31804,7 +31848,7 @@ function bbResetShip(slot) {
   for (let g = 0; g < BB_MAXG; g++) { bbCool[b + g] = g < info.groups.length ? phase * info.groups[g].interval : 0; bbTgt[b + g] = -1; bbSearchAt[b + g] = 0; }
   for (let k = 0; k < BB_SK; k++) bbStore[slot * BB_SK + k] = info.storeCap[k];
   bbNarrowAt[slot] = -1e9; mdTurnMul[slot] = 1; mdAccelMul[slot] = 1; mdPdMul[slot] = 1; bbHeatAdd[slot] = 0; bbCornerSince[slot] = -1; bbCorneredAt[slot] = -1e9;
-  for (let g = 0; g < BB_MAXG; g++) { bbFocus[b + g] = 1; bbFocusTgt[b + g] = -1; }   // (v30 B2) no Focus built yet
+  for (let g = 0; g < BB_MAXG; g++) { bbFocus[b + g] = 1; bbFocusTgt[b + g] = -1; bbBeamCell[b + g] = -1; }   // (v30 B2) no Focus built yet
   bbAblativeAt[slot] = -1e9; bbShedAt[slot] = -1e9; for (let q = 0; q < BB_PDK; q++) { bbPdAcc[slot * BB_PDK + q] = 0; bbPdLoad[slot * BB_PDK + q] = -1; } bbSandUntil[slot] = -1e9; bbSandReady[slot] = 0;   // (v88)
   bbArmAt[slot] = 0; bbCargoAt[slot] = 0; bbCargoLeft[slot] = -1;   // (v89)
   if (typeof bbTitanSupportForget === 'function') bbTitanSupportForget(slot);   // (v97.3)
@@ -31840,6 +31884,7 @@ function bbRow(r, t) {
 // After loadTypeStats and loadWeaponStats have filled the type's numbers from that row: marks the type, its Profile nudge, its stores and its total dps.
 function bbLoadType(t, st, r) {
   const rec = SHIP_TYPES[t];
+  for (let f = 0; f < 4; f++) stArmorRow[st * 4 + f] = stArmor[st * 4 + f];   // (v345.0) the row's own number, for Last Stand's pricing
   stV3[st] = 0; stNudge[st] = 0;
   if (stOptimal.length !== stV3.length) { stOptimal = new Float64Array(stV3.length); stFoScatter = new Float64Array(stV3.length).fill(1); }   // (v30 B1)
   stOptimal[st] = 0; stFoScatter[st] = 1;
@@ -31851,6 +31896,8 @@ function bbLoadType(t, st, r) {
   sgLoadType(t, st);                                     // (v258.0, section 5vg) its gunnery size (grid squares and agility)
   if (!bbRecordOn(rec)) return;
   const info = bbTypeInfo(t);
+  // (v345.0, part 2e bbBeltArmour) the armour the estimates read is the belt a hit really meets on each side, not every row's outer plate added up
+  if (info && info.lof && info.lof.inFrame && bbOn() && SETTINGS.moduleDamage === 1 && SETTINGS.bbLineOfFire === 1 && bbTrampleOn()) for (let f = 0; f < 4; f++) stArmor[st * 4 + f] = roundTo(bbBeltArmour(info, f), 2);
   if (!info || (info.groups.length === 0 && !info.support)) return;   // (v89) an unarmed ship with support parts (a repair corvette, a tender) still counts
   stV3[st] = 1;
   stSupport[st] = info.support ? 1 : 0;   // (v89)
@@ -32277,6 +32324,7 @@ function bbLineOfFireTables(L, S, tracks) {
   for (let x = 0; x < W; x++) { let n = 0; for (let y = 0; y < H; y++) { const k = y * W + x; if (L.cellFrame[k] < 0) { n = 0; continue; } run[2 * N + k] = n; n++; } }              // left: -y
   for (let x = 0; x < W; x++) { let n = 0; for (let y = H - 1; y >= 0; y--) { const k = y * W + x; if (L.cellFrame[k] < 0) { n = 0; continue; } run[3 * N + k] = n; n++; } }         // right: +y
   for (let i = 0; i < nF; i++) { const k = cells[i]; let best = 0, bestRun = run[k]; for (let f = 1; f < 4; f++) if (run[f * N + k] < bestRun) { bestRun = run[f * N + k]; best = f; } side[k] = best; }
+  const inFrame = new Uint8Array(N); for (let i = 0; i < nF; i++) inFrame[cells[i]] = 1;   // (v344.0, part 2e) 1 = a frame square (the outside-in walk skips the rest)
   const cum = new Float32Array(4 * nF), total = [0, 0, 0, 0], w = Math.max(0, SETTINGS.bbSideWeight);
   for (let f = 0; f < 4; f++) { let s = 0; for (let i = 0; i < nF; i++) { s += side[cells[i]] === f ? w : 1; cum[f * nF + i] = s; } total[f] = s; }
   // the plates and bulkheads: armour and flags a square
@@ -32313,7 +32361,7 @@ function bbLineOfFireTables(L, S, tracks) {
   const trackAt = new Int32Array(4 * N).fill(-1);
   let base = 0;
   for (let t = 0; t < tracks.length; t++) { const tr = tracks[t]; for (let q = 0; q < tr.cells.length; q++) trackAt[tr.cells[q] * 4 + tr.kind] = base + q; base += tr.cells.length; }
-  return { W: W, H: H, N: N, cells: Int32Array.from(cells), nF: nF, side: side, cum: cum, total: total, plateAt: plateAt, cellArmour: cellArmour, cellFlags: cellFlags, trackAt: trackAt, step: [1, -1, -W, W] };
+  return { W: W, H: H, N: N, cells: Int32Array.from(cells), nF: nF, side: side, cum: cum, total: total, plateAt: plateAt, cellArmour: cellArmour, cellFlags: cellFlags, trackAt: trackAt, step: [1, -1, -W, W], inFrame: inFrame };
 }
 
 // (balance pass 1) Heat from cooling, the idle heat made and the guns' heat made: the idle heat the radiators cannot shed (a second), and the share of the
@@ -32334,7 +32382,7 @@ function bbSigma(stt, t, ca, sa) {
   let n = stNudge[stt];
   if (n > 0) {
     const sq = shipSquad[t];
-    if (SETTINGS.officerModel === 1 && sq > 0 && sqOfficer[sq]) n *= 0.5 + officerSkill(sqOfficer[sq], 'maneuver');
+    if (SETTINGS.officerModel === 1 && sq > 0 && sqOfficer[sq]) n *= 0.5 + officerSkill(sqOfficer[sq], 'maneuver', shipType[t]);   // (v342.0: through its bridge)
     if (bbNarrowAt[t] > simTime - BB_NARROW_SECONDS) n *= SETTINGS.profileNudgeFiring;
     if (n > 0.95) n = 0.95;
   }
@@ -32619,6 +32667,23 @@ function bbFire(i, st, dt, withdrawing, deferred) {
 }
 
 // ---------------------------------------------------------------------
+// (v345.0, Alex 26 Nov 2026: lasers "need to reach that x10 number, but in a much longer time than 10 seconds. and the curve should prob be that growth
+// slows over the duration"; then, once lasers counted no armour, "Focus to x3") FOCUS CLIMB: a beam's Focus f after `seconds` more on the same target, never over `top`. Focus follows a curve that climbs
+// fast at first and flattens out, reaching bbFocusMax (x3) after bbFocusSeconds (60 s): about x1.6 after 10 s, x2.1 after 20 s, x2.5 after 30 s, x3 at a minute.
+// The Focus is turned back into how long the beam has been on, the seconds are added, and the curve is read again. bbFocusSeconds 0 = the old
+// straight climb of bbFocusPerTick a tick.
+// ---------------------------------------------------------------------
+function bbFocusClimb(f, seconds, top) {
+  if (!(seconds > 0)) return Math.min(top, f);
+  const T = SETTINGS.bbFocusSeconds, span = SETTINGS.bbFocusMax - 1;
+  if (!(T > 0) || !(span > 0)) return Math.min(top, f + seconds * SETTINGS.bbBeamTicks * SETTINGS.bbFocusPerTick);
+  const q0 = Math.min(1, Math.max(0, (f - 1) / span));
+  const t = T * (1 - Math.sqrt(1 - q0)) + seconds;             // how long on target, plus the new seconds
+  const q = Math.min(1, t / T);
+  return Math.min(top, 1 + span * (1 - (1 - q) * (1 - q)));
+}
+
+// ---------------------------------------------------------------------
 // (v30 B2) ONE SECOND OF BEAM (spec 7.1), worked out as ONE hit per emitter of group g on ship i:
 //   POWER (7.4): a second of beam costs the emitter's power. The ship's spare reactor power pays for it through the capacitors, which fill again at
 //     that spare rate every second (storeRefill, kind 3): while the beams fire, the capacitors drain by what the reactors cannot cover. A second the
@@ -32626,7 +32691,12 @@ function bbFire(i, st, dt, withdrawing, deferred) {
 //   HEAT: every point of beam power spent becomes ship heat.
 //   TICKS: the second is split into bbBeamTicks ticks (fewer when the power was short), and the armour pass subtracts the armour from each tick in
 //     full (bbArmourPass reads bbBeamTicks2). One hit square a second, the 10% floor once, one internal-damage chance.
-//   FOCUS: +bbFocusPerTick a tick while the beam stays on the same target, up to bbFocusMax; switching target resets it to 1. A target that ROLLS
+//   (v345.0) LOCKED LINE: the beam keeps hitting the square it first hit (bbBeamCell, read by bbArmourPass) while it holds its target, so it burns
+//     through that one line, plate and part, block by block (lasers count no armour: armorEffect 0, 02-2).
+//   (v345.0) MOVING ON (bbBeamMove): once nothing is left standing on the beam's line it moves to a new random line that has something on it, and
+//     its Focus starts again; what it burns out through the far side does not count against the hull (it has to hit parts to do damage).
+//   FOCUS: climbs while the beam stays on the same target, fast at first and then slower, to bbFocusMax (x3) after bbFocusSeconds (60 s): about
+//     x1.6 after 10 s, x2.1 after 20 s, x2.5 after 30 s. Switching target resets it to 1. A target that ROLLS
 //     (RCS jets: the Rolling trait) or whose Ablative plate is taking the beam gives Focus nothing. The second's damage uses the middle of its climb.
 //   FALLOFF is in DAMAGE, not accuracy: full damage out to beamFull (a third of the range), then (beamFull / distance) ^ 2.
 // Returns 1 when the second was fired, 0 when it was not (no power).
@@ -32646,20 +32716,31 @@ function bbBeamSecond(i, st, g, grp, target, stt, shots, d, ux, uy, p, band, def
   if (ticks < 1) ticks = 1;
   // Focus
   const b = i * BB_MAXG + g;
-  if (bbFocusTgt[b] !== target) { bbFocusTgt[b] = target; bbFocus[b] = 1; }
+  if (bbFocusTgt[b] !== target) { bbFocusTgt[b] = target; bbFocus[b] = 1; bbBeamCell[b] = -1; }   // (v345.0) a new target: Focus and the locked line start again
   let f = bbFocus[b] > 0 ? bbFocus[b] : 1;
   const tinfo = bbTypeInfo(shipType[target]);
   // ROLLING cancels Focus: a ship with RCS jets (the Rolling trait) that is WEAVING rolls the beam's heat round its hull, so Focus does not build.
   // An Ablative plate taking the beam does the same (spec 3.3).
-  const noFocus = (tinfo && tinfo.rolling === 1 && shipJink[target] > 0) || bbAblativeAt[target] > simTime - 2;
+  const rolling = tinfo && tinfo.rolling === 1 && shipJink[target] > 0;
+  const noFocus = rolling || bbAblativeAt[target] > simTime - 2;
+  // (v345.0, Alex 26 Nov 2026: the beam stays on its line "unless its forced to change targets, or the enemy has rolling") a rolling target throws the
+  // beam off its line every second and its Focus starts again from nothing
+  if (rolling && SETTINGS.bbBeamLock === 1) { bbFocus[b] = 1; f = 1; bbBeamCell[b] = -1; }
+  // (v345.0, Alex 26 Nov 2026: "if they burn through a line, they move their target to a new random line") the beam's line has nothing left to hit:
+  // it moves to a new random line (bbArmourPass picks one that has something on it) and its Focus starts again there
+  if (SETTINGS.bbBeamMove === 1 && SETTINGS.bbBeamLock === 1 && bbBeamCell[b] >= 0 && tinfo && tinfo.lof && mdState[target] &&
+      bbLineEmpty(target, tinfo, tinfo.lof, mdState[target], bbBeamFace[b], bbBeamCell[b])) {
+    bbBeamCell[b] = -1; bbFocus[b] = 1; f = 1; bbStats.beamMoves = (bbStats.beamMoves || 0) + 1;
+  }
   // (v69, Tier 2 plan s5c) HEAT-SHEDDING CHITIN on the beam's line (it was there within the last 2 seconds): the plate glows and sheds the heat, so the beam
   // builds only bbShedFocusMul (half) of its Focus: it climbs at half the rate and to half the extra (x2 at most, against x3).
   const shed = bbShedAt[target] > simTime - 2 ? Math.max(0, Math.min(1, SETTINGS.bbShedFocusMul)) : 1;
   const top = 1 + (SETTINGS.bbFocusMax - 1) * shed;
-  const grow = noFocus ? 0 : ticks * SETTINGS.bbFocusPerTick * shed;
   if (f > top) f = top;
-  const mid = Math.min(top, f + grow * 0.5);
-  f = Math.min(top, f + grow);
+  // (v345.0) the climb itself is bbFocusClimb (above): seconds is the share of a second the beam fired, halved by a heat-shedding plate
+  const dt = noFocus ? 0 : (ticks / Math.max(1, SETTINGS.bbBeamTicks)) * shed;
+  const mid = bbFocusClimb(f, dt * 0.5, top);
+  f = bbFocusClimb(f, dt, top);
   bbFocus[b] = f;
   if (f > bbStats.focusTop) bbStats.focusTop = f;
   // the damage: a tick x the falloff x Focus, ten ticks (or fewer) to the second
@@ -32695,8 +32776,11 @@ function bbBeamSecond(i, st, g, grp, target, stt, shots, d, ux, uy, p, band, def
     bbStats.beamHits++;
     statShotsHit[st]++; statHitBand[band]++; statHitsOn[stt]++;
     const dx = -ux * d, dy = -uy * d;
+    bbBeamLockKey = b;                               // (v345.0) the hit lands on this beam's locked line (bbArmourPass)
     if (deferred) { wrCur = wk; queueHit(i, target, dx, dy, undefined, undefined, undefined, undefined, damage, grp.d, grp.traits, hits); wrCur = -1; }
-    else { wrCur = wk; resolveHit(i, target, dx, dy, undefined, undefined, undefined, undefined, damage, grp.d, grp.traits, hits); wrCur = -1; if (shipAlive[target] === 0) break; }
+    else { wrCur = wk; resolveHit(i, target, dx, dy, undefined, undefined, undefined, undefined, damage, grp.d, grp.traits, hits); wrCur = -1; }
+    bbBeamLockKey = -1;
+    if (!deferred && shipAlive[target] === 0) break;
   }
   if (grp.split === 1) bbBeamSplit(i, grp, target, shots, full * grp.splitMul / Math.max(1e-9, mid * fall) , p, deferred, hits);   // (v90) the second target takes the beam without this target's Focus or falloff
   if (hitN > 0 && (grp.traits & BB_TRAIT_BITS.Raking)) bbBeamRake(i, grp, target, ux, uy, damage * hitN, deferred, hits);       // (v90) the Mega particle cannon rakes the line
@@ -32892,6 +32976,24 @@ function bbStateOf(i, info) {
   return ms;
 }
 // ---------------------------------------------------------------------
+// (v345.0, Alex 26 Nov 2026: "dont let a laser linger on an empty square") Is the line through square `cell`, entered from side `facing`, empty: no
+// standing plate or working part left anywhere on that row (shot from the left or right) or column (from the front or back)? A locked beam on an
+// empty line moves to a new one (bbBeamSecond, SETTINGS.bbBeamMove).
+// ---------------------------------------------------------------------
+function bbLineEmpty(t, info, lof, ms, facing, cell) {
+  if (!lof || !lof.inFrame || cell < 0 || cell >= lof.N) return false;
+  const W = lof.W, H = lof.H, cellPart = info.a.layout.cellPart, out = ms.out, inFrame = lof.inFrame;
+  const folded = info.foldPart && bbFolded(t);
+  const x0 = cell % W, y0 = (cell - x0) / W, len = facing < 2 ? W : H;
+  for (let s = 0; s < len; s++) {
+    const k = facing < 2 ? y0 * W + s : s * W + x0;
+    if (inFrame[k] !== 1) continue;
+    const p = cellPart[k];
+    if (p >= 0 && out[p] === 0 && !(folded && info.foldPart[p] === 1)) return false;
+  }
+  return true;
+}
+// ---------------------------------------------------------------------
 // (v30 B1) THE LINE-OF-FIRE ARMOUR PASS (spec 3.1, 3.3), called by resolveHit (section 5) in place of the four-side armour for a v 3 target with bbLof on.
 //   a = the shooter, t = the ship hit (side + type stt), facing = the side the shot came from, damage = what got past the shield, dtype = its damage type,
 //   traits = its weapon trait bits, sa = the shooter's side + type. Returns the damage that gets through to the hull, and leaves for bbModuleHit:
@@ -32919,8 +33021,26 @@ function bbArmourPass(a, t, stt, facing, damage, dtype, traits, sa) {
   const r = mdRand() * lof.total[facing];
   let lo = 0, hi = nF - 1;
   while (lo < hi) { const mid = (lo + hi) >> 1; if (cum[base + mid] >= r) hi = mid; else lo = mid + 1; }
-  const cell = lof.cells[lo];
+  let cell = lof.cells[lo];
+  // (v345.0) A LOCKED BEAM (SETTINGS.bbBeamLock): a laser that has hit this ship keeps hitting the same square's line, second after second, until it
+  // changes target or the target rolls (bbBeamSecond clears the lock). bbBeamLockKey is the firing beam (ship x group), set round its hits.
+  if (bbBeamLockKey >= 0 && SETTINGS.bbBeamLock === 1) {
+    const c = bbBeamCell[bbBeamLockKey];
+    if (c >= 0 && c < lof.N && lof.inFrame && lof.inFrame[c] === 1) cell = c;
+    else {
+      // (v345.0, bbBeamMove) a beam picking a new line takes one that still has something to hit: up to 8 tries, else the last one rolled
+      if (SETTINGS.bbBeamMove === 1 && lof.inFrame) for (let tries = 0; tries < 8 && bbLineEmpty(t, info, lof, ms, facing, cell); tries++) {
+        const r2 = mdRand() * lof.total[facing]; let lo2 = 0, hi2 = nF - 1;
+        while (lo2 < hi2) { const mid = (lo2 + hi2) >> 1; if (cum[base + mid] >= r2) hi2 = mid; else lo2 = mid + 1; }
+        cell = lof.cells[lo2];
+      }
+      bbBeamCell[bbBeamLockKey] = cell;
+    }
+    bbBeamFace[bbBeamLockKey] = facing;
+  }
   bbHitCell = cell; bbHitPart = lof.W > 0 ? info.a.layout.cellPart[cell] : -1;
+  // (v344.0, part 2e) DAMAGE FROM THE OUTSIDE IN: the square only chooses the row or column; the damage enters at the edge and tramples inward
+  if (bbTrampleOn() && lof.inFrame) { const ticks = bbBeamTicks2; bbBeamTicks2 = 0; return bbTramplePlan(a, t, stt, facing, damage, dtype, traits, sa, info, lof, ms, cell, ticks); }
   // 2. the plates between it and the shooter (the hit square itself counts when it is a plate)
   const N = lof.N, W = lof.W, H = lof.H, step = lof.step[facing], plateAt = lof.plateAt, flagsOf = lof.cellFlags, armourOf = lof.cellArmour, cellPart = info.a.layout.cellPart, out = ms.out;
   let armour = 0, deflecting = 0, flags = 0, reactive = -1;
@@ -32947,7 +33067,7 @@ function bbArmourPass(a, t, stt, facing, damage, dtype, traits, sa) {
   const stat = bbStatFor(shipSide[t], shipType[t]);
   // 3. the traits
   const proj = bbIsProjectile(dtype);
-  if (proj && deflecting > 0 && damage <= deflecting * SETTINGS.deflectRatio) {
+  if (proj && deflecting > 0 && SETTINGS.bbMinArmorPass > 0 && damage <= deflecting * SETTINGS.deflectRatio) {   // (v345.0) with no floor Deflecting adds no rule (see part 2e)
     // (v30 S1) acid SPLASHES: a Corrosive hit is never deflected (the plates still take their armour off it below)
     if ((traits & BB_TRAIT_BITS.Corrosive) && SETTINGS.bbAcid === 1) bbStats.acidSplashes++;
     else {
@@ -33019,10 +33139,11 @@ function bbModuleHit(t, stt, facing, damage, through, sa) {
     bbStats.lofHits++;
     if (through > 0) scarsNoteHit(t, bbHitCell);   // (v118.0, section 5vd) the battle scars record: a damaging hit on this square (a record only: nothing reads it here)
     let part = bbHitPart;
+    const trample = bbTrampleOn() && bbTr.ship === t;   // (v344.0, part 2e) the damage was planned from the outside in: bbTrampleApply deals it below
     // (v30 B1/B2, spec 3.3) ABLATIVE: while such a plate lies on the line it takes a beam itself. The part behind it is untouched, the ship is not
     // heated and the beam's Focus stops building (bbAblativeAt, read by bbBeamSecond).
     let ablative = false;
-    if (bbHitAblative >= 0 && (bbHitTraits & (BB_TRAIT_BITS.Focus | BB_TRAIT_BITS.Heat)) && ms.out[bbHitAblative] === 0) { part = bbHitAblative; ablative = true; bbStats.ablativeHits++; bbAblativeAt[t] = simTime; }
+    if (bbHitAblative >= 0 && (bbHitTraits & (BB_TRAIT_BITS.Focus | BB_TRAIT_BITS.Heat)) && ms.out[bbHitAblative] === 0) { if (!trample) part = bbHitAblative; ablative = true; bbStats.ablativeHits++; bbAblativeAt[t] = simTime; }
     // (v69, Tier 2 plan s5c) HEAT-SHEDDING CHITIN on the line takes a beam's heat into the plate: the ship is not heated inside, its Regrowing is not burnt
     // off, and the beam's Focus builds at half (bbShedAt, read by bbBeamSecond). The damage itself goes on as usual (the plate's armour counts as chitin's).
     let shedding = false;
@@ -33043,7 +33164,7 @@ function bbModuleHit(t, stt, facing, damage, through, sa) {
     }
     // (v30 B2, spec 4.4) a FOLDING radiator that is pulled in is not there to be hit: the shot passes into the hull
     if (!ablative && part >= 0 && info.foldPart[part] === 1 && bbFolded(t)) part = -1;
-    if (part < 0 && through > 0 && syShotBy >= 0) part = syAimPart(t, ms, mi, U);   // (v77, section 5vc) a Sylph Ace's shot on bare hull is moved onto a working part, the higher its rank the more often
+    if (!trample && part < 0 && through > 0 && syShotBy >= 0) part = syAimPart(t, ms, mi, U);   // (v77, section 5vc) a Sylph Ace's shot on bare hull is moved onto a working part, the higher its rank the more often
     // (v90) MELTING (plasma): the plate it hit (the hit square's, else the outermost on the line) counts meltArmourMul of its armour for meltSeconds
     if ((bbHitTraits & BB_TRAIT_BITS.Melting) && damage > 0 && bbHitWeep === 0) {   // (v92: not through weeping hide)
       const pl = part >= 0 && U[part].role === 'armour' && ms.out[part] === 0 ? part : (bbHitOuterPlate >= 0 && ms.out[bbHitOuterPlate] === 0 ? bbHitOuterPlate : -1);
@@ -33054,7 +33175,8 @@ function bbModuleHit(t, stt, facing, damage, through, sa) {
       const kill = Math.min(info.base.crew - ms.crewLost, through * SETTINGS.irradCrewPerDamage);
       if (kill > 0) { ms.crewLost += kill; bbStats.crewKilled += kill; bbStats.irradHits++; changed = true; }
     }
-    if (part >= 0) {
+    if (trample) { if (bbTrampleApply(t, ms, info, stat)) changed = true; }   // (v344.0) the planned walk: plates, parts and tracks from the outside in
+    else if (part >= 0) {
       if (ms.out[part] === 0 && through > 0) {
         const plate = (info.lof.cellFlags[bbHitCell] & BB_PF_WALL) !== 0 || U[part].role === 'armour';
         stat.hits++; bbStats.lofPartHits++; if (plate) bbStats.plateHits++; else stat.v3.internal++;
@@ -34170,6 +34292,257 @@ function pulseGazetteLine(from, to) {
   if (!weeks) return '';
   return 'The Fleet\'s pulse drives burned over ' + places.join(' and ') + ' in ' + (weeks === 1 ? 'one week' : weeks + ' weeks') + ' this month. People there reported flashes in the sky.';   // (v278.10) plain reporting
 }
+// =====================================================================
+// 5vb part 2e. (v344.0, Alex 26 Nov 2026) DAMAGE FROM THE OUTSIDE IN. SETTINGS.bbTrample 1 (0 = the v30 rule: the hit lands on the picked square itself).
+//   Alex: "I want the damage to come from the outside in, the damage reduced by the entire thickness of the armor, then applied to the square furthest
+//   out on the line that still has hp. Damage over the hp of the module tramples over to the next square in the line, and so on." The goal: armour is
+//   worth more, and parts deep inside the ship are safer. The five points he settled (thread "Make armour soak damage outside-in"):
+//   1. The hit still picks a square at random, as before (the side facing the shooter three times likelier). That square now only chooses WHICH ROW OR
+//      COLUMN is hit. The damage enters at the hull's edge on the shooter's side and works inward along that whole line. What is left past the far
+//      edge is lost (to the parts: the hull pool still takes it, as before).
+//   2. ARMOUR: the outer belt (the unbroken run of standing plates met first, knocked-out parts and bare hull in between do not break it) is taken off
+//      the damage ONCE, up front, with the same rules as before (the damage type's share of armour, Piercing at half, Deflecting, Reactive, the 10%
+//      floor, a beam's armour off each tick). Then the damage lands on the outermost plate. A bulkhead or plate run deeper inside takes its own armour
+//      off only when the damage reaches it (each run lets at least 10% of what reaches it through).
+//   3. A PART IS A WHOLE BLOCK: damage on any of its squares comes off the whole block's hit points; only what is left after the block is knocked out
+//      carries on to the next square past it. Knocked-out parts, bare hull and a folded radiator let damage straight through. (Alex: "the tracks dont
+//      soak damage") A track square (passage, conduit, hoist, fuel line) lets damage straight through too: its tracks are cut only when it is the
+//      picked square itself and damage gets that far, as the old rule cut the tracks on the square that was hit.
+//      MODULE HIT POINTS: every part also holds the frame's hit points of the squares it sits on (moved from the frame, so the hull total is the same;
+//      35d-2 passNumbersV3), so a part is a real block in the way.
+//   4. PENETRATING WEAPONS: Piercing still counts armour at half, then tramples. A railgun's over-penetration (its overPenShare) and a particle beam's
+//      armour bypass (its irradBypass share) go STRAIGHT onto the part on the picked square, so they can still reach deep parts. A Blast (HE) shell
+//      hurts the parts touching the part where the damage stopped. A Sylph Ace's aimed shot also goes straight onto the part it picked.
+//   5. Kept as they were: Deflecting, the floor, Reactive plates eating missiles, beam ticks, shields, acid, plasma, heat.
+//   (v345.0, Alex 26 Nov 2026) NO FLOOR (bbMinArmorPass 0) and every damage type counts armour in full: a hit the armour on its line fully stops does
+//   nothing, and plates wear only when something punches through them ("1b": the outer plate takes what got through, then the rest tramples on).
+//   (v345.0, bbBeamMove) a locked beam's damage that goes out through the far side is lost to the hull too: a laser has to hit parts to do damage.
+//   THE HP DIAL ONCE: before this the HP dial (SETTINGS.hpScale) was taken off a part's damage twice (the hull's share was passed on, then divided again),
+//   so parts took a quarter of what got through while the hull took half. Under bbTrample every part takes the damage divided by the dial once, as the hull.
+//   How it runs: bbArmourPass (2-hit-profile) asks bbTramplePlan, which walks the line once without changing anything, works out the armour taken and
+//   what each square on the way will take, and returns what reaches the hull. resolveHit (05) takes that off the hull, then bbModuleHit asks
+//   bbTrampleApply, which deals the planned damage to the parts and tracks.
+// =====================================================================
+function bbTrampleOn() { return SETTINGS.bbTrample === 1; }
+// The plan of the last hit (made by bbTramplePlan, used by bbTrampleApply on the same ship straight after). Plain arrays, reused, so no memory is made per hit.
+const bbTr = { ship: -1, n: 0, kind: [], id: [], amt: [], stopPart: -1, stopAmt: 0, pickPart: -1, overPen: 0, bypass: 0, through: 0 };
+// The armour of one run against `rem` damage: the damage type's share, a beam's ticks, the floor. Returns what gets through.
+function bbTrCut(rem, eff, ticks) {
+  let out;
+  if (ticks > 1) { const tick = rem / ticks - eff; out = tick > 0 ? tick * ticks : 0; }
+  else out = rem - eff;
+  const floor = rem * SETTINGS.bbMinArmorPass;
+  return out < floor ? floor : out;
+}
+function bbTrPush(kind, id, amt) { const n = bbTr.n++; bbTr.kind[n] = kind; bbTr.id[n] = id; bbTr.amt[n] = amt; }
+// The walk. Called by bbArmourPass once the square is picked (cell), for a ship t with a layout (info, lof, ms). damage = what got past the shield,
+// ticks = a beam's ticks (0 or 1 = not a beam). Sets the bbHit... notes as bbArmourPass does and returns what reaches the hull (0 = deflected or caught).
+function bbTramplePlan(a, t, stt, facing, damage, dtype, traits, sa, info, lof, ms, cell, ticks) {
+  const W = lof.W, H = lof.H, N = lof.N, step = lof.step[facing], cellPart = info.a.layout.cellPart, U = info.units, out = ms.out;
+  const flagsOf = lof.cellFlags, armourOf = lof.cellArmour, inFrame = lof.inFrame, trackAt = lof.trackAt;
+  const A = dbgArmour[shipSide[t]], hpT = hpTough(shipSide[t]);
+  const stat = bbStatFor(shipSide[t], shipType[t]);
+  const proj = bbIsProjectile(dtype), isMissile = dmgMissile[dtype] === 1;
+  const folded = info.foldPart && bbFolded(t);
+  bbTr.ship = t; bbTr.n = 0; bbTr.stopPart = -1; bbTr.stopAmt = 0; bbTr.overPen = 0; bbTr.bypass = 0; bbTr.through = 0;
+  bbTr.pickPart = cellPart[cell] >= 0 && out[cellPart[cell]] === 0 ? cellPart[cell] : -1;
+  // what kind of square k is now: 0 = lets damage through (bare hull, a knocked-out part, a track square), 1 = a standing plate or bulkhead, 2 = a working part
+  const kindOf = function (k) {
+    if (inFrame[k] !== 1) return 0;
+    const p = cellPart[k];
+    if (p >= 0) { if (out[p] !== 0 || (folded && info.foldPart[p] === 1)) return 0; return (flagsOf[k] & BB_PF_WALL) ? 1 : 2; }
+    return 0;
+  };
+  const len = facing < 2 ? W : H;
+  // the square on the shooter's edge of this row or column
+  let edge = cell;
+  for (let s = 0; s < len; s++) {
+    const x = edge % W, y = (edge - x) / W;
+    if (facing === 0 ? x >= W - 1 : (facing === 1 ? x <= 0 : (facing === 2 ? y <= 0 : y >= H - 1))) break;
+    edge += step;
+  }
+  // 1. the plates in front of the picked square (from the edge up to it): a Spaced plate or Hardened bulkhead there stops a railgun's over-penetration, and a
+  //    Hardened one cancels a particle beam's bypass, as on the old line
+  let front = 0;
+  for (let s = 0, k = edge; s < len; s++, k -= step) { if (kindOf(k) === 1) front |= flagsOf[k]; if (k === cell) break; }
+  let tr = traits;
+  if ((tr & BB_TRAIT_BITS['Over-penetrating']) && (front & (BB_PF_SPACED | BB_PF_HARDENED))) { bbStats.overPenStopped++; tr &= ~BB_TRAIT_BITS['Over-penetrating']; }
+  if ((tr & BB_TRAIT_BITS.Irradiating) && (front & BB_PF_HARDENED)) { bbStats.hardenedStops++; tr &= ~BB_HARDENED_STOPS; }
+  // (v90) IRRADIATING (particle beams): irradBypass of the hit ignores the armour; under this rule it lands straight on the picked square's part
+  let rem = damage, bypass = 0;
+  if (tr & BB_TRAIT_BITS.Irradiating) { bypass = rem * SETTINGS.irradBypass; rem -= bypass; }
+  // 2. the walk inward
+  let runs = 0, inRun = false, lastPart = -1, lastDead = false, lost = 0, stopCell = -1, firstPart = -1;
+  for (let s = 0, k = edge; s < len && rem > 0; s++, k -= step) {
+    const kd = kindOf(k);
+    if (k === cell && cellPart[k] < 0 && inFrame[k] === 1) {
+      // the picked square is a track square and the damage got this far: every live track on it is cut (the damage carries on, not reduced)
+      for (let kind = 0; kind < 4; kind++) { const q = trackAt[k * 4 + kind]; if (q >= 0 && !ms.cut[q]) bbTrPush(kind, q, 0); }
+    }
+    if (kd === 0) continue;
+    const p = cellPart[k];
+    if (p >= 0 && p === lastPart && lastDead) continue;          // the rest of a block already knocked out on the way
+    if (kd === 1 && !inRun) {
+      // a run of plates begins: its armour (every standing plate square from here inward until a working part or a live track) comes off once
+      let armour = 0, deflecting = 0, flags = 0, reactive = -1, ablative = -1, outer = -1;
+      for (let s2 = s, k2 = k; s2 < len; s2++, k2 -= step) {
+        const kd2 = kindOf(k2);
+        if (kd2 === 2) break;
+        if (kd2 !== 1) continue;
+        const p2 = cellPart[k2], f = flagsOf[k2];
+        armour += ms.melt[p2] > simTime ? armourOf[k2] * SETTINGS.meltArmourMul : armourOf[k2]; flags |= f;   // (v90) a plate plasma has softened counts less
+        if (outer < 0 && (f & BB_PF_BULKHEAD) === 0) outer = p2;
+        if (f & BB_PF_DEFLECTING) deflecting += armourOf[k2];
+        if ((f & BB_PF_ABLATIVE) && ablative < 0) ablative = p2;
+        if ((f & BB_PF_REACTIVE) && reactive < 0 && ms.used[p2] === 0) reactive = p2;
+      }
+      armour *= A; deflecting *= A;
+      const belt = runs === 0;
+      runs++;
+      if (belt) {                                                 // the outer belt: what the old line read off its plates
+        bbHitOuterPlate = outer; bbHitAblative = ablative;
+        if (flags & BB_PF_SHEDDING) bbHitShed = 1;
+        if (flags & BB_PF_WEEPING) bbHitWeep = 1;
+        if (flags & BB_PF_CRYSTAL) bbHitCrystal = 1;
+      }
+      // Deflecting: a projectile no bigger than the Deflecting armour of the run does nothing more (acid is never deflected)
+      // (v345.0) with no floor (bbMinArmorPass 0) every plate stops a hit no bigger than its armour, so Deflecting adds no rule of its own (it is the
+      // name the player sees for that); it only acts when a floor is set, as before
+      if (proj && deflecting > 0 && SETTINGS.bbMinArmorPass > 0 && rem <= deflecting * SETTINGS.deflectRatio) {
+        if ((tr & BB_TRAIT_BITS.Corrosive) && SETTINGS.bbAcid === 1) bbStats.acidSplashes++;
+        else if (belt) { bbHitDeflected = 1; bbStats.deflected++; stat.v3.deflected++; bbSayDeflected(a, t, sa, stt); bbTr.n = 0; bbTr.ship = -1; return 0; }
+        else { lost += rem; rem = 0; stopCell = k; bbStats.trDeepStops = (bbStats.trDeepStops || 0) + 1; break; }
+      }
+      // Reactive: the first unused Reactive plate of the run swallows a missile
+      if (reactive >= 0 && isMissile) {
+        ms.used[reactive] = 1; bbStats.reactiveUsed++; stat.v3.reactive++;
+        if (belt) { mdCall(t, 'has burst a Reactive plate against a missile'); bbTr.n = 0; bbTr.ship = -1; return 0; }
+        lost += rem; rem = 0; stopCell = k; break;
+      }
+      // (v92) WEEPING HIDE sheds a plasma hit's burning layers: the hit does weepMeltShare of itself
+      if (belt && bbHitWeep === 1 && (tr & BB_TRAIT_BITS.Melting)) { const r0 = rem; rem *= SETTINGS.weepMeltShare; lost += r0 - rem; bbStats.weepHits++; }
+      let eff = armour * bbPlateEffect(dtype);
+      if (tr & BB_TRAIT_BITS.Piercing) {
+        if (flags & (BB_PF_SPACED | BB_PF_HARDENED)) { bbStats.piercingStopped++; tr &= ~BB_TRAIT_BITS.Piercing; }
+        else eff *= SETTINGS.piercingArmourShare;
+      }
+      if ((flags & BB_PF_HARDENED) && (tr & BB_HARDENED_STOPS)) { bbStats.hardenedStops++; if (tr & BB_TRAIT_BITS.Corrosive) bbStats.acidHardened++; tr &= ~BB_HARDENED_STOPS; }
+      const r1 = bbTrCut(rem, eff, ticks);
+      lost += rem - r1; rem = r1;
+      if (rem <= 0) {
+        // (v345.0, no floor) the armour stopped all of it: the plates take no wear. On the outer belt with nothing bypassing it, the hit did nothing
+        // at all and the shooters hear their shots bounce off (as a Deflecting plate's).
+        if (belt && bypass <= 0) {
+          if ((tr & BB_TRAIT_BITS.Corrosive) && SETTINGS.bbAcid === 1) {
+            // acid the armour stops still splashes: it leaves its patch on the outer plate (bbModuleHit), which eats the plate over time
+            bbStats.acidSplashes++; bbHitTraits = tr; bbHitCell = k; bbHitPart = -1; bbTr.n = 0; bbTr.through = 0; bbTr.bypass = 0; bbTr.overPen = 0; bbTr.pickPart = -1;
+            return 0;
+          }
+          bbHitDeflected = 1; bbStats.deflected++; stat.v3.deflected++; bbSayDeflected(a, t, sa, stt); bbTr.n = 0; bbTr.ship = -1; return 0;
+        }
+        rem = 0; stopCell = k; bbStats.trDeepStops = (bbStats.trDeepStops || 0) + (belt ? 0 : 1); break;
+      }
+    }
+    // a plate or a working part: the whole block takes it; what is over its hit points goes on
+    inRun = kd === 1;
+    const cap = ms.hp[p] * hpT;
+    if (firstPart < 0) firstPart = p;
+    bbTrPush(-1, p, rem);
+    lastPart = p; stopCell = k;
+    if (rem >= cap) { rem -= cap; lastDead = true; }
+    else { bbTr.stopPart = p; bbTr.stopAmt = rem; rem = 0; lastDead = false; }
+  }
+  if (rem > 0) {
+    bbStats.trExits = (bbStats.trExits || 0) + 1;                 // it went out through the far side: the parts are done with it
+    // (v345.0, Alex 26 Nov 2026: "lasers should have to hit modules to do their damage") a locked beam's damage out through the far side is lost
+    // to the hull as well
+    if (bbBeamLockKey >= 0 && SETTINGS.bbBeamMove === 1) { lost += rem; bbStats.beamExitLost = (bbStats.beamExitLost || 0) + rem; }
+  }
+  bbHitTraits = tr;
+  bbHitCell = stopCell >= 0 ? stopCell : cell;
+  bbHitPart = firstPart;
+  // what reaches the hull: everything past the armour, the bypass included (the hull still takes what went out through the far side, except a beam's)
+  const through = damage - lost;
+  bbTr.through = through; bbTr.bypass = bypass;
+  bbTr.overPen = (tr & BB_TRAIT_BITS['Over-penetrating']) && SETTINGS.overPenShare > 0 ? 1 : 0;
+  bbStats.trWalks = (bbStats.trWalks || 0) + 1;
+  return through;
+}
+// Deals the planned damage to ship t (called by bbModuleHit, which has done the heat, acid, plasma and crew effects). Returns true when a part was
+// knocked out or a track cut (bbModuleHit then works the ship's numbers out again).
+function bbTrampleApply(t, ms, info, stat) {
+  if (bbTr.ship !== t) return false;
+  const U = info.units;
+  let changed = false;
+  // (v77, section 5vc) a Sylph Ace's shot on a square with no working part goes straight onto a working part it picks (the higher its rank the more often)
+  if (bbTr.pickPart < 0 && syShotBy >= 0 && bbTr.through > 0) {
+    const ap = syAimPart(t, ms, ms.info, U);
+    if (ap >= 0) { bbTr.n = 0; bbTr.stopPart = ap; bbTr.stopAmt = bbTr.through; bbTrPush(-1, ap, bbTr.through); bbStats.trAceAims = (bbStats.trAceAims || 0) + 1; }
+  }
+  for (let j = 0; j < bbTr.n && shipHp[t] > 0; j++) {
+    const kind = bbTr.kind[j], id = bbTr.id[j], amt = bbTr.amt[j];
+    if (kind >= 0) {                                              // a track square cut
+      if (ms.cut[id]) continue;
+      ms.cut[id] = 1; ms.cutCount++; stat.v3.cuts++; stat.v3.track++; bbStats.lofTrackHits++;
+      bbStats[['passageCuts', 'conduitCuts', 'hoistCuts', 'fuelLineCuts'][kind]]++;
+      if (ms.dcAt < 0) ms.dcAt = simTime + bbRepairSeconds(t, ms);
+      if (mdList.indexOf(t) < 0) mdList.push(t);
+      changed = true;
+      continue;
+    }
+    if (ms.out[id] !== 0) continue;
+    const plate = U[id].role === 'armour';
+    stat.hits++; bbStats.lofPartHits++; if (plate) bbStats.plateHits++; else stat.v3.internal++;
+    if (j > 0) bbStats.trTrampled = (bbStats.trTrampled || 0) + 1;   // a square reached by damage carried on from the one before
+    if (bbDamagePart(t, ms, id, amt, stat, 0)) { changed = true; if (plate) bbStats.platesOut++; }
+  }
+  // the penetrating shares, straight onto the picked square's part
+  const pp = bbTr.pickPart;
+  if (pp >= 0 && shipHp[t] > 0 && ms.out[pp] === 0) {
+    if (bbTr.bypass > 0) { stat.hits++; bbStats.trBypassHits = (bbStats.trBypassHits || 0) + 1; if (bbDamagePart(t, ms, pp, bbTr.bypass, stat, 0)) changed = true; }
+    if (bbTr.overPen === 1 && ms.out[pp] === 0 && U[pp].role !== 'armour' && U[pp].blocks !== 1) {
+      bbStats.overPen++; if (bbDamagePart(t, ms, pp, bbTr.through * SETTINGS.overPenShare, stat, 0)) changed = true;
+    }
+  }
+  // a Blast (HE) shell: the parts touching the part where the damage stopped take blastNeighbourShare of what landed there
+  const sp = bbTr.stopPart;
+  if ((bbHitTraits & BB_TRAIT_BITS.Blast) && SETTINGS.blastNeighbourShare > 0 && sp >= 0 && shipHp[t] > 0) {
+    const nb = U[sp].neighbours, share = bbTr.stopAmt * SETTINGS.blastNeighbourShare;
+    for (let q = 0; q < nb.length; q++) if (ms.out[nb[q]] === 0 && U[nb[q]].blocks !== 1) { if (bbDamagePart(t, ms, nb[q], share, stat, 0)) changed = true; }
+  }
+  if (bbTr.n === 0 && bbTr.through > 0) bbStats.hullHits++;
+  bbTr.ship = -1;
+  return changed;
+}
+
+// (v345.0) THE BELT A HIT MEETS, for the estimates. The AI's matchup tables, the danger field, Last Stand's pricing, wings and point defence read one
+// armour number per side (stArmor). For a Bureau design that number was the armour of the outermost plate square of every row added up along the whole
+// side (a Halberd's left side: 216, where a real hit meets a belt of 16). While armour always let 20% through that rarely mattered; with no floor
+// (v345.0) it told the AI that most weapons could not hurt most ships, so ships stopped picking targets they could hurt. This gives instead the belt a
+// hit from side `facing` really meets on the undamaged ship: for each square the hit can pick, the standing plates from that side's edge inward until the
+// first working part, averaged with the same weights as the pick (the squares nearest the side weigh more). bbLoadType (part 1) puts it in stArmor.
+function bbBeltArmour(info, facing) {
+  const lof = info && info.lof; if (!lof || !lof.inFrame) return 0;
+  const W = lof.W, H = lof.H, nF = lof.nF, cum = lof.cum, base = facing * nF, cellPart = info.a.layout.cellPart, flagsOf = lof.cellFlags, armourOf = lof.cellArmour;
+  const lineBelt = new Map();
+  const beltOf = function (cell) {
+    const x0 = cell % W, y0 = (cell - x0) / W, key = facing < 2 ? y0 : x0;
+    if (lineBelt.has(key)) return lineBelt.get(key);
+    const len = facing < 2 ? W : H;
+    let belt = 0;
+    for (let s = 0; s < len; s++) {
+      const k = facing === 0 ? y0 * W + (W - 1 - s) : facing === 1 ? y0 * W + s : facing === 2 ? s * W + x0 : (H - 1 - s) * W + x0;
+      if (lof.inFrame[k] !== 1 || cellPart[k] < 0) continue;             // bare hull and track squares let the hit through
+      if (flagsOf[k] & BB_PF_WALL) { belt += armourOf[k]; continue; }    // a plate or bulkhead of the belt
+      break;                                                             // the first working part: the belt ends
+    }
+    lineBelt.set(key, belt);
+    return belt;
+  };
+  let sum = 0, wsum = 0;
+  for (let i = 0; i < nF; i++) { const w = cum[base + i] - (i > 0 ? cum[base + i - 1] : 0); if (!(w > 0)) continue; sum += w * beltOf(lof.cells[i]); wsum += w; }
+  return wsum > 0 ? sum / wsum : 0;
+}
 // ---------------------------------------------------------------------
 // DAMAGE CONTROL through the passageways: one thing at a time, the most needed first, among the parts the crew can still reach (and every cut square).
 // ---------------------------------------------------------------------
@@ -34183,7 +34556,7 @@ function bbRepairSeconds(i, ms) { return bbRepairSecondsBase(i, ms) * dcPaceMulN
 function bbRepairSecondsBase(i, ms) {
   const sq = shipSquad[i];
   const o = sq > 0 && typeof sqOfficer !== 'undefined' && sqOfficer && sqOfficer[sq] ? sqOfficer[sq] : null;
-  const readiness = o && typeof o.readiness === 'number' ? o.readiness : 0.5;
+  const readiness = o && typeof o.readiness === 'number' ? officerChairCap(o.readiness, shipType[i]) : 0.5;   // (v342.0) through its bridge: the officer's chair
   let pace = Math.max(0.25, 1.5 - readiness);
   // (v94.2) the backup bridge's perk: while one works (not knocked out, not cut off), every repair takes backupBridgeRepair (0.9) of the time
   const bk = ms.bb && ms.bb.backups;
@@ -34972,7 +35345,7 @@ const BUREAU_BATTLE_API = {
 //   * THE FLATTOP works through the fighter code (17b fighterStep): its super hangar's craft are bays like any hangar's, and it rebuilds lost ones.
 // ---------------------------------------------------------------------
 const TITAN_DRONE_LOSS = { enemyReach: 1000, chance: 0.15, rebuildSeconds: 30, perDoor: 4 };   // a drone's danger near an enemy, and the hive's rebuild time
-const TITAN_WHEEL_DOCKS = { capacity: 12, repairRate: 150 };  // the Wheel's docks: how many ships at once, and hull a second each (a station: 6 docks at 40)
+const TITAN_WHEEL_DOCKS = { capacity: 12, repairRate: 300 };  // (v344.0: was 150; hit points doubled)  // the Wheel's docks: how many ships at once, and hull a second each (a station: 6 docks at 40)
 const TITAN_DEPOT_TANK_COST = 20;                             // supplies a tank's worth of fuel costs the depot
 const bbTitanSup = [];      // by ship slot: the support titan's own clocks { slot, type, fieldAt, partAt, droneAt, buildAt, drones, trips, point }
 const bbTitanSupList = [];  // the slots that have a record (bbTitanSupportStep looks after their docks)
@@ -61117,10 +61490,32 @@ function officerCautionOf(o) { return SETTINGS.officerModel === 1 ? 1 - o.boldne
 // Boldness on its own (the chance to experiment): boldness, or v14's aggression.
 function officerBoldnessOf(o) { return SETTINGS.officerModel === 1 ? o.boldness : o.aggression; }
 // A skill ('strike', 'maneuver', 'command' or 'readiness'), or v14's one skill.
-function officerSkill(o, id) {
+// (v342.0) t = the ship type the officer commands from (a squadron's type, or a flagship's), or leave it out: see THE OFFICER'S CHAIR below.
+function officerSkill(o, id, t) {
   if (SETTINGS.officerModel !== 1) return o.skill;
-  return o.wounded === 1 ? Math.max(0, o[id] - SETTINGS.woundedSkillPenalty) : o[id];   // (stop 6) a wounded officer, for the rest of the battle
+  const x = o.wounded === 1 ? Math.max(0, o[id] - SETTINGS.woundedSkillPenalty) : o[id];   // (stop 6) a wounded officer, for the rest of the battle
+  return officerChairCap(x, t);
 }
+// (v342.0, Alex 25 Nov: "make bridges worth using over cockpits") THE OFFICER'S CHAIR. An officer works through the ship's bridge: a real bridge has room
+// for the officer's staff, a Cockpit has room for two pilots. So on a corvette or bigger whose bridge is a Cockpit, any skill above average (0.5) counts as
+// average: a gifted officer's talent goes to waste, while a poor officer still drags the ship down. Small and Tiny craft are left alone (a pilot flies on
+// instinct), and so are the enemy's ships and the old (v14) designs. SETTINGS.officerChair 0 turns the rule off.
+function officerChairCap(x, t) {
+  if (!(x > 0.5) || t === undefined || t < 0 || SETTINGS.officerChair !== 1) return x;
+  return typeLacksChair(t) ? 0.5 : x;
+}
+// True when ship type t is one of ours built in the Bureau, a corvette or bigger, with a Cockpit for its bridge (the answer is kept with the type's battle info).
+function typeLacksChair(t) {
+  const info = typeof bbTypeInfo === 'function' ? bbTypeInfo(t) : null;
+  if (!info) return false;
+  if (info.noChair === undefined) {
+    const L = info.a && info.a.layout, cls = L && L.hull ? (L.hull.cls || L.hull.hull) : null;
+    info.noChair = !!(L && L.bridge && L.bridge.m && L.bridge.m.id === 'cockpit' && !L.bridge.m.alien && cls && cls.rank >= 1);
+  }
+  return info.noChair;
+}
+// The ship type an officer commands from when it rides flagship i (-1 = none, no chair rule).
+function officerSeatType(i) { return typeof i === 'number' && i >= 0 && shipAlive[i] === 1 ? shipType[i] : -1; }
 
 function clampNumber(x, low, high) { return x < low ? low : (x > high ? high : x); }
 // Moves a smoothed value toward a new reading: after `halfLife` seconds it has covered half the gap (an exponential moving average with a half-life).
@@ -61148,13 +61543,13 @@ function officerReengageThreshold(o, base, retreatLevel) {
 }
 
 // How long ships wait between decisions, compared with an ordinary officer (1 = ordinary, below 1 = faster): the Command skill.
-function officerThinkScale(o) {
-  return clampNumber(1 + (0.5 - officerSkill(o, 'command')) * OFFICER_EFFECTS.reactionSwing, OFFICER_LIMITS.thinkScale.low, OFFICER_LIMITS.thinkScale.high);
+function officerThinkScale(o, t) {
+  return clampNumber(1 + (0.5 - officerSkill(o, 'command', t)) * OFFICER_EFFECTS.reactionSwing, OFFICER_LIMITS.thinkScale.low, OFFICER_LIMITS.thinkScale.high);
 }
 
 // The share of each shot's damage that lands (1 = ordinary), or under the new gunnery how well it aims: the Strike skill.
-function officerAccuracy(o) {
-  return clampNumber(1 + (officerSkill(o, 'strike') - 0.5) * OFFICER_EFFECTS.accuracySwing, OFFICER_LIMITS.accuracy.low, OFFICER_LIMITS.accuracy.high);
+function officerAccuracy(o, t) {
+  return clampNumber(1 + (officerSkill(o, 'strike', t) - 0.5) * OFFICER_EFFECTS.accuracySwing, OFFICER_LIMITS.accuracy.low, OFFICER_LIMITS.accuracy.high);
 }
 
 // Smart tactics (the Combat Update). A standoff or kite ring x this: cautious officers stand further off.
@@ -61176,8 +61571,8 @@ function officerOutnumbered(o, base) {
   return base / clampNumber(1 - officerSwing(o) * OFFICER_EFFECTS.overwhelmSwing, OFFICER_LIMITS.outnumbered.low, OFFICER_LIMITS.outnumbered.high);
 }
 // Smart tactics. How hard the squadron's ships weave x this: the Maneuver skill (skilled officers weave harder).
-function officerJinkScale(o) {
-  return clampNumber(0.8 + officerSkill(o, 'maneuver') * OFFICER_EFFECTS.jinkSwing, OFFICER_LIMITS.jink.low, OFFICER_LIMITS.jink.high);
+function officerJinkScale(o, t) {
+  return clampNumber(0.8 + officerSkill(o, 'maneuver', t) * OFFICER_EFFECTS.jinkSwing, OFFICER_LIMITS.jink.low, OFFICER_LIMITS.jink.high);
 }
 // Smart tactics. True for an officer aggressive enough to take the nearest of tied engagement distances instead of the farthest.
 function officerPressesIn(o) {
@@ -61248,8 +61643,8 @@ function shipReengageLevel(i, st) {
 // so changing an officer's numbers during a battle takes effect within a second or two.
 function refreshSquadronCache(sq) {
   const o = sqOfficer[sq];
-  sqReaction[sq] = officerThinkScale(o);
-  sqAccuracy[sq] = officerAccuracy(o);
+  sqReaction[sq] = officerThinkScale(o, sqType[sq]);   // (v342.0) through the squadron's bridge: the officer's chair
+  sqAccuracy[sq] = officerAccuracy(o, sqType[sq]);
   let spacing = formationSpacingFor(sqType[sq], o);
   if (lockOn() && sqWeaveAmp[sq] > 0) spacing = Math.max(spacing, 2 * sqWeaveAmp[sq] + typeSize[sqType[sq]]);   // (v16 lock step: room for every ship to weave in its own place)
   if (spacing !== sqSpacing[sq]) { sqSpacing[sq] = spacing; sqDirty[sq] = 1; }      // a different spacing means new formation slots
@@ -61635,7 +62030,7 @@ function fallbackWanted(i, st, sq, o) {
     if (shipBreakOffs[i] < SETTINGS.maxBreakOffs) { shipBreakOffs[i]++; statBreakOffs[st]++; return WHY_FOCUSED; }
     if (stRepairBelow[st] > 0 && nearestRepairPointTo(shipSide[i], shipX[i], shipY[i], i) >= 0) { fbRoute = FALLBACK_TO_REPAIR; return WHY_FOCUSED; }   // out of break-offs: repair if it can, else fight on
   }
-  if (SETTINGS.overheatFallback === 1 && shipOverheated[i] === 1) return WHY_HEAT;               // guns shut down by heat: back off until they cool
+  if (SETTINGS.overheatFallback === 1 && shipOverheated[i] === 1 && heatFallbackWanted(i, st)) return WHY_HEAT;   // guns shut down by heat: back off until they cool (v343.0, 07c: only with an enemy in reach, and only if backing off can cool it)
   if (stV3[st] === 1 && tdDockOn() && fgOutOfAmmo(i, st) && tdTenderFor(i) >= 0) { fbRoute = FALLBACK_TO_TENDER; return WHY_DRY; }   // (v95, section 5jt) a Bureau ship with nothing left to fire: alongside a tender to be filled
   if (SETTINGS.overheatFallback === 1 && shipDry(i, st)) {                                       // (v18) out of ammunition: to a dock to rearm if there is one, else back out of reach
     fbRoute = nearestRepairPointTo(shipSide[i], shipX[i], shipY[i], i) >= 0 ? FALLBACK_TO_REPAIR : (tdTenderFor(i) >= 0 ? FALLBACK_TO_TENDER : FALLBACK_TO_LINE);   // (v95) else a tender with supplies
@@ -61656,7 +62051,7 @@ function shipDry(i, st) {
 function fallbackDone(i, st, sq, o) {
   if (simTime - shipStateSince[i] < SETTINGS.fallbackMinSeconds) return false;
   if (sq > 0 && sqTactic[sq] === TACTIC_FALLBACK) return false;
-  if (SETTINGS.overheatFallback === 1 && shipOverheated[i] === 1) return false;
+  if (SETTINGS.overheatFallback === 1 && shipOverheated[i] === 1 && heatFallbackHolds(i, st)) return false;   // (v343.0, 07c: with no enemy in reach it waits in its place instead)
   if (stV3[st] === 1 && shipWhy[i] !== WHY_DRY && bbCornered(i, st)) return true;                 // (stop 6) a Bureau v2 ship that cannot get away turns and fights
   if (SETTINGS.overheatFallback === 1 && SETTINGS.weaponModel === 1 && shipWhy[i] === WHY_DRY &&
       shipDry(i, st)) return false;                                                                // (v18) dry: not before it has rearmed
@@ -61911,8 +62306,8 @@ function setFacingAndJink(i, st, target, sq, copyFace, faceK) {
         const ring = shipRing[i] > 0 ? shipRing[i] : ad;
         const cent = Math.sqrt(SETTINGS.centripetalUse * aIn(st, shipFaceOff[i]) * ring);
         if (cent < v) v = cent;
-        speed = (level === 1 ? 0.5 : 1) * officerJinkScale(sqOfficer[sq]) * v;
-        if (hot) { speed *= 0.8 + 0.4 * officerSkill(sqOfficer[sq], 'maneuver'); if (speed > v) speed = v; statHotWeave[st] += 1; }
+        speed = (level === 1 ? 0.5 : 1) * officerJinkScale(sqOfficer[sq], sqType[sq]) * v;   // (v342.0: through its bridge)
+        if (hot) { speed *= 0.8 + 0.4 * officerSkill(sqOfficer[sq], 'maneuver', sqType[sq]); if (speed > v) speed = v; statHotWeave[st] += 1; }
       }
     }
   }
@@ -62295,7 +62690,7 @@ function squadronTactics(sq) {
     sqOdds[sq] = smoothToward(sqOdds[sq], oddsAt(side, sqCenterX[sq], sqCenterY[sq], r), SETTINGS.oddsHalfLife, dtThink);
     if (SETTINGS.routRatio > 0 && sqOdds[sq] >= SETTINGS.routRatio) sqBadOdds[sq] = 1;   // (stop 3) it has seen hopeless odds: medals and scars look at this
   }
-  if (sqEnemyType[sq] < 0) return;                         // nothing to plan against yet: the leader advances as a lone ship would
+  if (sqEnemyType[sq] < 0) { heatLeashNoEnemy(sq); return; }   // nothing to plan against yet: the leader advances as a lone ship would (v343.0, 07c: its hold leash still follows its place)
   const et = sqEnemyType[sq], est = (1 - side) * TYPE_COUNT + et, m = st * TYPE_COUNT + et;
   // 1b2. The front gap (stage 8): how far the nearest enemy ship is from the leader. A member that falls back on its own shifts its place back from here when the
   //      lines have closed inside the planned ring (slotWorld), so that it really ends up beyond the enemy's reach.
@@ -63666,6 +64061,84 @@ function fitCameraToRect(x0, y0, x1, y1) {
 // (The start-up lines that make the lists, which used to be here, are now at the very end of section 5f.)
 
 // =====================================================================
+// 5b3. AN OVERHEATED SHIP NEVER WANDERS OFF ACROSS THE MAP  (v343.0, SETTINGS.heatRunaway 1; 0 = as v342)
+//
+//   Alex, week-81 save (25 Nov 2026): "what is this group of ship doing way out near venus?" Two squadrons of Jackal frigates (BATTERY x6) of the
+//   Assault Fleet sat out in empty space past Venus, and more of them left Earth when the save ran on, although their orders said "hold at Earth".
+//
+//   THE CAUSE: three faults that only did harm together.
+//     1. A HOLD LEASH AT THE MAP'S CORNER. A squadron told to hold a place is kept near it by a leash (07-5b part 3, step 7). The leash point is only
+//        set when the squadron plans against a known enemy type; with no enemy known yet it stayed where every new squadron starts it: at the map's
+//        corner (0, 0). A ship that is fighting by a ring (falling back, circling) is pulled toward its leash point when it is far from it, so a squadron
+//        with no enemy near was pulled straight toward the corner: from Earth that is west, past Venus and the Sun.
+//     2. FALLING BACK FROM HEAT WITH NOBODY THERE. A designed ship whose guns shut down from heat falls back "until they cool" (07-5b part 2). It did so
+//        even with no enemy anywhere near, and its fall-back never ended while it stayed hot. The Jackal makes more heat at rest than its radiators shed
+//        (it never cools), so its fall-back never ended at all, and fault 1 steered it the whole time.
+//     3. ASLEEP SHIPS NEVER COOLED. A ship with no enemy near is asleep (4b5) and its gunnery step is skipped, and that step is also where heat and
+//        shields change. So even a ship that could cool stayed as hot as it fell asleep, and stayed falling back.
+//
+//   WHAT THIS DOES
+//     A. The leash always follows the place the squadron holds, also while no enemy is known (never the map's corner).
+//     B. A ship falls back from heat only when an enemy could reach it, and its heat fall-back ends once no enemy can (it waits in its place with its guns
+//        paused until they cool). A ship that cannot cool at rest (it makes at least as much heat as it sheds even with its guns quiet) never falls back
+//        from heat: backing off would not cool it, so it keeps its place.
+//     C. An asleep ship still cools and recharges its shield: once every sleepEvery steps, that many steps' worth, as asleep ships move (4b5).
+//   Check: tools/v343.0/heat-runaway-check.js (Alex's week-81 save, and a fall-back from heat in a real fight still happening).
+// =====================================================================
+
+function heatRunawayOn() { return SETTINGS.heatRunaway === 1; }
+
+// A. (from squadronTactics, 07-5b part 3, when the squadron knows no enemy yet) its hold leash goes to the place it holds.
+function heatLeashNoEnemy(sq) {
+  if (!heatRunawayOn() || sqMode[sq] !== MODE_STATION) return;
+  sqLeashX[sq] = sqGoalX[sq]; sqLeashY[sq] = sqGoalY[sq]; sqLeashSliding[sq] = 0;
+}
+
+// B. Can an enemy reach ship i: one within its fall-back look (the enemy's reach against it, past the stand-off margin, as keepFallingBack measures it)?
+function heatDangerNear(i, st) {
+  const side = shipSide[i], et = shipEnemyType[i];
+  const R = (et >= 0 ? reachVs((1 - side) * TYPE_COUNT + et, st % TYPE_COUNT) : stRange[st]) * (1 + SETTINGS.standoffMargin) / (1 - SETTINGS.ringBandFraction);
+  const look = R * Math.max(1, SETTINGS.kiteExitFactor);
+  return findNearestEnemy(i, look * look) >= 0;
+}
+// B. Does ship i make at least as much heat as it sheds while its guns are quiet (so backing off can never cool it)?
+function heatHotAtRest(i, st) {
+  if (stV3[st] === 1 && SETTINGS.bbHeatModel === 1) {
+    const info = bbTypeInfo(shipType[i]);
+    if (info) {
+      const ms = mdShip[i] === 1 && mdState[i] && mdState[i].v3 ? mdState[i] : null;
+      const idle = ms ? ms.heatIdle : info.idleMade, fix = ms ? ms.coolFix : info.coolFix, fold = ms ? ms.coolFold : info.coolFold;
+      return idle - fix - fold >= 0;                     // (at rest its folding radiators are out: it sheds with all of them)
+    }
+  }
+  return stHeatDrift[st] + (mdShip[i] === 1 ? mdHeatExtra[i] : 0) >= 0;
+}
+// B. (fallbackWanted, 07-5b part 2) an overheated ship: does it fall back? Before v343.0 always.
+function heatFallbackWanted(i, st) { return !heatRunawayOn() || (!heatHotAtRest(i, st) && heatDangerNear(i, st)); }
+// B. (fallbackDone) an overheated ship falling back: does it keep falling back? Before v343.0 always, until cool.
+function heatFallbackHolds(i, st) { return !heatRunawayOn() || (!heatHotAtRest(i, st) && heatDangerNear(i, st)); }
+
+// C. (updateCombat, 05-5, for a ship whose guns are asleep) its shield and heat, once every sleepEvery steps with that many steps' worth.
+function heatAsleepUpkeep(i, dt) {
+  if (!heatRunawayOn()) return;
+  const every = Math.max(2, Math.floor(SETTINGS.sleepEvery));
+  if (((i + moveStepCounter) % every) !== 0) return;
+  const sdt = every * dt, st = shipSide[i] * TYPE_COUNT + shipType[i], own = mdShip[i] === 1;
+  const maxShield = own ? mdShieldMax[i] : stShield[st];
+  if (maxShield > 0) {
+    if (shipShieldDelay[i] > 0) shipShieldDelay[i] -= sdt;
+    else if (shipShield[i] < maxShield) { const s = shipShield[i] + (own ? mdShieldRe[i] : stShieldRecharge[st]) * sdt; shipShield[i] = s > maxShield ? maxShield : s; }
+  }
+  if (stDesigned[st] === 1) {
+    const drift = (stV3[st] === 1 && SETTINGS.bbHeatModel === 1) ? bbHeatDrift(i, st) : (own ? stHeatDrift[st] + mdHeatExtra[i] : stHeatDrift[st]);
+    let h = shipHeat[i] + drift * sdt;
+    if (h < 0) h = 0; else if (h > 2 * stHeatLimit[st]) h = 2 * stHeatLimit[st];
+    shipHeat[i] = h;
+    if (shipOverheated[i] === 1) { if (h <= stHeatResume[st]) shipOverheated[i] = 0; }
+    else if (h >= stHeatLimit[st]) shipOverheated[i] = 1;
+  }
+}
+// =====================================================================
 // 5c. COMMAND TREE  (who commands whom: nodes, officers, order inboxes, messages, and the command log)
 //
 //   Every unit that can be commanded is a NODE. A node has a PARENT, CHILDREN, an OFFICER and an INBOX (messages waiting to be read):
@@ -64605,7 +65078,7 @@ function cmdUpdate() {
       const F = cmdFleetList[ids[k]];
       if (F.attachedTo >= 0 || simTime < F.thinkAt) continue;
       cmdFleetThink(F);
-      F.thinkAt = simTime + cmdThinkSeconds(SETTINGS.cmdFleetThinkSeconds) * officerThinkScale(F.officer) * handoverScale(F.handoverUntil, F.officer);
+      F.thinkAt = simTime + cmdThinkSeconds(SETTINGS.cmdFleetThinkSeconds) * officerThinkScale(F.officer, officerSeatType(F.flagship)) * handoverScale(F.handoverUntil, F.officer);
       if (F.attachedTo < 0) cmdChainAfterViceAdmiral(F);              // (v245.1, 08c) its Commodores read its orders next
     }
     const live = cmdLiveFleets(side);
@@ -66639,7 +67112,7 @@ function admiralThink(a) {
   else runRules(a);                                             //    ... otherwise the rules (section 5g; with the command model on, only the rules marked cmdKeep run)
   if (cmdActive(a.side)) cmdAdmiralThink(a);                    //    (v25 stop 3, section 5mv) with the command model on: an order for every Fleet instead of squadron-level rules
   watchBatches(a);
-  a.thinkAt = simTime + cmdThinkSeconds(SETTINGS.admiralThinkMin + aiRand() * (SETTINGS.admiralThinkMax - SETTINGS.admiralThinkMin)) * officerThinkScale(a.officer);   // 5. rest (v245.1: at the command's pace, 08c)
+  a.thinkAt = simTime + cmdThinkSeconds(SETTINGS.admiralThinkMin + aiRand() * (SETTINGS.admiralThinkMax - SETTINGS.admiralThinkMin)) * officerThinkScale(a.officer, officerSeatType(a.flagship));   // 5. rest (v245.1: at the command's pace, 08c)
   if (SETTINGS.officerModel === 1) a.thinkAt = simTime + (a.thinkAt - simTime) * handoverScale(a.handoverUntil, a.officer);   // (stop 6) slower while a new Admiral settles in
   cmdChainAfterAdmiral(a);                                      // (v245.1, 08c) its Vice Admirals (or Commodores) read its orders next
 }
@@ -68514,7 +68987,7 @@ function commodoreThink(dv) {
     if (cmdOn()) cmdCommodoreThink(dv, a);                       // (v25 stop 2: role orders, triggers and squares; section 5mr)
     runDivisionRules(dv);
   }
-  dv.nextThink = simTime + cmdThinkSeconds(SETTINGS.commodoreThinkMin + aiRand() * (SETTINGS.commodoreThinkMax - SETTINGS.commodoreThinkMin)) * officerThinkScale(dv.officer) * handoverScale(dv.handoverUntil, dv.officer);   // (stop 6: slower while a new Commodore settles in)
+  dv.nextThink = simTime + cmdThinkSeconds(SETTINGS.commodoreThinkMin + aiRand() * (SETTINGS.commodoreThinkMax - SETTINGS.commodoreThinkMin)) * officerThinkScale(dv.officer, officerSeatType(dv.flagship)) * handoverScale(dv.handoverUntil, dv.officer);   // (stop 6: slower while a new Commodore settles in)
   cmdChainAfterCommodore(dv);                                   // (v245.1, 08c) its squadrons read its orders next
 }
 // The Commodore's rules, run like the Admiral's (section 5g): proposals scored by the officer's personality and the reliability of the squadrons, best first, no squadron twice.
@@ -73622,11 +74095,11 @@ function fmHuntTick(a) {
 // A lean of at most cmdLeanSwing either way from a stat (0 to 1; 0.5 = no lean): 1 + swing at 1, 1 - swing at 0.
 function fmLean(v) { return 1 + clampNumber(SETTINGS.cmdLeanSwing, 0, 0.9) * 2 * (clampNumber(v, 0, 1) - 0.5); }
 // (cmdRotateRanks, section 5mr) the share of its ships a front-rank squadron may have lost before it is rotated back: a ready Commodore rotates earlier.
-function fmRotateLoss(dv, loss) { return fmLeansOn() && dv.officer ? loss / fmLean(officerSkill(dv.officer, 'readiness')) : loss; }
+function fmRotateLoss(dv, loss) { return fmLeansOn() && dv.officer ? loss / fmLean(officerSkill(dv.officer, 'readiness', officerSeatType(dv.flagship))) : loss; }
 // (refreshDivisionView, section 5m) does this Commodore mass its Division's fire on one target? A tight rein always did; a strong Strike does too.
-function fmMassesFire(dv) { return fmLeansOn() && !!dv.officer && officerSkill(dv.officer, 'strike') >= SETTINGS.cmdLeanStrikeFocus; }
+function fmMassesFire(dv) { return fmLeansOn() && !!dv.officer && officerSkill(dv.officer, 'strike', officerSeatType(dv.flagship)) >= SETTINGS.cmdLeanStrikeFocus; }
 // ... and how far it looks for that target: further with more Strike.
-function fmFocusReach(dv, reach) { return fmLeansOn() && dv.officer ? reach * fmLean(officerSkill(dv.officer, 'strike')) : reach; }
+function fmFocusReach(dv, reach) { return fmLeansOn() && dv.officer ? reach * fmLean(officerSkill(dv.officer, 'strike', officerSeatType(dv.flagship))) : reach; }
 // (cmdCommodoreJumpIn, section 5mv) Initiative inside the order. A Commodore of low Discipline, with its own Division out of contact, sends ONE squadron to
 // the nearest friend of another Division that is losing a fight within its Division's reach; the squadron comes back to its place afterwards. It never takes
 // the whole Division anywhere its Vice Admiral did not send it. The lower its Discipline, the sooner it does this again.
@@ -73765,9 +74238,10 @@ function ptRefresh(side) {
   }
 }
 // Which list an officer reads: the staff's (the war's record too) when it is disciplined and has the Command skill to use it, else its own battle's.
-function ptReadsStaff(o) {
+// (v342.0) t = the ship type the officer commands from (the officer's chair, 07-5b); left out = no chair rule.
+function ptReadsStaff(o, t) {
   if (!o || SETTINGS.officerModel !== 1) return true;
-  return officerSkill(o, 'command') >= SETTINGS.ptCommandStaff && (typeof o.discipline === 'number' ? o.discipline : 0.5) >= SETTINGS.ptDisciplineStaff;
+  return officerSkill(o, 'command', t) >= SETTINGS.ptCommandStaff && (typeof o.discipline === 'number' ? o.discipline : 0.5) >= SETTINGS.ptDisciplineStaff;
 }
 function ptListFor(side, o) { const L = ptLists[side]; if (!L) return null; return ptReadsStaff(o) ? L.full : L.battle; }
 // The target-score weights by enemy type for a squadron (null = none): its officer's list, and its design's doctrine (v259.3: ptDoctrineMul).
@@ -73775,17 +74249,18 @@ function ptShipMul(side, sq) {
   if (ptAnyList === 0) return null;
   const L = ptLists[side]; if (!L) return null;
   const o = sq > 0 ? sqOfficer[sq] : null;
-  const list = ptReadsStaff(o) ? L.full : L.battle;
+  const t = sq > 0 ? sqType[sq] : -1, staff = ptReadsStaff(o, t);   // (v342.0: through the squadron's bridge)
+  const list = staff ? L.full : L.battle;
   if (!list.length) return null;
   if (sq > 0 && ptDoctrineOf(side, sqType[sq]) === 'ignore') return null;
-  return ptReadsStaff(o) ? L.mulFull : L.mulBattle;
+  return staff ? L.mulFull : L.mulBattle;
 }
 function ptIsPriority(side, v, o) { const list = ptListFor(side, o); if (!list) return null; for (const r of list) if (r.v === v) return r; return null; }
 // (the Division target, section 5m) the weight of contact type v for a tight-rein Commodore's Division target.
 function ptDivisionMul(dv, v) {
   if (ptAnyList === 0) return 1;
   const L = ptLists[dv.side]; if (!L || !ptSideOn(dv.side)) return 1;
-  const mul = ptReadsStaff(dv.officer) ? L.mulFull : L.mulBattle;   // (the list's weights by enemy type: above 1 for a priority design)
+  const mul = ptReadsStaff(dv.officer, officerSeatType(dv.flagship)) ? L.mulFull : L.mulBattle;   // (the list's weights by enemy type: above 1 for a priority design)
   return v >= 0 && v < mul.length && mul[v] > 1 ? 1 + SETTINGS.ptDivisionBonus : 1;
 }
 
@@ -73915,7 +74390,7 @@ function ptStrikeTick(a) {
     if (sqActive[sq] < 0.5 * h.startShips) { ptStrikeEnd(side, key, h, 'it is worn'); continue; }
     if (simTime - h.onTargetAt > 20 && sqDangerAt[sq] > 0 && sqDanger[sq] > sqDangerLimit[sq]) { ptStrikeEnd(side, key, h, 'it ran into more than it could take'); continue; }
     if (simTime - h.since > SETTINGS.ptStrikeSeconds) { ptStrikeEnd(side, key, h, 'the strike has run its time'); continue; }
-    const targets = h.kind === 'cover' ? null : (ptReadsStaff(dv.officer) ? staffTargets : ownTargets);
+    const targets = h.kind === 'cover' ? null : (ptReadsStaff(dv.officer, officerSeatType(dv.flagship)) ? staffTargets : ownTargets);
     if (targets !== null && !targets.some(function (t) { return t.v === h.v; })) { ptStrikeEnd(side, key, h, ptDesignLeft(1 - side, h.v) ? 'the ' + krTypeName(h.v) + ' is no longer a priority' : 'no ' + krTypeName(h.v) + ' is left'); continue; }
     const ctr = fmDivisionCentre(dv), R = ptStrikeReach(dv, a);
     let cur = null;
@@ -73942,7 +74417,7 @@ function ptStrikeTick(a) {
       if (taken.has(t.e)) continue;
       let best = null;
       for (const dv of divs) {
-        const staff = ptReadsStaff(dv.officer);
+        const staff = ptReadsStaff(dv.officer, officerSeatType(dv.flagship));
         if ((pass === staffTargets) !== staff || !ptDivisionMay(dv, side)) continue;
         const F = cmdFleetOfDivision(dv);
         if (F && taken.has('F' + F.id + '|' + t.v)) continue;
@@ -79639,7 +80114,7 @@ function survivalSteer(sq) {
     const allow = (stSpFast[st] === 1 && fr.hasLine ? SETTINGS.screenAhead : SETTINGS.aheadMax) * spacing;   // (the screens ride just in front of the line, the rest at most aheadMax ahead)
     const march = fr.march;
     if (ahead > allow) sqSpeedCap[sq] = Math.max(1, 0.25 * march);
-    else if (ahead > 0) sqSpeedCap[sq] = march * (1 + 0.25 * (1.2 - 0.4 * officerSkill(o, 'command')));
+    else if (ahead > 0) sqSpeedCap[sq] = march * (1 + 0.25 * (1.2 - 0.4 * officerSkill(o, 'command', sqType[sq])));   // (v342.0: through its bridge)
   }
 
   // 3. Holding off (stop 2) and probing (stop 3): a squadron whose fighting place (its ring from its target) is hotter than it accepts holds just outside the enemy's reach,
@@ -80702,7 +81177,7 @@ function dfOfficerFactor(sq, st) {
   if (!o) return 1;
   const bold = clampNumber(officerBoldnessOf(o), 0, 1);
   let f = 1 + SETTINGS.dangerBoldSwing * (1 - 2 * bold);
-  const cmd = clampNumber(officerSkill(o, 'command'), 0, 1);
+  const cmd = clampNumber(officerSkill(o, 'command', sqType[sq]), 0, 1);   // (v342.0: through its bridge)
   const et = sqEnemyType[sq];
   const exp = dfTypeExperience(o, st, et);
   f *= 1 + SETTINGS.dangerNoiseMax * (1 - cmd) * (1 - 0.5 * exp) * dfHashSigned(typeof o.serial === 'number' ? o.serial : 0, et, st % TYPE_COUNT);
@@ -81047,7 +81522,7 @@ function bmCoverTick(a, divs, taken) {
   let covers = 0;
   for (const h of ptStrikes[side].values()) if (h.kind === 'cover') taken.add('C' + h.dv.id);
   for (const dv of divs) {
-    const staff = ptReadsStaff(dv.officer), alive = [];
+    const staff = ptReadsStaff(dv.officer, officerSeatType(dv.flagship)), alive = [];
     for (const sq of dv.squads) if (sqAlive[sq] > 0 && sqRetired[sq] !== 1) alive.push(sq);
     if (alive.length === 0) continue;
     // the enemy near the Division (its hunting reach, plus the longest enemy reach on it)
@@ -88923,7 +89398,7 @@ function closeKeepCanvas(canvas, key, meta) {
 // (CLOSE_LOOK.keepDrawn). what: everything the picture is drawn from, as text (the art, the design, the size, the livery). It is filed under that and
 // the build's fingerprint (CLOSE_BUILD_PRINT, made by tools/build.js from every source file), so a picture drawn by older art is never read back.
 // cb(pic): the same { canvas, ... } as make() gives (read back: a fresh canvas with the kept measurements), or null when it could not be drawn.
-const CLOSE_BUILD_PRINT = '4a1e13424e50';
+const CLOSE_BUILD_PRINT = 'c79793b5a7ad';
 function closeKeptPicture(what, make, cb) {
   const fresh = function (key) {
     let pic = null;
@@ -95739,7 +96214,7 @@ function feedbackScreenWords() {
 // Everything the game adds to a note by itself. Each line is a short label and a value.
 function feedbackContext() {
   const c = {};
-  c.build = typeof GAME_VERSION !== 'undefined' ? GAME_VERSION : 'v341.0';
+  c.build = typeof GAME_VERSION !== 'undefined' ? GAME_VERSION : 'v346.0';
   c.where = feedbackScreenWords();
   if (typeof campaign !== 'undefined' && campaign && typeof gameModeNow === 'function' && gameModeNow() === 'campaign') {
     c.warWeek = Math.floor(campaign.week || 0);
@@ -103883,7 +104358,7 @@ function hpTough(side) { return dbgTough[side] * SETTINGS.hpScale; }
 const BATTLE_DIALS = [
   { key: 'evasionStrength', label: 'Evasion', min: 1, max: 8, step: 0.5, tip: 'How much a weaving ship\'s dodging counts, and how well ships slip a missile\'s turn. x1 is the old game. x4 (the game\'s value) makes ships dodge about 1.8 times the shots. Every battle, kept in this browser.' },
   { key: 'fireRateScale', label: 'Fire rate', min: 0.1, max: 2, step: 0.05, tip: 'How often every weapon fires (beams burn this many times as long). x1 is the old game, x0.5 (the game\'s value) is half. Point defence is not changed. Every battle, kept in this browser.' },
-  { key: 'hpScale', label: 'Hit points', min: 1, max: 10, step: 0.5, tip: 'Hit points of every hull and part (they take this many times less damage). x1 is the old game, x2 (the game\'s value) is double. Stacks with the toughness sliders. Every battle, kept in this browser.' }
+  { key: 'hpScale', label: 'Hit points', min: 1, max: 10, step: 0.5, tip: 'Hit points of every hull and part (they take this many times less damage). x1 is the game (since v344.0 the hit points shown are the real ones), x2 is double. Stacks with the toughness sliders. Every battle, kept in this browser.' }
 ];
 const BATTLE_DIAL_STORE = 'engineersWar.battleDials';
 const BATTLE_DIAL_GAME = {};                                      // the game's own values, before this browser's choices
@@ -103892,10 +104367,12 @@ function battleDialClamp(d, v) { v = +v; if (!(v > 0)) v = BATTLE_DIAL_GAME[d.ke
 function battleDialsLoad() {
   let saved = null; try { saved = JSON.parse(window.localStorage.getItem(BATTLE_DIAL_STORE) || 'null'); } catch (e) { saved = null; }
   if (!saved || typeof saved !== 'object') return;
+  if (saved.hpScale !== undefined && saved.v344 !== 1) delete saved.hpScale;   // (v344.0) a hit points choice made when x2 was the game's own value no longer means the same: dropped
   for (const d of BATTLE_DIALS) if (saved[d.key] !== undefined) SETTINGS[d.key] = battleDialClamp(d, saved[d.key]);
 }
 function battleDialsSave() {
   const o = {}; for (const d of BATTLE_DIALS) if (SETTINGS[d.key] !== BATTLE_DIAL_GAME[d.key]) o[d.key] = SETTINGS[d.key];
+  if (o.hpScale !== undefined) o.v344 = 1;
   try { if (Object.keys(o).length) window.localStorage.setItem(BATTLE_DIAL_STORE, JSON.stringify(o)); else window.localStorage.removeItem(BATTLE_DIAL_STORE); } catch (e) { /* storage blocked: lasts until the page closes */ }
 }
 function battleDialSet(key, v) { const d = BATTLE_DIALS.find(function (x) { return x.key === key; }); if (!d) return; SETTINGS[key] = battleDialClamp(d, v); battleDialsSave(); }
@@ -110735,7 +111212,10 @@ function lsMusterMove(F, dt) {
 // Check: tools/v258.1/wave-mix-check.js.
 // =====================================================================
 const LS_MIX = {
-  armourRef: 150,        // the hit (damage) armour is weighed against when pricing toughness: armour stops at most (1 - minArmorPassFraction) of it
+  armourRef: 150,        // the hit (damage) armour is weighed against when pricing toughness: armour stops at most (1 - minPassPriced) of it
+  minPassPriced: 0.2,    // (v345.0) the share of that hit priced as always getting through. It was the battle's armour floor (minArmorPassFraction 0.2); since
+                         //   v345.0 there is no floor, so armour at least as thick as the hit made a ship cost an endless amount (and Last Stand levels ran away).
+                         //   Keeping the old 0.2 here prices every ship as before: a ship is priced at most x5 for its armour.
   regrowSeconds: 60,     // regrowth is priced as the hull it gives back in this many seconds of fighting
   bossRotate: 2,         // after its first appearance, the boss waves take turns between the newest this-many bosses
   // the most of the enemy's strength on the field (bosses left out) a design may make up
@@ -110745,8 +111225,11 @@ function lsMixOn() { return SETTINGS.lsMixModel === 1; }
 
 // How much harder to kill armour and regrowth make a ship type than its bare hull says (1 = no armour, no regrowth).
 function lsToughMul(st) {
-  let arm = 0; for (let k = 0; k < 4; k++) arm += stArmor[st * 4 + k] || 0; arm /= 4;
-  const ref = LS_MIX.armourRef, blocked = Math.min(arm, ref * (1 - SETTINGS.minArmorPassFraction));
+  // (v345.0) priced on the armour the type's row gives (stArmorRow: for a Bureau design every row's outer plate added up along the side), the number this
+  // pricing was tuned on; stArmor became the belt a single hit meets, a much smaller number that would make armoured ships cheap
+  const A = stArmorRow.length > st * 4 + 3 ? stArmorRow : stArmor;
+  let arm = 0; for (let k = 0; k < 4; k++) arm += A[st * 4 + k] || 0; arm /= 4;
+  const ref = LS_MIX.armourRef, blocked = Math.min(arm, ref * (1 - Math.max(SETTINGS.minArmorPassFraction, LS_MIX.minPassPriced)));   // (v345.0) never all of it
   let mul = ref / (ref - blocked);
   if (SETTINGS.bbRegrow === 1 && stRegrow.length > st && stRegrow[st] === 1) {
     const t = st % TYPE_COUNT, info = typeof bbTypeInfo === 'function' ? bbTypeInfo(t) : null;
@@ -113272,8 +113755,9 @@ function buildSummary() {
 
   // 9. A stalemate hint.
   if (res.reason === 'timeout') {
-    bullets.push('If nothing is being destroyed, check that each side has weapons that can hurt the other side. Armor can stop at most ' +
-      Math.round((1 - SETTINGS.minArmorPassFraction) * 100) + '% of a hit, so some damage always gets through.');
+    bullets.push('If nothing is being destroyed, check that each side has weapons that can hurt the other side. ' + (SETTINGS.minArmorPassFraction > 0
+      ? 'Armor can stop at most ' + Math.round((1 - SETTINGS.minArmorPassFraction) * 100) + '% of a hit, so some damage always gets through.'
+      : 'A hit no bigger than the armor on its line does nothing at all, so small guns cannot hurt heavily armored ships.'));   // (v345.0) no floor
     // Designed ships with no guns at all are another common reason for this.
     for (let side = 0; side < 2; side++) {
       for (let t = 0; t < TYPE_COUNT; t++) {
@@ -118746,6 +119230,11 @@ function passBridgeV3(L, a) {
   L.bridge = count === 1 ? (cpus[0] || seats[0] || others[0]) : null;
   if (count === 1 && (seats.length > 0 || cpus.length > 0)) { a.seatBridge = true; a.drone = cpus.length > 0; }
   if (count === 1 && L.bridge && L.bridge.m.machineMind) a.drone = true;   // (v75) a Delver drone mind: a bigger ship with nobody aboard (never pulls back, mends nothing in battle)
+  // (v342.0) THE OFFICER'S CHAIR (07-5b officerChairCap): a Cockpit on a corvette or bigger leaves no room for an officer's staff. Only a note: the design is
+  // allowed, but the player should know what it costs in battle.
+  if (count === 1 && L.bridge && L.bridge.m.id === 'cockpit' && cls && cls.rank >= 1 && SETTINGS.officerChair === 1) {
+    addProblem(a, 'BRIDGE_COCKPIT', 'note', 'A Cockpit on a ' + cls.name.toLowerCase() + ' has no room for an officer\'s staff: your officers\' skills above average count as average on this ship. A Bridge lets them use their full talent.', partsAt(L, [L.bridge]), partsSquares(L, [L.bridge]), partIdxs([L.bridge]));
+  }
 }
 
 // 4. The edge: parts that must touch the outside (radiators, airlocks, ports, missile racks, point defence, sensors, shields, RCS).
@@ -118868,16 +119357,16 @@ function passPowerV3(L, a) {
     if (u.comp < 0 || !compCap[u.comp]) noCharge.push(u);
   }
   // heat totals: each component sheds its idle heat first, then the guns'
-  let idleNet = 0, gunNet = 0, made = 0, shed = 0, sink = 0;
+  let idleNet = 0, gunNet = 0, made = 0, shed = 0, sink = 0, idleMade = 0;
   for (let c = 0; c < net.compCount; c++) {
-    made += compIdle[c] + compGun[c];
+    made += compIdle[c] + compGun[c]; idleMade += compIdle[c];
     const cool = compCool[c];
     const idleLeft = Math.max(0, compIdle[c] - cool), gunLeft = Math.max(0, compGun[c] - Math.max(0, cool - compIdle[c]));
     idleNet += idleLeft; gunNet += gunLeft; shed += compIdle[c] + compGun[c] - idleLeft - gunLeft;
   }
-  for (let i = 0; i < stranded.length; i++) { made += stranded[i].s.heat; if (stranded[i].s.weapon) gunNet += stranded[i].s.heat; else idleNet += stranded[i].s.heat; }
+  for (let i = 0; i < stranded.length; i++) { made += stranded[i].s.heat; if (stranded[i].s.weapon) gunNet += stranded[i].s.heat; else { idleNet += stranded[i].s.heat; idleMade += stranded[i].s.heat; } }
   for (let i = 0; i < L.parts.length; i++) if (L.parts[i].working && L.parts[i].s.heatCap > 0) sink += L.parts[i].s.heatCap;
-  a.heatIdleNet = idleNet; a.heatGunNet = gunNet; a.heatMade = made; a.heatShed = shed; a.heatSink = sink; a.heatLimit = HEAT_RULES.meter + sink;   // (v30 A1, s4.4: the meter holds 100 plus the sinks)
+  a.heatIdleMade = idleMade; a.heatIdleNet = idleNet; a.heatGunNet = gunNet; a.heatMade = made; a.heatShed = shed; a.heatSink = sink; a.heatLimit = HEAT_RULES.meter + sink;   // (v30 A1, s4.4: the meter holds 100 plus the sinks)
   powerNetworksV3(L, a, net, compCool);   // (v71) the networks numbered, and each one's heat (section 10d start)
   // overlay: 3 source, 2 fed consumer, 1 dark consumer, 4 live conduit, 5 dead conduit
   for (let k = 0; k < L.N; k++) if (L.cellTrack[k] & TRACK_BITS.conduit) { const id = net.cellNode[k]; a.overlays.power[k] = id >= 0 && net.comp[id] >= 0 && net.compLive[net.comp[id]] ? 4 : 5; }
@@ -118885,9 +119374,21 @@ function passPowerV3(L, a) {
   if (reactors.length === 0 && dark.length > 0) addProblem(a, 'POWER_NONE', 'warning', 'No reactor: nothing that needs power works.', partsAt(L, dark), partsSquares(L, dark), partIdxs(dark));
   else if (dark.length > 0) addProblem(a, 'POWER_DARK', 'warning', pluralV3(dark.length, 'part gets', 'parts get') + ' no power: not joined to a power source (a reactor or battery) by conduits or parts that carry power (' + Array.from(new Set(dark.map(itemName))).join(', ') + ').', partsAt(L, dark), partsSquares(L, dark), partIdxs(dark));
   if (loose.length > 0) addProblem(a, 'HEAT_LOOSE', 'warning', pluralV3(loose.length, 'radiator or heat sink is', 'radiators or heat sinks are') + ' not joined to the power network: it sheds nothing.', partsAt(L, loose), partsSquares(L, loose), partIdxs(loose));
+  // (v346.0, Alex 26 Nov 2026: "refuse") HOT AT REST IS REFUSED. A design whose parts make more heat with no gun firing than its radiators (on the hot
+  // parts' own power networks) and the hull's own passive cooling can shed fills its heat meter while it sits still, so it can never cool down and
+  // its guns stay shut once they first overheat (the Jackal frigates of v343.0). Before, this was only a warning; now it is a problem, so the Bureau
+  // will not save the design, and a saved one that fails it comes back OUTDATED (the yards stop building it, its ships keep flying: 06k).
+  // Heat from a part with no radiator on its network counts too (it builds up just the same). DESIGN_RULES.hotAtRestRefused 0 = the old warning.
+  // The words say how much more cooling is needed, so the player knows what to add.
+  if (idleNet > DESIGN_RULES.passiveCooling) {
+    const need = idleNet - DESIGN_RULES.passiveCooling, refuse = DESIGN_RULES.hotAtRestRefused !== 0;
+    const warm = L.parts.filter(function (u) { return u.working && !u.s.weapon && u.s.heat > 0; });   // the parts that make heat at rest (shown on the sheet)
+    addProblem(a, 'HEAT_HOT', refuse ? 'problem' : 'warning', 'Overheats at rest: with no gun firing, its parts make ' + roundTo(idleMade, 1) + ' heat a second but it sheds only ' +
+      roundTo(idleMade - idleNet + DESIGN_RULES.passiveCooling, 1) + ' (radiators on their power network, plus ' + DESIGN_RULES.passiveCooling + ' the hull sheds by itself), so its heat meter fills even sitting still.' +
+      (refuse ? ' The Bureau will not approve it:' : '') + ' add radiators that shed at least ' + roundTo(need, 1) + ' more, joined to the hot parts\' power network.', partsAt(L, warm), partsSquares(L, warm), partIdxs(warm), { need: roundTo(need, 1) });
+  }
   if (stranded.length > 0) addProblem(a, 'HEAT_STRANDED', 'warning', pluralV3(stranded.length, 'hot part has', 'hot parts have') + (stranded.length === 1 ? ' no radiator on its network: its heat builds up (' : ' no radiator on their network: their heat builds up (') + Array.from(new Set(stranded.map(itemName))).join(', ') + ').', partsAt(L, stranded), partsSquares(L, stranded), partIdxs(stranded));
-  else if (idleNet > DESIGN_RULES.passiveCooling) addProblem(a, 'HEAT_HOT', 'warning', 'The radiators shed less heat than the ship makes even while idle (' + roundTo(made, 1) + ' made, ' + roundTo(shed, 1) + ' shed): add radiators.', null, [], []);
-  else if (gunNet > 0 && idleNet + gunNet > DESIGN_RULES.passiveCooling) addProblem(a, 'HEAT_FIRING', 'note', 'Firing non-stop, the heat meter fills in about ' + Math.round(a.heatLimit / Math.max(1e-9, idleNet + gunNet - DESIGN_RULES.passiveCooling)) + ' s and the weapons pause.', null, [], []);
+  else if (idleNet <= DESIGN_RULES.passiveCooling && gunNet > 0 && idleNet + gunNet > DESIGN_RULES.passiveCooling) addProblem(a, 'HEAT_FIRING', 'note', 'Firing non-stop, the heat meter fills in about ' + Math.round(a.heatLimit / Math.max(1e-9, idleNet + gunNet - DESIGN_RULES.passiveCooling)) + ' s and the weapons pause.', null, [], []);
   if (noCharge.length > 0 && !liveChargeOn(a)) addProblem(a, 'CHARGE_NONE', 'note', pluralV3(noCharge.length, 'laser has', 'lasers have') + ' no capacitor on its power network: it fires only on what the reactor spares.', partsAt(L, noCharge), partsSquares(L, noCharge), partIdxs(noCharge));
   if (reactors.length === 1 && dark.length === 0 && L.parts.some(function (u) { return u.s.power < 0; })) addProblem(a, 'POWER_ONE_REACTOR', 'note', 'One reactor: when it goes, everything goes dark. A second reactor is the only fix.', partsAt(L, reactors), partsSquares(L, reactors), partIdxs(reactors));
 }
@@ -119428,7 +119929,17 @@ function passNumbersV3(L, a) {
     const u = L.parts[i], s = u.s;
     const m = s.mass * frameBonusMul(u, 'H');   // (v307.0) H, a hardpoint: a weapon on it weighs 10% less
     mass += m; mx += m * u.cx; my += m * u.cy;
-    hp += s.hp * (u.m.bridge && frameBonusOn(u, 'C') ? 1.2 : 1);
+    const ownHp = s.hp * (u.m.bridge && frameBonusOn(u, 'C') ? 1.2 : 1);
+    hp += ownHp;
+    // (v344.0, Alex 26 Nov 2026: "we will need to boost module HP") a part also holds the frame's hit points of the squares it sits on, so damage
+    // coming in from outside (05f part 2e) has to chew through it. These hit points are MOVED from the frame to the part, not added: the ship's hull
+    // total stays exactly what it was. u.hpMax is what the part holds in battle (35d-3 designBattleUnitsV3).
+    let frameHp = 0;
+    for (let c = 0; c < u.cells.length; c++) {
+      const fi = L.cellFrame[u.cells[c]]; if (fi < 0) continue;
+      const f = FRAME_V3_BY_ID[hl.frames[fi].frame]; if (f && f.squares > 0) frameHp += f.structure / f.squares;
+    }
+    u.frameHp = roundTo(frameHp, 1); u.hpMax = ownHp + u.frameHp;
     cost += s.cost;
     res.alloys += Math.ceil(s.alloys); res.iridium += s.iridium; res.helium3 += s.helium3; res.rareEarths += s.rareEarths; res.fissiles += s.fissiles; res.antimatter = (res.antimatter || 0) + (s.antimatter || 0);
     squares += u.cells.length;
@@ -120439,7 +120950,7 @@ const B2_TRAIT_CLASSES = {
 // k: w weapon trait, d defence trait. m: what it means; by / vs: the traits that counter it or that it answers (the working doc, 4g to 4i).
 const B2_TRAITS = {
   Piercing:      { k: 'w', c: 'imp',  g: 'piercing',  m: 'Goes right through a ship without spaced or very thick armour, damaging a random part inside.', by: ['Spaced', 'Hardened'], seen: 'coilguns, railguns' },
-  Focus:         { k: 'w', c: 'heat', g: 'focus',     m: 'Damage builds while the beam stays on one target. Agile ships spread it over all their armour.', by: ['Rolling', 'Ablative', 'Screening'], seen: 'lasers' },
+  Focus:         { k: 'w', c: 'heat', g: 'focus',     m: 'The beam ignores armour. It stays on one line of its target and builds up its damage, fast at first then slower, to three times after a minute. Once nothing is left on the line it moves to a new one and starts again. Rolling ships throw it off.', by: ['Rolling', 'Ablative', 'Screening'], seen: 'lasers' },   // (v345.0)
   Heat:          { k: 'w', c: 'heat', g: 'heat',      m: 'Adds heat to the target.', by: ['Cooling', 'Ablative'], seen: 'lasers, plasma' },
   Melting:       { k: 'w', c: 'heat', g: 'melting',   m: 'Weakens the armour it hits.', by: ['Magnetic'], seen: 'plasma' },
   Irradiating:   { k: 'w', c: 'chg',  g: 'irradiating', m: 'Partly bypasses armour and causes widespread damage inside.', by: ['Magnetic', 'Hardened'], seen: 'particle beams' },
@@ -120447,10 +120958,10 @@ const B2_TRAITS = {
   Guided:        { k: 'w', c: 'fli',  g: 'guided',    m: 'Steers onto its target, so dodging helps less.', by: ['Decoying'], seen: 'missiles, torpedoes' },
   Flak:          { k: 'w', c: 'exp',  g: 'flak',      m: 'Bursts near small craft and warheads.', by: ['Deflecting'], seen: 'flak shells, point defence' },
   Spaced:        { k: 'd', c: 'imp',  ans: ['imp'], g: 'spaced', m: 'An outer layer shatters slugs before they reach the main wall.', vs: ['Piercing'], seen: 'spaced armour' },
-  Deflecting:    { k: 'd', c: 'imp',  ans: ['imp', 'exp'], g: 'deflecting', m: 'Stops small, weak rounds outright, above a certain tier.', vs: ['Flak'], vsp: 'low-tier Kinetic', seen: 'armour plate, high-tier shields' },
+  Deflecting:    { k: 'd', c: 'imp',  ans: ['imp', 'exp'], g: 'deflecting', m: 'A hit no bigger than the armour on its line does nothing at all; a bigger one loses that much armour\'s worth. Lasers ignore armour.', vs: ['Flak'], vsp: 'any hit smaller than the armour', seen: 'armour plate, high-tier shields' },
   Ablative:      { k: 'd', c: 'heat', ans: ['heat', 'rad'], g: 'ablative', m: 'Boils off to carry heat away. Used up as it works.', vs: ['Focus', 'Heat'], seen: 'ablative coating' },
   Cooling:       { k: 'd', c: 'heat', ans: ['heat'], g: 'cooling', m: 'Soaks heat before it causes trouble.', vs: ['Heat'], seen: 'heat sinks, radiators' },
-  Rolling:       { k: 'd', c: 'heat', ans: ['heat'], g: 'rolling', m: 'Spreads beam hits over all the armour, so no side breaks early.', vs: ['Focus'], seen: 'agile hulls, RCS, officer skill' },
+  Rolling:       { k: 'd', c: 'heat', ans: ['heat'], g: 'rolling', m: 'While weaving, throws a beam off its line every second and its Focus starts again, so no line burns through.', vs: ['Focus'], seen: 'agile hulls, RCS, officer skill' },
   Magnetic:      { k: 'd', c: 'chg',  ans: ['chg', 'heat', 'imp'], g: 'magnetic', m: 'Bends charged matter away.', vs: ['Melting', 'Irradiating'], seen: 'magnetic shields' },
   Hardened:      { k: 'd', c: 'chg',  ans: ['chg', 'imp', 'chem'], g: 'hardened', m: 'Shelters crew and electronics, and stops damage spreading inside.', vs: ['Irradiating', 'Piercing'], seen: 'hardened bulkheads, radiation shelters' },
   Reactive:      { k: 'd', c: 'rad',  ans: ['rad', 'fli'], g: 'reactive', m: 'Bursts outward to break up incoming warheads. One use per patch.', vs: ['Interceptable'], seen: 'reactive armour (later)' },
@@ -126959,7 +127470,7 @@ const STATION_TYPE_IDS = { 1: 'station_t1', 2: 'shipyard', 3: 'station_t3', 4: '
 // Sylphs hold no places at all.
 const DELVER_STATION_TYPE_IDS = { 1: 'dv_station_t1', 2: 'dv_station_t2', 3: 'dv_station_t3', 4: 'dv_station_t4', 5: 'dv_station_t5' };
 const STATION_RULES = {
-  docks: { capacity: 6, repairRate: 40 },   // the repair docks of every station (as the old Shipyard row)
+  docks: { capacity: 6, repairRate: 80 },   // (v344.0: was 40; hit points doubled when the hidden HP dial went)   // the repair docks of every station (as the old Shipyard row)
   dockStep: 2,                              // ... and this many more berths a tier above the Station
   ammoRefillSeconds: 600,                   // a station makes a full load of rounds and missiles in this many battle seconds (10 minutes), a little at a time
   partHpMul: 3                              // every part of a station takes this many times the hits the same part takes on a ship: it is built into the station's
@@ -127579,7 +128090,7 @@ BUREAU2_SCREEN_API.testRange = { run: testRangeRun, state: testRange, plan: func
 //   adopted habits come along in its copy code and into every new campaign. A doctrine changed in the Bureau after the save updates the plan's copy.
 //   DOCTRINE TEMPLATES (LIBRARY.templates: [{ name, doctrine, savedAt }]) live here too, so they carry over as well. A plan from before v37 has no doctrine: Auto.
 // =====================================================================
-const GAME_VERSION = 'v341.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
+const GAME_VERSION = 'v346.0';                    // the game version written on every saved plan ((v198.0) the build fills it in from the file name)
 const LIBRARY_KEY = 'engineersWar.library';
 const LIBRARY_FORMAT = 1;
 const LIBRARY_CODE_SHIP = 'EW-SHIP-1:', LIBRARY_CODE_LIB = 'EW-LIB-1:';
